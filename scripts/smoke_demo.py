@@ -10,6 +10,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url", default="http://localhost:5176")
     parser.add_argument("--planner", action="store_true")
+    parser.add_argument("--all-cases", action="store_true", help="Verify all eight airport cases instead of two reference cases")
     args = parser.parse_args()
     base = args.base_url.rstrip("/")
 
@@ -32,7 +33,9 @@ def main() -> None:
     assert request("/api/v1/ready")["status"] == "ready"
     seeds = request("/api/v1/scenarios")
     assert len([s for s in seeds if s["id"].startswith("airport_case_")]) >= 8
-    for scenario in ("airport_turnaround_stability_v1", "airport_case_02_guillotine_v1", "airport_case_08_schwarzstart_v1"):
+    cases = sorted(s["id"] for s in seeds if s["id"].startswith("airport_case_") and s["id"].endswith("_v1"))
+    reference_cases = ["airport_case_02_guillotine_v1", "airport_case_08_schwarzstart_v1"]
+    for scenario in ["airport_turnaround_stability_v1", *(cases if args.all_cases else reference_cases)]:
         created = request("/api/v1/runs", {
             "scenario_id": scenario, "model_pack_id": "airport_medium_eu_v1",
             "seed": 42, "realtime_mode": "sil", "adapters": [],
@@ -42,6 +45,12 @@ def main() -> None:
         record = request("/api/v1/runs/" + run_id + "/record")
         assert record["summary"]["airport_kpis"]
         assert record["status"]["artifacts"]
+        assert record["scenario_snapshot"]["domain"] == "airport_turnaround_v1"
+        safety = request("/api/v1/runs/" + run_id + "/safety")
+        assert safety["audit"]["fingerprint_match"], safety
+        for artifact, signature in (("telemetry.csv", b"ts,source,"), ("artifacts/report.pdf", b"%PDF")):
+            with urllib.request.urlopen(base + f"/api/v1/runs/{run_id}/{artifact}", timeout=10) as response:
+                assert response.read().startswith(signature), artifact
         print(json.dumps({"scenario": scenario, "run_id": run_id, "kpis": record["summary"]["airport_kpis"]}))
 
     if args.planner:

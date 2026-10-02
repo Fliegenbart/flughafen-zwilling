@@ -1,7 +1,8 @@
-# FlexLab Workbench API
+# Airport Twin Core + FlexLab API
 
-Lokale, messdatenbasierte Testauswertung ohne Hardware-Schreibzugriff.
-Die vorhandene Airport Twin API bleibt kompatibel.
+Airport ist der primaere Arbeitsbereich. Die separate FlexLab-Auswertung bleibt
+unter `/api/v1/lab` erhalten; bestehende Airport-Endpunkte bleiben kompatibel.
+Beide werden lokal, ohne abgenommene reale Anlagenansteuerung betrieben.
 
 ## Start und Tests
 

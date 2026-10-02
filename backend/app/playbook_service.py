@@ -12,7 +12,7 @@ from typing import Callable
 from uuid import uuid4
 
 from .config import Settings
-from .forecast_service import ForecastService
+from .forecast_service import ForecastResolution, ForecastService
 from .models import (
     AirportKpiSummary,
     PlaybookDelta,
@@ -23,6 +23,7 @@ from .models import (
     PlaybookStatus,
     RunRequest,
     RunState,
+    ScenarioDefinition,
 )
 from .observability import (
     PLAYBOOK_CANDIDATES_EVALUATED,
@@ -137,10 +138,18 @@ class PlaybookService:
                 state=PlaybookJobState.queued,
                 progress=0,
             )
+            resolved = self.forecast_service.resolve(job_id, normalized_request)
             record = PlaybookRecord(
                 status=status,
                 request=normalized_request,
-                build_meta={"backend_git_commit": self.settings.build_git_commit},
+                scenario_snapshot=resolved.scenario,
+                model_pack_snapshot=resolved.model_pack,
+                build_meta={
+                    "backend_git_commit": self.settings.build_git_commit,
+                    "input_freeze": "queued",
+                    "input_resolution": {key: value for key, value in vars(resolved).items()
+                                         if key not in {"scenario", "model_pack"}},
+                },
             )
             self.storage.save_playbook_record(record)
 
@@ -221,6 +230,7 @@ class PlaybookService:
         source_scenario_id: str,
         model_pack_id: str,
         seed: int,
+        source_scenario: ScenarioDefinition | None = None,
     ) -> None:
         if self._enqueue_run is None:
             raise PlaybookError("run_dispatcher_not_configured")
@@ -230,7 +240,7 @@ class PlaybookService:
             if option.option_id == "baseline"
             else f"playbook_{job_id}_opt_{derived_index}_v1"
         )
-        base_scenario = self.storage.get_scenario(source_scenario_id)
+        base_scenario = source_scenario or self.storage.get_scenario(source_scenario_id)
         derived_scenario = build_playbook_scenario(base_scenario, option, derived_id)
         self.run_service.create_scenario(derived_scenario)
 
@@ -283,7 +293,22 @@ class PlaybookService:
         PLAYBOOK_JOBS_TOTAL.labels(state="running").inc()
 
         try:
-            resolved = self.forecast_service.resolve(job_id, record.request)
+            resolution_meta = record.build_meta.get("input_resolution")
+            if record.scenario_snapshot is not None and record.model_pack_snapshot is not None and resolution_meta:
+                resolved = ForecastResolution(
+                    scenario=record.scenario_snapshot,
+                    model_pack=record.model_pack_snapshot,
+                    **resolution_meta,
+                )
+            else:
+                resolved = self.forecast_service.resolve(job_id, record.request)
+                record.scenario_snapshot = resolved.scenario
+                record.model_pack_snapshot = resolved.model_pack
+                record.build_meta["input_freeze"] = "legacy_catalog_at_execution"
+                record.build_meta["input_resolution"] = {
+                    key: value for key, value in vars(resolved).items() if key not in {"scenario", "model_pack"}
+                }
+                self.storage.save_playbook_record(record)
             scenario = resolved.scenario
             model_pack = resolved.model_pack
 
@@ -319,6 +344,8 @@ class PlaybookService:
                 seen_option_ids.add(option.option_id)
 
             validation_run_ids: list[str] = []
+            validation_model_pack = model_pack.model_copy(update={"id": f"playbook_{job_id}_validation_model_v1"})
+            self.storage.save_model_pack(validation_model_pack)
             option_lookup = {option.option_id: option for option in unique_validation_order}
             for idx, option in enumerate(unique_validation_order, start=1):
                 self._validate_option(
@@ -326,8 +353,9 @@ class PlaybookService:
                     option=option,
                     derived_index=idx,
                     source_scenario_id=scenario.id,
-                    model_pack_id=model_pack.id,
+                    model_pack_id=validation_model_pack.id,
                     seed=record.request.seed,
+                    source_scenario=scenario,
                 )
                 if option.validation_run_id:
                     validation_run_ids.append(option.validation_run_id)

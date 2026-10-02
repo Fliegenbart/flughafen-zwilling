@@ -1,0 +1,123 @@
+.workspace-frame {
+  min-height: 100vh;
+}
+
+.workspace-selector {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 18px max(18px, calc((100% - 1380px) / 2));
+  font-family: "Sora", "Segoe UI", sans-serif;
+  border-bottom: 1px solid #324963;
+  color: #e9f4ff;
+  background: #0a1828;
+}
+
+.workspace-selector__intro {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.workspace-selector__intro strong {
+  font-size: 13px;
+}
+
+.workspace-selector__intro > span {
+  max-width: 530px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #b8d0e9;
+}
+
+.workspace-selector__links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.workspace-selector__links a {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #324963;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #b8d0e9;
+  text-decoration: none;
+  transition: border-color 140ms ease;
+}
+
+.workspace-selector__links a > span {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.workspace-selector__links a > strong {
+  font-size: 12px;
+}
+
+.workspace-selector__links a[aria-current="page"] {
+  border-color: #2ae6cf;
+  background: #123733;
+  color: #e9f4ff;
+}
+
+.workspace-selector__links a:hover {
+  border-color: #2ae6cf;
+}
+
+.workspace-selector__links a:focus-visible {
+  outline: 3px solid #2ae6cf;
+  outline-offset: 3px;
+}
+
+.workspace-frame--flexlab .workspace-selector {
+  background: #f4f6f2;
+  color: #183b31;
+  border-color: #c9d5c8;
+}
+
+.workspace-frame--flexlab .workspace-selector__intro > span,
+.workspace-frame--flexlab .workspace-selector__links a {
+  color: #41574b;
+}
+
+.workspace-frame--flexlab .workspace-selector__links a {
+  border-color: #a1b8a7;
+}
+
+.workspace-frame--flexlab .workspace-selector__links a[aria-current="page"] {
+  color: #183b31;
+  background: #e7efd7;
+  border-color: #237d8c;
+}
+
+.workspace-loading {
+  padding: 30px;
+  font: 14px "Sora", sans-serif;
+}
+
+@media (max-width: 800px) {
+  .workspace-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .workspace-selector__links {
+    width: 100%;
+  }
+
+  .workspace-selector__links a {
+    padding: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-selector__links a {
+    transition: none;
+  }
+}

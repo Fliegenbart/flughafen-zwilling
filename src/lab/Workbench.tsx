@@ -341,7 +341,7 @@ export default function Workbench() {
   return (
     <div className="lab-shell">
       <aside className="lab-sidebar">
-        <a className="lab-brand" href="/">
+        <a className="lab-brand" href="/?workspace=flexlab">
           <span className="lab-brand-symbol">
             <Icon name="pulse" size={25} />
           </span>
