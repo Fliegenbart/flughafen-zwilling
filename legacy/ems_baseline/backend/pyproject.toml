@@ -1,0 +1,57 @@
+[project]
+name = "kasernen-ems-twin-core"
+version = "0.1.0"
+description = "Deterministic digital twin core service for barracks EMS HIL/SIL testing"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.8.0",
+  "eval-type-backport>=0.2.0",
+  "reportlab>=4.2.0",
+  "charset-normalizer>=3.4.0",
+  "influxdb-client>=1.36.0",
+  "prometheus-client>=0.20.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "httpx>=0.27.0",
+  "ruff>=0.3.0",
+  "mypy>=1.9.0"
+]
+hil = [
+  "pymodbus>=3.6.9",
+  "opcua>=0.98.13",
+  "paho-mqtt>=2.1.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+strict = true
+python_version = "3.9"
+
+[[tool.mypy.overrides]]
+module = ["pymodbus.*", "opcua.*", "paho.*", "reportlab.*"]
+ignore_missing_imports = true
+
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.setuptools.package-data]
+app = ["profiles/*.json"]

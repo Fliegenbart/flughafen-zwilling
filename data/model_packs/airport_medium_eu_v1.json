@@ -1,0 +1,46 @@
+{
+  "id": "airport_medium_eu_v1",
+  "site_profile": "airport-medium-eu",
+  "assets": [
+    {
+      "id": "gates-main",
+      "type": "gates",
+      "name": "Terminal Main Gates",
+      "limits": {
+        "count": 28
+      }
+    },
+    {
+      "id": "ground-ops",
+      "type": "ground_ops",
+      "name": "Ground Operations",
+      "limits": {
+        "crew_teams": 14
+      }
+    },
+    {
+      "id": "runway-ops",
+      "type": "runway",
+      "name": "Runway Slot Controller",
+      "limits": {
+        "slots_per_hour": 28
+      }
+    }
+  ],
+  "parameter_set": {
+    "gates_total": 28,
+    "gates_open_pct": 96,
+    "arrivals_per_hour": 24,
+    "departures_per_hour": 24,
+    "base_turnaround_min": 44,
+    "ground_crew_teams": 14,
+    "crew_capacity_flights_per_hour": 1.8,
+    "baggage_capacity_flights_per_hour": 26,
+    "runway_slots_per_hour": 28
+  },
+  "calibration_meta": {
+    "source": "airport-seed",
+    "site_class": "medium_eu",
+    "revision": "r1"
+  }
+}

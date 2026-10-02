@@ -1,0 +1,43 @@
+{
+  "id": "airport_medium_eu_v1",
+  "name": "Airport Medium EU v1",
+  "description": "Default signal mapping for airport turnaround HIL integration.",
+  "adapters": {
+    "modbus": {
+      "endpoint": "sim://modbus-airport-medium-eu",
+      "mapping": {
+        "otp_pct": "41001@100",
+        "turnaround_avg_min": "41003@100",
+        "gate_utilization_pct": "41005@100",
+        "ground_crew_utilization_pct": "41007@100",
+        "departure_queue_flights": "41009@100",
+        "baggage_queue_flights": "41011@100",
+        "delay_avg_min": "41013@100"
+      }
+    },
+    "opcua": {
+      "endpoint": "sim://opcua-airport-medium-eu",
+      "mapping": {
+        "otp_pct": "ns=2;s=airport.turnaround.otp_pct",
+        "turnaround_avg_min": "ns=2;s=airport.turnaround.avg_min",
+        "gate_utilization_pct": "ns=2;s=airport.gates.utilization_pct",
+        "ground_crew_utilization_pct": "ns=2;s=airport.ground.crew_utilization_pct",
+        "departure_queue_flights": "ns=2;s=airport.queue.departure_flights",
+        "baggage_queue_flights": "ns=2;s=airport.queue.baggage_flights",
+        "delay_avg_min": "ns=2;s=airport.delay.avg_min"
+      }
+    },
+    "mqtt": {
+      "endpoint": "sim://mqtt-airport-medium-eu",
+      "mapping": {
+        "otp_pct": "airport/hil/turnaround/otp",
+        "turnaround_avg_min": "airport/hil/turnaround/avg_min",
+        "gate_utilization_pct": "airport/hil/gates/utilization",
+        "ground_crew_utilization_pct": "airport/hil/ground/crew_utilization",
+        "departure_queue_flights": "airport/hil/queue/departure",
+        "baggage_queue_flights": "airport/hil/queue/baggage",
+        "delay_avg_min": "airport/hil/delay/avg_min"
+      }
+    }
+  }
+}

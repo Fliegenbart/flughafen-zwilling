@@ -1,0 +1,9 @@
+api-twin.example.com {
+    @allowed remote_ip 203.0.113.10 198.51.100.0/24
+    handle @allowed {
+        reverse_proxy 127.0.0.1:8000
+    }
+    handle {
+        respond "forbidden" 403
+    }
+}

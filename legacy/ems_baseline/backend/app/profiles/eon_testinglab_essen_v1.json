@@ -1,0 +1,43 @@
+{
+  "id": "eon_testinglab_essen_v1",
+  "name": "E.ON TestingLab Essen v1",
+  "description": "Default signal mapping for Kasernen EMS HIL integration in E.ON TestingLab Essen.",
+  "adapters": {
+    "modbus": {
+      "endpoint": "sim://modbus-eon-testinglab",
+      "mapping": {
+        "frequency_hz": "40001@100",
+        "voltage_v": "40003@10",
+        "battery_soc_pct": "40010@100",
+        "battery_power_kw": "40012@100",
+        "diesel_power_kw": "40022@100",
+        "grid_on": "40071@1",
+        "load_kw": "40040@10"
+      }
+    },
+    "opcua": {
+      "endpoint": "sim://opcua-eon-testinglab",
+      "mapping": {
+        "frequency_hz": "ns=2;s=ems.grid.frequency_hz",
+        "voltage_v": "ns=2;s=ems.grid.voltage_v",
+        "battery_soc_pct": "ns=2;s=ems.battery.soc_pct",
+        "battery_power_kw": "ns=2;s=ems.battery.power_kw",
+        "diesel_power_kw": "ns=2;s=ems.diesel.power_kw",
+        "grid_on": "ns=2;s=ems.grid.connected",
+        "load_kw": "ns=2;s=ems.load.total_kw"
+      }
+    },
+    "mqtt": {
+      "endpoint": "sim://mqtt-eon-testinglab",
+      "mapping": {
+        "frequency_hz": "kaserne/hil/frequency",
+        "voltage_v": "kaserne/hil/voltage",
+        "battery_soc_pct": "kaserne/hil/battery/soc",
+        "battery_power_kw": "kaserne/hil/battery/power",
+        "diesel_power_kw": "kaserne/hil/diesel/power",
+        "grid_on": "kaserne/hil/grid/state",
+        "load_kw": "kaserne/hil/load/total"
+      }
+    }
+  }
+}

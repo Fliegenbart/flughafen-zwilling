@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.vite/
+.vercel/
+data/runs/
+data/playbook_jobs/

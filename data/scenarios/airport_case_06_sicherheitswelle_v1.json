@@ -1,0 +1,49 @@
+{
+  "id": "airport_case_06_sicherheitswelle_v1",
+  "version": "1.0.0",
+  "domain": "airport_turnaround_v1",
+  "description": "Hohe Security-Verzoegerung mit kleinem Personalengpass",
+  "duration_ms": 60000,
+  "tick_ms": 40,
+  "timeline_events": [],
+  "disturbances": [
+    {
+      "name": "security-burst",
+      "target": "security_delay_min",
+      "start_ms": 10000,
+      "duration_ms": 23000,
+      "magnitude": 10.0
+    },
+    {
+      "name": "staffing-dip",
+      "target": "staffing_shortage_pct",
+      "start_ms": 12000,
+      "duration_ms": 17000,
+      "magnitude": 12.0
+    }
+  ],
+  "expected_assertions": [
+    {
+      "name": "OTP",
+      "metric": "airport_kpis.otp_rate_pct",
+      "op": ">=",
+      "threshold": 85.0
+    },
+    {
+      "name": "Turnaround",
+      "metric": "airport_kpis.avg_turnaround_min",
+      "op": "<=",
+      "threshold": 55.0
+    },
+    {
+      "name": "Gate Utilization",
+      "metric": "airport_kpis.gate_utilization_avg_pct",
+      "op": "<=",
+      "threshold": 92.0
+    }
+  ],
+  "metadata": {
+    "source": "airport-seed",
+    "case_name": "Sicherheitswelle"
+  }
+}

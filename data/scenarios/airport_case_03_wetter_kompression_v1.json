@@ -1,0 +1,56 @@
+{
+  "id": "airport_case_03_wetter_kompression_v1",
+  "version": "1.0.0",
+  "domain": "airport_turnaround_v1",
+  "description": "Wetter drueckt Runway-Slots und verlaengert Turnaround",
+  "duration_ms": 60000,
+  "tick_ms": 40,
+  "timeline_events": [],
+  "disturbances": [
+    {
+      "name": "weather-window",
+      "target": "weather_restriction_pct",
+      "start_ms": 10000,
+      "duration_ms": 22000,
+      "magnitude": 20.0
+    },
+    {
+      "name": "slot-cut",
+      "target": "runway_slot_reduction_pct",
+      "start_ms": 10000,
+      "duration_ms": 22000,
+      "magnitude": 18.0
+    },
+    {
+      "name": "deicing-add",
+      "target": "deicing_delay_min",
+      "start_ms": 12000,
+      "duration_ms": 17000,
+      "magnitude": 4.0
+    }
+  ],
+  "expected_assertions": [
+    {
+      "name": "OTP",
+      "metric": "airport_kpis.otp_rate_pct",
+      "op": ">=",
+      "threshold": 85.0
+    },
+    {
+      "name": "Turnaround",
+      "metric": "airport_kpis.avg_turnaround_min",
+      "op": "<=",
+      "threshold": 55.0
+    },
+    {
+      "name": "Gate Utilization",
+      "metric": "airport_kpis.gate_utilization_avg_pct",
+      "op": "<=",
+      "threshold": 92.0
+    }
+  ],
+  "metadata": {
+    "source": "airport-seed",
+    "case_name": "Wetter-Kompression"
+  }
+}

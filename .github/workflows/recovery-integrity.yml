@@ -1,0 +1,42 @@
+name: Airport Twin Checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      INFLUX_TOKEN: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e './backend[dev]'
+      - run: python -m pytest backend/tests -q
+      - run: docker compose -f docker-compose.demo.yml config --quiet
+      - run: docker compose -f docker-compose.demo.yml -f docker-compose.demo-monitoring.yml config --quiet
+  snapshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check original recovery snapshots
+        run: sh scripts/check-recovery.sh

@@ -1,0 +1,56 @@
+{
+  "id": "airport_case_04_gepaeckstau_v1",
+  "version": "1.0.0",
+  "domain": "airport_turnaround_v1",
+  "description": "Gepaecksystem-Engpass mit Security-Verzoegerung und Arrival-Boost",
+  "duration_ms": 60000,
+  "tick_ms": 40,
+  "timeline_events": [
+    {
+      "at_ms": 9000,
+      "action": "inject",
+      "target": "arrivals_per_hour",
+      "value": 2.0
+    }
+  ],
+  "disturbances": [
+    {
+      "name": "baggage-jam",
+      "target": "baggage_jam_pct",
+      "start_ms": 12000,
+      "duration_ms": 22000,
+      "magnitude": 33.0
+    },
+    {
+      "name": "security-wave",
+      "target": "security_delay_min",
+      "start_ms": 14000,
+      "duration_ms": 17000,
+      "magnitude": 5.0
+    }
+  ],
+  "expected_assertions": [
+    {
+      "name": "OTP",
+      "metric": "airport_kpis.otp_rate_pct",
+      "op": ">=",
+      "threshold": 85.0
+    },
+    {
+      "name": "Turnaround",
+      "metric": "airport_kpis.avg_turnaround_min",
+      "op": "<=",
+      "threshold": 55.0
+    },
+    {
+      "name": "Gate Utilization",
+      "metric": "airport_kpis.gate_utilization_avg_pct",
+      "op": "<=",
+      "threshold": 92.0
+    }
+  ],
+  "metadata": {
+    "source": "airport-seed",
+    "case_name": "Gepaeckstau"
+  }
+}

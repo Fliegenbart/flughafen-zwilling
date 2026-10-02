@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+node_modules
+dist
+legacy
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/*.egg-info
+data/runs
+data/playbook_jobs
+backend/data

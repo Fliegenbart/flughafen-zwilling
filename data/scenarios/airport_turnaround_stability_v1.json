@@ -1,0 +1,56 @@
+{
+  "id": "airport_turnaround_stability_v1",
+  "version": "1.0.0",
+  "domain": "airport_turnaround_v1",
+  "description": "Turnaround stability sweep for medium-size airport operations",
+  "duration_ms": 60000,
+  "tick_ms": 40,
+  "timeline_events": [
+    {
+      "at_ms": 10000,
+      "action": "inject",
+      "target": "arrivals_per_hour",
+      "value": 2.0
+    },
+    {
+      "at_ms": 25000,
+      "action": "inject",
+      "target": "departures_per_hour",
+      "value": 2.0
+    }
+  ],
+  "disturbances": [
+    {
+      "name": "morning-stand-pressure",
+      "target": "gate_blockage_pct",
+      "start_ms": 12000,
+      "duration_ms": 18000,
+      "magnitude": 10.0
+    },
+    {
+      "name": "temporary-security-check",
+      "target": "security_delay_min",
+      "start_ms": 15000,
+      "duration_ms": 12000,
+      "magnitude": 4.0
+    }
+  ],
+  "expected_assertions": [
+    {
+      "name": "OTP baseline",
+      "metric": "airport_kpis.otp_rate_pct",
+      "op": ">=",
+      "threshold": 85.0
+    },
+    {
+      "name": "Turnaround budget",
+      "metric": "airport_kpis.avg_turnaround_min",
+      "op": "<=",
+      "threshold": 55.0
+    }
+  ],
+  "metadata": {
+    "site_class": "medium_eu",
+    "source": "airport-seed"
+  }
+}

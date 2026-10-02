@@ -1,0 +1,21 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    access: proxy
+    isDefault: true
+
+  - name: InfluxDB
+    uid: influxdb
+    type: influxdb
+    url: http://influxdb:8086
+    access: proxy
+    secureJsonData:
+      token: dev_token_12345
+    jsonData:
+      version: Flux
+      organization: eon-lab
+      defaultBucket: hil-telemetry
