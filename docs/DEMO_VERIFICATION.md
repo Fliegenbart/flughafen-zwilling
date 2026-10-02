@@ -7,6 +7,7 @@ Stand: 2026-10-02. macOS/Docker Desktop, lokale Demo ohne reale Hardware.
 | Pruefung | Ergebnis |
 | --- | --- |
 | Backend-Tests | 67 bestanden, ein Starlette-Deprecation-Hinweis |
+| Backend-Tests im versionsgebundenen Demo-Image | 67 bestanden; zusaetzlicher Cache-Hinweis wegen Read-only-Testmount |
 | Frontend-Tests | 18 bestanden |
 | ESLint / strikter Typecheck | erfolgreich |
 | Vite-Produktionsbuild | erfolgreich, Chunk-Warnung >500 kB |
@@ -64,6 +65,8 @@ echten Betriebsdaten oder privaten Protokolle in das Repository uebernommen.
 - Keine relevanten Browser-Konsolenfehler im geprueften Ablauf.
 - Mobile Breite 390px: Seitenbreite 390px, kein horizontaler Seitenueberlauf.
 - HTML-Compare-/Forecast-Report wird zusaetzlich durch Frontend-Tests geprueft.
+- Reale Schwarzstart-Synthese im Browser: `completed`, Baseline/Empfehlung,
+  validierte KPI-Deltas und Artefakt-/Validation-Run-Links sichtbar.
 
 Nicht geprueft: Windows/Linux als Host, echte Adapter-Hardware, Produktiv-
 Deployment, ein 100-Run-Realtime-Dauerlauf oder empirische Modellguete.
