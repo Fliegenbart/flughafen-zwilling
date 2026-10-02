@@ -1,6 +1,7 @@
 # Arbeitskontext
 
-- Dieses Repository ist der aktive Arbeitsstand fuer Airport Twin Core.
+- Dieses Repository ist der aktive Arbeitsstand fuer FlexLab Workbench.
+- Airport Twin Core bleibt separat mit kompatibler API erhalten.
 - `origin`: `https://github.com/Fliegenbart/flughafen-zwilling.git`.
 - Neue Branches verwenden den Prefix `codex/`.
 - Angeforderte, fertig gepruefte Aenderungen hier committen und pushen;
@@ -19,3 +20,8 @@
 - Vor einem fachlichen Ausbau `docs/TIMO_PILOT.md` lesen. SIL-Validierung ist
   keine empirische Validierung; keine Betriebs-/Optimierungsversprechen daraus ableiten.
 - Backend genau ein Prozess. Worker und JSON-Storage sind nicht multiprozesssicher.
+- FlexLab-Kern: `backend/app/lab/`, UI: `src/lab/`, Vertrag: `docs/FLEXLAB_V1.md`.
+- FlexLab ist messdatenbasiert und read-only. Keine Hardwarewrites einfuehren;
+  Live-Connectoren und Versuchsvorschriften brauchen separate Lab-Freigabe.
+- Schlechte Datenqualitaet darf nie zu PASS fuehren. Laufzeitdaten
+  unter `data/lab/` nicht committen. Originalquellen und Einheiten erhalten.

@@ -1,81 +1,82 @@
-# Timos 20-Minuten-Pilot
+# Timos Fuenf-Minuten-Pilot
 
-## Auftrag
+## Die konkrete Frage
 
-Nicht "Kann die Software einen Flughafen optimieren?", sondern:
-**Hilft eine reproduzierbare Stoerungs-/Gegenmassnahmen-Simulation dem Lab,
-eine konkrete Testfrage zu formulieren und Ergebnisse nachvollziehbar zu vergleichen?**
+**Kann ich einen Lade-/Flexibilitaetsversuch ohne Excel-Nacharbeit anhand
+von Ist-Leistung, Sollwert, Limit und vorab festgelegten Kriterien beurteilen?**
 
-Alle KPIs sind unkalibrierte Modellwerte. Die SIL-Validierung bestaetigt die
-Reproduktion im selben Modell, nicht die Wirkung an einem echten Flughafen.
+Die Anwendung ist ein lokaler Auswertungsarbeitsplatz. Kein Schreibzugriff auf
+Anlagen; keine angenommene Kenntnis der konkreten E.ON-Pruefstaende.
 
 ## Start
 
-Git, Docker Desktop und eine Internetverbindung fuer den ersten Build genuegen.
-Im Terminal:
-
 ```sh
-git clone --branch codex/recovery-audit https://github.com/Fliegenbart/flughafen-zwilling.git
+git clone --branch codex/flexlab-workbench https://github.com/Fliegenbart/flughafen-zwilling.git
 cd flughafen-zwilling
 docker compose -f docker-compose.demo.yml up --build -d
 ```
 
-Browser: [http://localhost:5176](http://localhost:5176). Kein Login erforderlich.
-Der erste Build kann mehrere Minuten dauern. Bei Problemen:
+[localhost:5176](http://localhost:5176) oeffnen. Keine Registrierung erforderlich.
+Docker muss laufen; erster Build braucht Internet. Startprobleme: `docker
+compose -f docker-compose.demo.yml logs --tail=100 twin-core frontend`.
 
-```sh
-docker compose -f docker-compose.demo.yml ps
-docker compose -f docker-compose.demo.yml logs --tail=100 twin-core frontend
+## Drei Dinge ausprobieren
+
+1. **Sollwertsprung:** Referenzprofil belassen, Test starten. Die 180 Modellsekunden
+   laufen bei 20x Wiedergabe in ca. 9 Sekunden. Soll-/Ist-Verlauf, Reaktionszeit,
+   Kriterien und Run-ID lesen. Das ist ausdruecklich eine Simulation.
+2. **Telemetrieausfall:** Testfall umstellen und starten. Fehlende Messpunkte
+   muessen sichtbar bleiben und das Ergebnis muss `Nicht bewertbar` sein.
+   Alternativ Antwortverzoegerung auf 20 s setzen: der Sollwertsprung verletzt
+   das vorher festgelegte Reaktionszeitlimit. Nachher Referenzwerte zuruecksetzen.
+3. **Messdaten:** `Simuliertes Beispiel` herunterladen und importieren. Danach
+   eigene anonymisierte CSV im selben Format importieren. Pruefstand, Messintervall
+   und akzeptierte Toleranzen vorher einstellen. Report, JSON und Trace exportieren.
+
+Ein wiederholter identischer Test wird als vergleichbare Baseline angeboten.
+Geaenderte Kriterien oder geaenderte Sollprofile werden nicht als identische
+Baseline verrechnet. Unterschiede sind Beobachtungen, keine kausale Optimierung.
+
+## CSV-Vertrag
+
+```csv
+ts_s,power_kw,setpoint_kw,limit_kw
+0,20,20,80
+1,20.1,20,80
+2,,20,80
+3,20,20,80
 ```
 
-Andere Startwege und optionale Grafana-Anbindung stehen im Root-README.
+- Relative Sekunden, strikt aufsteigend, Dezimalpunkt, Komma/Semikolon.
+- `power_kw`: positive Leistung = Bezug, negative = Einspeisung, leer = unbekannt.
+- Sollwert muss wirklich aufgezeichnet sein und bereits eine gegebenenfalls
+  wirksame Begrenzung enthalten. Keine frei angenommene Sollkurve als Messbeweis.
+- `limit_kw` ist die obere positive Leistungsgrenze. Untergrenzen, Frequenz,
+  Spannung und Kommunikationsprotokolle werden in v1 nicht geprueft.
+- Energie wird nur ueber gueltige beobachtete Intervalle integriert. Datenluecken
+  und schlechte Zeitabdeckung verhindern einen scheinbaren PASS.
+- Originaldatei und SHA-256 bleiben im lokalen Run-Record nachvollziehbar.
 
-## Drei konkrete Tests
+## Rueckmeldung
 
-1. **Spitzenwelle:** `API pruefen`, Profil waehlen, `Backend Run starten`.
-   Run-ID und KPI-Kurven beobachten, bis der Run `completed` ist.
-2. **Guillotine-Test:** gleiche Modellparameter verwenden. Was passiert mit
-   OTP/Delay, wenn Kapazitaeten gleichzeitig einbrechen? Anschliessend
-   `Playbook synthetisieren`: Baseline, Empfehlung, Actions und Deltas lesen.
-3. **Schwarzstart:** Recovery im Kapazitaetsmodell beobachten und ein zweites
-   Playbook erstellen. `Bericht erzeugen` oeffnet den HTML-/Druckreport.
+Bitte Fall, Run-ID und ggf. Report nennen:
 
-Ein Live-Run dauert ungefaehr 60 Sekunden. Das ist hier auch ein
-60-Sekunden-Modellfenster, **keine beschleunigte Flughafenstunde**.
-Die Forecast-Funktion kann laengere Modellhorizonte untersuchen, bleibt aber
-im selben vereinfachten Modell.
+1. Passt das Datenformat zu einem vorhandenen Pruefstandexport?
+2. Welche reale Versuchsvorschrift soll zuerst abgebildet werden?
+3. Sind Toleranz, Einschwingfrist und Reaktionszeitdefinition fachlich passend?
+4. Welche zusaetzlichen Signale fehlen (z. B. SoC, Spannung, Frequenz)?
 
-`completed` bedeutet technisch fertig, nicht automatisch KPI-PASS.
-`queued` bedeutet: der einzige RunWorker arbeitet noch an einem anderen Run
-oder an einem Playbook-Validierungsrun. Pro Backend genau ein Prozess.
+Erster Integrationsschritt: **ein** anonymisierter realer Export + eine abgestimmte
+Testvorschrift. Erst danach ein read-only Connector. Geraeteansteuerung nur mit
+separater Sicherheitsfreigabe des Labs, nicht durch diese Anwendung.
 
-## Rueckmeldung an David
+## Betrieb
 
-Bitte je Beobachtung Fall, Seed, Run-ID und ggf. Report nennen.
+`completed` = technisch fertig; das fachliche Ergebnis steht separat.
+`queued` = der einzelne lokale Worker bearbeitet noch einen anderen Test.
+Abbruch ist moeglich. Nach Backend-Neustart beginnt ein unfertiger Test mit
+derselben ID von vorn; `recovery_count` steht im JSON-Export.
 
-1. Startet das Tool ohne Hilfe und sind die Ergebnisse verstaendlich?
-2. Welche Modellreaktion ist plausibel, welche fachlich falsch?
-3. Welche reale Lab-Testfrage koennte damit untersucht werden?
-4. Welche Messdaten und welche reale Vergleichsmethode waeren dafuer notwendig?
-
-Nicht jede Gegenmassnahme muss alle KPIs verbessern. Engpassverschiebung und
-unwirksame Eingriffe sind ebenfalls relevante Ergebnisse.
-
-## Bedeutung fuer E.ON TestingLab
-
-Der vorhandene Nutzen ist ein wiederholbarer Testablauf mit Stoerung,
-Gegenmassnahme, Grenzwerten, Trace und Report. Ein spezifischer E.ON-Mehrwert
-ist noch eine Hypothese: etwa die Erholung nach Ausfaellen kritischer
-Infrastruktur. Eine Kopplung mit elektrischen Bodenfahrzeugen, Ladeleistung
-und Energieversorgung ist **noch nicht implementiert**.
-
-Nach dem Pilot zuerst eine reale Testfrage mit Timo festlegen, dann
-Zeitmodell, Ressourcenwirkung und Validierung an Messdaten entwickeln.
-Kein weiterer Feature-Ausbau ohne diese fachliche Grundlage.
-
-## Sicherer Betrieb
-
-Die Demo ist an localhost gebunden, hat keine API-Authentifizierung und
-verwendet keine echten Betriebsdaten. Nicht als gehosteten Dienst oder an
-Live-Hardware einsetzen. Stoppen mit `docker compose -f docker-compose.demo.yml down`;
-Volumes nicht loeschen, wenn die Reports erhalten bleiben sollen.
+Stoppen mit `docker compose -f docker-compose.demo.yml down`. Nicht `down -v`
+verwenden, wenn Messdaten erhalten bleiben sollen. Keine Authentifizierung;
+nur localhost, nicht als gemeinsamen Netzwerkdienst verwenden.
