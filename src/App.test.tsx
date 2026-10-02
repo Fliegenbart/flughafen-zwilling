@@ -61,10 +61,60 @@ describe("HMI smoke", () => {
     expect(screen.getByRole("button", { name: /Bericht erzeugen/i })).toBeInTheDocument();
   });
 
-  it("auto-switches to the local observability backend when the current API does not feed Grafana", async () => {
+  it("uses the same-origin API without probing an unrelated local service by default", async () => {
     const fetchMock = vi.mocked(global.fetch);
-    (globalThis as { __TWIN_CONFIG__?: { apiBaseUrl?: string } }).__TWIN_CONFIG__ = {
+    fetchMock.mockClear();
+    delete (globalThis as { __TWIN_CONFIG__?: unknown }).__TWIN_CONFIG__;
+    fetchMock.mockImplementation(() => mockJsonResponse({ playbook_synth_enabled: true }));
+
+    render(<App />);
+    await screen.findByText("Playbook Synthesizer");
+    expect(screen.getByDisplayValue(window.location.origin)).toBeInTheDocument();
+    expect(fetchMock.mock.calls.every(([url]) => String(url).startsWith(window.location.origin)))
+      .toBe(true);
+  });
+
+  it("exports the completed run's case and configuration rather than edited form values", async () => {
+    const status = { run_id: "frozen-run", state: "completed", progress: 100, pass_fail: true };
+    vi.mocked(global.fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/telemetry")) return mockTextResponse("");
+      if (url.endsWith("/capabilities")) return mockJsonResponse({ playbook_synth_enabled: false });
+      if (url.endsWith("/record")) return mockJsonResponse({ status, summary: {} });
+      if (url.endsWith("/runs") || url.endsWith("/runs/frozen-run")) return mockJsonResponse(status);
+      return mockJsonResponse({ status: "ok" });
+    });
+    const blobs: Blob[] = [];
+    const blobSpy = vi.spyOn(URL, "createObjectURL").mockImplementation((blob) => {
+      blobs.push(blob as Blob);
+      return "blob:report";
+    });
+    const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+    try {
+      render(<App />);
+      fireEvent.change(screen.getByLabelText("Testprofil"), { target: { value: "2" } });
+      fireEvent.click(screen.getByRole("button", { name: "Backend Run starten" }));
+      await waitFor(() => expect(screen.getByRole("button", { name: "Bericht erzeugen" })).toBeEnabled());
+      fireEvent.change(screen.getByLabelText("Testprofil"), { target: { value: "8" } });
+      fireEvent.change(screen.getByLabelText("Gates Total"), { target: { value: "30" } });
+      fireEvent.click(screen.getByRole("button", { name: "Bericht erzeugen" }));
+      const html = await blobs[0]!.text();
+      expect(html).toContain("<b>Szenario:</b> Guillotine-Test");
+      expect(html).toContain("Gates: 28");
+      expect(screen.getByRole("link", { name: "PDF-Bericht" })).toHaveAttribute(
+        "href", `${window.location.origin}/api/v1/runs/frozen-run/artifacts/report.pdf`,
+      );
+    } finally {
+      blobSpy.mockRestore();
+      openSpy.mockRestore();
+    }
+  });
+
+  it("only switches to the local observability backend when fallback is explicitly enabled", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    globalThis.__TWIN_CONFIG__ = {
       apiBaseUrl: "http://127.0.0.1:8001",
+      allowLocalApiFallback: true,
     };
 
     fetchMock.mockImplementation((input: RequestInfo | URL) => {
@@ -730,6 +780,7 @@ describe("HMI smoke", () => {
     fireEvent.change(screen.getByRole("combobox", { name: /Run Mode/i }), {
       target: { value: "sil" },
     });
+    await waitFor(() => expect(screen.getByRole("button", { name: /Demo Live starten/i })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: /Demo Live starten/i }));
 
     await waitFor(() => {

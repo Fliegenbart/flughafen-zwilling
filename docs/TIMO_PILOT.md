@@ -1,82 +1,73 @@
-# Timos Fuenf-Minuten-Pilot
+# Timos Pilot: Flughafen zuerst, FlexLab separat
 
-## Die konkrete Frage
+**Der Flughafen-Zwilling ist die Hauptdemo. FlexLab ist ein optionales
+Messdaten-Zusatzwerkzeug und ersetzt weder den Flughafen noch eure vorhandenen
+Pruefstaende.** Es wird keine Kenntnis der konkreten Lab-Ausstattung behauptet.
 
-**Kann ich einen Lade-/Flexibilitaetsversuch ohne Excel-Nacharbeit anhand
-von Ist-Leistung, Sollwert, Limit und vorab festgelegten Kriterien beurteilen?**
+## Ein Start, zwei Anwendungen
 
-Die Anwendung ist ein lokaler Auswertungsarbeitsplatz. Kein Schreibzugriff auf
-Anlagen; keine angenommene Kenntnis der konkreten E.ON-Pruefstaende.
-
-## Start
+Git und Docker mit Compose benoetigt; Docker muss laufen.
 
 ```sh
-git clone --branch codex/flexlab-workbench https://github.com/Fliegenbart/flughafen-zwilling.git
+git clone https://github.com/Fliegenbart/flughafen-zwilling.git
 cd flughafen-zwilling
 docker compose -f docker-compose.demo.yml up --build -d
 ```
 
-[localhost:5176](http://localhost:5176) oeffnen. Keine Registrierung erforderlich.
-Docker muss laufen; erster Build braucht Internet. Startprobleme: `docker
-compose -f docker-compose.demo.yml logs --tail=100 twin-core frontend`.
+- [Flughafen / Standard](http://localhost:5176/): acht Betriebsszenarien,
+  KPI-Kurven, Playbook-/Baseline-Vergleich und Reports.
+- [FlexLab / Zusatzwerkzeug](http://localhost:5176/?workspace=flexlab):
+  getrennte Leistungsversuche und CSV-Auswertung.
+- [API-Dokumentation](http://localhost:5176/docs).
 
-## Drei Dinge ausprobieren
+Oben im Dashboard zwischen beiden Arbeitsbereichen wechseln. Keine Registrierung.
+Nur localhost, keine gemeinsame Netzanwendung. Keine reale Anlagensteuerung.
+Die Persistenz liegt im Docker-Volume; nicht `down -v` ausfuehren.
 
-1. **Sollwertsprung:** Referenzprofil belassen, Test starten. Die 180 Modellsekunden
-   laufen bei 20x Wiedergabe in ca. 9 Sekunden. Soll-/Ist-Verlauf, Reaktionszeit,
-   Kriterien und Run-ID lesen. Das ist ausdruecklich eine Simulation.
-2. **Telemetrieausfall:** Testfall umstellen und starten. Fehlende Messpunkte
-   muessen sichtbar bleiben und das Ergebnis muss `Nicht bewertbar` sein.
-   Alternativ Antwortverzoegerung auf 20 s setzen: der Sollwertsprung verletzt
-   das vorher festgelegte Reaktionszeitlimit. Nachher Referenzwerte zuruecksetzen.
-3. **Messdaten:** `Simuliertes Beispiel` herunterladen und importieren. Danach
-   eigene anonymisierte CSV im selben Format importieren. Pruefstand, Messintervall
-   und akzeptierte Toleranzen vorher einstellen. Report, JSON und Trace exportieren.
+## Zuerst Airport ausprobieren
 
-Ein wiederholter identischer Test wird als vergleichbare Baseline angeboten.
-Geaenderte Kriterien oder geaenderte Sollprofile werden nicht als identische
-Baseline verrechnet. Unterschiede sind Beobachtungen, keine kausale Optimierung.
+[Airport-Testablauf, ca. 15 Minuten](TIMO_AIRPORT_PILOT.md): Guillotine und
+Schwarzstart im SIL-Schnelllauf starten, technische Fertigstellung von fachlichem
+PASS unterscheiden, Kurven/Report pruefen und den Playbook-Vergleich ausprobieren.
+Das Modell ist nicht kalibriert. Schwarzstart ist hier ein Airport-
+Kapazitaetsstresstest, kein elektrischer Schwarzstart.
 
-## CSV-Vertrag
+## Optional FlexLab anschauen
 
-```csv
-ts_s,power_kw,setpoint_kw,limit_kw
-0,20,20,80
-1,20.1,20,80
-2,,20,80
-3,20,20,80
+[Separater FlexLab-Testablauf](TIMO_FLEXLAB_PILOT.md). Eigene Leistungsdaten
+importieren und gegen vorab festgelegte Kriterien beurteilen. Wenn solche
+Funktionen bei euch schon bestehen, ist das kein angenommener neuer Mehrwert.
+Die Arbeit bleibt verfuegbar und separat gesichert.
+
+## Die relevante Frage fuer das TestingLab
+
+**Waere ein gekoppeltes Flughafen- oder Standort-Energieszenario als
+Systemtest eurer vorhandenen Komponenten nuetzlich, statt weitere Einzelgeraete-
+Flex-Tests nachzubauen?** Das ist eine zu pruefende Mehrwert-Hypothese.
+
+Heute simuliert Airport Twin Core Gate-/Turnaround-Kapazitaeten, nicht die
+elektrische Anlage eines Flughafens. Ein echter Energie-/Notstromversuch
+benoetigt eine abgestimmte Versuchsvorschrift, Anlagenmodell, Messsignale,
+Sicherheitsgrenzen und separate Hardwarefreigabe. Keine automatische Ansteuerung
+aus dieser Demo.
+
+Bitte fuer Rueckmeldung Fall, Run-ID und Report nennen:
+
+1. Welche Systemtest-Frage fehlt heute, trotz vorhandener Geraetetests?
+2. Flughafenbetrieb oder Standortenergie/Versorgung: welcher Kontext ist relevant?
+3. Welche Lasten/Komponenten, Zeitmassstaebe und Messsignale gehoeren dazu?
+4. Welche konkrete Versuchsvorschrift und Kontrollmethode sollen zuerst gelten?
+
+## Diagnose / Stoppen
+
+```sh
+docker compose -f docker-compose.demo.yml ps
+docker compose -f docker-compose.demo.yml logs --tail=100 twin-core frontend
+docker compose -f docker-compose.demo.yml down
 ```
 
-- Relative Sekunden, strikt aufsteigend, Dezimalpunkt, Komma/Semikolon.
-- `power_kw`: positive Leistung = Bezug, negative = Einspeisung, leer = unbekannt.
-- Sollwert muss wirklich aufgezeichnet sein und bereits eine gegebenenfalls
-  wirksame Begrenzung enthalten. Keine frei angenommene Sollkurve als Messbeweis.
-- `limit_kw` ist die obere positive Leistungsgrenze. Untergrenzen, Frequenz,
-  Spannung und Kommunikationsprotokolle werden in v1 nicht geprueft.
-- Energie wird nur ueber gueltige beobachtete Intervalle integriert. Datenluecken
-  und schlechte Zeitabdeckung verhindern einen scheinbaren PASS.
-- Originaldatei und SHA-256 bleiben im lokalen Run-Record nachvollziehbar.
-
-## Rueckmeldung
-
-Bitte Fall, Run-ID und ggf. Report nennen:
-
-1. Passt das Datenformat zu einem vorhandenen Pruefstandexport?
-2. Welche reale Versuchsvorschrift soll zuerst abgebildet werden?
-3. Sind Toleranz, Einschwingfrist und Reaktionszeitdefinition fachlich passend?
-4. Welche zusaetzlichen Signale fehlen (z. B. SoC, Spannung, Frequenz)?
-
-Erster Integrationsschritt: **ein** anonymisierter realer Export + eine abgestimmte
-Testvorschrift. Erst danach ein read-only Connector. Geraeteansteuerung nur mit
-separater Sicherheitsfreigabe des Labs, nicht durch diese Anwendung.
-
-## Betrieb
-
-`completed` = technisch fertig; das fachliche Ergebnis steht separat.
-`queued` = der einzelne lokale Worker bearbeitet noch einen anderen Test.
-Abbruch ist moeglich. Nach Backend-Neustart beginnt ein unfertiger Test mit
-derselben ID von vorn; `recovery_count` steht im JSON-Export.
-
-Stoppen mit `docker compose -f docker-compose.demo.yml down`. Nicht `down -v`
-verwenden, wenn Messdaten erhalten bleiben sollen. Keine Authentifizierung;
-nur localhost, nicht als gemeinsamen Netzwerkdienst verwenden.
+Grafana ist optional und nur fuer Airport-Telemetrie provisioniert. Start und
+oeffentliche lokale Demozugangsdaten stehen im [README](../README.md).
+Bei vorhandener Monitoring-Installation die beiden Compose-Dateien auch beim
+Neuaufbau zusammen angeben. `queued` bedeutet: der serielle Worker wartet noch;
+Logs bei dauerhaftem Warten pruefen, keine Betriebsdateien manuell loeschen.

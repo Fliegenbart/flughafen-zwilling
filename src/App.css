@@ -55,7 +55,7 @@ body {
   position: relative;
   min-height: 100vh;
   padding: 26px 18px 30px;
-  overflow: hidden;
+  overflow: clip;
   isolation: isolate;
 }
 
@@ -406,8 +406,12 @@ body {
 
 .playbook-compare {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
+}
+
+.command-rail .playbook-brief__grid {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .playbook-result__card,
@@ -496,6 +500,8 @@ body {
   color: #9fe7ff;
   text-decoration: none;
   border-bottom: 1px dashed color-mix(in srgb, var(--cyan) 45%, transparent);
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .planner-links a:hover {
@@ -581,6 +587,7 @@ body {
 .content-grid {
   display: grid;
   gap: 14px;
+  align-content: start;
 }
 
 .kpi-band {

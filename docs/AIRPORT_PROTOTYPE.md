@@ -38,7 +38,7 @@ docker compose -f docker-compose.demo.yml down
 ```
 
 Der konkrete 20-Minuten-Test und die Rueckmeldefragen stehen in
-[docs/TIMO_PILOT.md](docs/TIMO_PILOT.md).
+[Airport-Testablauf](TIMO_AIRPORT_PILOT.md).
 
 ## Was funktioniert
 
@@ -94,7 +94,7 @@ legacy/                      Unveraenderte archivierte Ausgangssnapshots
 
 Die aktive Airport-Version wurde aus den erhaltenen historischen Quellcode-
 Aenderungen wiederhergestellt. Provenienz, Codebefunde und Grenzen:
-[docs/RECOVERY_AUDIT.md](docs/RECOVERY_AUDIT.md).
+[Wiederherstellungs-Audit](RECOVERY_AUDIT.md).
 
 ## Entwicklung und Checks
 

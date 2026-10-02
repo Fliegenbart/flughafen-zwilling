@@ -73,6 +73,7 @@ interface PlaybookOptionClient {
 }
 
 interface PlaybookRequestClient {
+  seed?: number;
   scenario_id?: string | null;
   model_pack_id?: string | null;
   source_kind?: "scenario" | "config_snapshot" | "run_snapshot";
@@ -97,6 +98,7 @@ interface PlaybookRecordClient {
     error?: string | null;
   };
   request?: PlaybookRequestClient;
+  model_pack_snapshot?: { parameter_set: Record<string, number | string | boolean> } | null;
   baseline_option?: PlaybookOptionClient | null;
   best_option: PlaybookOptionClient | null;
   pareto_options: PlaybookOptionClient[];
@@ -404,7 +406,7 @@ function resolveRuntimeConfigUrl(
 }
 
 function resolveTwinApiBaseUrl() {
-  return resolveRuntimeConfigUrl("apiBaseUrl", "VITE_TWIN_API_BASE_URL", "http://127.0.0.1:8000");
+  return resolveRuntimeConfigUrl("apiBaseUrl", "VITE_TWIN_API_BASE_URL", window.location.origin);
 }
 
 function resolveTwinGrafanaBaseUrl() {
@@ -424,7 +426,7 @@ function isLocalLoopbackHost(hostname: string) {
 }
 
 function suggestLocalObservabilityApiBase(currentApiBase: string) {
-  if (globalThis.__TWIN_CONFIG__?.allowLocalApiFallback === false) return "";
+  if (globalThis.__TWIN_CONFIG__?.allowLocalApiFallback !== true) return "";
   const parsed = parseAbsoluteUrl(normalizeBaseUrl(currentApiBase));
   const pageHost = typeof window !== "undefined" ? window.location.hostname : "";
   const candidateHost = parsed && isLocalLoopbackHost(parsed.hostname) ? parsed.hostname : isLocalLoopbackHost(pageHost) ? pageHost : "";
@@ -1100,6 +1102,7 @@ export default function App() {
   const [config, setConfig] = useState<AirportConfig>(() => ({ ...DEFAULT_CONFIG, twinApiBaseUrl: resolveTwinApiBaseUrl() }));
   const [state, setState] = useState<AirportState>(INITIAL_STATE);
   const [selectedTest, setSelectedTest] = useState<number>(1);
+  const [reportContext, setReportContext] = useState<{ testId: number; config: AirportConfig } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [playbookEnabled, setPlaybookEnabled] = useState(false);
@@ -1378,6 +1381,10 @@ export default function App() {
       });
 
       resetTelemetryBuffer();
+      setReportContext({
+        testId: selectedTest,
+        config: { ...config, twinApiBaseUrl: resolvedBase, twinRealtimeMode: realtimeMode },
+      });
 
       setConfig((prev) => ({
         ...prev,
@@ -1569,6 +1576,13 @@ export default function App() {
         }
       : null;
   const playbookForecastNarrative = buildForecastNarrative(playbookRecord);
+  const reportPlaybook = playbookRecord?.request?.source_kind === "run_snapshot" && playbookRecord.request.source_run_id === state.remoteRunId
+    ? playbookRecord
+    : reportContext && playbookRecord?.request?.scenario_id === buildTwinScenario(reportContext.testId, reportContext.config).id
+    && playbookRecord.request.seed === reportContext.config.twinSeedBase + reportContext.testId
+    && Object.entries(buildPlannerConfigSnapshot(reportContext.config)).every(
+      ([key, value]) => playbookRecord.model_pack_snapshot?.parameter_set[key] === value
+    ) ? playbookRecord : null;
 
   return (
     <div className="app-shell">
@@ -1579,7 +1593,7 @@ export default function App() {
           <div>
             <p className="hero__eyebrow">Airport Operations Digital Twin</p>
             <h1 className="hero__title">Airport Twin Core</h1>
-            <p className="hero__subtitle">Digitaler Zwilling fuer Gate- und Turnaround-Betrieb mit HIL/SIL-Anbindung</p>
+            <p className="hero__subtitle">Flughafen-Stresstests fuer Gate- und Turnaround-Betrieb mit simulierten Schnittstellen</p>
             <p className="hero__subtitle">Demo-Modell: unkalibriert. KPI-Werte sind Modellwerte, keine Betriebsprognose.</p>
           </div>
           <div className="hero__chips">
@@ -1638,13 +1652,13 @@ export default function App() {
                     }))
                   }
                 >
-                  <option value="hil_realtime">HIL Realtime (live fuer Grafana)</option>
+                  <option value="hil_realtime">Echtzeit-Demo (simulierte Adapter, 60 s)</option>
                   <option value="sil">SIL Schnelllauf (Batch ohne Live-Effekt)</option>
                 </select>
               </label>
 
               <div className="button-stack">
-                <button className="btn btn--live" onClick={runDemoLiveScenario} disabled={busy}>
+                <button className="btn btn--live" onClick={runDemoLiveScenario} disabled={busy || !telemetryStreamEnabled}>
                   {busy ? "Demo startet..." : "Demo Live starten"}
                 </button>
                 <button className="btn btn--secondary" onClick={checkApi}>
@@ -1655,8 +1669,8 @@ export default function App() {
                 </button>
                 <button
                   className="btn btn--ghost"
-                  onClick={() => generateTestReport(state, config, selectedTest, playbookRecord)}
-                  disabled={!state.remoteRunId}
+                  onClick={() => reportContext && generateTestReport(state, reportContext.config, reportContext.testId, reportPlaybook)}
+                  disabled={state.remoteRunState !== "completed" || !reportContext}
                 >
                   Bericht erzeugen
                 </button>
@@ -1695,6 +1709,16 @@ export default function App() {
                   <a href={`${apiBase}/api/v1/runs/${state.remoteRunId}/record`} target="_blank" rel="noreferrer" className="mono">
                     Record
                   </a>
+                  {state.remoteRunState === "completed" ? (
+                    <>
+                      <a href={`${apiBase}/api/v1/runs/${state.remoteRunId}/artifacts/report.pdf`} target="_blank" rel="noreferrer" className="mono">
+                        PDF-Bericht
+                      </a>
+                      <a href={`${apiBase}/api/v1/runs/${state.remoteRunId}/telemetry.csv`} target="_blank" rel="noreferrer" className="mono">
+                        Telemetrie-CSV
+                      </a>
+                    </>
+                  ) : null}
                   {grafanaRunUrl ? (
                     <a href={grafanaRunUrl} target="_blank" rel="noreferrer" className="mono">
                       Grafana Live

@@ -99,8 +99,14 @@ class ForecastService:
         source_run = self.storage.get_run_record(request.source_run_id)
         source_model_pack_id = request.model_pack_id or source_run.request.model_pack_id
         source_scenario_id = request.scenario_id or source_run.request.scenario_id
-        base_model_pack = self.storage.get_model_pack(source_model_pack_id)
-        template_scenario = self.storage.get_scenario(source_scenario_id) if source_scenario_id else None
+        if source_model_pack_id == source_run.request.model_pack_id and source_run.model_pack_snapshot:
+            base_model_pack = source_run.model_pack_snapshot
+        else:
+            base_model_pack = self.storage.get_model_pack(source_model_pack_id)
+        if source_scenario_id == source_run.request.scenario_id and source_run.scenario_snapshot:
+            template_scenario = source_run.scenario_snapshot
+        else:
+            template_scenario = self.storage.get_scenario(source_scenario_id) if source_scenario_id else None
         horizon_min = request.forecast_horizon_min or 60
         latest_metrics, current_ts_ms = self._read_latest_run_metrics(source_run)
         derived_model_pack = self._build_run_snapshot_model_pack(

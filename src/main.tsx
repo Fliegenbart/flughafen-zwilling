@@ -1,16 +1,11 @@
-import React, { lazy, Suspense } from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
-import Workbench from "./lab/Workbench";
-
-const AirportApp = lazy(() => import("./App"));
-const showAirport = new URLSearchParams(window.location.search).get("workspace") === "airport";
+import WorkspaceApp from "./WorkspaceApp";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 
 createRoot(rootElement).render(
   <React.StrictMode>
-    <Suspense fallback={<p>Arbeitsplatz wird geladen…</p>}>
-      {showAirport ? <AirportApp /> : <Workbench />}
-    </Suspense>
+    <WorkspaceApp />
   </React.StrictMode>,
 );

@@ -7,6 +7,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Iterator
+from uuid import UUID
 
 from fastapi import FastAPI, HTTPException
 from fastapi import Query
@@ -29,6 +30,7 @@ from .models import (
     ReadyResponse,
     RunRecord,
     RunRequest,
+    RunState,
     SafetyResponse,
     RunStatus,
     ScenarioDefinition,
@@ -86,9 +88,9 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         workers.stop()
 
     app = FastAPI(
-        title="FlexLab Workbench + Airport Twin API",
+        title="Airport Twin Core + FlexLab API",
         version="1.0.0",
-        description="Lokale Testauswertung ohne Hardware-Schreibzugriff; Airport API bleibt kompatibel.",
+        description="Flughafen-Stresstests und separate FlexLab-Messdatenauswertung. Lokale Demo ohne reale Anlagensteuerung.",
         lifespan=lifespan,
     )
     app.add_middleware(
@@ -214,6 +216,29 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         except StorageError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         return FileResponse(path, media_type="application/x-ndjson", filename=f"{run_id}-telemetry.jsonl")
+
+    @app.get("/api/v1/runs/{run_id}/artifacts/{artifact_name}")
+    def get_run_artifact(run_id: str, artifact_name: str) -> FileResponse:
+        allowed = {
+            "record.json": ("run.json", "application/json"),
+            "report.json": ("report.json", "application/json"),
+            "report.pdf": ("report.pdf", "application/pdf"),
+            "telemetry.jsonl": ("telemetry.jsonl", "application/x-ndjson"),
+        }
+        try:
+            if artifact_name not in allowed or UUID(run_id).hex != run_id:
+                raise StorageError("Artifact not found")
+            record = service.get_run_record(run_id)
+            if artifact_name != "record.json" and record.status.state != RunState.completed:
+                raise StorageError("Completed artifact not available")
+            filename, media_type = allowed[artifact_name]
+            run_dir = storage.runs_dir / run_id
+            path = (run_dir / filename).resolve()
+            if path.parent != run_dir.resolve() or not path.is_file():
+                raise StorageError("Artifact not found")
+        except (StorageError, ValueError) as exc:
+            raise HTTPException(status_code=404, detail="Artifact not found") from exc
+        return FileResponse(path, media_type=media_type, filename=f"{run_id}-{artifact_name}")
 
     @app.get("/api/v1/runs/{run_id}/telemetry-slice", response_model=TelemetrySliceResponse)
     def get_run_telemetry_slice(

@@ -230,6 +230,8 @@ class PlaybookStatus(BaseModel):
 class PlaybookRecord(BaseModel):
     status: PlaybookStatus
     request: PlaybookRequest
+    scenario_snapshot: ScenarioDefinition | None = None
+    model_pack_snapshot: ModelPack | None = None
     baseline_option: PlaybookOption | None = None
     best_option: PlaybookOption | None = None
     pareto_options: list[PlaybookOption] = Field(default_factory=list)
@@ -321,6 +323,8 @@ class RunStatus(BaseModel):
 class RunRecord(BaseModel):
     status: RunStatus
     request: RunRequest
+    scenario_snapshot: ScenarioDefinition | None = None
+    model_pack_snapshot: ModelPack | None = None
     summary: RunSummary | None = None
     assertion_results: list[AssertionResult] = Field(default_factory=list)
     build_meta: dict[str, Any] = Field(default_factory=dict)

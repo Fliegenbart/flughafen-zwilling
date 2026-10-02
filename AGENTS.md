@@ -1,7 +1,11 @@
 # Arbeitskontext
 
-- Dieses Repository ist der aktive Arbeitsstand fuer FlexLab Workbench.
-- Airport Twin Core bleibt separat mit kompatibler API erhalten.
+- Airport Twin Core ist der primaere Arbeitsbereich; Default-URL zeigt Flughafen.
+- FlexLab Workbench ist separat unter `?workspace=flexlab` voll erhalten.
+- Keine Domaene stillschweigend ersetzen. Fachlichen Wechsel vorab deutlich
+  abstimmen; vorhandene Lab-Funktionen nicht als unbekannten Bedarf voraussetzen.
+- Der FlexLab-Stand vor diesem Einstieg ist per Tag
+  `flexlab-workbench-v1-2026-10-03` unveraendert auf GitHub gesichert.
 - `origin`: `https://github.com/Fliegenbart/flughafen-zwilling.git`.
 - Neue Branches verwenden den Prefix `codex/`.
 - Angeforderte, fertig gepruefte Aenderungen hier committen und pushen;

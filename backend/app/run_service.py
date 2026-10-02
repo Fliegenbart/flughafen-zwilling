@@ -67,8 +67,8 @@ class RunService:
 
     def recompute_audit_fingerprint(self, run_id: str) -> str:
         record = self.storage.get_run_record(run_id)
-        scenario = self.storage.get_scenario(record.request.scenario_id)
-        model_pack = self.storage.get_model_pack(record.request.model_pack_id)
+        scenario = record.scenario_snapshot or self.storage.get_scenario(record.request.scenario_id)
+        model_pack = record.model_pack_snapshot or self.storage.get_model_pack(record.request.model_pack_id)
         telemetry_path = self.get_run_telemetry_path(run_id)
         return self._compute_audit_fingerprint(record.request, scenario, model_pack, telemetry_path)
 
@@ -169,8 +169,8 @@ class RunService:
 
     def queue_run(self, request: RunRequest) -> RunStatus:
         # Validate references before creating the run.
-        self.storage.get_scenario(request.scenario_id)
-        self.storage.get_model_pack(request.model_pack_id)
+        scenario = self.storage.get_scenario(request.scenario_id)
+        model_pack = self.storage.get_model_pack(request.model_pack_id)
 
         run_id = uuid4().hex
         status = RunStatus(
@@ -185,7 +185,9 @@ class RunService:
         record = RunRecord(
             status=status,
             request=request,
-            build_meta={"backend_git_commit": self.settings.build_git_commit},
+            scenario_snapshot=scenario,
+            model_pack_snapshot=model_pack,
+            build_meta={"backend_git_commit": self.settings.build_git_commit, "input_freeze": "queued"},
             hardware_meta=request.hardware_meta,
         )
         self.storage.save_run_record(record)
@@ -225,8 +227,14 @@ class RunService:
         telemetry_path = self.storage.run_dir(run_id) / "telemetry.jsonl"
 
         try:
-            scenario = self.storage.get_scenario(record.request.scenario_id)
-            model_pack = self.storage.get_model_pack(record.request.model_pack_id)
+            scenario = record.scenario_snapshot or self.storage.get_scenario(record.request.scenario_id)
+            model_pack = record.model_pack_snapshot or self.storage.get_model_pack(record.request.model_pack_id)
+            if record.scenario_snapshot is None or record.model_pack_snapshot is None:
+                # Old records cannot reconstruct inputs that were never preserved.
+                record.scenario_snapshot = scenario
+                record.model_pack_snapshot = model_pack
+                record.build_meta["input_freeze"] = "legacy_catalog_at_execution"
+                self.storage.save_run_record(record)
             adapters = build_adapters(record.request.adapters)
 
             with telemetry_path.open("w", encoding="utf-8") as f_out:
