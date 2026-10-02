@@ -7,6 +7,11 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    proxy: {
+      "/api": process.env.TWIN_DEV_API_URL || "http://127.0.0.1:8010",
+      "/docs": process.env.TWIN_DEV_API_URL || "http://127.0.0.1:8010",
+      "/openapi.json": process.env.TWIN_DEV_API_URL || "http://127.0.0.1:8010",
+    },
   },
   test: {
     include: ["src/**/*.test.{ts,tsx}"],

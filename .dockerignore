@@ -10,4 +10,5 @@ legacy
 **/*.egg-info
 data/runs
 data/playbook_jobs
+data/lab
 backend/data

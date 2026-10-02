@@ -1,4 +1,4 @@
-name: Airport Twin Checks
+name: FlexLab and Airport Checks
 
 on:
   push:
@@ -32,6 +32,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -e './backend[dev]'
       - run: python -m pytest backend/tests -q
+      - run: ruff check backend/app/lab
       - run: docker compose -f docker-compose.demo.yml config --quiet
       - run: docker compose -f docker-compose.demo.yml -f docker-compose.demo-monitoring.yml config --quiet
   snapshots:

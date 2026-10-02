@@ -38,6 +38,8 @@ from .playbook_service import PlaybookError, PlaybookService
 from .run_service import RunService
 from .storage import FileStorage, StorageError
 from .workers import WorkerManager
+from .lab.router import create_router as create_lab_router
+from .lab.service import LabService
 
 logger = logging.getLogger("twin_core.main")
 
@@ -66,9 +68,11 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     playbook_service.set_run_dispatcher(workers.enqueue_run)
     workers.start()
     workers.recover_pending()
+    lab_service = LabService(storage.base_dir)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
+        lab_service.start()
         report = storage.readiness_report()
         profile_count = len(list_profiles())
         logger.info(
@@ -78,12 +82,13 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             ",".join(settings.allowed_origins),
         )
         yield
+        lab_service.stop()
         workers.stop()
 
     app = FastAPI(
-        title="Airport Twin Core Service",
-        version="0.1.0",
-        description="Deterministic digital twin API for HIL/SIL testing",
+        title="FlexLab Workbench + Airport Twin API",
+        version="1.0.0",
+        description="Lokale Testauswertung ohne Hardware-Schreibzugriff; Airport API bleibt kompatibel.",
         lifespan=lifespan,
     )
     app.add_middleware(
@@ -93,6 +98,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.include_router(create_lab_router(lab_service))
 
     @app.get("/api/v1/health", response_model=HealthResponse)
     def health() -> HealthResponse:

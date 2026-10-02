@@ -1,7 +1,7 @@
 [project]
-name = "airport-twin-core"
-version = "0.1.0"
-description = "Deterministic digital twin core service for airport turnaround HIL/SIL testing"
+name = "flexlab-workbench-api"
+version = "1.0.0"
+description = "Local measurement-first charging and flexibility test workbench with compatible Airport Twin API"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [

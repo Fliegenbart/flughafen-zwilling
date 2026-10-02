@@ -1,36 +1,38 @@
-# Airport Twin Core Backend
+# FlexLab Workbench API
 
-Deterministischer, unkalibrierter Methodenprototyp fuer Gate-/Turnaround-Tests.
-Keine Betriebsprognose, kein Flugleitsystem und keine Live-Aktuierung im Pilot.
+Lokale, messdatenbasierte Testauswertung ohne Hardware-Schreibzugriff.
+Die vorhandene Airport Twin API bleibt kompatibel.
 
-## Lokal entwickeln
+## Start und Tests
 
-Python 3.12 verwenden. Im Repository-Root:
+Im Repository-Root, Python 3.12:
 
 ```sh
 python3.12 -m venv backend/.venv
 backend/.venv/bin/pip install -e './backend[dev]'
 INFLUX_TOKEN='' backend/.venv/bin/python -m pytest backend/tests -q
-TWIN_DATA_DIR="$PWD/data" TWIN_ENABLE_PLAYBOOK_SYNTH=1 \
-  backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+TWIN_DATA_DIR="$PWD/data" INFLUX_TOKEN='' \
+  backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8010 --workers 1
 ```
 
-Genau ein Uvicorn-Prozess: die persistenten Queues sind lokal und nicht
-fuer mehrere Prozesse oder horizontale Skalierung ausgelegt.
-API-Dokumentation: `http://localhost:8000/docs`.
+API-Dokumentation: `http://localhost:8010/docs`. Genau ein Prozess; lokale
+Worker/JSON-Persistenz sind nicht multiprozesssicher. Keine Authentifizierung,
+daher nur lokal betreiben.
 
-## Aufbau
+## FlexLab-Kern
 
-- `models.py`: Scenario-, Run-, KPI-, Playbook- und Forecast-Vertraege.
-- `simulators/airport_turnaround.py`: aggregiertes Kapazitaetsmodell.
-- `deterministic.py`: Domain-Dispatcher und Assertions.
-- `run_service.py`, `workers.py`, `storage.py`: serielle Jobs, JSON-Artefakte,
-  Neustart-Recovery mit derselben Job-ID.
-- `playbook_synth.py`, `playbook_service.py`: begrenzte Strategiesuche,
-  Baseline, Pareto-Optionen und SIL-Validierungsruns.
-- `forecast_service.py`: modellbasierte Projektionen aus Konfiguration/Run.
-- `observability.py`: optionale Influx-Telemetrie und Prometheus-Metriken.
+- `lab/models.py`: typisierte, endliche Zahlen mit Einheiten und Begrenzungen.
+- `lab/analysis.py`: strenger CSV-Parser, Zeitabdeckung, Energie, Tracking,
+  Reaktionszeit, obere Leistungsgrenze und erklaerbare Assertions.
+- `lab/simulator.py`: deterministisches aggregiertes Referenzlastmodell.
+- `lab/service.py`: serieller Worker, atomare Records/Traces, Abbruch,
+  persistente Neustart-Recovery, auditierbarer Baseline-Vergleich.
+- `lab/router.py`: API unter `/api/v1/lab`, begrenzte Imports und Artefakt-Whitelist.
+- `lab/report.py`: standalone HTML und CSV; Nutzertext wird escaped.
 
-Der Playbook-Feature-Flag ist ausserhalb der expliziten Demo standardmaessig
-ausgeschaltet. Adaptersupport ist vorhanden, aber nicht Teil der SIL-Abnahme.
-Details und Grenzen: `../docs/RECOVERY_AUDIT.md`.
+CSV-Import ist JSON-Transport mit `csv_text`, kein Hardwareconnector. Rohdaten
+liegen unter `TWIN_DATA_DIR/lab/runs/<uuid>`. Diese Daten nicht committen.
+Methoden und Grenzen: `../docs/FLEXLAB_V1.md`; Timos Ablauf: `../docs/TIMO_PILOT.md`.
+
+Airport-Prototyp: `../docs/AIRPORT_BACKEND.md`. Seine Adapter werden nicht fuer
+FlexLab verwendet; kein OCPP-/EEBUS-Support und kein Live-Schreibpfad.
