@@ -1,0 +1,91 @@
+{
+  "id": "munich_public_facts_v1",
+  "airport": "Flughafen Muenchen / MUC",
+  "researched_at": "2026-10-03",
+  "purpose": "Public source dossier, not a calibrated model pack or an airport operational dataset",
+  "sources": [
+    {
+      "id": "muc_business_2025",
+      "publisher": "Flughafen Muenchen GmbH",
+      "title": "Integrierter Bericht 2025: Wirtschaftsbericht",
+      "url": "https://bericht2025.munich-airport.de/financial-report/konzernlagebericht/wirtschaftsbericht/",
+      "content_period": "2025",
+      "publication_date": null,
+      "accessed_at": "2026-10-03"
+    },
+    {
+      "id": "muc_climate_2025",
+      "publisher": "Flughafen Muenchen GmbH",
+      "title": "Integrierter Bericht 2025: Klimaschutz",
+      "url": "https://bericht2025.munich-airport.de/impact-report/umwelt-und-klimaschutz/klimaschutz/",
+      "content_period": "2025, with explicitly identified future targets",
+      "publication_date": null,
+      "accessed_at": "2026-10-03"
+    },
+    {
+      "id": "muc_sustainability_2025",
+      "publisher": "Flughafen Muenchen GmbH",
+      "title": "Integrierter Bericht 2025: Nachhaltigkeitskennzahlen",
+      "url": "https://bericht2025.munich-airport.de/impact-report/nachhaltige-entwicklung/nachhaltigkeitskennzahlen/",
+      "content_period": "2025",
+      "publication_date": null,
+      "accessed_at": "2026-10-03"
+    },
+    {
+      "id": "muc_medium_voltage_tab",
+      "publisher": "Flughafen Muenchen GmbH",
+      "title": "Technische Anschlussbedingungen Mittelspannung",
+      "url": "https://www.munich-airport.de/_b/0000000000000032057458bb6811e3c4/technische-anschlussbedingung-ms.pdf",
+      "content_period": "Document footer 2014-02-03; linked from current publication page",
+      "publication_date": null,
+      "accessed_at": "2026-10-03"
+    },
+    {
+      "id": "muc_environment_trail",
+      "publisher": "Flughafen Muenchen GmbH",
+      "title": "Umwelt-Radweg: Energiezentrale West",
+      "url": "https://www.munich-airport.de/umwelt-radweg-6699942",
+      "content_period": "BHKW ratings explicitly refer to 2022",
+      "publication_date": null,
+      "accessed_at": "2026-10-03"
+    }
+  ],
+  "facts": [
+    {"id": "passengers_2025", "label": "Passagiere", "value": 43.4, "unit": "million/year", "status": "reported_rounded", "as_of": "2025", "source_id": "muc_business_2025", "locator": "Verkehrszahlen Flughafen Muenchen", "scope": "Airport annual total, not a daily arrival profile"},
+    {"id": "movements_2025", "label": "Flugbewegungen", "value": 337438, "unit": "movements/year", "status": "reported", "as_of": "2025", "source_id": "muc_business_2025", "locator": "Verkehrszahlen Flughafen Muenchen", "scope": "Arrivals and departures combined; not a turnaround count or schedule"},
+    {"id": "p44_charge_points", "label": "P44 Ladepunkte", "value": 275, "unit": "charge_points", "status": "reported", "as_of": "2025-09", "source_id": "muc_business_2025", "locator": "Inbetriebnahme des groessten Ladeparks", "scope": "Public charging park, not all campus chargers"},
+    {"id": "p43_p44_pv", "label": "PV auf P43/P44", "value": 3, "unit": "MWp", "status": "reported", "as_of": "2025-09", "source_id": "muc_business_2025", "locator": "Inbetriebnahme des groessten Ladeparks", "scope": "Combined rooftop capacity; subset of campus PV, never add to the campus total"},
+    {"id": "bus_depot_charge_points", "label": "Busdepot Ladepunkte", "value": 50, "unit": "charge_points", "status": "reported", "as_of": "2025-08", "source_id": "muc_business_2025", "locator": "Neues E-Bus-Depot", "scope": "Charge-point count, not electrical power"},
+    {"id": "pv_campus_end_2025", "label": "Installierte Campus-PV", "value": 7, "unit": "MWp", "status": "reported_rounded", "as_of": "2025-12-31", "source_id": "muc_climate_2025", "locator": "2 Photovoltaik", "scope": "Nameplate capacity, not constant generation"},
+    {"id": "pv_target_2030", "label": "PV-Ausbauziel", "value": 50, "unit": "MW", "status": "target", "as_of": "2030", "source_id": "muc_climate_2025", "locator": "2 Photovoltaik", "scope": "Future target, not installed capacity"},
+    {"id": "pv_project_2026", "label": "Freiflaechen-PV mit Speicher", "value": 3.7, "unit": "MWp", "status": "announced", "as_of": "2026 project outlook in the 2025 report", "source_id": "muc_climate_2025", "locator": "2 Photovoltaik", "scope": "Commissioning status on research date unverified; storage kW/kWh not stated"},
+    {"id": "bus_fleet_2025", "label": "Emissionsfreie Busse", "value": 55, "unit": "vehicles", "status": "reported", "as_of": "2025", "source_id": "muc_climate_2025", "locator": "Elektromobilitaet", "scope": "AeroGround fleet, not a deployment or charging schedule"},
+    {"id": "existing_energy_twin", "label": "Bestehender dynamischer Energiezwilling", "value": true, "unit": "boolean", "status": "reported", "as_of": "2025", "source_id": "muc_climate_2025", "locator": "5 Umweltwaerme", "scope": "Built with an external partner; capabilities and interfaces not publicly established here"},
+    {"id": "third_grid_construction", "label": "Drittes Stromnetz: Baubeginn", "value": 2027, "unit": "year", "status": "planned", "as_of": "2025 report outlook", "source_id": "muc_climate_2025", "locator": "6 Stromnetz", "scope": "Completion planned by end 2029; not existing transport capacity"},
+    {"id": "chp_electricity_share", "label": "BHKW-Anteil am Strombedarf", "value": 80, "unit": "percent", "status": "reported_approximate", "as_of": "2025 report description", "source_id": "muc_sustainability_2025", "locator": "Stromerzeugung und -bezug", "scope": "Approximate energy share, not dispatch, efficiency or rated power"},
+    {"id": "electricity_intensity_2025", "label": "Campus-Stromverbrauch je Passagier", "value": 5.03, "unit": "kWh/passenger", "status": "reported_rounded", "as_of": "2025", "source_id": "muc_sustainability_2025", "locator": "Energieintensitaetskoeffizient and footnote", "scope": "Includes campus buildings/assets, third-party throughput and LV losses; not FMG-only consumption"},
+    {"id": "medium_voltage", "label": "MS-Betriebsspannung", "value": 20, "unit": "kV", "status": "historical_document", "as_of": "2014-02-03 document footer", "source_id": "muc_medium_voltage_tab", "locator": "PDF page 8, section 5.1 A", "scope": "Confirm applicable/current TAB with FMG; not proof of a specific transformer ratio or capacity"},
+    {"id": "chp_rating_2022", "label": "BHKW elektrische Leistung", "value": 25, "unit": "MW", "status": "historical_reported", "as_of": "2022", "source_id": "muc_environment_trail", "locator": "Energiezentrale West", "scope": "Six engines in 2022; current installed/available capacity must be confirmed"}
+  ],
+  "derived_context": [
+    {"id": "campus_electricity_order_of_magnitude", "value": 218302, "unit": "MWh/year", "method": "43.4 million passengers * 5.03 kWh/passenger / 1000", "input_fact_ids": ["passengers_2025", "electricity_intensity_2025"], "status": "derived_from_rounded_inputs", "scope": "Approximate annual campus context only; precision is not warranted and no load profile follows from this"}
+  ],
+  "unresolved_inputs": [
+    {"id": "grid_import_export_limits", "value": null, "unit": "kW", "needed_for": "Available capacity and peak comparison"},
+    {"id": "sector_transformer_ratings", "value": null, "unit": "kVA", "needed_for": "Sector limits; no real P44/depot transformer rating is asserted"},
+    {"id": "network_topology_and_power_factor", "value": null, "unit": "site_data", "needed_for": "Power flow and transformer apparent-power loading"},
+    {"id": "measured_load_profiles", "value": null, "unit": "timestamped_kW", "needed_for": "Calibration; annual energy cannot replace a time series"},
+    {"id": "pv_generation_profiles", "value": null, "unit": "timestamped_kW", "needed_for": "Weather/seasonal dispatch rather than nameplate power"},
+    {"id": "battery_rating", "value": null, "unit": "kW_and_kWh", "needed_for": "Storage is mentioned publicly but actual size/control are unknown"},
+    {"id": "charging_sessions_and_bus_missions", "value": null, "unit": "sessions_and_jobs", "needed_for": "Availability, charging deadlines and operational coupling"},
+    {"id": "chp_heat_and_dispatch", "value": null, "unit": "kW_electric_and_thermal", "needed_for": "No CHP phase-out claim without heat/cooling replacement model"},
+    {"id": "existing_twin_coverage", "value": null, "unit": "model_scope", "needed_for": "Verify additional TestingLab value instead of duplicating existing planning"}
+  ],
+  "guardrails": [
+    "No operational model parameters are auto-created from this dossier.",
+    "Public asset counts do not establish electrical capacity, utilization or availability.",
+    "Targets and announced projects must not appear as current installed assets.",
+    "No airport partnership, endorsement, privileged data access or empirical validation is claimed.",
+    "A planning stress scenario is not evidence that Munich Airport currently has an overload or outage."
+  ]
+}
