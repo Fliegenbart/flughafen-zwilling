@@ -112,8 +112,25 @@ Turnaround-Playbook bleibt auch fuer Config-Snapshots dieser Domaene gesperrt.
 Artefakte: `missions.csv`, `departures.csv`, `vehicles.csv`, `parking.csv`,
 `coupled-evidence.json`, `report.json`, `report.pdf`, `record.json`, Telemetrie.
 `build_meta.result_artifact_hashes` und `/safety.audit.artifact_hashes_match`
-pruefen die fuenf neuen Ergebnisartefakte; bestehender Fingerprint prueft
-Request/Szenario/Model-Pack/Telemetrie. **Keine externe Signatur/Echtheitsgarantie.**
+pruefen die vollstaendige, versionsabhaengige Dateiliste, nicht nur vorhandene
+Manifest-Eintraege. Neue Runs (`result_audit_version=coupled_evidence_v2`)
+hashen alle fuenf Datenartefakte **plus `report.json` und `report.pdf`**.
+Der bestehende Fingerprint prueft Request/Szenario/Model-Pack/Telemetrie.
+`report_consistent_match` gleicht KPIs, Modellkriterien, Assertions,
+Eingabe-Snapshots und Execution-Metadaten mit dem gespeicherten JSON-Bericht ab.
+Fehlende Telemetrie, unvollstaendige Manifeste und widerspruechliche Ergebnisse
+geben keine positive Vergleichsfreigabe; die UI zeigt einen Fehler statt KPIs.
+
+Alte Runs behalten ihr urspruengliches Fuenf-Dateien-Manifest. Die UI kennzeichnet
+sie als `data_and_report_consistency_v1`: Datenartefakte gehasht, Report-Konsistenz
+geprueft, **kein urspruenglicher SHA256-Nachweis fuer PDF/JSON-Berichte**.
+Unbekannte Versionen werden abgelehnt statt auf Legacy heruntergestuft.
+Der JSON-Bericht enthaelt das vor seiner Erstellung verfuegbare Datenmanifest;
+die beiden Bericht-Hashes stehen danach im finalen `record.json`. Nur dieses
+zirkulaere Manifest wird beim Metadatenvergleich ausgenommen.
+**Lokale Konsistenzpruefung, keine externe Signatur/Echtheitsgarantie oder
+empirische Validierung.** Ein gemeinsam veraenderter Record und seine Dateien
+werden durch diese lokalen Hashes nicht authentifiziert.
 CSV schuetzt importierte Strings vor Spreadsheet-Formeln; HTML escaped Fremdtext.
 Laufzeit-/Flugdaten und PDFs nicht ins oeffentliche Git-Repo stellen.
 
@@ -147,6 +164,15 @@ Laufzeit-/Flugdaten und PDFs nicht ins oeffentliche Git-Repo stellen.
   behauptete gerenderte Ansicht hinter dem HTTPS-Login.
 
 ## Noch offen fuer ein professionelles Kundenprodukt
+
+Ergaenzende Nachweispruefung vom 03.10.2026: 188 Backend- und 64 Frontend-Tests
+bestanden, inklusive fehlender/manipulierter Dateimanifeste, mutierter KPIs,
+Modellkriterien/Assertions/Execution-Commit und fehlender Telemetrie/Berichte.
+Neue und aeltere Runs wurden im lokalen Dashboard getrennt geprueft.
+Die Ergebnisanzeige nennt den Nenner der modellierten Abflugseintraege;
+unvollstaendige numerische Eingaben sperren den Start.
+1440px-/390px-UI-Smoke ohne horizontalen Seitenueberlauf, ESLint, TypeScript,
+Ruff, Root-/Subpath-Build und Archivpruefung bestanden. Keine Hardwaretests.
 
 [Produkt-Gates](PRODUCT_READINESS.md): reale, freigegebene Missionen/Fahrzeug-
 und Energiedaten, getrennte Kalibrier-/Holdout-Pruefung, feste Kundenfrage und
