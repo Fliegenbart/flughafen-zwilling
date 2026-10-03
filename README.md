@@ -29,10 +29,13 @@ Oben in allen Anwendungen gibt es einen sichtbaren Arbeitsbereich-Wechsel.
 Der Wechsel laedt die andere Anwendung neu; laufende Jobs bleiben im Backend.
 Airport-Runs und FlexLab-Runs werden nicht miteinander verglichen.
 
-Kein Login. **Nur localhost, nicht ins Internet oder gemeinsam ins Lab-Netz
+Die lokale Demo hat keinen Login. **Nur localhost, nicht ins Internet oder gemeinsam ins Lab-Netz
 exponieren.** UI und API verwenden denselben Origin, keine manuelle CORS-Einstellung.
 Jobs, Rohimporte und Reports liegen im Docker-Volume
 `airport-twin-demo_twin-data` und ueberleben Neustarts.
+
+Separate passwortgeschuetzte Server-Demo: [Hetzner-Pilot](docs/HETZNER_PILOT.md).
+Sie verwendet einen eigenen Datenbereich und keine lokalen Messdaten.
 
 An Timo schicken: [gemeinsame Startanleitung](docs/TIMO_PILOT.md),
 [Airport-Testablauf](docs/TIMO_AIRPORT_PILOT.md) und optional

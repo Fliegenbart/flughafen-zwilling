@@ -61,6 +61,27 @@ describe("HMI smoke", () => {
     expect(screen.getByRole("button", { name: /Bericht erzeugen/i })).toBeInTheDocument();
   });
 
+  it("does not offer a localhost Grafana link when hosted monitoring is disabled", async () => {
+    globalThis.__TWIN_CONFIG__ = { grafanaBaseUrl: "" };
+    const status = { run_id: "hosted-run", state: "completed", progress: 1, artifacts: {}, pass_fail: true };
+    vi.mocked(global.fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/capabilities")) return mockJsonResponse({ grafana_base_url: "", playbook_synth_enabled: false });
+      if (url.endsWith("/telemetry")) return mockTextResponse("");
+      if (url.endsWith("/record")) return mockJsonResponse({ status, summary: {} });
+      if (url.endsWith("/runs") || url.endsWith("/runs/hosted-run")) return mockJsonResponse(status);
+      return mockJsonResponse({ status: "ok" });
+    });
+    try {
+      render(<App />);
+      fireEvent.click(screen.getByRole("button", { name: "Backend Run starten" }));
+      await waitFor(() => expect(screen.getByRole("link", { name: "PDF-Bericht" })).toBeVisible());
+      expect(screen.queryByRole("link", { name: /Grafana/i })).toBeNull();
+    } finally {
+      delete globalThis.__TWIN_CONFIG__;
+    }
+  });
+
   it("uses the same-origin API without probing an unrelated local service by default", async () => {
     const fetchMock = vi.mocked(global.fetch);
     fetchMock.mockClear();

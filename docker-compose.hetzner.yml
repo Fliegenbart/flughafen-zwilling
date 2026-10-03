@@ -1,0 +1,53 @@
+name: airport-twin-pilot
+services:
+  twin-core:
+    build:
+      context: .
+      dockerfile: deploy/demo/backend.Dockerfile
+    environment:
+      TWIN_DATA_DIR: /app/data
+      TWIN_ENABLE_PLAYBOOK_SYNTH: "true"
+      TWIN_BUILD_GIT_COMMIT: ${TWIN_BUILD_GIT_COMMIT:?Set the verified release commit}
+      TWIN_ALLOWED_ORIGINS: https://labpulse.ai
+      TWIN_GRAFANA_BASE_URL: ""
+      INFLUX_TOKEN: ""
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--root-path", "/airport"]
+    volumes:
+      - pilot-data:/app/data
+    networks: [simulation]
+    cpus: 1.0
+    mem_limit: 1g
+    pids_limit: 256
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/ready', timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+    restart: unless-stopped
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/demo/frontend.Dockerfile
+      args:
+        TWIN_UI_BASE_PATH: /airport/
+        TWIN_RUNTIME_CONFIG: deploy/hetzner/runtime-config.js
+    depends_on:
+      twin-core:
+        condition: service_healthy
+    # The existing HTTPS proxy reaches this host bridge address; no public port.
+    ports:
+      - "172.17.0.1:18576:80"
+    networks: [simulation, ingress]
+    cpus: 0.25
+    mem_limit: 128m
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+networks:
+  simulation:
+    internal: true
+  ingress: {}
+volumes:
+  pilot-data: {}
