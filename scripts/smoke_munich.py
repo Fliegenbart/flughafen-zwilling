@@ -4,13 +4,16 @@ import argparse
 import json
 import time
 import urllib.request
+from pilot_auth import configure_auth
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url", default="http://localhost:5176")
+    parser.add_argument("--auth-file", help="Private 0600 netrc file for HTTPS pilot")
     args = parser.parse_args()
     base = args.base_url.rstrip("/")
+    configure_auth(base, args.auth_file)
 
     def request(path, payload=None):
         data = None if payload is None else json.dumps(payload).encode()

@@ -410,6 +410,7 @@ function resolveTwinApiBaseUrl() {
 }
 
 function resolveTwinGrafanaBaseUrl() {
+  if (globalThis.__TWIN_CONFIG__?.grafanaBaseUrl === "") return "";
   return resolveRuntimeConfigUrl("grafanaBaseUrl", "VITE_TWIN_GRAFANA_BASE_URL", "http://127.0.0.1:3000");
 }
 

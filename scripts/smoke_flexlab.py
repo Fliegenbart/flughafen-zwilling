@@ -9,15 +9,18 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+from pilot_auth import configure_auth
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url", default="http://localhost:5176")
+    parser.add_argument("--auth-file", help="Private 0600 netrc file for HTTPS pilot")
     parser.add_argument(
         "--restart", action="store_true", help="Restart ONLY the local demo twin-core"
     )
     args = parser.parse_args()
+    configure_auth(args.base_url, args.auth_file)
     base = args.base_url.rstrip("/") + "/api/v1/lab"
 
     def request(path, payload=None, raw=False):

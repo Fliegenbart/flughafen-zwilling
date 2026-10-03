@@ -24,6 +24,7 @@ describe("Workspace entry point", () => {
     if (root) await act(() => root.unmount());
     document.getElementById("root")?.remove();
     window.history.replaceState(null, "", "/");
+    vi.unstubAllEnvs();
   });
 
   async function open(search = "") {
@@ -68,5 +69,17 @@ describe("Workspace entry point", () => {
     expect(screen.getByRole("link", { name: /Energiepilot.*München Referenz/i }))
       .toHaveAttribute("aria-current", "page");
     await waitFor(() => expect(document.title).toBe("München / Airport Twin Core"));
+  });
+
+  it("keeps all workspace links inside the hosted base path", async () => {
+    vi.stubEnv("BASE_URL", "/airport/");
+    await open("?workspace=munich");
+    expect(await screen.findByRole("heading", { name: "Flughafen München" })).toBeVisible();
+    expect(screen.getByRole("link", { name: /Flughafen.*Airport Twin Core/i }))
+      .toHaveAttribute("href", "/airport/?workspace=airport");
+    expect(screen.getByRole("link", { name: /Energiepilot.*München Referenz/i }))
+      .toHaveAttribute("href", "/airport/?workspace=munich");
+    expect(screen.getByRole("link", { name: /Messdaten.*FlexLab Workbench/i }))
+      .toHaveAttribute("href", "/airport/?workspace=flexlab");
   });
 });
