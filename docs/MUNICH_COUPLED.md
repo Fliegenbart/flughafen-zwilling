@@ -133,6 +133,18 @@ Laufzeit-/Flugdaten und PDFs nicht ins oeffentliche Git-Repo stellen.
   gespeicherter Vergleich nach Reload; 1440/390 px ohne Seitenueberlauf.
   HTML-Download und Inhalte geprueft. Lokale Datei-Vorschau ist im Testbrowser
   gesperrt; kein vorgetaeuschter visueller Browsernachweis fuer den HTML-Export.
+- Geschuetzter Hetzner-Pilot: Code-Release
+  `e1bdd97fc674ee0547bd9180d73433e561b7093e`, GitHub-CI gruen, eigene Daten
+  vor Update privat gesichert. Derselbe importierte Tag und Welt-Hash liefern
+  zwei abgeschlossene Runs inklusive Quellen-/Artefaktpruefung und Downloads
+  in 15,74 Sekunden (Wallclock inkl. HTTPS und Download, kein SLA).
+  Execution-Commit in beiden Records stimmt mit dem Release ueberein.
+- Ausgeliefertes HTML und Muenchen-JS/CSS sind bytegleich zum geprueften
+  Subpath-Build. HTTPS-Regression: Airport-Baseline/Guillotine/Schwarzstart,
+  beide Planner-Referenzen, vier Energie-v1-Faelle und FlexLab bestehen.
+  Ohne Anmeldung: UI, neue API und Ergebnisnachweis jeweils 401; bestehende
+  Root-Weiterleitung unveraendert. Browserbild-Nachweis ist lokal, nicht eine
+  behauptete gerenderte Ansicht hinter dem HTTPS-Login.
 
 ## Noch offen fuer ein professionelles Kundenprodukt
 
