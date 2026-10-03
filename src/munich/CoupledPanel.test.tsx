@@ -157,7 +157,14 @@ function mockApi() {
     const record = records.find((r) => p.includes(r.status.run_id));
     if (p.endsWith("/safety"))
       return new Response(
-        JSON.stringify({ audit: { fingerprint_match: true, artifact_hashes_match: true } }),
+        JSON.stringify({
+          audit: {
+            fingerprint_match: true,
+            artifact_hashes_match: true,
+            report_consistent_match: true,
+            result_audit_scope: "data_and_reports_v2",
+          },
+        }),
       );
     if (p.endsWith("/record")) return new Response(JSON.stringify(record));
     if (p.endsWith("/coupled-evidence.json"))
@@ -239,6 +246,8 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
     expect(await screen.findByRole("heading", { name: "Fristenpriorität" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Ungesteuert" })).toBeVisible();
     expect(screen.getByText(/Δ Aufgabenbereitschaft/)).toHaveTextContent("+100 pp");
+    expect(screen.getByText("0 / 1 modellierte Abflugseinträge rechtzeitig")).toBeVisible();
+    expect(screen.getByText("1 / 1 modellierte Abflugseinträge rechtzeitig")).toBeVisible();
     expect(screen.getByText("XY102")).toBeVisible();
     expect(screen.getByRole("link", { name: "Fahrzeug-SOC CSV" })).toHaveAttribute(
       "href",
@@ -320,6 +329,38 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
     expect(screen.queryByRole("heading", { name: "Fristenpriorität" })).not.toBeInTheDocument();
   });
 
+  it.each(["seed", "offline_chargers"] as const)(
+    "blocks incomplete numeric input: %s",
+    async (field) => {
+      mockApi();
+      render(<CoupledPanel plan={plan} />);
+      const start = screen.getByRole("button", { name: "Gekoppelten Vergleich starten" });
+      await waitFor(() => expect(start).toBeEnabled());
+      fireEvent.click(screen.getByText("Flotten-/Versorgungsannahmen"));
+      if (field === "offline_chargers") {
+        fireEvent.click(
+          screen.getByRole("checkbox", {
+            name: "Zeitlich begrenzten Netz-/Ladepunktengpass prüfen",
+          }),
+        );
+        fireEvent.change(
+          screen.getByRole("combobox", {
+            name: "Ladepunktausfall / Fahrzeugklasse",
+          }),
+          { target: { value: "bus" } },
+        );
+      }
+      fireEvent.change(
+        screen.getByRole("spinbutton", {
+          name: field === "seed" ? /Kopplungs-Seed/ : /Ausgefallene Ladepunkte/,
+        }),
+        { target: { value: "" } },
+      );
+      expect(start).toBeDisabled();
+      expect(vi.mocked(fetch).mock.calls.every(([, init]) => init?.method !== "POST")).toBe(true);
+    },
+  );
+
   it("rejects unmatched worlds and escapes report input; handles DST using UTC", () => {
     expect(() => coupledPair(records, "wrong")).toThrow(/identische/);
     const html = buildCoupledHtml(records, hash);
@@ -369,5 +410,55 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
     fireEvent.click(start);
     expect(await screen.findByRole("alert")).toHaveTextContent("Testausfall");
     expect(screen.queryByText(/aktuelle SHA256-Prüfung konsistent/)).not.toBeInTheDocument();
+  });
+
+  it("withholds a comparison when displayed KPI/report evidence disagrees", async () => {
+    mockApi();
+    const original = vi.mocked(fetch).getMockImplementation()!;
+    vi.mocked(fetch).mockImplementation(async (path, init) =>
+      String(path).endsWith("/safety")
+        ? new Response(
+            JSON.stringify({
+              audit: {
+                fingerprint_match: true,
+                artifact_hashes_match: true,
+                report_consistent_match: false,
+                result_audit_scope: "data_and_reports_v2",
+              },
+            }),
+          )
+        : original(path, init),
+    );
+    render(<CoupledPanel plan={plan} pollMs={20} />);
+    const start = screen.getByRole("button", { name: "Gekoppelten Vergleich starten" });
+    await waitFor(() => expect(start).toBeEnabled());
+    fireEvent.click(start);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Integritätsprüfung fehlgeschlagen");
+    expect(screen.queryByRole("heading", { name: "Fristenpriorität" })).not.toBeInTheDocument();
+  });
+
+  it("does not claim sealed reports for older otherwise consistent runs", async () => {
+    mockApi();
+    const original = vi.mocked(fetch).getMockImplementation()!;
+    vi.mocked(fetch).mockImplementation(async (path, init) =>
+      String(path).endsWith("/safety")
+        ? new Response(
+            JSON.stringify({
+              audit: {
+                fingerprint_match: true,
+                artifact_hashes_match: true,
+                report_consistent_match: true,
+                result_audit_scope: "data_and_report_consistency_v1",
+              },
+            }),
+          )
+        : original(path, init),
+    );
+    render(<CoupledPanel plan={plan} pollMs={20} />);
+    const start = screen.getByRole("button", { name: "Gekoppelten Vergleich starten" });
+    await waitFor(() => expect(start).toBeEnabled());
+    fireEvent.click(start);
+    await screen.findByRole("heading", { name: "Fristenpriorität" });
+    expect(screen.getByText(/PDF\/Report-Dateien ohne ursprüngliche SHA256/)).toBeVisible();
   });
 });

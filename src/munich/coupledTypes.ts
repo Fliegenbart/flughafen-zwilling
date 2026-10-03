@@ -103,6 +103,7 @@ export type CoupledRecord = {
   build_meta: {
     execution_backend_git_commit?: string;
     result_artifact_hashes?: Record<string, string>;
+    result_audit_version?: string;
   };
   summary: {
     domain: "airport_coupled_v1";

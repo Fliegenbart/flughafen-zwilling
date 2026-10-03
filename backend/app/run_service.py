@@ -33,6 +33,7 @@ from .munich.integration import validate_energy_inputs
 from .munich.reporting import write_charging_csv
 from .munich.coupled_integration import validate_coupled_inputs
 from .munich.coupled_evidence import ARTIFACT_NAMES
+from .munich.coupled_audit import AUDIT_VERSION, file_sha256, inspect_coupled_evidence
 
 logger = logging.getLogger("twin_core.run_service")
 
@@ -138,6 +139,7 @@ class RunService:
             record.watchdog_summary = SafetySummary()
             record.build_meta = self._with_recovery_meta(record.build_meta, recovered=recovered_after_restart)
             record.build_meta.pop("result_artifact_hashes", None)
+            record.build_meta.pop("result_audit_version", None)
             self.storage.save_run_record(record)
             return record
 
@@ -299,11 +301,15 @@ class RunService:
                     extra_paths.append(str(path))
                 if artifact_hashes:
                     record.build_meta["result_artifact_hashes"] = artifact_hashes
+                    record.build_meta["result_audit_version"] = AUDIT_VERSION
 
                 payload = build_report_payload(record, result.summary, result.assertion_results)
                 report_json_path = self.storage.save_run_report(run_id, payload)
                 pdf_path = self.storage.run_dir(run_id) / "report.pdf"
                 write_pdf_report(pdf_path, payload)
+                if artifact_hashes:
+                    for path in [report_json_path, pdf_path]:
+                        artifact_hashes[path.name] = file_sha256(path)
 
                 record.status.artifacts = [
                     str(telemetry_path),
@@ -433,26 +439,19 @@ class RunService:
         tick_avg = 0.0
         tick_max = 0.0
         tick_p99 = 0.0
-        expected_hashes = record.build_meta.get("result_artifact_hashes")
-        artifact_hashes_match = None
-        if isinstance(expected_hashes, dict) and expected_hashes:
-            artifact_hashes_match = True
-            for name, expected in expected_hashes.items():
-                if name not in ARTIFACT_NAMES:
-                    artifact_hashes_match = False
-                    break
-                path = self.storage.run_dir(run_id) / name
-                if not path.is_file() or sha256(path.read_bytes()).hexdigest() != expected:
-                    artifact_hashes_match = False
-                    break
+        evidence_audit = {"artifact_hashes_match": None, "report_consistent_match": None,
+                          "result_audit_scope": "not_applicable", "reports_hashed": None}
+        if record.scenario_snapshot and record.scenario_snapshot.domain == "airport_coupled_v1":
+            evidence_audit = inspect_coupled_evidence(record, self.storage.run_dir(run_id))
         if summary is not None:
             tick_avg = summary.tick_drift_avg_ms
             tick_max = summary.tick_drift_max_ms
             tick_p99 = summary.tick_drift_p99_ms
             fingerprint = summary.audit_fingerprint_sha256
-            telemetry_path = self.get_run_telemetry_path(run_id)
-            if telemetry_path.exists():
+            try:
                 recomputed = self.recompute_audit_fingerprint(run_id)
+            except (StorageError, OSError):
+                pass
 
         return SafetyResponse(
             run_id=run_id,
@@ -466,7 +465,7 @@ class RunService:
             audit={
                 "fingerprint_sha256": fingerprint,
                 "fingerprint_match": bool(fingerprint) and fingerprint == recomputed,
-                "artifact_hashes_match": artifact_hashes_match,
+                **evidence_audit,
                 "backend_git_commit": record.build_meta.get("backend_git_commit", ""),
                 "firmware_versions": record.hardware_meta.get("firmware_versions", {}),
             },

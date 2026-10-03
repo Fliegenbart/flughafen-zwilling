@@ -31,6 +31,10 @@ export function ResultCard({ record }: { record: CoupledRecord }) {
           <small>{k.departure_readiness_pct === null ? "" : " %"}</small>
         </strong>
         <span>Modellierte Abflug-Aufgabenbereitschaft, keine OTP</span>
+        <span>
+          {k.departures_ready_on_time} / {k.modeled_departure_count} modellierte Abflugseinträge
+          rechtzeitig
+        </span>
       </div>
       <dl className="muc-result__metrics">
         <div>

@@ -67,12 +67,15 @@ def main() -> None:
             "snapshot_id"
         ] == args.snapshot_id, "Flugplan-Snapshot abweichend")
         audit = fetch(f"/runs/{run_id}/safety")["audit"]
-        require(audit["fingerprint_match"] and audit["artifact_hashes_match"], "Audit fehlgeschlagen")
+        require(audit["fingerprint_match"] and audit["artifact_hashes_match"]
+                and audit["report_consistent_match"], "Audit fehlgeschlagen")
+        require(audit["result_audit_scope"] == "data_and_reports_v2"
+                and audit["reports_hashed"], "Neue Runs benoetigen den vollstaendigen Berichtsnachweis")
         directory = args.output_dir / run_id
         directory.mkdir(exist_ok=True, mode=0o700)
         for artifact, expected in record["build_meta"]["result_artifact_hashes"].items():
             if artifact not in {"missions.csv", "departures.csv", "vehicles.csv", "parking.csv",
-                                "coupled-evidence.json"}:
+                                "coupled-evidence.json", "report.json", "report.pdf"}:
                 raise RuntimeError("Unbekanntes Artefakt")
             content = raw(f"/runs/{run_id}/artifacts/{artifact}")
             require(hashlib.sha256(content).hexdigest() == expected, "Artefakt-Hash abweichend")

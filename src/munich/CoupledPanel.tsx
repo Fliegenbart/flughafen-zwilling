@@ -45,6 +45,7 @@ export default function CoupledPanel({
   const [statuses, setStatuses] = useState<RunStatus[]>([]);
   const [records, setRecords] = useState<CoupledRecord[]>([]);
   const [evidence, setEvidence] = useState<CoupledEvidence[]>([]);
+  const [reportsHashed, setReportsHashed] = useState(false);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
   const [referenceError, setReferenceError] = useState("");
@@ -103,14 +104,28 @@ export default function CoupledPanel({
             );
           }
           coupledPair(loaded, comparison!.world_hash);
+          const auditScopes: string[] = [];
           for (const run of next) {
             const safety = await request<{
-              audit: { fingerprint_match: boolean; artifact_hashes_match: boolean };
+              audit: {
+                fingerprint_match: boolean;
+                artifact_hashes_match: boolean;
+                report_consistent_match: boolean;
+                result_audit_scope: string;
+              };
             }>(`/runs/${run.run_id}/safety`, { signal: controller.signal });
-            if (!safety.audit.fingerprint_match || !safety.audit.artifact_hashes_match)
+            if (
+              !safety.audit.fingerprint_match ||
+              !safety.audit.artifact_hashes_match ||
+              !safety.audit.report_consistent_match ||
+              !["data_and_reports_v2", "data_and_report_consistency_v1"].includes(
+                safety.audit.result_audit_scope,
+              )
+            )
               throw new Error(
                 `Integritätsprüfung fehlgeschlagen für Run ${run.run_id}. Keine Vergleichsfreigabe.`,
               );
+            auditScopes.push(safety.audit.result_audit_scope);
           }
           if (
             data.some(
@@ -126,6 +141,7 @@ export default function CoupledPanel({
           if (controller.signal.aborted) return;
           setRecords(loaded);
           setEvidence(data);
+          setReportsHashed(auditScopes.every((scope) => scope === "data_and_reports_v2"));
           setError("");
         } else timer = setTimeout(poll, pollMs);
       } catch (e) {
@@ -142,6 +158,7 @@ export default function CoupledPanel({
   const busy = starting || Boolean(comparison && !records.length && !error);
   const numbersComplete = Boolean(
     config &&
+    Number.isFinite(seed) &&
     Object.values(config.power).every(Number.isFinite) &&
     config.fleets.every((f) =>
       Object.entries(f).every(([key, value]) => key === "kind" || Number.isFinite(value)),
@@ -152,6 +169,7 @@ export default function CoupledPanel({
       (e) =>
         Number.isFinite(e.start_min) &&
         Number.isFinite(e.end_min) &&
+        Number.isFinite(e.offline_chargers) &&
         (e.grid_import_limit_kw === null || Number.isFinite(e.grid_import_limit_kw)),
     ),
   );
@@ -165,6 +183,7 @@ export default function CoupledPanel({
     setComparison(null);
     setRecords([]);
     setEvidence([]);
+    setReportsHashed(false);
     setStatuses([]);
     try {
       const result = await request<CoupledComparison>(
@@ -320,15 +339,7 @@ export default function CoupledPanel({
         <button
           type="button"
           className="muc-primary"
-          disabled={
-            !plan ||
-            !config ||
-            !sharedAccepted ||
-            !numbersComplete ||
-            busy ||
-            loadingPlan ||
-            !Number.isFinite(seed)
-          }
+          disabled={!plan || !config || !sharedAccepted || !numbersComplete || busy || loadingPlan}
           onClick={() => void start()}
         >
           {starting ? "Vergleich wird angelegt…" : "Gekoppelten Vergleich starten"}
@@ -377,8 +388,11 @@ export default function CoupledPanel({
       {pair && (
         <div className="coupled-evidence">
           <p className="muc-ok">
-            Eingaben, Telemetrie und Ergebnisartefakte: aktuelle SHA256-Prüfung konsistent. Kein
-            externer Echtheitsnachweis.
+            {reportsHashed
+              ? "Eingaben, Telemetrie, Datenartefakte und JSON/PDF: aktuelle SHA256-Prüfung konsistent."
+              : "Ältere Runs: Datenartefakte gehasht, PDF/Report-Dateien ohne ursprüngliche SHA256."}{" "}
+            KPIs, Modellkriterien und Execution-Metadaten stimmen mit dem gespeicherten Bericht
+            überein. Kein externer Echtheitsnachweis.
           </p>
           <p className="coupled-frozen">
             Eingefrorener Vergleich:{" "}
