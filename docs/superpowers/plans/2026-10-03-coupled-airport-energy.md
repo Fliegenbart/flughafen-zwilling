@@ -93,10 +93,10 @@ Files: `src/munich/CoupledPanel.tsx`, `.css`, `coupledTypes.ts`,
 ### 5. Release and still-open product gates
 Files: `docs/MUNICH_COUPLED.md`, `docs/PRODUCT_READINESS.md`, existing pilot
 docs, `scripts/smoke_coupled.py`.
-- [ ] Evidence ledger: technical proof, assumptions, empirical gaps and scope.
-- [ ] Actual imported day smoke, isolated no-hardware tests, existing 8 Airport,
+- [x] Evidence ledger: technical proof, assumptions, empirical gaps and scope.
+- [x] Actual imported day smoke, isolated no-hardware tests, existing 8 Airport,
   Munich-v1 and FlexLab regressions. Commit/push and verify remote SHA/CI.
-- [ ] Deploy only verified release to protected demo after own-volume backup;
+- [x] Deploy only verified release to protected demo after own-volume backup;
   verify HTTPS pipeline, UI bundle, access guard and existing apps untouched.
-- [ ] Keep overarching goal active: real-data validation, customer acceptance,
+- [x] Keep overarching goal active: real-data validation, customer acceptance,
   economic decision contract and enterprise operation still need proof.

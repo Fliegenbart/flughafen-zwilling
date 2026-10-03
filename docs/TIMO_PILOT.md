@@ -18,8 +18,9 @@ docker compose -f docker-compose.demo.yml up --build -d
   KPI-Kurven, Playbook-/Baseline-Vergleich und Reports.
 - [FlexLab / Zusatzwerkzeug](http://localhost:5176/?workspace=flexlab):
   getrennte Leistungsversuche und CSV-Auswertung.
-- [Muenchen / Energiepilot](http://localhost:5176/?workspace=munich): synthetische
-  Campus-Strombilanz und Ladefristen-Vergleich, kein kalibriertes FMG-Modell.
+- [Muenchen / Energiepilot](http://localhost:5176/?workspace=munich): manueller
+  Flugplanimport, gekoppelter Fahrzeug-/Energietest und erhaltener statischer
+  Ladefristen-Vergleich; kein kalibriertes FMG-Modell.
 - [API-Dokumentation](http://localhost:5176/docs).
 
 Oben im Dashboard zwischen den Arbeitsbereichen wechseln. Keine Registrierung.
@@ -43,6 +44,18 @@ Die Arbeit bleibt verfuegbar und separat gesichert.
 
 ## Muenchen-Referenzpilot ausprobieren
 
+[Gekoppelter Testablauf](MUNICH_COUPLED.md): offiziellen Saisonflugplan manuell
+importieren oder gespeicherten Verkehrstag waehlen, Flotten-/Energieannahmen
+pruefen, ungeklaerte Mehrfachgruppen bewusst behandeln und **Gekoppelten
+Vergleich starten**. Zwei Runs teilen denselben Flugplan und dieselben
+Auftraege/Startzustaende. Laderegeln beeinflussen Fahrzeug-SOC, Belegung und
+modellierte Aufgabenbereitschaft. Vergleich und Einzelnachweise herunterladen.
+Kein automatischer Flugplanabruf. Keine echte Flug-OTP/TOBT.
+
+Im bereits geschuetzten [Hetzner-Pilot](https://labpulse.ai/airport/?workspace=munich)
+funktioniert derselbe Ablauf ohne lokale Installation. Zugang separat erhalten;
+keine Passwoerter oder Betriebsdaten ins Git-Repo stellen.
+
 [10-Minuten-Ablauf und Modellgrenzen](MUNICH_PILOT.md). Zuerst Referenztag,
 dann synthetischen Anschluss-Engpass vergleichen. Quellen und angenommene Werte
 bleiben sichtbar getrennt. Muenchen besitzt bereits einen Energiezwilling;
@@ -55,8 +68,10 @@ Systemtest eurer vorhandenen Komponenten nuetzlich, statt weitere Einzelgeraete-
 Flex-Tests nachzubauen?** Das ist eine zu pruefende Mehrwert-Hypothese.
 
 Airport Twin Core simuliert Gate-/Turnaround-Kapazitaeten. Der zusaetzliche
-Muenchen-Referenzpilot bildet eine synthetische Wirkleistungsbilanz und
-Ladefristen ab, nicht die reale elektrische Anlage. Ein echter Energie-/Notstromversuch
+Muenchen-Systemtest koppelt veroeffentlichte Planzeiten mit angenommenen
+Fahrzeugeinsaetzen und gemeinsamer Wirkleistungsbilanz. Energie-v1 bleibt als
+statischer Ladefristen-Vergleich erhalten. Beide bilden nicht die reale
+elektrische Anlage ab. Ein echter Energie-/Notstromversuch
 benoetigt eine abgestimmte Versuchsvorschrift, Anlagenmodell, Messsignale,
 Sicherheitsgrenzen und separate Hardwarefreigabe. Keine automatische Ansteuerung
 aus dieser Demo.
