@@ -1,5 +1,6 @@
 import { FIELDS, number } from "./config";
 import type { EnergyRecord } from "./types";
+import { flightDate } from "./flightplanTypes";
 
 const escape = (value: unknown) =>
   String(value).replace(
@@ -24,6 +25,8 @@ function sourceUrl(value: string): string {
 }
 
 export function assertComparable(base: EnergyRecord, priority: EnergyRecord): void {
+  const a = base.model_pack_snapshot.calibration_meta;
+  const b = priority.model_pack_snapshot.calibration_meta;
   if (
     !base.summary ||
     !priority.summary ||
@@ -36,7 +39,11 @@ export function assertComparable(base: EnergyRecord, priority: EnergyRecord): vo
     base.scenario_snapshot.metadata.comparison_id !==
       priority.scenario_snapshot.metadata.comparison_id ||
     base.scenario_snapshot.metadata.policy !== "uncontrolled" ||
-    priority.scenario_snapshot.metadata.policy !== "bus_priority"
+    priority.scenario_snapshot.metadata.policy !== "bus_priority" ||
+    (a.flight_plan_snapshot?.content_sha256 ?? null) !==
+      (b.flight_plan_snapshot?.content_sha256 ?? null) ||
+    (a.flight_plan_snapshot && a.flight_plan_usage !== "context_only_not_driving_energy") ||
+    (b.flight_plan_snapshot && b.flight_plan_usage !== "context_only_not_driving_energy")
   ) {
     throw new Error("Vergleich nicht zulässig: identische, abgeschlossene Eingabewelten fehlen.");
   }
@@ -65,6 +72,7 @@ export function buildCompareHtml(base: EnergyRecord, priority: EnergyRecord): st
     ["Speicherverluste", a.battery_loss_kwh, b.battery_loss_kwh, "kWh"],
   ];
   const meta = base.model_pack_snapshot.calibration_meta;
+  const plan = meta.flight_plan_snapshot;
   return `<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>München / Vergleichsreport</title><style>
   body{margin:0;background:#081829;color:#ecf4fa;font:15px Sora,"Trebuchet MS",sans-serif;line-height:1.6}
@@ -96,6 +104,20 @@ export function buildCompareHtml(base: EnergyRecord, priority: EnergyRecord): st
     )
     .join("")}
   <p>Gemeinsamer Welt-Hash: <code>${escape(base.summary!.energy_world_hash)}</code></p>
+  ${
+    plan
+      ? `<h2>Flugplan-Kontext</h2><p>Verkehrstag: ${escape(flightDate(plan.service_date))} / Datenstand:
+  ${escape(flightDate(plan.source_data_date))} / ${escape(plan.timezone)}.</p>
+  <p>${plan.arrival_entry_count} Ankunfts- und ${plan.departure_entry_count} Abflugseinträge.
+  ${plan.possible_shared_flight_groups} ungeklärte Mehrfachgruppen; keine bestätigte Anzahl physischer Flugbewegungen.</p>
+  <p>Veröffentlichte Planzeiten aus manuellem PDF-Import, kein Live-Status oder Echtheitsnachweis.
+  Dieser Kontext hat in Energie-v1 keine betrieblichen Auswirkungen: Ladeaufträge, Einsatzprofile und Ergebnisse
+  bleiben synthetisch. Fahrzeugaufträge und Flugzeugumläufe fehlen weiterhin.</p>
+  <p>Snapshot/Inhalts-Hash: <code>${escape(plan.content_sha256)}</code><br>
+  Original-PDF-SHA256: <code>${escape(plan.source_pdf_sha256)}</code><br>Parser: ${escape(plan.parser_version)}</p>
+  <p><a href="${sourceUrl(plan.source_url)}">Offizieller Saisonflugplan / Referenzquelle</a></p>`
+      : ""
+  }
   <h2>Öffentliche Quellen</h2><p>Recherche: ${escape(meta.reference_dossier.researched_at)}. Berichtsstände bleiben getrennt von Annahmen.</p>
   ${meta.reference_dossier.sources.map((s) => `<p><a href="${sourceUrl(s.url)}">${escape(s.title)}</a></p>`).join("")}
   <p>München besitzt bereits einen Energiezwilling. Zusätzlicher TestingLab-Nutzen muss mit FMG vereinbart und mit echten Daten separat validiert werden.</p></main></html>`;

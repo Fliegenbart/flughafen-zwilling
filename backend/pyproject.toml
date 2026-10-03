@@ -10,6 +10,8 @@ dependencies = [
   "pydantic>=2.8.0",
   "eval-type-backport>=0.2.0",
   "reportlab>=4.2.0",
+  "pypdf[crypto]==6.19.0",
+  "tzdata>=2025.2",
   "charset-normalizer>=3.4.0",
   "influxdb-client>=1.36.0",
   "prometheus-client>=0.20.0"

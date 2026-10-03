@@ -1,0 +1,156 @@
+.muc-flightplan__import {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.7fr) minmax(180px, 1.3fr) auto;
+  gap: 16px;
+  align-items: end;
+  margin: 24px 0 12px;
+}
+.muc-flightplan__import .muc-field {
+  margin: 0;
+}
+.muc-flightplan__import button {
+  min-height: 44px;
+}
+.muc-flightplan input[type="file"] {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  font-size: 12px;
+}
+.muc-flightplan input::file-selector-button {
+  border: 1px solid #47637b;
+  border-radius: 5px;
+  background: #203c52;
+  color: #eaf6ff;
+  padding: 7px 9px;
+  margin-right: 8px;
+  cursor: pointer;
+}
+.muc-flightplan__selector {
+  max-width: 600px;
+}
+.muc-flightplan__boundary {
+  margin: 20px 0;
+  padding: 14px 16px;
+  border-left: 3px solid #ffca78;
+  background: #172c3c;
+  color: #c7d8e4;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.muc-flightplan__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.muc-flightplan__stats div {
+  background: #11283b;
+  border: 1px solid #28465b;
+  border-radius: 10px;
+  padding: 14px;
+}
+.muc-flightplan__stats span {
+  display: block;
+  font-size: 11px;
+  color: #a9c0d0;
+}
+.muc-flightplan__stats strong {
+  display: block;
+  font:
+    600 23px "IBM Plex Mono",
+    monospace;
+  margin-top: 8px;
+}
+.muc-flightplan__histogram {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  height: 150px;
+  gap: 6px;
+  margin-top: 26px;
+  background: repeating-linear-gradient(to top, transparent 0, transparent 35px, #244359 36px);
+}
+.muc-flightplan__hour {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.muc-flightplan__bars {
+  flex: 1;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 2px;
+}
+.muc-flightplan__bars i {
+  width: 45%;
+  background: #5ee3d6;
+  border-radius: 3px 3px 0 0;
+}
+.muc-flightplan__bars i + i {
+  background: #8db6ff;
+}
+.muc-flightplan__hour small {
+  height: 23px;
+  padding-top: 7px;
+  color: #a9c0d0;
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+}
+.muc-flightplan__legend {
+  display: flex;
+  gap: 18px;
+  margin: 12px 0 24px;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+.muc-flightplan__legend span {
+  color: #5ee3d6;
+}
+.muc-flightplan__legend span + span {
+  color: #8db6ff;
+}
+.muc-flightplan__legend small {
+  color: #a9c0d0;
+}
+.muc-flightplan__airline {
+  display: block;
+  color: #b0c5d5;
+  margin-top: 4px;
+}
+.muc-flightplan__pagination {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: end;
+  margin: 16px 0;
+  font-size: 12px;
+}
+.muc-flightplan .muc-table-controls input[type="search"] {
+  width: min(260px, 100%);
+}
+@media (max-width: 1150px) {
+  .muc-flightplan__import {
+    grid-template-columns: 1fr 1fr;
+  }
+  .muc-flightplan__import button {
+    grid-column: 1 / -1;
+  }
+  .muc-flightplan__stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 520px) {
+  .muc-flightplan__import {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .muc-flightplan__stats strong {
+    font-size: 18px;
+  }
+  .muc-flightplan__histogram {
+    gap: 3px;
+  }
+  .muc-flightplan__bars {
+    gap: 1px;
+  }
+}

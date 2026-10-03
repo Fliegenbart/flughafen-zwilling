@@ -20,6 +20,11 @@ python-dotenv==1.2.4
 PyYAML==6.0.3
 reactivex==5.1.0
 reportlab==5.0.1
+pypdf[crypto]==6.19.0
+cryptography==50.0.2
+cffi==2.1.1
+pycparser==3.0
+tzdata==2026.2
 six==1.17.0
 starlette==1.7.0
 typing-inspection==0.4.4

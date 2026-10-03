@@ -71,6 +71,12 @@ Modellgrenzen und Architektur: [Airport-Prototyp](docs/AIRPORT_PROTOTYPE.md),
 
 ## Muenchen: Energie und Ladefristen als Systemtest
 
+Neu: [manueller Import des offiziellen Saisonflugplans](docs/MUNICH_FLIGHTPLAN.md).
+Tagesauswahl, geplante Ankuenfte/Abfluege, Stundenverteilung, PDF-Seitenbelege und
+CSV-/JSON-Export. Ein ausgewaehlter Tag wird im Energievergleich als Kontext
+eingefroren. **Noch keine automatische Kopplung an Ladebedarf, Fahrzeugauftraege
+oder Flugverspaetungen.** Kein periodischer Abruf, keine echten FMG-Messdaten.
+
 Zusaetzlicher Referenzpilot fuer P43/P44 und Busdepot mit vereinfachter
 Campus-Strombilanz: Netz, exogenes BHKW, 7 MWp PV-Referenz (3 MWp P43/P44
 als Teilmenge), optionale hypothetische Batterie, getrennte Ladeabgaenge.

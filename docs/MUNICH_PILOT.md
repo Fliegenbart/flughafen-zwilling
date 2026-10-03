@@ -78,6 +78,11 @@ Betriebsnachweis oder empirische Validierung.**
 
 ## API und Betrieb
 
+Zusaetzlich ist ein [manueller Flugplanimport](MUNICH_FLIGHTPLAN.md) verfuegbar.
+Er fuehrt veroeffentlichte Tages-Planzeiten als getrennten, eingefrorenen Kontext
+mit. Energie-v1 verwendet ihn noch nicht fuer Fahrzeugauftraege/Ladebedarfe/OTP.
+Keine automatische Aktualisierung; Original-PDFs werden nicht gespeichert.
+
 `GET /api/v1/munich/reference` liefert Dossier/Defaults.
 `POST /api/v1/munich/comparisons` mit `seed` und `assumptions` liefert zwei Run-IDs,
 Vergleichs-ID und Welt-Hash (HTTP 202). Status, Record, Telemetrie, Safety und

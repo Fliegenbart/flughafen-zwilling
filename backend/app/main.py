@@ -43,6 +43,8 @@ from .workers import WorkerManager
 from .lab.router import create_router as create_lab_router
 from .lab.service import LabService
 from .munich.router import create_router as create_munich_router
+from .munich.flightplan_router import create_router as create_flightplan_router
+from .munich.flightplan_store import FlightPlanStore
 
 logger = logging.getLogger("twin_core.main")
 
@@ -102,7 +104,9 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(create_lab_router(lab_service))
-    app.include_router(create_munich_router(service, workers.enqueue_run))
+    flight_plans = FlightPlanStore(storage.base_dir)
+    app.include_router(create_flightplan_router(flight_plans))
+    app.include_router(create_munich_router(service, workers.enqueue_run, flight_plans))
 
     @app.get("/api/v1/health", response_model=HealthResponse)
     def health() -> HealthResponse:

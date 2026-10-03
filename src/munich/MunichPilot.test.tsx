@@ -6,6 +6,7 @@ import { parseTelemetry } from "./api";
 import { buildCompareHtml } from "./report";
 import MunichPilot from "./MunichPilot";
 import type { EnergyKpis, EnergyRecord } from "./types";
+import { plan } from "./__fixtures__/flightplan";
 
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -83,6 +84,7 @@ describe("München Referenzpilot", () => {
       const path = String(input);
       if (path.endsWith("/munich/reference"))
         return new Response(JSON.stringify({ defaults: DEFAULTS, dossier }));
+      if (path.endsWith("/munich/flight-plans")) return new Response("[]");
       if (path.endsWith("/munich/comparisons") && init?.method === "POST")
         return new Response(
           JSON.stringify({
@@ -143,6 +145,7 @@ describe("München Referenzpilot", () => {
     vi.mocked(fetch).mockImplementation(async (input) => {
       if (String(input).endsWith("/reference"))
         return new Response(JSON.stringify({ defaults: DEFAULTS, dossier }));
+      if (String(input).endsWith("/munich/flight-plans")) return new Response("[]");
       return new Response(JSON.stringify({ detail: "Run-Queue voll" }), { status: 429 });
     });
     render(<MunichPilot />);
@@ -236,5 +239,72 @@ describe("München Referenzpilot", () => {
       { minute: 5, bus_kw: 50 },
     ]);
     expect(() => parseTelemetry('{"ts":0,"metric":"bus_kw","value":"invalid"}')).toThrow();
+  });
+
+  it("includes a frozen flightplan in reports without claiming an energy or OTP coupling", () => {
+    const withPlan = (record: EnergyRecord): EnergyRecord => ({
+      ...record,
+      model_pack_snapshot: {
+        calibration_meta: {
+          ...record.model_pack_snapshot.calibration_meta,
+          flight_plan_snapshot: plan,
+          flight_plan_usage: "context_only_not_driving_energy",
+        },
+      },
+    });
+    const html = buildCompareHtml(withPlan(base), withPlan(priority));
+    expect(html).toContain("Flugplan-Kontext");
+    expect(html).toContain("03.10.2026");
+    expect(html).toContain(plan.content_sha256);
+    expect(html).toContain("keine betrieblichen Auswirkungen");
+    expect(buildCompareHtml(base, priority)).not.toContain("Flugplan-Kontext");
+    expect(() => buildCompareHtml(withPlan(base), priority)).toThrow();
+  });
+
+  it("passes the explicitly selected plan to the next comparison", async () => {
+    const original = vi.mocked(fetch).getMockImplementation()!;
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (String(input).endsWith("/munich/flight-plans"))
+        return new Response(JSON.stringify([plan]));
+      if (String(input).endsWith(plan.snapshot_id)) return new Response(JSON.stringify(plan));
+      return original(input, init);
+    });
+    render(<MunichPilot />);
+    await screen.findByRole("option", { name: /03.10.2026/ });
+    fireEvent.change(screen.getByRole("combobox", { name: "Gespeicherter Flugplantag" }), {
+      target: { value: plan.snapshot_id },
+    });
+    await screen.findByText("XY101");
+    fireEvent.click(screen.getByRole("button", { name: "Regeln vergleichen" }));
+    const call = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([input, init]) => String(input).endsWith("/munich/comparisons") && init?.method === "POST",
+      );
+    expect(JSON.parse(String(call?.[1]?.body)).flight_plan_snapshot_id).toBe(plan.snapshot_id);
+  });
+
+  it("blocks a comparison until the requested flight plan has loaded", async () => {
+    const original = vi.mocked(fetch).getMockImplementation()!;
+    let finish!: (response: Response) => void;
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (String(input).endsWith("/munich/flight-plans"))
+        return new Response(JSON.stringify([plan]));
+      if (String(input).endsWith(plan.snapshot_id))
+        return new Promise<Response>((resolve) => {
+          finish = resolve;
+        });
+      return original(input, init);
+    });
+    render(<MunichPilot />);
+    await screen.findByRole("option", { name: /03.10.2026/ });
+    fireEvent.change(screen.getByRole("combobox", { name: "Gespeicherter Flugplantag" }), {
+      target: { value: plan.snapshot_id },
+    });
+    expect(screen.getByRole("button", { name: "Flugplan abwarten…" })).toBeDisabled();
+    finish(new Response(JSON.stringify(plan)));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Regeln vergleichen" })).toBeEnabled(),
+    );
   });
 });

@@ -7,12 +7,13 @@ async function bounded<T>(
   path: string,
   init: RequestInit | undefined,
   read: (r: Response) => Promise<T>,
+  timeoutMs = 15000,
 ): Promise<T> {
   const controller = new AbortController();
   const abort = () => controller.abort();
   if (init?.signal?.aborted) abort();
   init?.signal?.addEventListener("abort", abort, { once: true });
-  const timeout = setTimeout(abort, 15000);
+  const timeout = setTimeout(abort, timeoutMs);
   try {
     const response = await fetch(url(path), {
       ...init,
@@ -31,8 +32,8 @@ async function bounded<T>(
   }
 }
 
-export function request<T>(path: string, init?: RequestInit): Promise<T> {
-  return bounded<T>(path, init, async (response) => (await response.json()) as T);
+export function request<T>(path: string, init?: RequestInit, timeoutMs = 15000): Promise<T> {
+  return bounded<T>(path, init, async (response) => (await response.json()) as T, timeoutMs);
 }
 
 export async function telemetry(runId: string, signal: AbortSignal): Promise<ChartRow[]> {

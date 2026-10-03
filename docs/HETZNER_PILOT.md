@@ -9,8 +9,10 @@
 Der Browser fragt nach Benutzername und Passwort (HTTP Basic Auth ueber HTTPS).
 Zugangsdaten separat erhalten; nicht in einen Link, Git oder Reports schreiben.
 Im Pilot teilen alle berechtigten Nutzer denselben Demo-Datenbereich. Das ist
-**keine Mandantentrennung**. Nur synthetische Testdaten verwenden, keine privaten
-FMG-/Lab-Messdaten hochladen. Modellgrenzen gelten unveraendert.
+**keine Mandantentrennung**. Nur synthetische Testdaten und oeffentliche
+Flugplan-Snapshots verwenden, keine privaten FMG-/Lab-Messdaten hochladen.
+Modellgrenzen gelten unveraendert; der manuelle Flugplan ist vorerst nur Kontext,
+kein Treiber fuer Ladebedarfe oder Verspaetungen (siehe `MUNICH_FLIGHTPLAN.md`).
 
 Start: Referenztag, dann Anschluss-Engpass im Muenchen-Pilot. Airport bleibt
 Standard. Backend arbeitet seriell; `queued` kann auf den vorherigen Run warten.
@@ -54,6 +56,7 @@ auch bei Ruecknahme erhalten; fehlende Demo darf 502, aber nie ungeschuetzt sein
 python3 scripts/smoke_munich.py --base-url https://labpulse.ai/airport --auth-file /private/path/demo.netrc
 python3 scripts/smoke_demo.py --base-url https://labpulse.ai/airport --auth-file /private/path/demo.netrc --planner --all-cases
 python3 scripts/smoke_flexlab.py --base-url https://labpulse.ai/airport --auth-file /private/path/demo.netrc
+python3 scripts/smoke_flightplan.py --pdf /private/path/flugplan.pdf --date 2026-10-03 --compare --base-url https://labpulse.ai/airport --auth-file /private/path/demo.netrc
 ```
 
 Netrc-Datei: Modus 0600, Host/Login/Passwort ausserhalb Git. Smoke-Helper sendet

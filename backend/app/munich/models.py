@@ -41,6 +41,7 @@ class MunichCompareRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     seed: int = Field(default=42, ge=0, le=2147483647)
     assumptions: MunichAssumptions = Field(default_factory=MunichAssumptions)
+    flight_plan_snapshot_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
 
 
 class ChargingSession(BaseModel):
