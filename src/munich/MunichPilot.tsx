@@ -25,6 +25,9 @@ import type {
   RunStatus,
 } from "./types";
 import "./MunichPilot.css";
+import FlightPlanPanel from "./FlightPlanPanel";
+import { flightDate } from "./flightplanTypes";
+import type { FlightPlanSnapshot } from "./flightplanTypes";
 
 const CACHE_KEY = `airport-munich-comparison:${url("")}`;
 function previous(): Comparison | null {
@@ -220,6 +223,8 @@ export default function MunichPilot() {
   const [retry, setRetry] = useState(0);
   const [sector, setSector] = useState("bus");
   const [onlyMissed, setOnlyMissed] = useState(false);
+  const [flightPlan, setFlightPlan] = useState<FlightPlanSnapshot | null>(null);
+  const [flightPlanLoading, setFlightPlanLoading] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -259,6 +264,9 @@ export default function MunichPilot() {
               }),
             );
           assertComparable(results[0]!, results[1]!);
+          const frozenPlan = results[0]!.model_pack_snapshot.calibration_meta.flight_plan_snapshot;
+          if ((comparison!.flight_plan_snapshot_id ?? null) !== (frozenPlan?.snapshot_id ?? null))
+            throw new Error("Flugplan-Kontext gehört nicht zum angeforderten Vergleich.");
           if (
             results[0]!.summary!.energy_world_hash !== comparison!.world_hash ||
             results[0]!.scenario_snapshot.metadata.comparison_id !== comparison!.comparison_id
@@ -296,7 +304,7 @@ export default function MunichPilot() {
     };
   }, [comparison, retry]);
 
-  const busy = starting || Boolean(comparison && !settled && !error);
+  const busy = starting || flightPlanLoading || Boolean(comparison && !settled && !error);
   const base = records[0];
   const priority = records[1];
   const frozen = base?.model_pack_snapshot.calibration_meta.munich_assumptions;
@@ -325,7 +333,11 @@ export default function MunichPilot() {
     try {
       const result = await request<Comparison>("/munich/comparisons", {
         method: "POST",
-        body: JSON.stringify({ seed, assumptions: config }),
+        body: JSON.stringify({
+          seed,
+          assumptions: config,
+          ...(flightPlan ? { flight_plan_snapshot_id: flightPlan.snapshot_id } : {}),
+        }),
       });
       setRecords([]);
       setRows([]);
@@ -467,7 +479,11 @@ export default function MunichPilot() {
               />
             </label>
             <button className="muc-primary" disabled={busy || !reference}>
-              {busy ? "Vergleich läuft…" : "Regeln vergleichen"}
+              {flightPlanLoading
+                ? "Flugplan abwarten…"
+                : busy
+                  ? "Vergleich läuft…"
+                  : "Regeln vergleichen"}
             </button>
             <p className="muc-small">
               Zwei eingefrorene Runs, identische Eingaben. Backend berechnet seriell und setzt nach
@@ -508,8 +524,23 @@ export default function MunichPilot() {
               <strong>Ergebnisse des gespeicherten Versuchs / Seed {base.request.seed}.</strong>
               Die Eingaben links gelten erst für den nächsten Vergleich, nicht für die angezeigten
               Ergebnisse.
+              {base.model_pack_snapshot.calibration_meta.flight_plan_snapshot && (
+                <p>
+                  Eingefrorener Flugplan-Kontext:{" "}
+                  {flightDate(
+                    base.model_pack_snapshot.calibration_meta.flight_plan_snapshot.service_date,
+                  )}
+                  . Noch keine Kopplung an Fahrzeugaufträge.
+                </p>
+              )}
             </aside>
           )}
+          <FlightPlanPanel
+            selected={flightPlan}
+            onSelect={setFlightPlan}
+            onBusyChange={setFlightPlanLoading}
+            disabled={busy}
+          />
           <section className="muc-network">
             <div className="muc-section-title">
               <h2>Versorgung &amp; Ladebereiche</h2>

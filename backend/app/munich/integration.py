@@ -12,6 +12,7 @@ from ..models import (
     ScenarioDefinition,
     TelemetrySample,
 )
+from .flightplan import FlightPlanSnapshot, verify_snapshot
 from .models import ChargingSession, MunichAssumptions
 from .simulator import simulate
 
@@ -41,6 +42,11 @@ def validate_energy_inputs(
         raise ValueError("Doppelte Ladeauftrag-ID")
     if model.parameter_set.get("policy") not in {"uncontrolled", "bus_priority"}:
         raise ValueError("Unbekannte Laderegel")
+    if "flight_plan_snapshot" in model.calibration_meta:
+        plan = FlightPlanSnapshot.model_validate(model.calibration_meta["flight_plan_snapshot"])
+        verify_snapshot(plan)
+        if model.calibration_meta.get("flight_plan_usage") != "context_only_not_driving_energy":
+            raise ValueError("Flugplan ist nur Kontext; Energie-v1 hat keine Betriebskopplung")
 
 
 def run_energy_simulation(

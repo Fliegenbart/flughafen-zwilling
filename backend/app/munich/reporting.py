@@ -63,6 +63,24 @@ def write_energy_pdf(path: Path, payload: dict) -> None:
     line(f"Backend-Commit: {payload.get('build_meta', {}).get('backend_git_commit', 'n/a')}")
     execution_commit = payload.get("build_meta", {}).get("execution_backend_git_commit", "n/a")
     line(f"Ausfuehrungs-Commit: {execution_commit}")
+    plan = meta.get("flight_plan_snapshot")
+    if plan:
+        line("Flugplan-Kontext (nicht betrieblich gekoppelt)", True)
+        line(f"Verkehrstag: {plan['service_date']} | Datenstand: {plan['source_data_date']}")
+        line(f"Zeitzone: {plan['timezone']} | Manueller PDF-Import, geplante Zeiten, "
+             "kein Live-Status")
+        line(f"Ankunftseintraege: {plan['arrival_entry_count']} | "
+             f"Abflugseintraege: {plan['departure_entry_count']}")
+        line(f"Ungeklaerte Mehrfachgruppen: {plan['possible_shared_flight_groups']}")
+        line("Eintraege sind keine bestaetigte Zahl physischer Flugbewegungen.")
+        line("Energie-v1 nutzt den Plan nur als Kontext; "
+             "Ladebedarf und Fristen bleiben synthetisch.")
+        line("Keine Fahrzeugauftraege, Positionen oder Flugzeugumlaeufe "
+             "aus dem Flugplan ableitbar.")
+        line(f"Snapshot/Inhalts-Hash: {plan['content_sha256']}")
+        line(f"Original-PDF-SHA256: {plan['source_pdf_sha256']}")
+        line(f"Parser: {plan['parser_version']} | Referenzquelle: {plan['source_url']}")
+        line("Quellenangabe und Hash sind kein externer Echtheitsnachweis.")
     line("Energie-KPIs (kW / kWh / Anzahl gemaess Feldname)", True)
     for key, value in payload["summary"].get("energy_kpis", {}).items():
         line(f"{key}: {value:.6f}" if isinstance(value, float) else f"{key}: {value}")

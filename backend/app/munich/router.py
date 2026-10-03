@@ -11,6 +11,8 @@ from fastapi import APIRouter, HTTPException
 
 from ..models import ModelPack, RunRequest, RunStatus, ScenarioDefinition
 from ..run_service import RunService
+from .flightplan_router import load_snapshot
+from .flightplan_store import FlightPlanStore
 from .models import MunichAssumptions, MunichCompareRequest
 from .simulator import generate_sessions, simulate
 
@@ -22,7 +24,9 @@ def read_reference() -> dict:
     return json.loads((root / "munich_public_facts_v1.json").read_text(encoding="utf-8"))
 
 
-def create_router(service: RunService, enqueue: Callable[[str], None]) -> APIRouter:
+def create_router(
+    service: RunService, enqueue: Callable[[str], None], plans: FlightPlanStore,
+) -> APIRouter:
     router = APIRouter(prefix="/api/v1/munich", tags=["Muenchen-Referenzpilot (synthetisch)"])
     creation_lock = Lock()
 
@@ -38,6 +42,8 @@ def create_router(service: RunService, enqueue: Callable[[str], None]) -> APIRou
     @router.post("/comparisons", status_code=202)
     def compare(payload: MunichCompareRequest) -> dict:
         with creation_lock:
+            plan = (load_snapshot(plans, payload.flight_plan_snapshot_id)
+                    if payload.flight_plan_snapshot_id else None)
             # Avoid an unbounded local backlog. Recovery still uses the ordinary RunWorker.
             pending = [r for r in service.list_runs() if r.state.value in {"queued", "running"}]
             if len(pending) + 2 > 10:
@@ -72,6 +78,10 @@ def create_router(service: RunService, enqueue: Callable[[str], None]) -> APIRou
                         "engine_version": "munich_energy_v1",
                         "all_operational_parameters": "synthetic_assumptions",
                         "compatibility_fields": "frequency_voltage_blackout_switching_not_modelled",
+                        **({
+                            "flight_plan_snapshot": plan.model_dump(mode="json"),
+                            "flight_plan_usage": "context_only_not_driving_energy",
+                        } if plan else {}),
                     },
                 )
                 service.create_scenario(scenario)
@@ -86,6 +96,7 @@ def create_router(service: RunService, enqueue: Callable[[str], None]) -> APIRou
             for status in statuses:
                 enqueue(status.run_id)
             return {"comparison_id": comparison_id, "world_hash": world_hash,
+                    "flight_plan_snapshot_id": plan.snapshot_id if plan else None,
                     "runs": [status.model_dump(mode="json") for status in statuses]}
 
     return router

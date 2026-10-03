@@ -1,3 +1,5 @@
+import type { FlightPlanSnapshot } from "./flightplanTypes";
+
 export type Assumptions = {
   grid_import_limit_kw: number;
   grid_export_limit_kw: number;
@@ -27,7 +29,12 @@ export type RunStatus = {
   error: string | null;
   pass_fail: boolean | null;
 };
-export type Comparison = { comparison_id: string; world_hash: string; runs: RunStatus[] };
+export type Comparison = {
+  comparison_id: string;
+  world_hash: string;
+  runs: RunStatus[];
+  flight_plan_snapshot_id?: string | null;
+};
 export type EnergyKpis = {
   evidence_level: string;
   model_hours: number;
@@ -79,6 +86,8 @@ export type EnergyRecord = {
       munich_assumptions: Assumptions;
       reference_dossier: Dossier;
       world_hash: string;
+      flight_plan_snapshot?: FlightPlanSnapshot;
+      flight_plan_usage?: "context_only_not_driving_energy";
     };
   };
   summary: {
