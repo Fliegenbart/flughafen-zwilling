@@ -26,6 +26,7 @@ import type {
 } from "./types";
 import "./MunichPilot.css";
 import FlightPlanPanel from "./FlightPlanPanel";
+import CoupledPanel from "./CoupledPanel";
 import { flightDate } from "./flightplanTypes";
 import type { FlightPlanSnapshot } from "./flightplanTypes";
 
@@ -403,11 +404,11 @@ export default function MunichPilot() {
           <p>
             Elektrifizierung als Systemtest.
             <br />
-            Ladefristen und Stromversorgung gemeinsam prüfen.
+            Flugplan, elektrische Flotte und Stromversorgung gemeinsam prüfen.
           </p>
         </div>
         <div className="muc-hero__meta">
-          <span className="muc-tag">24 Modellstunden / 5-Minuten-Schritte</span>
+          <span className="muc-tag">Flugplanbasierte Systemtests / SIL</span>
           <strong>
             Öffentliche Referenz.
             <br />
@@ -416,6 +417,11 @@ export default function MunichPilot() {
           <span>Keine FMG-Betriebsdaten. Nicht kalibriert.</span>
         </div>
       </header>
+      <nav className="muc-pilot-nav" aria-label="München Pilotbereiche">
+        <a href="#muc-flightplan-title">1. Flugplan wählen</a>
+        <a href="#coupled-title">2. Gekoppelten Systemtest prüfen</a>
+        <a href="#muc-energy-v1">Energie-v1 / statisch</a>
+      </nav>
       <aside className="muc-boundary">
         <strong>Referenzpilot, kein Betriebsnachweis.</strong> Keine reale Anlagensteuerung,
         CO₂-/Kostenoptimierung oder Netzfreigabe. Die Original-Airport-Fälle und FlexLab bleiben
@@ -430,8 +436,8 @@ export default function MunichPilot() {
             }}
           >
             <div className="muc-section-title">
-              <h2>Versuch festlegen</h2>
-              <span>SIL</span>
+              <h2 id="muc-energy-v1">Energie-v1 festlegen</h2>
+              <span>Statische Ladefristen</span>
             </div>
             <label className="muc-field">
               Synthetischer Testfall
@@ -541,6 +547,7 @@ export default function MunichPilot() {
             onBusyChange={setFlightPlanLoading}
             disabled={busy}
           />
+          <CoupledPanel plan={flightPlan} loadingPlan={flightPlanLoading} />
           <section className="muc-network">
             <div className="muc-section-title">
               <h2>Versorgung &amp; Ladebereiche</h2>

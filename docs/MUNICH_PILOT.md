@@ -1,5 +1,10 @@
 # Muenchen-Referenzpilot: Stromversorgung und Ladefristen
 
+**Dieser Vertrag beschreibt unveraendert Energie-v1.** Der neue additive
+[gekoppelte Flugplan-/Fahrzeug-/Energieversuch](MUNICH_COUPLED.md) steht im
+gleichen Arbeitsbereich, hat aber eine eigene Domaene und eingefrorene Welt.
+Es werden keine vorhandenen statischen Runs nachtraeglich umgedeutet.
+
 ## Start fuer Timo (ca. 10 Minuten)
 
 Im Repository: `docker compose -f docker-compose.demo.yml up --build -d`.

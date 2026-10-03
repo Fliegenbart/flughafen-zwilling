@@ -9,6 +9,7 @@ from reportlab.pdfgen import canvas
 
 from .models import AssertionResult, RunRecord, RunSummary
 from .munich.reporting import write_energy_pdf
+from .munich.coupled_evidence import write_coupled_pdf
 
 
 def build_report_payload(
@@ -30,9 +31,10 @@ def build_report_payload(
         "watchdog_summary": run_record.watchdog_summary.model_dump(mode="json"),
         "assertions": [a.model_dump(mode="json") for a in assertion_results],
     }
-    if summary.domain == "airport_energy_v1":
+    if summary.domain in {"airport_energy_v1", "airport_coupled_v1"}:
         payload.update({
-            "evidence_level": "synthetic_uncalibrated",
+            "evidence_level": ("schedule_driven_assumptions_uncalibrated"
+                               if summary.coupled_kpis else "synthetic_uncalibrated"),
             "scenario_snapshot": run_record.scenario_snapshot.model_dump(mode="json") if run_record.scenario_snapshot else None,
             "model_pack_snapshot": run_record.model_pack_snapshot.model_dump(mode="json") if run_record.model_pack_snapshot else None,
         })
@@ -41,6 +43,9 @@ def build_report_payload(
 
 def write_pdf_report(pdf_path: Path, payload: dict[str, Any]) -> None:
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    if payload.get("summary", {}).get("domain") == "airport_coupled_v1":
+        write_coupled_pdf(pdf_path, payload)
+        return
     if payload.get("summary", {}).get("domain") == "airport_energy_v1":
         write_energy_pdf(pdf_path, payload)
         return

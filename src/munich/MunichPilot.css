@@ -822,3 +822,26 @@ body:has(.muc-pilot) {
     transition: none;
   }
 }
+.muc-pilot-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0;
+}
+.muc-pilot-nav a {
+  color: #dbe9f3;
+  text-decoration: none;
+  padding: 10px 14px;
+  border: 1px solid #35516a;
+  background: #102438;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.muc-pilot-nav a:hover,
+.muc-pilot-nav a:focus-visible {
+  border-color: #5ee3d6;
+  color: #5ee3d6;
+}
+.muc-pilot h2 {
+  scroll-margin-top: 24px;
+}

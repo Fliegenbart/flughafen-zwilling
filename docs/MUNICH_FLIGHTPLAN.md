@@ -10,7 +10,8 @@
    ausloesen. Kein automatischer Abruf, kein API-Schluessel und kein Scheduler.
 3. Stundenverteilung, Datum/Datenstand, Eintraege, PDF-Seitenbelege und Warnungen
    pruefen. Ankunft/Abflug oder Flugnummer, Airline, IATA und Terminal filtern.
-4. Der ausgewaehlte Snapshot gilt als **Kontext fuer den naechsten Energievergleich**.
+4. Der ausgewaehlte Snapshot gilt als **Kontext fuer Energie-v1** und als
+   Eingabe fuer den separaten [gekoppelten Systemtest](MUNICH_COUPLED.md).
    Beide Runs erhalten denselben kompletten Snapshot. Bei bereits angezeigten
    Ergebnissen gilt weiter der eingefrorene damalige Kontext, nicht die neue Auswahl.
 5. Flugplan-CSV/JSON sowie Run-Record, HTML-/PDF-Report herunterladen.
@@ -24,7 +25,7 @@ MUC-Abflugzeit. Flugtage beziehen sich auf Muenchen; alle Zeiten sind Ortszeiten
 Geltung und Wochentage werden beruecksichtigt. Gegenflughafen-Zeiten am Vortag/
 Folgetag verschieben nicht den Muenchner Verkehrstag.
 
-**Noch nicht gekoppelt:** Energie-v1 nutzt den Flugplan nur als auditierbaren
+**Energie-v1 unveraendert:** Energie-v1 nutzt den Flugplan nur als auditierbaren
 Kontext. Er erzeugt weder Ladebedarf noch Busmissionen oder Flugverspaetungen.
 Fahrzeugflotte, Auftraege, Energieverbrauch, Positionen und Flugzeugumlaeufe
 fehlen weiterhin. Diese Angaben bleiben Annahmen oder benoetigen einen
@@ -77,9 +78,11 @@ Run-/Scenario-Schnittstelle wird ersetzt. Der `energy_world_hash` umfasst weiter
 nur die Energie-Eingaben; der separate Flugplan-Inhaltshash und der Run-
 Auditfingerprint belegen den mitgefuehrten Kontext.
 
-## Naechster fachlicher Schritt
+## Additive Kopplung
 
-Auftraege aus dem echten Plan plus ausdruecklichen Einsatzannahmen ableiten;
-Fahrzeug-SOC, Ladefenster, Energieverbrauch und Rueckkehrzeiten modellieren.
-Erst dann kann fehlende Fahrzeugverfuegbarkeit nachvollziehbar Abfertigungen
-verzoegern. Der Import ersetzt diese kausale Modellierung nicht.
+[Modellvertrag und Testablauf](MUNICH_COUPLED.md): Planzeiten plus ausdrueckliche
+Auftrags-/Flottenannahmen treiben dynamischen SOC, Ladefenster und Fahrzeugbelegung.
+Ungeklaerte Mehrfachgruppen blockieren diesen Versuch, bis unabhaengige
+Nachfrageeintraege bewusst bestaetigt werden. Gemessen wird modellierte
+Aufgabenbereitschaft, keine reale Flugverspaetung oder A-CDM-Konformitaet.
+Auch die Kopplung macht das Modell nicht empirisch validiert.

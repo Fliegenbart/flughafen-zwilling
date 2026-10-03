@@ -154,3 +154,13 @@
     gap: 1px;
   }
 }
+.muc-flightplan .muc-table-scroll {
+  max-height: 420px;
+  overflow: auto;
+}
+.muc-flightplan thead {
+  position: sticky;
+  top: 0;
+  background: #102438;
+  z-index: 1;
+}

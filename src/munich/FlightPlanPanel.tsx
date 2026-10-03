@@ -211,9 +211,9 @@ export default function FlightPlanPanel({
         </select>
       </label>
       <aside className="muc-flightplan__boundary">
-        <strong>Flugplan-Kontext für den nächsten Vergleich.</strong> Der Import ändert noch keine
-        Ladebedarfe oder Verspätungen. Dafür fehlen Fahrzeugaufträge, Energieprofile und
-        Flugzeugumläufe. Die Energie-v1-Simulation bleibt synthetisch.
+        <strong>Planzeiten, keine Live-Bewegungen.</strong> Energie-v1 ändert noch keine Ladebedarfe
+        durch den Import. Der separate gekoppelte Systemtest unten nutzt Planzeiten für ausdrücklich
+        angenommene Fahrzeugeinsätze. Reale Energieprofile und Flugzeugumläufe fehlen.
       </aside>
       {selected ? (
         <>
@@ -292,7 +292,12 @@ export default function FlightPlanPanel({
             </label>
             <span>{rows.length} Einträge</span>
           </div>
-          <div className="muc-table-scroll">
+          <div
+            className="muc-table-scroll"
+            role="region"
+            aria-label="Flugplaneinträge, scrollbare Tabelle"
+            tabIndex={0}
+          >
             <table>
               <thead>
                 <tr>
