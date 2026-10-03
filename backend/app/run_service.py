@@ -31,6 +31,8 @@ from .reporting import build_report_payload, write_pdf_report
 from .storage import FileStorage, StorageError
 from .munich.integration import validate_energy_inputs
 from .munich.reporting import write_charging_csv
+from .munich.coupled_integration import validate_coupled_inputs
+from .munich.coupled_evidence import ARTIFACT_NAMES
 
 logger = logging.getLogger("twin_core.run_service")
 
@@ -135,6 +137,7 @@ class RunService:
             record.assertion_results = []
             record.watchdog_summary = SafetySummary()
             record.build_meta = self._with_recovery_meta(record.build_meta, recovered=recovered_after_restart)
+            record.build_meta.pop("result_artifact_hashes", None)
             self.storage.save_run_record(record)
             return record
 
@@ -175,7 +178,9 @@ class RunService:
         model_pack = self.storage.get_model_pack(request.model_pack_id)
         if scenario.domain == "airport_energy_v1":
             validate_energy_inputs(scenario, model_pack, request)
-        elif model_pack.site_profile == "munich_public_reference_v1":
+        elif scenario.domain == "airport_coupled_v1":
+            validate_coupled_inputs(scenario, model_pack, request)
+        elif model_pack.site_profile in {"munich_public_reference_v1", "munich_coupled_reference_v1"}:
             raise ValueError("Muenchen-Energieprofil nicht mit Turnaround-/Legacy-Szenario kombinieren")
 
         run_id = uuid4().hex
@@ -237,7 +242,11 @@ class RunService:
                 self.storage.save_run_record(record)
             if scenario.domain == "airport_energy_v1":
                 validate_energy_inputs(scenario, model_pack, record.request)
-            if self.settings.influx_token and scenario.domain != "airport_energy_v1":
+            elif scenario.domain == "airport_coupled_v1":
+                validate_coupled_inputs(scenario, model_pack, record.request)
+            if self.settings.influx_token and scenario.domain not in {
+                "airport_energy_v1", "airport_coupled_v1",
+            }:
                 influx = InfluxTelemetryWriter(
                     self.settings.influx_url,
                     self.settings.influx_token,
@@ -279,6 +288,17 @@ class RunService:
                 record.summary.audit_fingerprint_sha256 = audit_fingerprint
                 record.assertion_results = result.assertion_results
                 record.watchdog_summary = result.watchdog_summary
+                extra_paths = []
+                artifact_hashes = {}
+                for name, content in result.extra_artifacts.items():
+                    if name not in ARTIFACT_NAMES:
+                        raise ValueError("Unbekanntes Ergebnisartefakt")
+                    path = self.storage.run_dir(run_id) / name
+                    path.write_text(content, encoding="utf-8")
+                    artifact_hashes[name] = sha256(path.read_bytes()).hexdigest()
+                    extra_paths.append(str(path))
+                if artifact_hashes:
+                    record.build_meta["result_artifact_hashes"] = artifact_hashes
 
                 payload = build_report_payload(record, result.summary, result.assertion_results)
                 report_json_path = self.storage.save_run_report(run_id, payload)
@@ -289,8 +309,8 @@ class RunService:
                     str(telemetry_path),
                     str(report_json_path),
                     str(pdf_path),
-                ]
-                if result.summary.energy_kpis is not None:
+                ] + extra_paths
+                if result.summary.domain == "airport_energy_v1":
                     charging_path = self.storage.run_dir(run_id) / "charging.csv"
                     write_charging_csv(charging_path, result.summary)
                     record.status.artifacts.append(str(charging_path))
@@ -413,6 +433,18 @@ class RunService:
         tick_avg = 0.0
         tick_max = 0.0
         tick_p99 = 0.0
+        expected_hashes = record.build_meta.get("result_artifact_hashes")
+        artifact_hashes_match = None
+        if isinstance(expected_hashes, dict) and expected_hashes:
+            artifact_hashes_match = True
+            for name, expected in expected_hashes.items():
+                if name not in ARTIFACT_NAMES:
+                    artifact_hashes_match = False
+                    break
+                path = self.storage.run_dir(run_id) / name
+                if not path.is_file() or sha256(path.read_bytes()).hexdigest() != expected:
+                    artifact_hashes_match = False
+                    break
         if summary is not None:
             tick_avg = summary.tick_drift_avg_ms
             tick_max = summary.tick_drift_max_ms
@@ -434,6 +466,7 @@ class RunService:
             audit={
                 "fingerprint_sha256": fingerprint,
                 "fingerprint_match": bool(fingerprint) and fingerprint == recomputed,
+                "artifact_hashes_match": artifact_hashes_match,
                 "backend_git_commit": record.build_meta.get("backend_git_commit", ""),
                 "firmware_versions": record.hardware_meta.get("firmware_versions", {}),
             },

@@ -12,6 +12,15 @@ HIL/Adapter und Turnaround-Playbook sind hier gesperrt. Quellen-Dossier aus
 `data/references` (Docker: `/opt/airport-references`); keine privaten FMG-Daten.
 Vertrag/Grenzen: `../docs/MUNICH_PILOT.md`.
 
+Zusaetzlich `airport_coupled_v1`: `coupled_world.py` friert einen manuell
+ausgewaehlten Flugplan plus Missionsannahmen ein; `coupled_simulator.py` koppelt
+Fahrzeugbelegung/SOC an `coupled_power.py`. `GET /api/v1/munich/coupled-reference`
+und `POST /api/v1/munich/coupled-comparisons` erzeugen zwei normale SIL-Runs.
+Nur Laderegel/Ladepunktbelegung unterscheiden sich. Neue `coupled_kpis` und
+SHA256-gepruefte Aufgaben-/Abflug-/Fahrzeug-/Parkhaus-Artefakte im vorhandenen
+Run-Pfad. Keine HIL-Adapter, kein Influx-Livezeit-Fake. Modellvertrag und Grenzen:
+`../docs/MUNICH_COUPLED.md`. Das ist kein Produktions-/FMG-Validierungsnachweis.
+
 ## Start und Tests
 
 Im Repository-Root, Python 3.12:

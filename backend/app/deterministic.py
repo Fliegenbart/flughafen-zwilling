@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 from .adapters import AdapterPlugin
@@ -17,6 +17,7 @@ from .models import (
 )
 from .simulators import run_airport_turnaround_simulation, run_legacy_ems_simulation
 from .munich.integration import run_energy_simulation
+from .munich.coupled_integration import run_coupled_simulation
 
 
 def _clamp(value: float, lo: float, hi: float) -> float:
@@ -50,6 +51,7 @@ class SimulationResult:
     assertion_results: list[AssertionResult]
     pass_fail: bool
     watchdog_summary: SafetySummary
+    extra_artifacts: dict[str, str] = field(default_factory=dict)
 
 
 def _metrics_from_summary(summary: RunSummary) -> dict[str, float]:
@@ -90,6 +92,10 @@ def _metrics_from_summary(summary: RunSummary) -> dict[str, float]:
         metrics.update({f"energy_kpis.{key}": float(value)
                         for key, value in summary.energy_kpis.model_dump().items()
                         if isinstance(value, (int, float))})
+    if summary.coupled_kpis is not None:
+        metrics.update({f"coupled_kpis.{key}": float(value)
+                        for key, value in summary.coupled_kpis.model_dump().items()
+                        if isinstance(value, (int, float))})
     return metrics
 
 
@@ -106,7 +112,27 @@ def evaluate_assertions(
     ] + custom
 
     if not merged:
-        if summary.domain == "airport_energy_v1":
+        if summary.domain == "airport_coupled_v1":
+            merged = [
+                AssertionSpec(name="Wirkleistungsbilanz", metric="energy_kpis.balance_error_max_kw",
+                              op="<=", threshold=0.000001),
+                AssertionSpec(name="Fahrzeug-Energiebilanz",
+                              metric="coupled_kpis.fleet_energy_balance_error_kwh",
+                              op="<=", threshold=0.000001),
+                AssertionSpec(name="Fahrzeugreserve eingehalten",
+                              metric="coupled_kpis.fleet_reserve_violations", op="<=", threshold=0),
+                AssertionSpec(name="Keine unerledigten Modellauftraege",
+                              metric="coupled_kpis.missions_uncompleted", op="<=", threshold=0),
+                AssertionSpec(name="Alle Modellauftraege rechtzeitig",
+                              metric="coupled_kpis.mission_on_time_pct", op=">=", threshold=100),
+                AssertionSpec(name="Grundlast versorgt (nur Modell)",
+                              metric="energy_kpis.background_unserved_kwh", op="<=", threshold=0.001),
+                AssertionSpec(name="Parkhausfristen erfuellt (nur Modell)",
+                              metric="energy_kpis.charging_unmet_kwh", op="<=", threshold=0.001),
+                AssertionSpec(name="BHKW-Erzeugung absetzbar (nur Modell)",
+                              metric="energy_kpis.chp_unabsorbed_kwh", op="<=", threshold=0.001),
+            ]
+        elif summary.domain == "airport_energy_v1":
             merged = [
                 AssertionSpec(name="Modellbilanz", metric="energy_kpis.balance_error_max_kw",
                               op="<=", threshold=0.000001),
@@ -170,6 +196,7 @@ def run_simulation(
     run_assertions: list[AssertionSpec],
     telemetry_callback: Callable[[TelemetrySample], None] | None = None,
 ) -> SimulationResult:
+    extra_artifacts: dict[str, str] = {}
     if scenario.domain == "ems_legacy_v1":
         summary, watchdog_summary = run_legacy_ems_simulation(
             run_id=run_id,
@@ -179,6 +206,11 @@ def run_simulation(
             realtime_mode=realtime_mode,
             adapters=adapters,
             telemetry_callback=telemetry_callback,
+        )
+    elif scenario.domain == "airport_coupled_v1":
+        summary, watchdog_summary, extra_artifacts = run_coupled_simulation(
+            run_id=run_id, scenario=scenario, model_pack=model_pack, seed=seed,
+            realtime_mode=realtime_mode, adapters=adapters, telemetry_callback=telemetry_callback,
         )
     elif scenario.domain == "airport_energy_v1":
         summary, watchdog_summary = run_energy_simulation(
@@ -203,4 +235,5 @@ def run_simulation(
         assertion_results=assertion_results,
         pass_fail=pass_fail,
         watchdog_summary=watchdog_summary,
+        extra_artifacts=extra_artifacts,
     )

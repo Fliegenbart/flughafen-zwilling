@@ -73,9 +73,17 @@ Modellgrenzen und Architektur: [Airport-Prototyp](docs/AIRPORT_PROTOTYPE.md),
 
 Neu: [manueller Import des offiziellen Saisonflugplans](docs/MUNICH_FLIGHTPLAN.md).
 Tagesauswahl, geplante Ankuenfte/Abfluege, Stundenverteilung, PDF-Seitenbelege und
-CSV-/JSON-Export. Ein ausgewaehlter Tag wird im Energievergleich als Kontext
-eingefroren. **Noch keine automatische Kopplung an Ladebedarf, Fahrzeugauftraege
-oder Flugverspaetungen.** Kein periodischer Abruf, keine echten FMG-Messdaten.
+CSV-/JSON-Export. Kein periodischer Abruf und keine echten FMG-Messdaten.
+
+**Neu: [Flugplan -> Fahrzeuge -> Energie](docs/MUNICH_COUPLED.md).** Ein
+ausgewaehlter Tag erzeugt explizit angenommene Serviceauftraege fuer Bus,
+Gepaeckschlepper, Pushback und mobile GPU. Dynamischer Fahrzeug-SOC, Ladepunkte,
+Trafoverluste und Netz/PV/BHKW/Speicher wirken auf modellierte Aufgabenbereitschaft.
+Ungesteuert vs. Fristenprioritaet teilen die gleiche eingefrorene Welt.
+Auftrags-/Flug-/Fahrzeugnachweise, Stoerungen, PDF/HTML/CSV und Wiederanlauf.
+**Keine reale OTP/TOBT, kein kalibriertes FMG-Modell oder Sicherheitsnachweis.**
+Energie-v1 darunter bleibt unveraendert als separater statischer Vergleich erhalten;
+dort dient der Flugplan weiterhin nur als Kontext.
 
 Zusaetzlicher Referenzpilot fuer P43/P44 und Busdepot mit vereinfachter
 Campus-Strombilanz: Netz, exogenes BHKW, 7 MWp PV-Referenz (3 MWp P43/P44

@@ -173,14 +173,16 @@ class PlaybookService:
             assert request.model_pack_id is not None
             if self.storage.get_scenario(request.scenario_id).domain != "airport_turnaround_v1":
                 raise PlaybookError("playbook_only_supports_airport_turnaround_v1")
-            if self.storage.get_model_pack(request.model_pack_id).site_profile == "munich_public_reference_v1":
+            if self.storage.get_model_pack(request.model_pack_id).site_profile in {
+                "munich_public_reference_v1", "munich_coupled_reference_v1",
+            }:
                 raise PlaybookError("playbook_only_supports_airport_turnaround_v1")
             return request
 
         if request.source_kind == "config_snapshot":
             assert request.model_pack_id is not None
             model = self.storage.get_model_pack(request.model_pack_id)
-            if model.site_profile == "munich_public_reference_v1":
+            if model.site_profile in {"munich_public_reference_v1", "munich_coupled_reference_v1"}:
                 raise PlaybookError("playbook_only_supports_airport_turnaround_v1")
             if request.scenario_id:
                 if self.storage.get_scenario(request.scenario_id).domain != "airport_turnaround_v1":

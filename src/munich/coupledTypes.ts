@@ -1,0 +1,147 @@
+import type { FlightPlanSnapshot } from "./flightplanTypes";
+import type { Comparison, EnergyKpis, RunStatus } from "./types";
+
+export type FleetKind = "bus" | "baggage_tractor" | "pushback_tug" | "gpu";
+export type CoupledPolicy = "uncontrolled" | "mission_priority";
+export type FleetSpec = {
+  kind: FleetKind;
+  vehicles: number;
+  chargers: number;
+  battery_capacity_kwh: number;
+  initial_soc_pct: number;
+  reserve_soc_pct: number;
+  charge_target_soc_pct: number;
+  charger_kw: number;
+  mission_energy_kwh: number;
+  service_duration_min: number;
+  return_min: number;
+  departure_lead_min: number;
+  departure_buffer_min: number;
+  arrival_allowance_min: number;
+  coverage_pct: number;
+};
+export type PowerConfig = {
+  grid_import_limit_kw: number;
+  grid_export_limit_kw: number;
+  background_load_kw: number;
+  chp_output_kw: number;
+  pv_capacity_kwp: number;
+  pv_peak_factor: number;
+  apron_transformer_kva: number;
+  parking_transformer_kva: number;
+  power_factor: number;
+  transformer_efficiency: number;
+  charging_efficiency: number;
+  battery_capacity_kwh: number;
+  battery_power_kw: number;
+  battery_initial_soc_pct: number;
+  battery_reserve_pct: number;
+  battery_efficiency: number;
+  parking_sessions: number;
+  parking_charger_kw: number;
+};
+export type StressEvent = {
+  start_min: number;
+  end_min: number;
+  grid_import_limit_kw: number | null;
+  fleet_kind: FleetKind | null;
+  offline_chargers: number;
+};
+export type CoupledConfig = {
+  power: PowerConfig;
+  fleets: FleetSpec[];
+  warmup_min: number;
+  drain_min: number;
+  shared_group_policy: "reject_unresolved" | "independent_entries_assumption";
+  stress_events: StressEvent[];
+};
+export type CoupledComparison = Comparison & { engine_version: "airport_coupled_v1" };
+export type CoupledKpis = {
+  evidence_level: "schedule_driven_assumptions_uncalibrated";
+  published_entry_count: number;
+  mission_count: number;
+  missions_completed: number;
+  missions_on_time: number;
+  missions_uncompleted: number;
+  mission_on_time_pct: number;
+  completed_mission_delay_avg_min: number | null;
+  modeled_departure_count: number;
+  departures_ready_on_time: number;
+  departure_readiness_pct: number | null;
+  departure_deadline_violation_lower_bound_avg_min: number | null;
+  departures_uncompleted: number;
+  energy_wait_total_min: number;
+  resource_wait_total_min: number;
+  fleet_initial_kwh: number;
+  fleet_final_kwh: number;
+  fleet_charged_kwh: number;
+  fleet_consumed_kwh: number;
+  fleet_energy_balance_error_kwh: number;
+  fleet_reserve_violations: number;
+  transformer_loss_kwh: number;
+  model_horizon_hours: number;
+};
+export type CoupledWorld = {
+  engine_version: "airport_coupled_v1";
+  world_hash: string;
+  seed: number;
+  source_plan_sha256: string;
+  config: CoupledConfig;
+  day_start_utc: string;
+  day_minutes: number;
+  start_min: number;
+  end_min: number;
+  warnings: string[];
+};
+export type CoupledRecord = {
+  status: RunStatus;
+  request: { seed: number; realtime_mode: string; adapters: unknown[] };
+  model_pack_snapshot: {
+    parameter_set: { policy: CoupledPolicy };
+    calibration_meta: { coupled_world: CoupledWorld; flight_plan_snapshot: FlightPlanSnapshot };
+  };
+  build_meta: {
+    execution_backend_git_commit?: string;
+    result_artifact_hashes?: Record<string, string>;
+  };
+  summary: {
+    domain: "airport_coupled_v1";
+    energy_world_hash: string;
+    energy_kpis: EnergyKpis;
+    coupled_kpis: CoupledKpis;
+    audit_fingerprint_sha256: string;
+  } | null;
+};
+export type MissionEvidence = {
+  mission_id: string;
+  source_entry_id: string;
+  kind: FleetKind;
+  direction: "arrival" | "departure";
+  flight_number: string;
+  remote_airport_iata: string;
+  source_pages: number[];
+  published_min: number;
+  release_min: number;
+  deadline_min: number;
+  energy_kwh: number;
+  consumed_kwh: number;
+  vehicle_id: string | null;
+  actual_start_min: number | null;
+  actual_complete_min: number | null;
+  energy_wait_min: number;
+  resource_wait_min: number;
+  deadline_met: boolean;
+  delay_min: number;
+  delay_is_lower_bound: boolean;
+  wait_cause: "none" | "energy" | "resource" | "energy_and_resource";
+};
+export type CoupledEvidence = {
+  policy: CoupledPolicy;
+  world_hash: string;
+  source_plan_sha256: string;
+  day_start_utc: string;
+  start_min: number;
+  end_min: number;
+  missions: MissionEvidence[];
+  series: { minute: number; [key: string]: number }[];
+};
