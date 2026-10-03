@@ -11,10 +11,15 @@ Zugangsdaten separat erhalten; nicht in einen Link, Git oder Reports schreiben.
 Im Pilot teilen alle berechtigten Nutzer denselben Demo-Datenbereich. Das ist
 **keine Mandantentrennung**. Nur synthetische Testdaten und oeffentliche
 Flugplan-Snapshots verwenden, keine privaten FMG-/Lab-Messdaten hochladen.
-Modellgrenzen gelten unveraendert; der manuelle Flugplan ist vorerst nur Kontext,
-kein Treiber fuer Ladebedarfe oder Verspaetungen (siehe `MUNICH_FLIGHTPLAN.md`).
+Modellgrenzen gelten unveraendert. Im [gekoppelten Systemtest](MUNICH_COUPLED.md)
+treiben manuell gewaehlte Planzeiten angenommene Fahrzeugauftraege, SOC und
+Ladebedarfe. Das sind keine gemessenen FMG-Einsaetze oder reale Flug-OTP/TOBT.
+Der separat erhaltene Energie-v1-Vergleich verwendet den Flugplan weiterhin
+nur als Kontext (siehe `MUNICH_FLIGHTPLAN.md`). Kein automatischer Flugplanabruf.
 
-Start: Referenztag, dann Anschluss-Engpass im Muenchen-Pilot. Airport bleibt
+Start: Flugplantag manuell importieren/auswaehlen, Annahmen und ungeklaerte
+Mehrfachgruppen pruefen, dann **Gekoppelten Vergleich starten**. Referenztag und
+Anschluss-Engpass in Energie-v1 bleiben separat verfuegbar. Airport bleibt
 Standard. Backend arbeitet seriell; `queued` kann auf den vorherigen Run warten.
 Grafana wird hier nicht angeboten. Kurven und Exporte liegen in der Anwendung.
 
@@ -57,12 +62,37 @@ python3 scripts/smoke_munich.py --base-url https://labpulse.ai/airport --auth-fi
 python3 scripts/smoke_demo.py --base-url https://labpulse.ai/airport --auth-file /private/path/demo.netrc --planner --all-cases
 python3 scripts/smoke_flexlab.py --base-url https://labpulse.ai/airport --auth-file /private/path/demo.netrc
 python3 scripts/smoke_flightplan.py --pdf /private/path/flugplan.pdf --date 2026-10-03 --compare --base-url https://labpulse.ai/airport --auth-file /private/path/demo.netrc
+python3 scripts/smoke_coupled.py --snapshot-id STORED_SNAPSHOT_ID --output-dir /private/path/coupled-evidence --base-url https://labpulse.ai/airport --auth-file /private/path/demo.netrc
 ```
+
+Der Kopplungs-Smoke verwendet ausschliesslich einen bereits importierten
+Snapshot. Bei ungeklaerten Mehrfachgruppen nur nach bewusster Entscheidung
+`--accept-independent-entries` ergaenzen; keine bestaetigte Zahl physischer Fluege.
 
 Netrc-Datei: Modus 0600, Host/Login/Passwort ausserhalb Git. Smoke-Helper sendet
 Zugangsdaten nur nach Challenge und lehnt Redirects ausserhalb dieses HTTPS-
 Pilotpfads ab. Vor Freigabe unauthentifiziert 401 fuer UI/API/Artefakte pruefen.
 HTTP ohne TLS darf nur umleiten, nie Zugangsdaten abfragen oder Inhalte liefern.
+
+## Verifizierter Release vom 03.10.2026
+
+Code-Release `c16a514ef715e31703baace439abd36c7b5f080b`, gepruefter PR #9,
+auf dem bestehenden isolierten Pilot aktiviert. Eigenes Datenvolume vorher
+konsistent privat gesichert; alte App-Images als Rollback behalten. Zugangsschutz,
+Proxy und andere Anwendungen wurden nicht veraendert.
+
+HTTPS-Gegenproben: alle acht Airport-Cases plus Baseline, beide Planner-Referenzen,
+vier Energie-v1-Vergleiche und FlexLab inklusive negativer Daten-/Fehlerfaelle.
+Der gespeicherte oeffentliche Flugplantag 03.10.2026 liefert zwei abgeschlossene
+Kopplungsruns mit verifiziertem Execution-Commit, gleichem Welt-Hash und allen
+sieben Daten-/JSON-/PDF-Hashes; bestehende Runs behalten ihren expliziten v1-Audit.
+13,83 Sekunden inklusive HTTPS und Downloads fuer diese Gegenprobe, kein SLA.
+HTML/Muenchen-JS/CSS sind bytegleich zum geprueften Subpath-Build. Ohne Login
+antworten UI, API und Artefakte mit 401; HTTP leitet nur auf HTTPS um.
+
+2.144 angenommene Auftraege und 98/456 rechtzeitige modellierte Abflugseintraege
+bei beiden Laderegeln. Kein Optimierungsvorteil und keine reale Flughafen-OTP
+nachgewiesen. Technisch `completed`, strenge Modellkriterien weiterhin `false`.
 
 Dies ist eine kleine passwortgeschuetzte Demo, kein Mehrnutzer-Produkt: kein
 Rollenmodell, kein SLA, keine datenbezogene Mandantentrennung oder globale
