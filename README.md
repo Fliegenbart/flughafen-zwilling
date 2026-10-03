@@ -2,7 +2,7 @@
 
 **Der Flughafen-Zwilling ist der primaere Arbeitsbereich. Die FlexLab Workbench
 bleibt als separates Zusatzwerkzeug erhalten; sie ersetzt den Flughafen nicht.**
-Ein gemeinsamer lokaler Docker-Start, zwei klar getrennte Oberflaechen und
+Ein gemeinsamer lokaler Docker-Start, drei klar getrennte Oberflaechen und
 Datenbereiche. React + FastAPI, persistente lokale Worker, keine Cloudpflicht.
 
 ## Start fuer Timo
@@ -21,10 +21,11 @@ docker compose -f docker-compose.demo.yml up --build -d
 | --- | --- | --- |
 | Flughafen (Standard) | [localhost:5176](http://localhost:5176/) | Acht Airport-Stresstests, KPI-Kurven, Playbook-/Baseline-Vergleich |
 | Flughafen (Direktlink) | [workspace=airport](http://localhost:5176/?workspace=airport) | Derselbe Airport Twin Core |
+| Muenchen (Energiepilot) | [workspace=munich](http://localhost:5176/?workspace=munich) | Synthetische Campusbilanz und fairer Ladestrategie-Vergleich |
 | FlexLab (Zusatzwerkzeug) | [workspace=flexlab](http://localhost:5176/?workspace=flexlab) | Getrennte Leistungs-/Messdatenauswertung und CSV-Import |
 | API-Dokumentation | [localhost:5176/docs](http://localhost:5176/docs) | Beide APIs; API direkt auch auf Port 8010 |
 
-Oben in beiden Anwendungen gibt es einen sichtbaren Arbeitsbereich-Wechsel.
+Oben in allen Anwendungen gibt es einen sichtbaren Arbeitsbereich-Wechsel.
 Der Wechsel laedt die andere Anwendung neu; laufende Jobs bleiben im Backend.
 Airport-Runs und FlexLab-Runs werden nicht miteinander verglichen.
 
@@ -60,10 +61,29 @@ zulaessige Baseline darf korrekt zu einer Empfehlung ohne Massnahmen fuehren.
 
 Guillotine und Schwarzstart sind hier **Airport-Kapazitaetsstresstests**, keine
 elektrischen Netz-/Notstromtests. Ein Flughafen-Energietest mit realen Anlagen
-ist eine separate Weiterentwicklung, nicht bereits implementiert.
+ist nicht implementiert; der neue Referenzpilot unten bleibt ausschliesslich SIL.
 
 Modellgrenzen und Architektur: [Airport-Prototyp](docs/AIRPORT_PROTOTYPE.md),
 [Wiederherstellungs-Audit](docs/RECOVERY_AUDIT.md).
+
+## Muenchen: Energie und Ladefristen als Systemtest
+
+Zusaetzlicher Referenzpilot fuer P43/P44 und Busdepot mit vereinfachter
+Campus-Strombilanz: Netz, exogenes BHKW, 7 MWp PV-Referenz (3 MWp P43/P44
+als Teilmenge), optionale hypothetische Batterie, getrennte Ladeabgaenge.
+24 Modellstunden / 5-Minuten-Schritte. Zwei Regeln mit identischen eingefrorenen
+Auftraegen: sofortiges proportionales Laden vs. Busprioritaet/frueheste Frist.
+Netzspitze, fehlende Energie, Ladefristen, PV-Bilanz, SOC, PDF/HTML/CSV/Run-Audit.
+
+**Nicht kalibriert; keine FMG-Betriebsdaten oder reale Netz-/Klimanutzen-Aussage.**
+Bestandszahlen sind belegt, alle Betriebsparameter explizite Annahmen. Muenchen
+besitzt bereits einen Energiezwilling; zusaetzlichen TestingLab-Systemtest-Nutzen
+mit den Kontakten zuerst klaeren. Bestehendes Grafana bleibt fuer Turnaround;
+die 24-Stunden-Modellzeit wird nicht als Livezeit nach Influx geschrieben.
+
+[Testablauf und Modellvertrag](docs/MUNICH_PILOT.md),
+[oeffentliche Quellen](docs/MUNICH_PUBLIC_DATA.md),
+[Realdaten-Anfrage und Validierungsfolge](docs/MUNICH_DATA_REQUEST.md).
 
 ## FlexLab: Bewahrt, nicht als neuer Lab-Mehrwert vorausgesetzt
 
@@ -134,6 +154,7 @@ alternativ `TWIN_DEV_API_URL` setzen. Lokale Demo pruefen:
 ```sh
 python3 scripts/smoke_demo.py --planner --all-cases
 python3 scripts/smoke_flexlab.py
+python3 scripts/smoke_munich.py
 sh scripts/check-recovery.sh
 ```
 

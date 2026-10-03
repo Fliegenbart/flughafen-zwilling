@@ -3,10 +3,12 @@ import "./WorkspaceApp.css";
 
 const AirportApp = lazy(() => import("./App"));
 const FlexLabApp = lazy(() => import("./lab/Workbench"));
+const MunichApp = lazy(() => import("./munich/MunichPilot"));
 
 export default function WorkspaceApp() {
   const isFlexLab = new URLSearchParams(window.location.search).get("workspace") === "flexlab";
-  const title = isFlexLab ? "FlexLab Workbench" : "Airport Twin Core";
+  const isMunich = new URLSearchParams(window.location.search).get("workspace") === "munich";
+  const title = isFlexLab ? "FlexLab Workbench" : isMunich ? "München / Airport Twin Core" : "Airport Twin Core";
 
   useEffect(() => {
     document.title = title;
@@ -16,13 +18,17 @@ export default function WorkspaceApp() {
     <div className={`workspace-frame workspace-frame--${isFlexLab ? "flexlab" : "airport"}`}>
       <header className="workspace-selector">
         <div className="workspace-selector__intro">
-          <strong>TestingLab / Zwei Arbeitsbereiche</strong>
-          <span>Flughafen-Stresstests und separate Messdatenauswertung. Keine reale Anlagensteuerung.</span>
+          <strong>Airport Twin Core / TestingLab</strong>
+          <span>Flughafenbetrieb, Energie-Referenzpilot und separate Messdatenauswertung. Keine reale Anlagensteuerung.</span>
         </div>
         <nav className="workspace-selector__links" aria-label="Arbeitsbereich wählen">
-          <a href="/?workspace=airport" aria-current={!isFlexLab ? "page" : undefined}>
+          <a href="/?workspace=airport" aria-current={!isFlexLab && !isMunich ? "page" : undefined}>
             <span>Flughafen</span>
             <strong>Airport Twin Core</strong>
+          </a>
+          <a href="/?workspace=munich" aria-current={isMunich ? "page" : undefined}>
+            <span>Flughafen / Energiepilot</span>
+            <strong>München Referenz</strong>
           </a>
           <a href="/?workspace=flexlab" aria-current={isFlexLab ? "page" : undefined}>
             <span>Messdaten / Zusatzwerkzeug</span>
@@ -31,7 +37,7 @@ export default function WorkspaceApp() {
         </nav>
       </header>
       <Suspense fallback={<p className="workspace-loading" role="status">{title} wird geladen…</p>}>
-        {isFlexLab ? <FlexLabApp /> : <AirportApp />}
+        {isFlexLab ? <FlexLabApp /> : isMunich ? <MunichApp /> : <AirportApp />}
       </Suspense>
     </div>
   );

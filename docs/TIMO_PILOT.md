@@ -4,7 +4,7 @@
 Messdaten-Zusatzwerkzeug und ersetzt weder den Flughafen noch eure vorhandenen
 Pruefstaende.** Es wird keine Kenntnis der konkreten Lab-Ausstattung behauptet.
 
-## Ein Start, zwei Anwendungen
+## Ein Start, drei getrennte Arbeitsbereiche
 
 Git und Docker mit Compose benoetigt; Docker muss laufen.
 
@@ -18,9 +18,11 @@ docker compose -f docker-compose.demo.yml up --build -d
   KPI-Kurven, Playbook-/Baseline-Vergleich und Reports.
 - [FlexLab / Zusatzwerkzeug](http://localhost:5176/?workspace=flexlab):
   getrennte Leistungsversuche und CSV-Auswertung.
+- [Muenchen / Energiepilot](http://localhost:5176/?workspace=munich): synthetische
+  Campus-Strombilanz und Ladefristen-Vergleich, kein kalibriertes FMG-Modell.
 - [API-Dokumentation](http://localhost:5176/docs).
 
-Oben im Dashboard zwischen beiden Arbeitsbereichen wechseln. Keine Registrierung.
+Oben im Dashboard zwischen den Arbeitsbereichen wechseln. Keine Registrierung.
 Nur localhost, keine gemeinsame Netzanwendung. Keine reale Anlagensteuerung.
 Die Persistenz liegt im Docker-Volume; nicht `down -v` ausfuehren.
 
@@ -39,14 +41,22 @@ importieren und gegen vorab festgelegte Kriterien beurteilen. Wenn solche
 Funktionen bei euch schon bestehen, ist das kein angenommener neuer Mehrwert.
 Die Arbeit bleibt verfuegbar und separat gesichert.
 
+## Muenchen-Referenzpilot ausprobieren
+
+[10-Minuten-Ablauf und Modellgrenzen](MUNICH_PILOT.md). Zuerst Referenztag,
+dann synthetischen Anschluss-Engpass vergleichen. Quellen und angenommene Werte
+bleiben sichtbar getrennt. Muenchen besitzt bereits einen Energiezwilling;
+welchen zusaetzlichen Systemtest das Lab beitragen kann, ist noch abzustimmen.
+
 ## Die relevante Frage fuer das TestingLab
 
 **Waere ein gekoppeltes Flughafen- oder Standort-Energieszenario als
 Systemtest eurer vorhandenen Komponenten nuetzlich, statt weitere Einzelgeraete-
 Flex-Tests nachzubauen?** Das ist eine zu pruefende Mehrwert-Hypothese.
 
-Heute simuliert Airport Twin Core Gate-/Turnaround-Kapazitaeten, nicht die
-elektrische Anlage eines Flughafens. Ein echter Energie-/Notstromversuch
+Airport Twin Core simuliert Gate-/Turnaround-Kapazitaeten. Der zusaetzliche
+Muenchen-Referenzpilot bildet eine synthetische Wirkleistungsbilanz und
+Ladefristen ab, nicht die reale elektrische Anlage. Ein echter Energie-/Notstromversuch
 benoetigt eine abgestimmte Versuchsvorschrift, Anlagenmodell, Messsignale,
 Sicherheitsgrenzen und separate Hardwarefreigabe. Keine automatische Ansteuerung
 aus dieser Demo.

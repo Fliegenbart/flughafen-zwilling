@@ -8,6 +8,7 @@ vi.mock("react-dom/client", async (importOriginal) => {
 });
 vi.mock("./App", () => ({ default: () => <h1>Airport Twin Core</h1> }));
 vi.mock("./lab/Workbench", () => ({ default: () => <h1>FlexLab Workbench</h1> }));
+vi.mock("./munich/MunichPilot", () => ({ default: () => <h1>Flughafen München</h1> }));
 
 describe("Workspace entry point", () => {
   beforeEach(() => {
@@ -59,5 +60,13 @@ describe("Workspace entry point", () => {
   it("defaults unknown workspace IDs to airport instead of silently choosing FlexLab", async () => {
     await open("?workspace=unknown");
     expect(await screen.findByRole("heading", { name: "Airport Twin Core" })).toBeVisible();
+  });
+
+  it("opens Munich explicitly without replacing either existing workspace", async () => {
+    await open("?workspace=munich");
+    expect(await screen.findByRole("heading", { name: "Flughafen München" })).toBeVisible();
+    expect(screen.getByRole("link", { name: /Energiepilot.*München Referenz/i }))
+      .toHaveAttribute("aria-current", "page");
+    await waitFor(() => expect(document.title).toBe("München / Airport Twin Core"));
   });
 });

@@ -42,6 +42,7 @@ from .storage import FileStorage, StorageError
 from .workers import WorkerManager
 from .lab.router import create_router as create_lab_router
 from .lab.service import LabService
+from .munich.router import create_router as create_munich_router
 
 logger = logging.getLogger("twin_core.main")
 
@@ -101,6 +102,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(create_lab_router(lab_service))
+    app.include_router(create_munich_router(service, workers.enqueue_run))
 
     @app.get("/api/v1/health", response_model=HealthResponse)
     def health() -> HealthResponse:
@@ -187,7 +189,8 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             status = service.queue_run(payload)
         except StorageError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         workers.enqueue_run(status.run_id)
         return status
 
@@ -224,6 +227,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             "report.json": ("report.json", "application/json"),
             "report.pdf": ("report.pdf", "application/pdf"),
             "telemetry.jsonl": ("telemetry.jsonl", "application/x-ndjson"),
+            "charging.csv": ("charging.csv", "text/csv"),
         }
         try:
             if artifact_name not in allowed or UUID(run_id).hex != run_id:

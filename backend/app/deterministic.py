@@ -16,6 +16,7 @@ from .models import (
     TelemetrySample,
 )
 from .simulators import run_airport_turnaround_simulation, run_legacy_ems_simulation
+from .munich.integration import run_energy_simulation
 
 
 def _clamp(value: float, lo: float, hi: float) -> float:
@@ -85,6 +86,10 @@ def _metrics_from_summary(summary: RunSummary) -> dict[str, float]:
             }
         )
 
+    if summary.energy_kpis is not None:
+        metrics.update({f"energy_kpis.{key}": float(value)
+                        for key, value in summary.energy_kpis.model_dump().items()
+                        if isinstance(value, (int, float))})
     return metrics
 
 
@@ -101,7 +106,18 @@ def evaluate_assertions(
     ] + custom
 
     if not merged:
-        if summary.domain == "airport_turnaround_v1":
+        if summary.domain == "airport_energy_v1":
+            merged = [
+                AssertionSpec(name="Modellbilanz", metric="energy_kpis.balance_error_max_kw",
+                              op="<=", threshold=0.000001),
+                AssertionSpec(name="Grundlast versorgt (nur Modell)",
+                              metric="energy_kpis.background_unserved_kwh", op="<=", threshold=0.001),
+                AssertionSpec(name="Ladefristen erfuellt (nur Modell)",
+                              metric="energy_kpis.charging_unmet_kwh", op="<=", threshold=0.001),
+                AssertionSpec(name="BHKW-Erzeugung absetzbar (nur Modell)",
+                              metric="energy_kpis.chp_unabsorbed_kwh", op="<=", threshold=0.001),
+            ]
+        elif summary.domain == "airport_turnaround_v1":
             merged = [
                 AssertionSpec(name="OTP Rate", metric="otp_rate_pct", op=">=", threshold=85.0),
                 AssertionSpec(name="Turnaround Avg", metric="avg_turnaround_min", op="<=", threshold=55.0),
@@ -163,6 +179,11 @@ def run_simulation(
             realtime_mode=realtime_mode,
             adapters=adapters,
             telemetry_callback=telemetry_callback,
+        )
+    elif scenario.domain == "airport_energy_v1":
+        summary, watchdog_summary = run_energy_simulation(
+            run_id=run_id, scenario=scenario, model_pack=model_pack, seed=seed,
+            realtime_mode=realtime_mode, adapters=adapters, telemetry_callback=telemetry_callback,
         )
     else:
         summary, watchdog_summary = run_airport_turnaround_simulation(

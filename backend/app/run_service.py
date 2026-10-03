@@ -29,6 +29,8 @@ from .models import (
 from .observability import InfluxTelemetryWriter, RUNS_TOTAL, TICK_DRIFT_P99, WATCHDOG_MISSES
 from .reporting import build_report_payload, write_pdf_report
 from .storage import FileStorage, StorageError
+from .munich.integration import validate_energy_inputs
+from .munich.reporting import write_charging_csv
 
 logger = logging.getLogger("twin_core.run_service")
 
@@ -171,6 +173,10 @@ class RunService:
         # Validate references before creating the run.
         scenario = self.storage.get_scenario(request.scenario_id)
         model_pack = self.storage.get_model_pack(request.model_pack_id)
+        if scenario.domain == "airport_energy_v1":
+            validate_energy_inputs(scenario, model_pack, request)
+        elif model_pack.site_profile == "munich_public_reference_v1":
+            raise ValueError("Muenchen-Energieprofil nicht mit Turnaround-/Legacy-Szenario kombinieren")
 
         run_id = uuid4().hex
         status = RunStatus(
@@ -207,6 +213,7 @@ class RunService:
             record.status.state = RunState.running
             record.status.progress = 5
             record.status.start_ts = datetime.now(timezone.utc)
+            record.build_meta["execution_backend_git_commit"] = self.settings.build_git_commit
             self.storage.save_run_record(record)
             _log_event(
                 "run_started",
@@ -217,13 +224,6 @@ class RunService:
             )
 
         influx = None
-        if self.settings.influx_token:
-            influx = InfluxTelemetryWriter(
-                self.settings.influx_url,
-                self.settings.influx_token,
-                self.settings.influx_org,
-                self.settings.influx_bucket,
-            )
         telemetry_path = self.storage.run_dir(run_id) / "telemetry.jsonl"
 
         try:
@@ -235,6 +235,15 @@ class RunService:
                 record.model_pack_snapshot = model_pack
                 record.build_meta["input_freeze"] = "legacy_catalog_at_execution"
                 self.storage.save_run_record(record)
+            if scenario.domain == "airport_energy_v1":
+                validate_energy_inputs(scenario, model_pack, record.request)
+            if self.settings.influx_token and scenario.domain != "airport_energy_v1":
+                influx = InfluxTelemetryWriter(
+                    self.settings.influx_url,
+                    self.settings.influx_token,
+                    self.settings.influx_org,
+                    self.settings.influx_bucket,
+                )
             adapters = build_adapters(record.request.adapters)
 
             with telemetry_path.open("w", encoding="utf-8") as f_out:
@@ -281,6 +290,10 @@ class RunService:
                     str(report_json_path),
                     str(pdf_path),
                 ]
+                if result.summary.energy_kpis is not None:
+                    charging_path = self.storage.run_dir(run_id) / "charging.csv"
+                    write_charging_csv(charging_path, result.summary)
+                    record.status.artifacts.append(str(charging_path))
                 record.status.state = RunState.completed
                 record.status.progress = 100
                 record.status.end_ts = datetime.now(timezone.utc)
