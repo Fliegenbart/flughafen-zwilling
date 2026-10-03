@@ -139,6 +139,8 @@ class PlaybookService:
                 progress=0,
             )
             resolved = self.forecast_service.resolve(job_id, normalized_request)
+            if resolved.scenario.domain != "airport_turnaround_v1":
+                raise PlaybookError("playbook_only_supports_airport_turnaround_v1")
             record = PlaybookRecord(
                 status=status,
                 request=normalized_request,
@@ -169,19 +171,26 @@ class PlaybookService:
         if request.source_kind == "scenario":
             assert request.scenario_id is not None
             assert request.model_pack_id is not None
-            self.storage.get_scenario(request.scenario_id)
-            self.storage.get_model_pack(request.model_pack_id)
+            if self.storage.get_scenario(request.scenario_id).domain != "airport_turnaround_v1":
+                raise PlaybookError("playbook_only_supports_airport_turnaround_v1")
+            if self.storage.get_model_pack(request.model_pack_id).site_profile == "munich_public_reference_v1":
+                raise PlaybookError("playbook_only_supports_airport_turnaround_v1")
             return request
 
         if request.source_kind == "config_snapshot":
             assert request.model_pack_id is not None
-            self.storage.get_model_pack(request.model_pack_id)
+            model = self.storage.get_model_pack(request.model_pack_id)
+            if model.site_profile == "munich_public_reference_v1":
+                raise PlaybookError("playbook_only_supports_airport_turnaround_v1")
             if request.scenario_id:
-                self.storage.get_scenario(request.scenario_id)
+                if self.storage.get_scenario(request.scenario_id).domain != "airport_turnaround_v1":
+                    raise PlaybookError("playbook_only_supports_airport_turnaround_v1")
             return request
 
         assert request.source_run_id is not None
         source_run = self.run_service.get_run_record(request.source_run_id)
+        if source_run.scenario_snapshot and source_run.scenario_snapshot.domain != "airport_turnaround_v1":
+            raise PlaybookError("playbook_only_supports_airport_turnaround_v1")
         model_pack_id = request.model_pack_id or source_run.request.model_pack_id
         scenario_id = request.scenario_id or source_run.request.scenario_id
         self.storage.get_model_pack(model_pack_id)

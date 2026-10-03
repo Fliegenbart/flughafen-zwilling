@@ -8,6 +8,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 from .models import AssertionResult, RunRecord, RunSummary
+from .munich.reporting import write_energy_pdf
 
 
 def build_report_payload(
@@ -15,7 +16,7 @@ def build_report_payload(
     summary: RunSummary,
     assertion_results: list[AssertionResult],
 ) -> dict[str, Any]:
-    return {
+    payload = {
         "run_id": run_record.status.run_id,
         "scenario_id": run_record.status.scenario_id,
         "model_pack_id": run_record.status.model_pack_id,
@@ -29,10 +30,20 @@ def build_report_payload(
         "watchdog_summary": run_record.watchdog_summary.model_dump(mode="json"),
         "assertions": [a.model_dump(mode="json") for a in assertion_results],
     }
+    if summary.domain == "airport_energy_v1":
+        payload.update({
+            "evidence_level": "synthetic_uncalibrated",
+            "scenario_snapshot": run_record.scenario_snapshot.model_dump(mode="json") if run_record.scenario_snapshot else None,
+            "model_pack_snapshot": run_record.model_pack_snapshot.model_dump(mode="json") if run_record.model_pack_snapshot else None,
+        })
+    return payload
 
 
 def write_pdf_report(pdf_path: Path, payload: dict[str, Any]) -> None:
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    if payload.get("summary", {}).get("domain") == "airport_energy_v1":
+        write_energy_pdf(pdf_path, payload)
+        return
     c = canvas.Canvas(str(pdf_path), pagesize=A4)
     width, height = A4
 

@@ -1,5 +1,6 @@
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+ENV TWIN_REFERENCE_DIR=/opt/airport-references
 WORKDIR /app
 COPY backend/pyproject.toml backend/README.md ./
 COPY backend/requirements-demo.txt ./
@@ -7,6 +8,7 @@ COPY backend/app ./app
 RUN pip install --no-cache-dir -r requirements-demo.txt && pip install --no-cache-dir --no-deps .
 COPY data/scenarios /opt/airport-seeds/scenarios
 COPY data/model_packs /opt/airport-seeds/model_packs
+COPY data/references /opt/airport-references
 COPY deploy/demo/backend-entrypoint.sh /usr/local/bin/airport-entrypoint
 RUN chmod +x /usr/local/bin/airport-entrypoint
 ENTRYPOINT ["airport-entrypoint"]

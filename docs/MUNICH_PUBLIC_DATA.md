@@ -1,8 +1,9 @@
 # Muenchen: oeffentliche Datengrundlage fuer den Airport-Pilot
 
 Recherche: 2026-10-03. Nur Primaerquellen der Flughafen Muenchen GmbH.
-**Noch kein implementierter oder kalibrierter Muenchen-Simulator.**
-Der laufende Flughafen-Demonstrator und FlexLab wurden nicht veraendert.
+**Ein synthetischer Muenchen-Referenzpilot ist implementiert, nicht kalibriert.**
+Ergaenzender Arbeitsbereich: `?workspace=munich`. Bestehende Flughafenfaelle und
+FlexLab bleiben erhalten. Ablauf und Modellvertrag: [MUNICH_PILOT.md](MUNICH_PILOT.md).
 
 Maschinenlesbarer Faktenkatalog: [munich_public_facts_v1.json](../data/references/munich_public_facts_v1.json).
 Er ist bewusst kein Model-Pack. Fehlende Eingaben stehen auf `null`.
@@ -77,21 +78,21 @@ Motoren **im Jahr 2022**. Nicht ungeprueft als aktuelle verfuegbare Leistung nut
 - Keine PV-Ertragsreihe, Batteriegroesse, reale Trafo-Kapazitaet oder empirische
   Flughafenverspaetung aus unpassenden Jahres-/Bestandswerten erfunden.
 
-## Vorgeschlagener erster Bauumfang, noch zur Freigabe
+## Implementierter erster Bauumfang
 
 **MUC Referenzpilot: P43/P44 und Busdepot mit vereinfachter Campus-Strombilanz.**
 Bestehende Flughafenfaelle und FlexLab bleiben voll erhalten.
 
 Die Bausteine sind Netz, BHKW, PV, ein optionaler hypothetischer Speicher und
 zwei getrennte Ladebereiche. Reale Bestandszahlen werden belegt; Lastprofile,
-Anschlussgrenzen und Einsatzplaene sind bis zum Datenpilot sichtbare Annahmen.
+Anschlussgrenzen und Ladefristen sind bis zum Datenpilot sichtbare Annahmen.
 Die Verbindung der Bereiche ist ein schematisches Modell, kein realer Netzplan.
 Keine festen Defaultwerte fuer unbelegte elektrische Grenzen in diesem Dossier.
 
 Erster Vergleich: ungesteuertes Laden gegen eine transparente Prioritaetsregel,
-bei identischen synthetischen Sessions, Missionen, Wetterprofilen und Stoerungen.
+bei identischen synthetischen Sessions, Tagesprofilen und festen Kapazitaetsgrenzen.
 Ergebnisse: Leistungs-/Energiebilanz, Netzspitze, PV-Nutzung, Speicherzustand und
-erfuellte Lade-/Einsatztermine. Keine behauptete Gesamtflughafen-OTP oder reale
+erfuellte Ladefristen (keine reale Busmission-Simulation). Keine Gesamtflughafen-OTP oder reale
 CO2-/Kosteneinsparung. Falls beide Regeln gleich gut sind, wird das gezeigt.
 
 Nicht Teil dieses ersten Umfangs: reales Netzlayout, Kurzschluss/Schutztechnik,

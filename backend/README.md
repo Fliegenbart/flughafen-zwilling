@@ -2,7 +2,15 @@
 
 Airport ist der primaere Arbeitsbereich. Die separate FlexLab-Auswertung bleibt
 unter `/api/v1/lab` erhalten; bestehende Airport-Endpunkte bleiben kompatibel.
-Beide werden lokal, ohne abgenommene reale Anlagenansteuerung betrieben.
+Alle Arbeitsbereiche werden lokal ohne reale Anlagenansteuerung betrieben.
+
+Muenchen-Pilot: `munich/` enthaelt begrenzte Annahmen, deterministischen
+24-Stunden-Simulator, Vergleichs-API und Energieberichte. Neue additive
+Domaene `airport_energy_v1`, Energie-KPIs im bestehenden Run-Pfad. Zwei SIL-Runs
+ueber denselben Worker; eingefrorene Eingaben und Recovery bleiben erhalten.
+HIL/Adapter und Turnaround-Playbook sind hier gesperrt. Quellen-Dossier aus
+`data/references` (Docker: `/opt/airport-references`); keine privaten FMG-Daten.
+Vertrag/Grenzen: `../docs/MUNICH_PILOT.md`.
 
 ## Start und Tests
 

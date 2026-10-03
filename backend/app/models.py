@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from .munich.models import ChargingEvidence, EnergyKpiSummary
+
 
 class RunState(str, Enum):
     queued = "queued"
@@ -59,7 +61,7 @@ class ExpectedAssertion(BaseModel):
 class ScenarioDefinition(BaseModel):
     id: str = Field(min_length=3)
     version: str = Field(min_length=1)
-    domain: Literal["airport_turnaround_v1", "ems_legacy_v1"] = "airport_turnaround_v1"
+    domain: Literal["airport_turnaround_v1", "ems_legacy_v1", "airport_energy_v1"] = "airport_turnaround_v1"
     description: str = ""
     duration_ms: int = Field(default=60_000, gt=0)
     tick_ms: int = Field(default=40, gt=0)
@@ -287,8 +289,11 @@ class RunSummary(BaseModel):
     final_soc_pct: float
     io_latency_p99_ms: float
     telemetry_hash: str
-    domain: Literal["airport_turnaround_v1", "ems_legacy_v1"] = "airport_turnaround_v1"
+    domain: Literal["airport_turnaround_v1", "ems_legacy_v1", "airport_energy_v1"] = "airport_turnaround_v1"
     airport_kpis: AirportKpiSummary | None = None
+    energy_kpis: EnergyKpiSummary | None = None
+    energy_sessions: list[ChargingEvidence] = Field(default_factory=list)
+    energy_world_hash: str = ""
     tick_target_ms: int = 0
     tick_drift_avg_ms: float = 0.0
     tick_drift_max_ms: float = 0.0
