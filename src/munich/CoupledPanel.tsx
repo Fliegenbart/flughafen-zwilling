@@ -12,7 +12,8 @@ import type {
 } from "./coupledTypes";
 import { buildCoupledHtml, coupledPair, FLEET_LABELS, modelTime } from "./coupledReport";
 import CoupledControls from "./CoupledControls";
-import { ResultCard, Delta, CoupledChart } from "./CoupledViews";
+import { Delta, CoupledChart } from "./CoupledViews";
+import CoupledCompare from "./CoupledCompare";
 import { StudioHeader, StudioWorkflowNav } from "../ui/StudioHeader";
 import "./CoupledPanel.css";
 
@@ -427,7 +428,7 @@ export default function CoupledPanel({
               <p className="muc-ok">
                 {reportsHashed
                   ? "Eingaben, Telemetrie, Datenartefakte und JSON/PDF: aktuelle SHA256-Prüfung konsistent."
-                  : "Ältere Runs: Datenartefakte gehasht, PDF/Report-Dateien ohne ursprüngliche SHA256."}{" "}
+                  : "Ältere Runs: Datenartefakte gehasht."}{" "}
                 KPIs, Modellkriterien und Execution-Metadaten stimmen mit dem gespeicherten Bericht
                 überein. Kein externer Echtheitsnachweis.
               </p>
@@ -439,19 +440,12 @@ export default function CoupledPanel({
                 · {number(pair[0].summary!.coupled_kpis.model_horizon_hours, 1)} Modellstunden
                 inklusive Vor-/Nachlauf. Aktuelle Formularänderungen ändern diese Nachweise nicht.
               </p>
-              <div className="coupled-results">
-                {pair.map((r) => (
-                  <ResultCard key={r.status.run_id} record={r} />
-                ))}
-              </div>
+              <CoupledCompare
+                baseline={pair[0]}
+                priority={pair[1]}
+                reportsHashed={reportsHashed}
+              />
               <div className="coupled-deltas">
-                <Delta
-                  label="Aufgabenbereitschaft"
-                  base={pair[0].summary!.coupled_kpis.departure_readiness_pct}
-                  value={pair[1].summary!.coupled_kpis.departure_readiness_pct}
-                  unit="pp"
-                  higherBetter
-                />
                 <Delta
                   label="Energie-Warteminuten"
                   base={pair[0].summary!.coupled_kpis.energy_wait_total_min}

@@ -22,6 +22,7 @@ export function ResultCard({ record }: { record: CoupledRecord }) {
       className={`muc-result ${policy === "mission_priority" ? "muc-result--priority" : ""}`}
     >
       <header>
+        {policy === "uncontrolled" && <span className="muc-small">Baseline /</span>}
         <h3>{POLICY_LABELS[policy]}</h3>
         <span className="muc-tag">SIL abgeschlossen</span>
       </header>
@@ -36,52 +37,55 @@ export function ResultCard({ record }: { record: CoupledRecord }) {
           rechtzeitig
         </span>
       </div>
-      <dl className="muc-result__metrics">
-        <div>
-          <dt>Rechtzeitige Aufgaben</dt>
-          <dd>
-            {k.missions_on_time} / {k.mission_count}
-          </dd>
-        </div>
-        <div>
-          <dt>Nicht erledigt</dt>
-          <dd>{k.missions_uncompleted}</dd>
-        </div>
-        <div>
-          <dt>Energie-Warteminuten je Auftrag, summiert</dt>
-          <dd>{number(k.energy_wait_total_min)}</dd>
-        </div>
-        <div>
-          <dt>Fahrzeug-Warteminuten je Auftrag, summiert</dt>
-          <dd>{number(k.resource_wait_total_min)}</dd>
-        </div>
-        <div>
-          <dt>Parkhaus-Ladefristen</dt>
-          <dd>
-            {e.parking_ready_count} / {e.parking_session_count}
-          </dd>
-        </div>
-        <div>
-          <dt>Parkhausenergie fehlt</dt>
-          <dd>{number(e.charging_unmet_kwh, 1)} kWh</dd>
-        </div>
-        <div>
-          <dt>Netzspitze</dt>
-          <dd>{number(e.grid_peak_kw)} kW</dd>
-        </div>
-        <div>
-          <dt>Fahrzeugverbrauch / Trafoverluste</dt>
-          <dd>
-            {number(k.fleet_consumed_kwh, 1)} / {number(k.transformer_loss_kwh, 1)} kWh
-          </dd>
-        </div>
-        <div>
-          <dt>Grundlast unversorgt / BHKW nicht absetzbar</dt>
-          <dd>
-            {number(e.background_unserved_kwh, 1)} / {number(e.chp_unabsorbed_kwh, 1)} kWh
-          </dd>
-        </div>
-      </dl>
+      <details>
+        <summary>Weitere Modellwerte</summary>
+        <dl className="muc-result__metrics">
+          <div>
+            <dt>Rechtzeitige Aufgaben</dt>
+            <dd>
+              {k.missions_on_time} / {k.mission_count}
+            </dd>
+          </div>
+          <div>
+            <dt>Nicht erledigt</dt>
+            <dd>{k.missions_uncompleted}</dd>
+          </div>
+          <div>
+            <dt>Energie-Warteminuten je Auftrag, summiert</dt>
+            <dd>{number(k.energy_wait_total_min)}</dd>
+          </div>
+          <div>
+            <dt>Fahrzeug-Warteminuten je Auftrag, summiert</dt>
+            <dd>{number(k.resource_wait_total_min)}</dd>
+          </div>
+          <div>
+            <dt>Parkhaus-Ladefristen</dt>
+            <dd>
+              {e.parking_ready_count} / {e.parking_session_count}
+            </dd>
+          </div>
+          <div>
+            <dt>Parkhausenergie fehlt</dt>
+            <dd>{number(e.charging_unmet_kwh, 1)} kWh</dd>
+          </div>
+          <div>
+            <dt>Netzspitze</dt>
+            <dd>{number(e.grid_peak_kw)} kW</dd>
+          </div>
+          <div>
+            <dt>Fahrzeugverbrauch / Trafoverluste</dt>
+            <dd>
+              {number(k.fleet_consumed_kwh, 1)} / {number(k.transformer_loss_kwh, 1)} kWh
+            </dd>
+          </div>
+          <div>
+            <dt>Grundlast unversorgt / BHKW nicht absetzbar</dt>
+            <dd>
+              {number(e.background_unserved_kwh, 1)} / {number(e.chp_unabsorbed_kwh, 1)} kWh
+            </dd>
+          </div>
+        </dl>
+      </details>
       <p className={record.status.pass_fail ? "muc-ok" : "muc-warn"}>
         Modellkriterien {record.status.pass_fail ? "erfüllt" : "nicht erfüllt"}; kein empirischer
         oder elektrischer Sicherheitsnachweis.

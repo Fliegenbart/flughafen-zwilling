@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import CoupledCompare from "./CoupledCompare";
 import CoupledPanel from "./CoupledPanel";
 import { plan } from "./__fixtures__/flightplan";
 import { buildCoupledHtml, coupledPair, modelTime } from "./coupledReport";
@@ -178,6 +179,26 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
     cleanup();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
+  });
+
+  it("shows dynamic denominators, null deltas and honest missing hash counts", () => {
+    const same = structuredClone(records);
+    same[1]!.summary!.coupled_kpis = { ...same[0]!.summary!.coupled_kpis };
+    render(<CoupledCompare baseline={same[0]!} priority={same[1]!} reportsHashed={false} />);
+    expect(screen.getByText(/Kein modellierter Vorteil/)).toBeVisible();
+    expect(screen.getByRole("table", { name: "Prüfnachweise" })).toBeVisible();
+    expect(screen.getAllByText(/0 \/ 1 modellierte Abflugseinträge rechtzeitig/)).toHaveLength(2);
+    expect(screen.getByText(/ohne ursprüngliche SHA256/)).toBeVisible();
+    expect(screen.queryByText("7 Dateien")).toBeNull();
+  });
+
+  it("does not replace absent readiness with a fabricated zero", () => {
+    const missing = structuredClone(records);
+    missing[0]!.summary!.coupled_kpis.departure_readiness_pct = null;
+    missing[1]!.summary!.coupled_kpis.departure_readiness_pct = null;
+    render(<CoupledCompare baseline={missing[0]!} priority={missing[1]!} reportsHashed />);
+    expect(screen.getAllByText("n/a").length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText(/Kein modellierter Vorteil/)).toBeNull();
   });
 
   it("requires an explicit plan and never starts a run on load", async () => {
