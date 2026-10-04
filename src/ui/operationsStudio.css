@@ -75,9 +75,15 @@ body:has([data-studio]) { margin: 0; }
 .studio-workflow a span { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #63758e; border-radius: 50%; font-weight: 400; }
 .studio-workflow a[aria-current="step"] { color: #2255ee; }
 .studio-workflow a[aria-current="step"] span { background: #2255ee; color: #fff; border-color: #2255ee; }
+[data-studio] .muc-app .studio-workflow a { color: #52657b; position: relative; }
+[data-studio] .muc-app .studio-workflow a[aria-current="step"] { color: #2255ee; }
+[data-studio] .muc-app .studio-workflow a:not(:last-child) { flex: 1 1 0; min-width: 0; }
+[data-studio] .muc-app .studio-workflow a span { flex: 0 0 36px; }
+[data-studio] .muc-app .studio-workflow a:not(:last-child)::after { content: ""; flex: 1 1 auto; min-width: 12px; height: 1px; margin-left: auto; background: #c8d2df; }
 @media (max-width: 767px) {
   .studio-page-header { grid-template-columns: 1fr; gap: 16px; }
   .studio-context { display: grid; gap: 12px; padding: 12px; }
   .studio-workflow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .studio-workflow a { font-size: 12px; gap: 8px; }
+  [data-studio] .muc-app .studio-workflow a:not(:last-child)::after { display: none; }
 }
