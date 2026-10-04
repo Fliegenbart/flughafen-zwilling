@@ -41,6 +41,8 @@ beforeEach(() => {
         return new Response(JSON.stringify(init?.method === "POST" ? project : [project]));
       if (path.endsWith("/imports"))
         return new Response(JSON.stringify(init?.method === "POST" ? imported : []));
+      if (path.endsWith("/tolerances"))
+        return new Response(init?.method === "PUT" ? JSON.stringify({ locked: true }) : "null");
       if (path.endsWith("/assessments"))
         return new Response(JSON.stringify(init?.method === "POST" ? assessment : []));
       return new Response("{}", { status: 404 });

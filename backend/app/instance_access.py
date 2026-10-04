@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import binascii
 import hashlib
@@ -24,6 +25,21 @@ _USERNAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$")
 _ROLES = {"viewer", "operator"}
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 _NO_STORE = {"Cache-Control": "no-store"}
+# Fehlversuchs-Grenzen. Zaehler liegen im Prozessspeicher und gelten nur mit
+# genau einem uvicorn-Worker (--workers 1), siehe docs/PILOT_OPERATIONS.md.
+_WINDOW_SECONDS = 300
+_IP_LIMIT = 20
+_USER_FREE_ATTEMPTS = 5
+_USER_BASE_LOCK = 15
+_USER_MAX_LOCK = 300
+_GLOBAL_THROTTLE_FROM = 100
+_GLOBAL_MAX_DELAY = 2.0
+
+
+def _backoff_seconds(failures: int) -> int:
+    """Sperrdauer nach dem n-ten Fehlversuch je IP+Nutzer (n >= 5)."""
+    steps = max(0, failures - _USER_FREE_ATTEMPTS)
+    return min(_USER_MAX_LOCK, _USER_BASE_LOCK * (2**min(steps, 10)))
 _OPEN_PATHS = {
     "/api/v1/health",
     "/api/v1/status",
@@ -203,6 +219,16 @@ class AccessStore:
             buckets[key] = deque()
         return buckets[key]
 
+    def global_delay(self) -> float:
+        """Verzoegerung (Sekunden) bei vielen Fehlversuchen insgesamt; nie eine Sperre."""
+        now = time.time()
+        while self._global_attempts and self._global_attempts[0] <= now - _WINDOW_SECONDS:
+            self._global_attempts.popleft()
+        excess = len(self._global_attempts) - _GLOBAL_THROTTLE_FROM
+        if excess < 0:
+            return 0.0
+        return min(_GLOBAL_MAX_DELAY, 0.25 * (1 + excess // 20))
+
     def login(
         self,
         username: str,
@@ -211,23 +237,25 @@ class AccessStore:
         ip_key: str,
     ) -> tuple[str | None, Principal | None, int]:
         now = time.time()
-        while self._global_attempts and self._global_attempts[0] <= now - 300:
+        # Global gibt es keine harte Sperre mehr: ein Angreifer koennte sonst alle
+        # berechtigten Nutzer aussperren. Die Route drosselt nur (global_delay).
+        while self._global_attempts and self._global_attempts[0] <= now - _WINDOW_SECONDS:
             self._global_attempts.popleft()
         ip_attempts = self._attempt_bucket(self._ip_attempts, ip_key)
-        while ip_attempts and ip_attempts[0] <= now - 300:
+        while ip_attempts and ip_attempts[0] <= now - _WINDOW_SECONDS:
             ip_attempts.popleft()
-        if len(ip_attempts) >= 20:
-            retry_after = max(1, int(300 - (now - ip_attempts[0])))
+        if len(ip_attempts) >= _IP_LIMIT:
+            retry_after = max(1, int(_WINDOW_SECONDS - (now - ip_attempts[0])))
             return None, None, retry_after
-        if len(self._global_attempts) >= 100:
-            retry_after = max(1, int(300 - (now - self._global_attempts[0])))
-            return None, None, retry_after
+        # Sperre nur je IP+Nutzer, mit kurzem exponentiellem Backoff (15 s .. 5 min).
         attempts = self._attempt_bucket(self._attempts, rate_key)
-        while attempts and attempts[0] <= now - 300:
+        while attempts and attempts[0] <= now - _WINDOW_SECONDS:
             attempts.popleft()
-        if len(attempts) >= 5:
-            retry_after = max(1, int(300 - (now - attempts[0])))
-            return None, None, retry_after
+        if len(attempts) >= _USER_FREE_ATTEMPTS:
+            lock = _backoff_seconds(len(attempts))
+            remaining = lock - (now - attempts[-1])
+            if remaining > 0:
+                return None, None, max(1, int(remaining + 0.999))
 
         with self._connect() as connection:
             row = connection.execute(
@@ -317,6 +345,8 @@ def _client_key(request: Request, username: str) -> str:
 
 
 def _client_ip(request: Request) -> str:
+    # Hinter dem Proxy setzt uvicorn (--proxy-headers --forwarded-allow-ips=<Proxy-Netz>)
+    # request.client auf die echte Client-IP; sonst waere es die Proxy-Adresse.
     return request.client.host if request.client else "unknown"
 
 
@@ -382,6 +412,9 @@ def install_instance_access(app: FastAPI, base_dir: Path) -> None:
         password = payload.get("password") if isinstance(payload, dict) else None
         if not isinstance(username, str) or not isinstance(password, str):
             return _response(400, "invalid_login_payload")
+        delay = store.global_delay()
+        if delay:
+            await asyncio.sleep(delay)
         token, principal, retry_after = store.login(
             username,
             password,

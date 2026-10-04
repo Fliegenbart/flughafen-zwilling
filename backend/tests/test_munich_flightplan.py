@@ -63,7 +63,7 @@ def test_conflicting_rows_and_partial_or_unknown_layout_do_not_succeed():
               "L XY 103 BROKEN 10:15 1234567 AAA 03.10.26 24.10.26 1 Test Air")
     with pytest.raises(FlightPlanError, match="widerspruech"):
         parse("S XY 102 09:00 10:00 1234567 AAA 03.10.26 24.10.26 1 Test Air",
-              "S XY 102 09:05 10:05 1234567 AAA 03.10.26 24.10.26 1 Test Air")
+              "S XY 102 09:00 10:05 1234567 AAA 03.10.26 24.10.26 2 Test Air")
     with pytest.raises(FlightPlanError, match="Format"):
         parse_pages(["Other Airport Schedules"], date(2026, 10, 3), "b" * 64)
     with pytest.raises(FlightPlanError, match="Verkehrstag"):
@@ -108,3 +108,37 @@ def test_a_wrapped_direction_marker_does_not_silently_drop_a_flight():
     with pytest.raises(FlightPlanError, match="Zeile"):
         parse("S XY 102 09:00 10:00 1234567 AAA 03.10.26 24.10.26 1 Test Air",
               "L\nXY 101 08:00 10:00 1234567 AAA 03.10.26 24.10.26 1 Test Air")
+
+
+def test_same_flight_number_twice_a_day_at_different_times_is_two_entries():
+    result = parse(
+        "S XY 500 07:00 08:00 1234567 AAA 03.10.26 24.10.26 1 Test Air",
+        "S XY 500 18:30 19:30 1234567 AAA 03.10.26 24.10.26 1 Test Air",
+        "S XY 500 18:30 19:30 1234567 AAA 03.10.26 24.10.26 1 Test Air",
+    )
+    assert [row.scheduled_local[11:16] for row in result.rows] == ["07:00", "18:30"]
+    assert len({row.entry_id for row in result.rows}) == 2
+    assert result.duplicate_rows_removed == 1
+    verify_snapshot(result)
+
+
+def test_same_flight_same_time_with_different_data_is_still_rejected():
+    with pytest.raises(FlightPlanError, match="widerspruechliche"):
+        parse(
+            "S XY 500 07:00 08:00 1234567 AAA 03.10.26 24.10.26 1 Test Air",
+            "S XY 500 07:00 08:00 1234567 AAA 03.10.26 24.10.26 2 Test Air",
+        )
+
+
+def test_shared_groups_use_the_utc_instant_and_keep_the_group_id_format():
+    import hashlib
+    import json
+    result = parse(
+        "S XY 1 09:00 10:00 1234567 AAA 03.10.26 24.10.26 1 Test Air",
+        "S ZZ 2 09:00 10:00 1234567 AAA 03.10.26 24.10.26 1 Other Air",
+    )
+    first = result.rows[0]
+    label = [first.direction, first.counterpart_iata, first.scheduled_local]
+    expected = hashlib.sha256(json.dumps({"group": label}, sort_keys=True,
+                                         separators=(",", ":")).encode()).hexdigest()[:16]
+    assert {row.possible_shared_group for row in result.rows} == {expected}

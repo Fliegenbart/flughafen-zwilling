@@ -139,7 +139,9 @@ def parse_pages(pages: list[str], service_date: date, pdf_sha256: str) -> Flight
     if len(data_dates) != 1:
         raise FlightPlanError("Einheitlicher Datenstand fehlt im Flugplan")
     source_data_date = next(iter(data_dates))
-    entries: dict[tuple[str, str, str], FlightEntry] = {}
+    # Schluessel inkl. planmaessiger Ortszeit: dieselbe Flugnummer darf am Tag mehrfach
+    # (zu verschiedenen Zeiten) verkehren. Gleiche Zeit mit anderen Daten bleibt Widerspruch.
+    entries: dict[tuple[str, str, str, str], FlightEntry] = {}
     parsed_count = duplicate_count = 0
     for page_number, page in enumerate(pages, 1):
         for raw in page.splitlines():
@@ -174,18 +176,18 @@ def parse_pages(pages: list[str], service_date: date, pdf_sha256: str) -> Flight
             clock = parts["second"] if direction == "arrival" else parts["first"]
             local = _local_time(service_date, clock)
             number = parts["carrier"] + parts["number"]
-            key = (direction, number, parts["airport"])
+            key = (direction, number, parts["airport"], local.isoformat())
             if key in entries:
                 old = entries[key]
-                if (old.scheduled_local, old.terminal, old.airline) != (
-                    local.isoformat(), parts["terminal"], parts["airline"],
-                ):
+                if (old.terminal, old.airline) != (parts["terminal"], parts["airline"]):
                     raise FlightPlanError("Flugplan enthaelt widerspruechliche Eintraege")
                 old.source_pages = sorted(set([*old.source_pages, page_number]))
                 duplicate_count += 1
                 continue
             entries[key] = FlightEntry(
-                entry_id=_hash({"key": key, "time": local.isoformat()})[:16],
+                # ID-Format unveraendert (3er-Schluessel + Zeit): bestehende Snapshots bleiben
+                # reproduzierbar, Mehrfachverkehr bekommt ueber die Zeit eigene IDs.
+                entry_id=_hash({"key": key[:3], "time": local.isoformat()})[:16],
                 direction=direction, flight_number=number, airline=parts["airline"],
                 counterpart_iata=parts["airport"], terminal=parts["terminal"],
                 scheduled_local=local.isoformat(),
@@ -194,22 +196,27 @@ def parse_pages(pages: list[str], service_date: date, pdf_sha256: str) -> Flight
             )
     if not entries:
         raise FlightPlanError("Keine Flugplaneintraege fuer diesen Verkehrstag; Geltung pruefen")
+    # Mehrfachgruppen nach UTC-Zeitpunkt (eindeutig, auch an Umstellungstagen).
     groups: dict[tuple[str, str, str], list[FlightEntry]] = defaultdict(list)
     rows = sorted(entries.values(), key=lambda r: (r.scheduled_utc, r.direction, r.flight_number))
     hourly = [HourlyFlights(hour=hour, arrivals=0, departures=0) for hour in range(24)]
     for entry in rows:
-        groups[(entry.direction, entry.counterpart_iata, entry.scheduled_local)].append(entry)
+        groups[(entry.direction, entry.counterpart_iata, entry.scheduled_utc)].append(entry)
         hour = datetime.fromisoformat(entry.scheduled_local).hour
         if entry.direction == "arrival":
             hourly[hour].arrivals += 1
         else:
             hourly[hour].departures += 1
     shared_groups = 0
-    for key, group in groups.items():
+    for group in groups.values():
         if len(group) > 1:
             shared_groups += 1
+            # Gruppen-ID weiter aus dem Ortszeit-Schluessel (bijektiv zur UTC-Zeit, da
+            # mehrdeutige Ortszeiten abgelehnt werden): alte Snapshot-Hashes bleiben gleich.
+            first = group[0]
+            label = (first.direction, first.counterpart_iata, first.scheduled_local)
             for entry in group:
-                entry.possible_shared_group = _hash({"group": key})[:16]
+                entry.possible_shared_group = _hash({"group": label})[:16]
     warnings = [
         "Geplanter Saisonflugplan, keine beobachteten Starts/Landungen oder Live-Statusdaten.",
         "Manueller Upload: Quellenangabe und PDF-Hash sind kein Echtheitsnachweis.",

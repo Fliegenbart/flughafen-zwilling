@@ -65,12 +65,12 @@ def _allocate(
     # Baseline requests charge immediately. Both policies enforce the same physical limits.
     scaled = dict(requests)
     for sector, limit in limits.items():
-        total = sum(v for i, v in requests.items() if sessions[i].sector == sector)
+        total = math.fsum(v for i, v in requests.items() if sessions[i].sector == sector)
         scale = min(1, limit / total) if total else 1
         for i in scaled:
             if sessions[i].sector == sector:
                 scaled[i] *= scale
-    total = sum(scaled.values())
+    total = math.fsum(scaled.values())
     scale = min(1, available_kw / total) if total else 1
     return {i: value * scale for i, value in scaled.items()}
 
@@ -117,8 +117,10 @@ def simulate(
         background_served = min(background, supply_limit)
         allocation = _allocate(requests, sessions, config,
                                max(0, supply_limit - background_served), policy)
-        parking = sum(v for i, v in allocation.items() if sessions[i].sector == "parking")
-        buses = sum(v for i, v in allocation.items() if sessions[i].sector == "bus")
+        # fsum ist exakt gerundet und damit unabhaengig von der Reihenfolge der Zuteilung:
+        # gleiche Leistungen ergeben unabhaengig von der Regel bitgleiche KPIs.
+        parking = math.fsum(v for i, v in allocation.items() if sessions[i].sector == "parking")
+        buses = math.fsum(v for i, v in allocation.items() if sessions[i].sector == "bus")
         demand = background_served + parking + buses
         deficit = max(0, demand - pv - chp)
         grid_import = min(config.grid_import_limit_kw, deficit)

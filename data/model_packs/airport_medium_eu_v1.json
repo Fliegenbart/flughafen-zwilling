@@ -41,6 +41,20 @@
   "calibration_meta": {
     "source": "airport-seed",
     "site_class": "medium_eu",
-    "revision": "r1"
+    "revision": "r1",
+    "calibrated": false,
+    "data_status": "synthetic_illustrative",
+    "provenance_note": "Keine Quellen, Annahmewerte: synthetisch-illustrative Seed-Daten, nicht kalibriert, keine empirische Validierung.",
+    "parameter_units": {
+      "gates_total": "count",
+      "gates_open_pct": "percent",
+      "arrivals_per_hour": "flights/h",
+      "departures_per_hour": "flights/h",
+      "base_turnaround_min": "min",
+      "ground_crew_teams": "count",
+      "crew_capacity_flights_per_hour": "flights/h per crew team",
+      "baggage_capacity_flights_per_hour": "flights/h",
+      "runway_slots_per_hour": "slots/h"
+    }
   }
 }

@@ -27,7 +27,10 @@ Grafana wird hier nicht angeboten. Kurven und Exporte liegen in der Anwendung.
 
 `docker-compose.hetzner.yml`: eigener Compose-Projektname `airport-twin-pilot`,
 eigenes Volume `airport-twin-pilot_pilot-data`, genau ein Backend-Prozess. Backend
-hat keine veroeffentlichten Ports und nur ein internes Simulationsnetz. Frontend
+hat keine veroeffentlichten Ports und nur ein internes Simulationsnetz
+(fest `172.31.250.0/24`; uvicorn vertraut per `--proxy-headers
+--forwarded-allow-ips` nur diesem Netz, der Frontend-nginx reicht `X-Real-IP`
+des Host-Proxys durch, damit die Login-Drosselung je echter Client-IP greift). Frontend
 ist nur am Host-Docker-Bridge-Interface auf Port 18576 gebunden, nicht am
 oeffentlichen Interface. Keine HIL-Zusatzabhaengigkeiten, Hardware-/GPU-Mounts
 oder Influx-Tokens. CPU/RAM/PID-Grenzen begrenzen den kleinen Demo-Stack.

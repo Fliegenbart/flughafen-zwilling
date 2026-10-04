@@ -46,7 +46,7 @@ bleibt die bekannte Warnung zur nicht-modularen `runtime-config.js` erhalten.
   Modellkriterien werden getrennt angezeigt. Keine Mess-/Betriebsvalidierung
   daraus abgeleitet. Vor dem ersten Ergebnis zeigen KPI-Karten `n/a`, nicht 0.
 - Planner: Capability-Gate, Start, Polling und terminaler Vergleich geprueft.
-  Baseline, Empfehlung und vier validierte Pareto-Alternativen mit vollstaendigen
+  Baseline, Empfehlung und vier modellintern gegengeprüfte Pareto-Alternativen mit vollstaendigen
   Validation-Run-Links und Artefaktlinks sichtbar. Gleiche Werte erzeugen
   neutrale Null-Deltas, keine erfundene Optimierungswirkung.
 - Nach Wechsel auf Schwarzstart bleibt der vorherige Guillotine-Playbook-Vergleich

@@ -68,6 +68,8 @@ interface PlaybookOptionClient {
   violation_penalty: number;
   intervention_cost: number;
   estimated_airport_kpis: AirportKpiSummaryClient;
+  // Backend-Feldname bleibt (Rueckwaertskompatibilitaet); Inhalt = KPIs des
+  // modellinternen Gegenpruef-Laufs, keine empirisch validierten Werte.
   validated_airport_kpis?: AirportKpiSummaryClient | null;
   delta_to_baseline?: PlaybookDeltaClient | null;
   actions: PlaybookActionClient[];
@@ -663,6 +665,20 @@ export function buildPlaybookJobPayload(args: {
   };
 }
 
+// Drei Zustaende der modellinternen Gegenpruefung (Audit-Run im selben Modell).
+// Das ist keine empirische Validierung gegen Messdaten.
+const MODEL_CHECK_NOTE = "modellintern, keine empirische Validierung";
+
+function modelCheckLabel(passFail: boolean | null | undefined): string {
+  if (passFail === true) return "Modell-Gegenprüfung bestanden";
+  if (passFail === false) return "Modell-Gegenprüfung nicht bestanden";
+  return "Modell-Gegenprüfung nicht geprüft";
+}
+
+function modelCheckText(passFail: boolean | null | undefined): string {
+  return `${modelCheckLabel(passFail)} (${MODEL_CHECK_NOTE})`;
+}
+
 function pickOptionKpis(option: PlaybookOptionClient | null | undefined): AirportKpiSummaryClient | null {
   if (!option) return null;
   return option.validated_airport_kpis || option.estimated_airport_kpis || null;
@@ -912,9 +928,9 @@ export function generateTestReport(
   <div class="compare">
     <h2>Baseline vs. Empfehlung</h2>
     <table>
-      <tr><th>Option</th><th>OTP</th><th>Turnaround</th><th>Gate Util</th><th>Delay</th><th>Kosten</th><th>Validierung</th></tr>
-      <tr><td>Baseline</td><td>${baselineKpis.otp_rate_pct.toFixed(2)}%</td><td>${baselineKpis.avg_turnaround_min.toFixed(2)} min</td><td>${baselineKpis.gate_utilization_avg_pct.toFixed(2)}%</td><td>${baselineKpis.delay_avg_min.toFixed(2)} min</td><td>${baseline.intervention_cost.toFixed(2)}</td><td>${baseline.validation_pass_fail === false ? "nicht validiert" : "validiert"}</td></tr>
-      <tr><td>Empfehlung</td><td>${recommendedKpis.otp_rate_pct.toFixed(2)}%</td><td>${recommendedKpis.avg_turnaround_min.toFixed(2)} min</td><td>${recommendedKpis.gate_utilization_avg_pct.toFixed(2)}%</td><td>${recommendedKpis.delay_avg_min.toFixed(2)} min</td><td>${recommended.intervention_cost.toFixed(2)}</td><td>${recommended.validation_pass_fail === false ? "nicht validiert" : "validiert"}</td></tr>
+      <tr><th>Option</th><th>OTP</th><th>Turnaround</th><th>Gate Util</th><th>Delay</th><th>Kosten</th><th>Modell-Gegenprüfung (modellintern)</th></tr>
+      <tr><td>Baseline</td><td>${baselineKpis.otp_rate_pct.toFixed(2)}%</td><td>${baselineKpis.avg_turnaround_min.toFixed(2)} min</td><td>${baselineKpis.gate_utilization_avg_pct.toFixed(2)}%</td><td>${baselineKpis.delay_avg_min.toFixed(2)} min</td><td>${baseline.intervention_cost.toFixed(2)}</td><td>${modelCheckText(baseline.validation_pass_fail)}</td></tr>
+      <tr><td>Empfehlung</td><td>${recommendedKpis.otp_rate_pct.toFixed(2)}%</td><td>${recommendedKpis.avg_turnaround_min.toFixed(2)} min</td><td>${recommendedKpis.gate_utilization_avg_pct.toFixed(2)}%</td><td>${recommendedKpis.delay_avg_min.toFixed(2)} min</td><td>${recommended.intervention_cost.toFixed(2)}</td><td>${modelCheckText(recommended.validation_pass_fail)}</td></tr>
     </table>
     <div class="config">
       <b>Wichtigste Deltas</b><br />
@@ -1631,7 +1647,7 @@ export default function App() {
                     <span className={`status-chip ${plannerTone}`}>Job {(playbookJobState || "idle").toUpperCase()}</span>
                   </div>
                   <p className="section-subtitle">
-                    Recommendation-only Optimierung fuer Turnaround-Levers mit Audit-Run-Validierung
+                    Suche über Stellhebel im Modell (nur Empfehlung, modellinterne Gegenprüfung)
                   </p>
                   <div className="planner-controls">
                     <label className="control-field">
@@ -1815,11 +1831,11 @@ export default function App() {
                               <div>Delay: {pickOptionKpis(playbookRecord.baseline_option)?.delay_avg_min?.toFixed(2)} min</div>
                               <div>Kosten: {playbookRecord.baseline_option.intervention_cost.toFixed(2)}</div>
                               <div>
-                                Status: {playbookRecord.baseline_option.validation_pass_fail === false ? "nicht validiert" : "validiert"}
+                                Status: {modelCheckText(playbookRecord.baseline_option.validation_pass_fail)}
                               </div>
                             </div>
                             <div className="planner-links">
-                              <span>Validation Run:</span>
+                              <span>Gegenprüf-Lauf (modellintern):</span>
                               {playbookRecord.baseline_option.validation_run_id ? (
                                 <a
                                   href={`${apiBase}/api/v1/runs/${playbookRecord.baseline_option.validation_run_id}/record`}
@@ -1850,11 +1866,11 @@ export default function App() {
                             <div>Delay: {pickOptionKpis(playbookRecord.best_option)?.delay_avg_min?.toFixed(2)} min</div>
                             <div>Kosten: {playbookRecord.best_option.intervention_cost.toFixed(2)}</div>
                             <div>
-                              Status: {playbookRecord.best_option.validation_pass_fail === false ? "nicht validiert" : "validiert"}
+                              Status: {modelCheckText(playbookRecord.best_option.validation_pass_fail)}
                             </div>
                           </div>
                           <div className="planner-links">
-                            <span>Validation Run:</span>
+                            <span>Gegenprüf-Lauf (modellintern):</span>
                             {playbookRecord.best_option.validation_run_id ? (
                               <a
                                 href={`${apiBase}/api/v1/runs/${playbookRecord.best_option.validation_run_id}/record`}
@@ -1944,7 +1960,7 @@ export default function App() {
                                         "-"
                                       )}
                                     </td>
-                                    <td>{option.validation_pass_fail === false ? "nicht validiert" : "validiert"}</td>
+                                    <td>{modelCheckText(option.validation_pass_fail)}</td>
                                   </tr>
                                 ))}
                               </tbody>

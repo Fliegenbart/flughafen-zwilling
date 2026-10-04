@@ -13,7 +13,7 @@ from ..models import (
     TelemetrySample,
 )
 from .coupled_evidence import build_artifacts
-from .coupled_models import ENGINE_VERSION, CoupledWorld
+from .coupled_models import COUPLED_DOMAIN, ENGINE_VERSION, LEGACY_ENGINE_VERSIONS, CoupledWorld
 from .coupled_simulator import simulate_coupled
 from .coupled_world import verify_world
 from .flightplan import FlightPlanSnapshot
@@ -27,6 +27,11 @@ def validate_coupled_inputs(
     if request.realtime_mode != "sil" or request.adapters:
         raise ValueError("Gekoppelter Pilot ist ausschliesslich SIL ohne Adapter")
     meta = model.calibration_meta
+    if meta.get("engine_version") in LEGACY_ENGINE_VERSIONS:
+        raise ValueError(
+            f"Lauf wurde mit aelterer Engine {meta['engine_version']} eingefroren; "
+            f"aktuelle Engine {ENGINE_VERSION} rechnet anders. Neuen Vergleich erzeugen.",
+        )
     if meta.get("calibrated") is not False or meta.get("engine_version") != ENGINE_VERSION:
         raise ValueError("Engine/Unkalibriert-Metadaten widersprechen dem Kopplungsmodell")
     if meta.get("flight_plan_usage") != "drives_explicit_hypothetical_missions":
@@ -34,6 +39,8 @@ def validate_coupled_inputs(
     world = CoupledWorld.model_validate(meta.get("coupled_world"))
     plan = FlightPlanSnapshot.model_validate(meta.get("flight_plan_snapshot"))
     verify_world(world, plan)
+    if world.engine_version != ENGINE_VERSION:
+        raise ValueError("Welt-Engine passt nicht zur aktuellen Kopplungs-Engine")
     if request.seed != world.seed:
         raise ValueError("Seed passt nicht zur eingefrorenen Welt; neuen Vergleich erzeugen")
     if (scenario.duration_ms != (world.end_min - world.start_min) * 60000
@@ -74,7 +81,7 @@ def run_coupled_simulation(
             if telemetry_callback:
                 telemetry_callback(sample)
     summary = RunSummary(
-        domain="airport_coupled_v1", coupled_kpis=result.kpis, energy_kpis=result.energy,
+        domain=COUPLED_DOMAIN, coupled_kpis=result.kpis, energy_kpis=result.energy,
         energy_world_hash=world.world_hash, telemetry_hash=digest.hexdigest(),
         freq_nadir_hz=0, volt_nadir_v=0, blackout_ms=0, switch_time_ms=0,
         final_soc_pct=(result.energy.battery_final_kwh / world.config.power.battery_capacity_kwh

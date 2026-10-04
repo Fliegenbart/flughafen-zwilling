@@ -51,6 +51,9 @@ def build_artifacts(
             "time_axis": "elapsed_minutes_from_local_midnight_UTC_continuous",
             "day_minutes": world.day_minutes, "start_min": world.start_min,
             "end_min": world.end_min, "warnings": world.warnings,
+            "model_warnings": result.kpis.model_warnings,
+            "readiness_by_task": [r.model_dump() for r in result.kpis.readiness_by_task],
+            "bottleneck": result.kpis.bottleneck,
             "series_interval_min": 1, "vehicle_trace_interval_min": 5,
             "sample_semantics": "power_and_state_for_last_interval_energy_at_interval_end",
             "missions": result.missions, "departures": result.departures,
@@ -95,12 +98,32 @@ def write_coupled_pdf(path: Path, payload: dict) -> None:
          f"{payload['build_meta'].get('execution_backend_git_commit', 'n/a')}")
     line("Modellkriterien " + ("erfuellt" if payload["pass_fail"] else "nicht erfuellt")
          + "; technisch completed ist nicht fachlich PASS.")
+    coupled = payload["summary"]["coupled_kpis"]
+    if coupled.get("model_warnings"):
+        line("Modellwarnungen / Ursachen", True)
+        for warning in coupled["model_warnings"]:
+            line("WARNUNG: " + warning)
+    line("Bilanzpruefung: balance_error_max_kw ist ein Buchfuehrungscheck derselben Gleichung "
+         "(per Konstruktion ~0, kein unabhaengiger Nachweis). Unabhaengig geprueft werden "
+         "fleet_energy_balance_error_kwh (Versorgungsseite vs. Fahrzeugzustand vs. "
+         "Auftragsformel) und storage_energy_balance_error_kwh.")
     for section, fields in [
         ("Aufgaben-/Fahrzeug-KPIs", "coupled_kpis"),
         ("Wirkleistung/Energie; Ladefristenfelder nur Parkhaus", "energy_kpis"),
     ]:
         line(section, True)
         for key, value in payload["summary"][fields].items():
+            if key in {"model_warnings"}:
+                continue
+            if key == "readiness_by_task":
+                for item in value:
+                    pct = item["on_time_pct"]
+                    line(f"Bereitschaft {item['kind']}/{item['direction']}: "
+                         f"{item['missions_on_time']}/{item['mission_count']} "
+                         f"({'n/a' if pct is None else f'{pct:.1f} %'}); Wartezeit Energie "
+                         f"{item['energy_wait_min']} min / Fahrzeuge "
+                         f"{item['resource_wait_min']} min")
+                continue
             line(f"{key}: {value:.6f}" if isinstance(value, float) else f"{key}: {value}")
     line("Eingefrorene Annahmen", True)
     for kind, config in [("Versorgung", world["config"]["power"])] + [

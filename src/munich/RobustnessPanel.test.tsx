@@ -6,7 +6,7 @@ import { plan } from "./__fixtures__/flightplan";
 
 const suite = {
   suite_id: "a".repeat(32),
-  engine_version: "airport_coupled_v1",
+  engine_version: "airport_coupled_v2",
   seed: 42,
   flight_plan_snapshot_id: plan.snapshot_id,
   source_plan_sha256: plan.content_sha256,

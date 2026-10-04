@@ -27,6 +27,8 @@ def test_robustness_suite_freezes_a_bounded_shared_demand_and_sil_runs(tmp_path,
         assert suite["suite_id"].isalnum()
         assert suite["source_plan_sha256"] == plan.content_sha256
         assert suite["seed"] == 17
+        assert suite["screen"] == "robustness"
+        assert suite["engine_version"] == "airport_coupled_v2"
         assert [scenario["key"] for scenario in suite["scenarios"]] == [
             "baseline", "grid_import_minus_20_pct", "one_bus_charger_offline", "pv_peak_factor_minus_50_pct",
         ]
@@ -66,12 +68,15 @@ def test_robustness_suite_freezes_a_bounded_shared_demand_and_sil_runs(tmp_path,
                 assert run["status"]["state"] == "completed"
                 assert set(run["completed_summary"]) == {
                     "departure_readiness_pct", "grid_peak_kw", "charging_unmet_kwh", "background_unserved_kwh",
+                    "energy_wait_total_min", "resource_wait_total_min", "energy_wait_share_pct",
+                    "bottleneck",
                 }
                 if scenario["key"] == "baseline":
                     assert run["delta_to_baseline"] is None
                 else:
                     assert set(run["delta_to_baseline"]) == {
                         "departure_readiness_pct", "grid_peak_kw", "charging_unmet_kwh", "background_unserved_kwh",
+                        "energy_wait_total_min", "resource_wait_total_min",
                     }
 
         artifact = client.get(f"/api/v1/munich/robustness-suites/{suite['suite_id']}/artifact.json")

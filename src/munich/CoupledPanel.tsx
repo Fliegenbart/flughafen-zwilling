@@ -10,6 +10,7 @@ import type {
   CoupledEvidence,
   CoupledRecord,
 } from "./coupledTypes";
+import { CURRENT_COUPLED_ENGINE } from "./coupledTypes";
 import { buildCoupledHtml, coupledPair, FLEET_LABELS, modelTime } from "./coupledReport";
 import CoupledControls from "./CoupledControls";
 import { Delta, CoupledChart } from "./CoupledViews";
@@ -24,7 +25,8 @@ const CACHE = `airport-coupled-v1:${url("")}`;
 function cached(): CoupledComparison | null {
   try {
     const value = JSON.parse(localStorage.getItem(CACHE) ?? "null") as CoupledComparison | null;
-    return value?.engine_version === "airport_coupled_v1" &&
+    return (value?.engine_version === "airport_coupled_v1" ||
+      value?.engine_version === CURRENT_COUPLED_ENGINE) &&
       /^[a-f0-9]{64}$/.test(value.world_hash) &&
       value.runs.length === 2 &&
       value.runs.every((r) => /^[a-f0-9]{32}$/.test(r.run_id))
@@ -212,7 +214,7 @@ export default function CoupledPanel({
         30000,
       );
       if (
-        result.engine_version !== "airport_coupled_v1" ||
+        result.engine_version !== CURRENT_COUPLED_ENGINE ||
         result.flight_plan_snapshot_id !== plan.snapshot_id ||
         result.runs.length !== 2
       )

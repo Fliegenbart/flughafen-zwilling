@@ -118,6 +118,17 @@ export default function PilotStudio() {
   async function assess(item: PilotImport) {
     if (!selected) return;
     await action(async () => {
+      // Toleranzen gelten projektweit und werden beim ersten Festlegen eingefroren.
+      const frozen = await request<unknown>(`/pilot/projects/${selected.id}/tolerances`);
+      if (frozen == null)
+        await request(`/pilot/projects/${selected.id}/tolerances`, {
+          method: "PUT",
+          body: JSON.stringify({
+            mae_max_kw: Number(mae),
+            energy_error_max_pct: Number(energy),
+            lock: true,
+          }),
+        });
       const a = await request<PilotAssessment>(`/pilot/projects/${selected.id}/assessments`, {
         method: "POST",
         body: JSON.stringify({

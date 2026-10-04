@@ -134,3 +134,41 @@ def test_ip_rate_limit_blocks_username_floods(tmp_path, monkeypatch) -> None:
         "/api/v1/auth/login",
         json={"username": "new-user", "password": "wrong password"},
     ).status_code == 429
+
+
+def test_global_failures_only_throttle_and_never_lock_out_legitimate_users(tmp_path, monkeypatch) -> None:
+    app = _app(tmp_path, monkeypatch)
+    create_user(tmp_path, "operator", "another correct horse battery staple", "operator")
+    store = app.state.instance_access
+    for index in range(150):
+        token, _, retry = store.login("operator", "wrong", f"10.0.{index}.1:operator", f"10.0.{index}.1")
+        assert token is None and retry == 0
+    assert store.global_delay() > 0
+    token, principal, retry = store.login(
+        "operator", "another correct horse battery staple", "10.9.9.9:operator", "10.9.9.9"
+    )
+    assert retry == 0 and token and principal and principal.username == "operator"
+
+
+def test_user_lock_is_per_ip_and_short_with_exponential_backoff(tmp_path, monkeypatch) -> None:
+    import app.instance_access as access
+
+    app = _app(tmp_path, monkeypatch)
+    create_user(tmp_path, "operator", "another correct horse battery staple", "operator")
+    store = app.state.instance_access
+    clock = [1_000_000.0]
+    monkeypatch.setattr(access.time, "time", lambda: clock[0])
+    for _ in range(5):
+        assert store.login("operator", "wrong", "1.1.1.1:operator", "1.1.1.1")[2] == 0
+    assert store.login("operator", "wrong", "1.1.1.1:operator", "1.1.1.1")[2] == 15
+    # Ein anderer Client ist von der Sperre des Angreifers nicht betroffen.
+    assert store.login(
+        "operator", "another correct horse battery staple", "2.2.2.2:operator", "2.2.2.2"
+    )[0]
+    clock[0] += 16
+    assert store.login("operator", "wrong", "1.1.1.1:operator", "1.1.1.1")[2] == 0
+    assert store.login("operator", "wrong", "1.1.1.1:operator", "1.1.1.1")[2] == 30
+    clock[0] += 31
+    assert store.login(
+        "operator", "another correct horse battery staple", "1.1.1.1:operator", "1.1.1.1"
+    )[0]

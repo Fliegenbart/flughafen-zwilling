@@ -80,6 +80,16 @@ export function ResultCard({ record }: { record: CoupledRecord }) {
             </dd>
           </div>
           <div>
+            <dt>Energiebilanz Flotte / Speicher (unabhängig geprüft)</dt>
+            <dd>
+              {number(k.fleet_energy_balance_error_kwh, 6)} /{" "}
+              {k.storage_energy_balance_error_kwh === undefined
+                ? "n/a"
+                : number(k.storage_energy_balance_error_kwh, 6)}{" "}
+              kWh
+            </dd>
+          </div>
+          <div>
             <dt>Grundlast unversorgt / BHKW nicht absetzbar</dt>
             <dd>
               {number(e.background_unserved_kwh, 1)} / {number(e.chp_unabsorbed_kwh, 1)} kWh
@@ -87,6 +97,13 @@ export function ResultCard({ record }: { record: CoupledRecord }) {
           </div>
         </dl>
       </details>
+      {(k.model_warnings ?? []).length > 0 && (
+        <ul className="muc-warn" role="alert" aria-label="Modellwarnungen">
+          {(k.model_warnings ?? []).map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+      )}
       <p className={record.status.pass_fail ? "muc-ok" : "muc-warn"}>
         Modellkriterien {record.status.pass_fail ? "erfüllt" : "nicht erfüllt"}; kein empirischer
         oder elektrischer Sicherheitsnachweis.

@@ -98,7 +98,7 @@ const records = (["uncontrolled", "mission_priority"] as const).map(
   }),
 );
 const comparison = {
-  engine_version: "airport_coupled_v1",
+  engine_version: "airport_coupled_v2",
   comparison_id: "test",
   world_hash: hash,
   flight_plan_snapshot_id: plan.snapshot_id,
