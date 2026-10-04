@@ -49,6 +49,14 @@ describe("Workspace entry point", () => {
       .toHaveAttribute("href", "/?workspace=flexlab");
   });
 
+  it("uses the studio shell only for airport workspaces", async () => {
+    await open("?workspace=airport");
+    await screen.findByRole("heading", { name: "Airport Twin Core" });
+    expect(document.querySelector("[data-studio]")).not.toBeNull();
+    expect(screen.getByRole("link", { name: "Zum Arbeitsbereich" }))
+      .toHaveAttribute("href", "#studio-main");
+  });
+
   it("preserves FlexLab under an explicit link without replacing the airport", async () => {
     await open("?workspace=flexlab");
     expect(await screen.findByRole("heading", { name: "FlexLab Workbench" })).toBeVisible();
@@ -69,6 +77,19 @@ describe("Workspace entry point", () => {
     expect(screen.getByRole("link", { name: /Energiepilot.*München Referenz/i }))
       .toHaveAttribute("aria-current", "page");
     await waitFor(() => expect(document.title).toBe("München / Airport Twin Core"));
+  });
+
+  it("uses the same studio shell for Munich", async () => {
+    await open("?workspace=munich");
+    await screen.findByRole("heading", { name: "Flughafen München" });
+    expect(document.querySelector("[data-studio]")).not.toBeNull();
+  });
+
+  it("does not apply studio tokens to FlexLab", async () => {
+    await open("?workspace=flexlab");
+    await screen.findByRole("heading", { name: "FlexLab Workbench" });
+    expect(document.querySelector("[data-studio]")).toBeNull();
+    expect(document.querySelector(".workspace-frame--flexlab")).not.toBeNull();
   });
 
   it("keeps all workspace links inside the hosted base path", async () => {

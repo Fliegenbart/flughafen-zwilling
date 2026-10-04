@@ -1,0 +1,62 @@
+.studio-workspace {
+  --studio-bg: #f4f6f8; --studio-surface: #fff; --studio-line: #dde3eb;
+  --studio-ink: #102033; --studio-muted: #5a6b80; --studio-blue: #2255ee;
+  --studio-warning: #9a4a00; --studio-warning-bg: #fff4df;
+  --studio-error: #b42332; --studio-success: #176447;
+  --bg-base: var(--studio-bg); --bg-layer: var(--studio-surface);
+  --bg-layer-2: #edf1f7; --surface: #fff; --surface-strong: #fff;
+  --surface-soft: #f6f8fb; --line: var(--studio-line); --line-soft: #e6ebf1;
+  --text-high: var(--studio-ink); --text-mid: var(--studio-muted); --text-low: #65758b;
+  --cyan: var(--studio-blue); --cyan-strong: #1944ce; --amber: var(--studio-warning);
+  --red: var(--studio-error); --green: var(--studio-success);
+  --muc-ink: var(--studio-ink); --muc-muted: var(--studio-muted);
+  --muc-line: var(--studio-line); --muc-surface: var(--studio-surface);
+  --muc-cyan: var(--studio-blue); --muc-amber: var(--studio-warning);
+  --radius-xl: 6px; --radius-lg: 6px; --radius-md: 6px; --radius-sm: 6px;
+  --shadow-glow: none; --shadow-card: 0 2px 8px #10203308;
+  --font-ui: "Sora", "Trebuchet MS", sans-serif;
+  --font-mono: "IBM Plex Mono", Menlo, Consolas, monospace;
+  display: grid; grid-template-columns: 208px minmax(0, 1fr); min-height: 100vh;
+  background: var(--studio-bg); color: var(--studio-ink);
+  font: 13px/1.6 var(--font-ui);
+}
+.studio-workspace *, .studio-workspace *::before, .studio-workspace *::after { box-sizing: border-box; }
+.studio-main { min-width: 0; }
+.studio-rail { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; background: #202832; color: #f3f5f8; }
+.studio-brand { padding: 24px; color: inherit; text-decoration: none; font-size: 17px; line-height: 1.4; font-weight: 600; }
+.studio-rail nav { display: grid; margin-top: 16px; }
+.studio-rail nav a { display: flex; align-items: center; gap: 14px; padding: 16px 24px; color: #dce2eb; text-decoration: none; border-left: 3px solid transparent; }
+.studio-rail nav a[aria-current="page"] { background: var(--studio-blue); color: #fff; border-left-color: #82a1ff; }
+.studio-rail nav a:hover { background: #303d50; }
+.studio-rail nav a[aria-current="page"]:hover { background: #1944ce; }
+.studio-rail-note { margin: auto 24px 24px; color: #c0ccdc; font-size: 12px; }
+.studio-skip { position: fixed; top: -100px; left: 12px; z-index: 30; padding: 12px; background: #fff; color: #102033; }
+.studio-skip:focus { top: 12px; }
+.studio-workspace :focus-visible { outline: 3px solid #2255ee; outline-offset: 3px; }
+.studio-rail :focus-visible { outline-color: #b4c7ff; outline-offset: -4px; }
+.studio-workspace button, .studio-workspace input, .studio-workspace select { font: inherit; }
+.studio-workspace input:not([type="checkbox"]):not([type="file"]), .studio-workspace select {
+  min-width: 0; max-width: 100%; background: #fff; color: #102033;
+  border: 1px solid #becbdb; border-radius: 6px; padding: 9px 11px;
+}
+.studio-workspace button { cursor: pointer; min-height: 40px; border-radius: 6px; transition: background 140ms ease; }
+.studio-workspace button:disabled { cursor: not-allowed; opacity: .55; }
+.studio-workspace code, .studio-workspace .mono { font-family: var(--font-mono); overflow-wrap: anywhere; }
+.studio-workspace a { text-underline-offset: 4px; }
+@media (max-width: 1279px) {
+  .studio-workspace { display: block; }
+  .studio-rail { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; }
+  .studio-brand { padding: 16px 20px; }
+  .studio-rail nav { display: flex; margin: 0; }
+  .studio-rail nav a { padding: 12px 16px; }
+  .studio-rail-note { margin: 12px 20px 12px auto; }
+}
+@media (max-width: 767px) {
+  .studio-brand { width: 100%; padding: 16px; }
+  .studio-rail nav { width: 100%; }
+  .studio-rail nav a { flex: 1; padding: 12px; gap: 8px; font-size: 12px; }
+  .studio-rail-note { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-workspace *, .studio-workspace *::before, .studio-workspace *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

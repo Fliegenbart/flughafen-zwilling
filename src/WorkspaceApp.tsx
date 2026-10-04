@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
+import AirportWorkspaceShell from "./ui/AirportWorkspaceShell";
 import "./WorkspaceApp.css";
 
 const AirportApp = lazy(() => import("./App"));
@@ -15,8 +16,18 @@ export default function WorkspaceApp() {
     document.title = title;
   }, [title]);
 
+  if (!isFlexLab) {
+    return (
+      <AirportWorkspaceShell workspace={isMunich ? "munich" : "airport"} basePath={basePath}>
+        <Suspense fallback={<p className="workspace-loading" role="status">{title} wird geladen…</p>}>
+          {isMunich ? <MunichApp /> : <AirportApp />}
+        </Suspense>
+      </AirportWorkspaceShell>
+    );
+  }
+
   return (
-    <div className={`workspace-frame workspace-frame--${isFlexLab ? "flexlab" : "airport"}`}>
+    <div className="workspace-frame workspace-frame--flexlab">
       <header className="workspace-selector">
         <div className="workspace-selector__intro">
           <strong>Airport Twin Core / TestingLab</strong>
@@ -38,7 +49,7 @@ export default function WorkspaceApp() {
         </nav>
       </header>
       <Suspense fallback={<p className="workspace-loading" role="status">{title} wird geladen…</p>}>
-        {isFlexLab ? <FlexLabApp /> : isMunich ? <MunichApp /> : <AirportApp />}
+        <FlexLabApp />
       </Suspense>
     </div>
   );
