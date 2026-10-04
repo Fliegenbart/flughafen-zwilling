@@ -154,6 +154,7 @@
 [data-studio] .muc-field__input small {
   padding-right: 8px;
   color: #5a6b80;
+  font-size: 12px;
 }
 [data-studio] .muc-primary {
   width: 100%;
@@ -263,6 +264,7 @@
 [data-studio] .muc-busbar small,
 [data-studio] .muc-storage small {
   color: #5a6b80;
+  font-size: 12px;
 }
 [data-studio] .muc-storage {
   display: flex;
@@ -338,6 +340,7 @@
 [data-studio] .muc-result__main small,
 [data-studio] .muc-result__main > span {
   color: #5a6b80;
+  font-size: 12px;
 }
 [data-studio] .muc-result__metrics > div,
 [data-studio] .muc-energy-list > div,
@@ -470,6 +473,7 @@
 }
 [data-studio] .muc-source-links small {
   color: #5a6b80;
+  font-size: 12px;
 }
 [data-studio] .studio-coupled-layout {
   display: grid;

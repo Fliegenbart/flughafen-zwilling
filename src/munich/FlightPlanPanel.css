@@ -122,6 +122,12 @@
   margin: 10px 0 16px;
   font-size: 12px;
 }
+[data-studio] .muc-flightplan__legend small {
+  font-size: 12px;
+}
+[data-studio] .muc-flightplan small.muc-warn {
+  font-size: 12px;
+}
 [data-studio] .muc-flightplan__legend span {
   color: #2255ee;
 }
