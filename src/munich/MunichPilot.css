@@ -238,7 +238,7 @@
 [data-studio] .muc-node > span,
 [data-studio] .muc-node small {
   color: #5a6b80;
-  font-size: 11px;
+  font-size: 12px;
 }
 [data-studio] .muc-node strong {
   color: #102033;
@@ -326,7 +326,7 @@
   background: #edf1f7;
   border: 0;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 12px;
 }
 [data-studio] .muc-result__main {
   display: grid;
@@ -377,7 +377,7 @@
   display: block;
   padding: 6px 0;
   color: #52657b;
-  font-size: 11px;
+  font-size: 12px;
 }
 [data-studio] .muc-report-action {
   display: flex;
@@ -433,7 +433,7 @@
   width: 100%;
   border-collapse: collapse;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
 }
 [data-studio] .muc-table-scroll th,
 [data-studio] .muc-table-scroll td {

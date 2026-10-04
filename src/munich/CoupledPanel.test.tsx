@@ -191,6 +191,18 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
     expect(vi.mocked(fetch).mock.calls.every(([, init]) => init?.method !== "POST")).toBe(true);
   });
 
+  it("keeps methodology reachable while compacting it below the visible warning", async () => {
+    mockApi();
+    render(<CoupledPanel plan={plan} />);
+    expect(screen.getByText(/Nicht kalibriert\. Keine FMG-Betriebsdaten/)).toBeVisible();
+    const methodology = screen.getByText("Methodik & Modellgrenzen").closest("details")!;
+    expect(methodology).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByText("Methodik & Modellgrenzen"));
+    expect(methodology).toHaveAttribute("open");
+    expect(screen.getByLabelText("Modellkopplung")).toBeVisible();
+    expect(screen.getByText(/Veröffentlichter Plan, angenommener Betrieb/)).toBeVisible();
+  });
+
   it("keeps coupled controls and its own action in one studio workspace", async () => {
     mockApi();
     render(<CoupledPanel plan={plan} flightPlanPanel={<p>Flugplan-Importslot</p>} pollMs={20} />);

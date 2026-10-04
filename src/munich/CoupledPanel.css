@@ -2,6 +2,9 @@
   margin: 18px 0;
   color: #33465d;
 }
+[data-studio] .studio-coupled-context[open] > summary {
+  margin-bottom: 12px;
+}
 [data-studio] .coupled-chain {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -14,7 +17,7 @@
   background: #f5f8fb;
   border: 1px solid #dde3eb;
   border-radius: 4px;
-  font: 11px var(--font-mono);
+  font: 12px var(--font-mono);
 }
 [data-studio] .coupled-chain strong {
   display: inline-block;
@@ -63,14 +66,14 @@
 }
 [data-studio] .coupled-form .muc-field span {
   color: #5a6b80;
-  font-size: 11px;
+  font-size: 12px;
 }
 [data-studio] .coupled-status {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin: 14px 0;
-  font: 11px var(--font-mono);
+  font: 12px var(--font-mono);
 }
 [data-studio] .coupled-status span {
   padding: 8px;
@@ -97,7 +100,7 @@
   padding: 12px;
   border: 1px solid #dde3eb;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 12px;
 }
 [data-studio] .coupled-deltas strong {
   display: block;
@@ -121,7 +124,7 @@
   min-width: 880px;
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 12px;
 }
 [data-studio] .coupled-evidence th,
 [data-studio] .coupled-evidence td {
@@ -133,7 +136,7 @@
   max-height: 360px;
   overflow: auto;
   color: #33465d;
-  font: 11px var(--font-mono);
+  font: 12px var(--font-mono);
 }
 [data-studio] .coupled-evidence .muc-table-scroll {
   max-height: 480px;

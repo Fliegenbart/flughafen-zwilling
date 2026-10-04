@@ -310,7 +310,8 @@ export default function CoupledPanel({
         }
       />
       <StudioWorkflowNav current={pair && !error ? "vergleich" : plan ? "energy" : "flightplan"} />
-      <div className="studio-coupled-context">
+      <details className="studio-coupled-context">
+        <summary>Methodik &amp; Modellgrenzen</summary>
         <p>
           Teste, wie Flugplan-Nachfrage, Fahrzeuge und Ladeleistung zusammenwirken. Ein gemeinsamer
           Modelltag, zwei Laderegeln. Keine automatische Anlagensteuerung.
@@ -347,7 +348,7 @@ export default function CoupledPanel({
           Fristen, Lastprofile und elektrische Topologie sind nicht kalibriert. Das Ergebnis ist
           keine reale Flug-OTP/TOBT und kein Sicherheits- oder Investitionsnachweis.
         </p>
-      </div>
+      </details>
       <div className="studio-coupled-layout">
         <section className="studio-test-config" aria-label="Testkonfiguration">
           <h2>Testkonfiguration</h2>
