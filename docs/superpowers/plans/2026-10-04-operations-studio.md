@@ -1080,7 +1080,7 @@ Bereich. Keine weiteren gestalterischen Abweichungen als Geschmackssache.
 
 **Files:** Review-Dokument aus Task 7 und dieses Plan-Dokument.
 
-- [ ] **8.1 Gesamte Regression am fertigen Commit wiederholen.**
+- [x] **8.1 Gesamte Regression am fertigen Commit wiederholen.**
 
 ```sh
 npm run typecheck
@@ -1096,7 +1096,7 @@ Die Liste darf keine Backend-, Seed-, Archiv- oder FlexLab-Fachdatei
 enthalten. Nicht gruene oder nicht ausgefuehrte Checks als solche berichten.
 Implementierungs-Checklisten erst nach tatsaechlicher Ausfuehrung markieren.
 
-- [ ] **8.2 Getesteten Stand pushen und Remote-SHA vergleichen.**
+- [x] **8.2 Getesteten Stand pushen und Remote-SHA vergleichen.**
 
 ```sh
 git push origin codex/operations-studio
@@ -1106,7 +1106,7 @@ test "$local_sha" = "$remote_sha"
 printf 'Verified remote: %s\n' "$remote_sha"
 ```
 
-- [ ] **8.3 PR erstellen und an diesen Chat anhaengen.** Base-Branch ist
+- [x] **8.3 PR erstellen und an diesen Chat anhaengen.** Base-Branch ist
   `codex/recovery-audit`; Titel `Modernize airport UI with Operations Studio`.
   Vor unbekanntem Create-Ausgang vorhandene PRs fuer diesen Head pruefen.
   PR-Beschreibung enthaelt den Praesentationsscope, Tests, Bildvergleich und
@@ -1114,7 +1114,7 @@ printf 'Verified remote: %s\n' "$remote_sha"
   Speicher-/Produktreifeversprechen. `attach_artifact` nach erfolgreicher
   PR-Erstellung aufrufen. Merge nur fuer den getesteten Head mit gruener CI.
 
-- [ ] **8.4 Ergebnis lokal zeigen und klar trennen.** Handoff: lokale
+- [x] **8.4 Ergebnis lokal zeigen und klar trennen.** Handoff: lokale
   Test-URL, Referenz/Screenshot, konkrete gepruefte Funktionen, Commit/PR und
   offene Freigaben. Nicht behaupten, der Hetzner-Pilot sei bereits erneuert.
   Ist ein Deployment gewuenscht, zuerst separat kontrolliertes Release
@@ -1145,5 +1145,9 @@ sind im IAB nicht verfuegbar und bleiben offen. 7.7 ist nach der vorgesehenen
 Fallback-Regel abgenommen: echte Downloads und Inhalt/Druck-CSS geprueft;
 visuelle Reportvorschau vom Browser blockiert, kein Sicherheitsbypass.
 
-Task 8 wird erst nach tatsaechlicher Regression, Remote-SHA-Pruefung und PR
-markiert. Der geschuetzte Hetzner-Pilot wird in diesem Scope nicht deployed.
+Task 8 ausgefuehrt: finale Regression auf dem Dokumentationscommit, Branch
+`codex/operations-studio` gepusht und Remote-SHA verglichen; PR #11 gegen
+`codex/recovery-audit` erstellt und an den Chat angehaengt. Lokale Demo auf
+Port 5186 geoeffnet, Viewport-Override zurueckgesetzt. Der geschuetzte Hetzner-
+Pilot bleibt unveraendert. Nach diesem reinen Checklist-Commit werden die
+Gates nochmals ausgefuehrt und der finale Remote-Head erneut verglichen.

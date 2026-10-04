@@ -139,3 +139,13 @@ unveraendert.
   nach dem Push geprueft. Kein automatischer Merge und kein Hetzner-Deployment.
 - Flughafenmodell bleibt unkalibrierter Methodenprototyp. SIL-Erfolg ist weder
   empirische Validierung noch ein Betriebs-, Einspar- oder Produktreifeversprechen.
+
+## Git-Handoff
+
+PR: [Modernize airport UI with Operations Studio](https://github.com/Fliegenbart/flughafen-zwilling/pull/11),
+Head `codex/operations-studio`, Base `codex/recovery-audit`. Der erste gepruefte
+Remote-Head war `51be4aa487dd1c6312b27073b93fc35f3e58f7cf`. Dieser reine
+Dokumentationsabschluss wird nochmals getestet, gepusht und per Remote-SHA
+verifiziert. Kein Merge, kein Hetzner-Deployment. Die lokale Docker-Demo
+verwendet den identischen UI-Code des Implementierungscommits oben; nachfolgende
+Commits betreffen ausschliesslich dieses Review und den Plan.
