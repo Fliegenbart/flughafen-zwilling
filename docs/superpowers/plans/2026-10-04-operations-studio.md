@@ -65,7 +65,7 @@ Das PNG ist nur die Referenz. Keine neuen Router, Stores oder UI-Frameworks.
 **Files:** Create `src/ui/AirportWorkspaceShell.tsx`, `src/ui/operationsStudio.css`.
 Modify `src/WorkspaceApp.tsx`. Test `src/main.test.tsx`.
 
-- [ ] **1.1 Navigationstest rot ergaenzen.** In den vorhandenen `open`-Tests
+- [x] **1.1 Navigationstest rot ergaenzen.** In den vorhandenen `open`-Tests
   bleiben die bestehenden Assertions bestehen. Diese drei Tests ergaenzen:
 
 ```tsx
@@ -95,7 +95,7 @@ it("does not apply studio tokens to FlexLab", async () => {
   Erwartet: neue Flughafen-Tests scheitern an fehlendem `[data-studio]`;
   bestehende Routen-/Subpath-Tests bleiben unveraendert.
 
-- [ ] **1.3 Shell implementieren.** Ganze neue TSX-Datei:
+- [x] **1.3 Shell implementieren.** Ganze neue TSX-Datei:
 
 ```tsx
 import type { ReactNode } from "react";
@@ -156,7 +156,7 @@ if (!isFlexLab) {
 }
 ```
 
-- [ ] **1.4 Die komplette scoped CSS-Grundlage anlegen.** Kein `:root`-Theme,
+- [x] **1.4 Die komplette scoped CSS-Grundlage anlegen.** Kein `:root`-Theme,
   keine Regeln fuer `body` ohne expliziten Flughafen-Selektor:
 
 ```css
@@ -228,7 +228,7 @@ CSS wird in spaeteren Tasks erweitert, nicht um ein zweites Token-System
 ergaenzt. Die alten `.muc-pilot`-Variablen werden in Task 3 entfernt, sonst
 ueberschreiben sie die geerbten hellen Tokens.
 
-- [ ] **1.5 Gruenlauf und Commit.**
+- [x] **1.5 Gruenlauf und Commit.**
 
 ```sh
 npm run test -- src/main.test.tsx
@@ -243,7 +243,7 @@ git commit -m "feat(ui): add scoped Operations Studio airport shell"
 `src/ui/chartTheme.ts`, `src/ui/chartTheme.test.ts`.
 Modify `src/ui/operationsStudio.css`.
 
-- [ ] **2.1 Tests vor Implementierung schreiben.**
+- [x] **2.1 Tests vor Implementierung schreiben.**
 
 ```tsx
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -272,7 +272,7 @@ it("uses real anchors, not a second simulation state machine", () => {
 - [ ] **2.2 Rotlauf.** `npm run test -- src/ui/StudioHeader.test.tsx`.
   Erwartet: Modul fehlt, danach Assertions gruen mit folgendem Code.
 
-- [ ] **2.3 Ganze Kopf-/Navigationskomponente anlegen.**
+- [x] **2.3 Ganze Kopf-/Navigationskomponente anlegen.**
 
 ```tsx
 import type { ReactNode } from "react";
@@ -304,7 +304,7 @@ export function StudioWorkflowNav({ current }: { current: typeof steps[number]["
 
 Die Nummer erscheint visuell einmal und ist im Accessible Name enthalten.
 
-- [ ] **2.4 Header-CSS erweitern.**
+- [x] **2.4 Header-CSS erweitern.**
 
 ```css
 .studio-page-header { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 20px; margin-bottom: 24px; }
@@ -328,7 +328,7 @@ Die Nummer erscheint visuell einmal und ist im Accessible Name enthalten.
 }
 ```
 
-- [ ] **2.5 Gemeinsames Chart-Theme und Kontrasttest anlegen.**
+- [x] **2.5 Gemeinsames Chart-Theme und Kontrasttest anlegen.**
 
 ```ts
 export const chartTheme = {
@@ -355,7 +355,7 @@ it("keeps axis, tooltip and status text readable on white", () => {
 });
 ```
 
-- [ ] **2.6 Gruenlauf und Commit.** `npm run test -- src/ui/StudioHeader.test.tsx src/ui/chartTheme.test.ts` und `npm run typecheck`.
+- [x] **2.6 Gruenlauf und Commit.** `npm run test -- src/ui/StudioHeader.test.tsx src/ui/chartTheme.test.ts` und `npm run typecheck`.
   Explizit die sechs zu diesem Task gehoerenden Dateien stagen und
   `git commit -m "feat(ui): add studio headers and accessible light chart tokens"`.
 
@@ -366,7 +366,7 @@ it("keeps axis, tooltip and status text readable on white", () => {
 `src/munich/CoupledControls.tsx`, `src/munich/FlightPlanPanel.css`.
 Test `src/munich/MunichPilot.test.tsx`, `src/munich/CoupledPanel.test.tsx`.
 
-- [ ] **3.1 Layout-/Controller-Regression schreiben.** In `CoupledPanel.test.tsx`
+- [x] **3.1 Layout-/Controller-Regression schreiben.** In `CoupledPanel.test.tsx`
   die vorhandenen `config`, `plan`, `mockApi` weiter nutzen. `within` zu den
   Testing-Library-Imports ergaenzen; folgenden Test hinzufuegen:
 
@@ -418,7 +418,7 @@ if (path.endsWith("/munich/coupled-reference"))
 - [ ] **3.2 Rotlauf.** `npm run test -- src/munich/MunichPilot.test.tsx src/munich/CoupledPanel.test.tsx`.
   Erwartet: fehlender `flightPlanPanel`-Slot, Region und neuer Kopf.
 
-- [ ] **3.3 Controller nicht verlagern; nur Praesentationsslot ergaenzen.**
+- [x] **3.3 Controller nicht verlagern; nur Praesentationsslot ergaenzen.**
   `ReactNode` als Type importieren. CoupledPanel-Signatur:
 
 ```tsx
@@ -502,7 +502,7 @@ const flightPlanPanel = <FlightPlanPanel selected={flightPlan} onSelect={setFlig
 Energie-v1-Controller. Keine Kopplungs-State-Variable in diesen Controller
 kopieren und keine neue globale Busy-Variable einfuehren.
 
-- [ ] **3.4 Kernparameter sichtbar machen, erweiterte Werte erhalten.**
+- [x] **3.4 Kernparameter sichtbar machen, erweiterte Werte erhalten.**
   In CoupledControls drei Kernfelder einmal vor dem vorhandenen Detailsblock
   rendern. Im erweiterten `POWER_FIELDS.map` diese drei ausfiltern:
 
@@ -527,7 +527,7 @@ Alle uebrigen Numeric-, Flotten-, Seed-, Stress-, Coverage- und Ack-Handler
 aus der jetzigen Datei wortgleich erhalten. Keine doppelte editierbare
 Instanz desselben Feldes, keine Aenderung des Wertes beim Auf-/Zuklappen.
 
-- [ ] **3.5 Scoped Layout und Importbereich umstellen.** Alte harte dunkle
+- [x] **3.5 Scoped Layout und Importbereich umstellen.** Alte harte dunkle
   Farben und die sechs `.muc-pilot`-Variablen entfernen; Selektoren fuer
   Muenchen auf `[data-studio] .muc-pilot` begrenzen. Folgende Basis verwenden:
 
@@ -562,7 +562,7 @@ Die verbleibenden dunklen Hardcodes der vier Muenchen-CSS-Dateien durch die
 obigen Rollen ersetzen; technische Detail-/Quellensektionen duerfen unter
 dem sichtbaren Kern aufgeklappt werden. Kein globaler `body:has`-Hintergrund.
 
-- [ ] **3.6 Gruenlauf und Commit.**
+- [x] **3.6 Gruenlauf und Commit.**
 
 ```sh
 npm run test -- src/munich/MunichPilot.test.tsx src/munich/CoupledPanel.test.tsx src/munich/FlightPlanPanel.test.tsx
@@ -577,7 +577,7 @@ git commit -m "feat(ui): reframe Munich around the coupled studio workspace"
 Modify `src/munich/CoupledViews.tsx`, `src/munich/CoupledPanel.tsx`,
 `src/munich/CoupledPanel.css`. Test `src/munich/CoupledPanel.test.tsx`.
 
-- [ ] **4.1 Tests fuer den Praesentationsbaustein schreiben.** Im vorhandenen
+- [x] **4.1 Tests fuer den Praesentationsbaustein schreiben.** Im vorhandenen
   Testfile `CoupledCompare` importieren und bestehende `records` verwenden:
 
 ```tsx
@@ -606,7 +606,7 @@ it("does not replace absent readiness with a fabricated zero", () => {
   Erwartet: neues Modul fehlt. Die bereits vorhandenen negativen Safety-
   und Report-Consistency-Tests weder entfernen noch lockern.
 
-- [ ] **4.3 Komponente implementieren; keine zweite KPI-Berechnung.**
+- [x] **4.3 Komponente implementieren; keine zweite KPI-Berechnung.**
 
 ```tsx
 import type { CoupledRecord } from "./coupledTypes";
@@ -675,7 +675,7 @@ Kein `coupledPair`-, Hash- oder Seed-Guard wird aus dem Controller entfernt.
 `reportsHashed` bleibt aus der Safety-Antwort abgeleitet, nie aus dem
 Designbild. Alte Reports duerfen nicht als v2 dargestellt werden.
 
-- [ ] **4.4 Ein sachlich korrektes Schema aus eingefrorenen Werten rendern.**
+- [x] **4.4 Ein sachlich korrektes Schema aus eingefrorenen Werten rendern.**
   In CoupledCompare unter dem Evidenzstreifen als Detailsbereich ergaenzen:
 
 ```tsx
@@ -700,7 +700,7 @@ Keine Energie-v1-`viewConfig` fuer diesen gekoppelten Versuch nutzen.
 Keine fuer eine schicke Serienlinie erfundene Netz-Topologie. Diese sachlich
 notwendige Abweichung zum generierten Bild in der Abnahme vermerken.
 
-- [ ] **4.5 CSS fuer gemeinsame Flaeche ergaenzen.**
+- [x] **4.5 CSS fuer gemeinsame Flaeche ergaenzen.**
 
 ```css
 [data-studio] .studio-compare-band { display: grid; grid-template-columns: minmax(0,1fr) 150px minmax(0,1fr); gap: 16px; padding: 16px 0; border-top: 1px solid #dde3eb; }
@@ -725,7 +725,7 @@ notwendige Abweichung zum generierten Bild in der Abnahme vermerken.
 }
 ```
 
-- [ ] **4.6 Gruenlauf und Commit.** `npm run test -- src/munich/CoupledPanel.test.tsx` und `npm run typecheck`.
+- [x] **4.6 Gruenlauf und Commit.** `npm run test -- src/munich/CoupledPanel.test.tsx` und `npm run typecheck`.
   Genau die fuenf Task-Dateien stagen und
   `git commit -m "feat(ui): add evidence-first studio comparison surface"`.
 
@@ -734,7 +734,7 @@ notwendige Abweichung zum generierten Bild in der Abnahme vermerken.
 **Files:** Modify `src/App.tsx`, `src/App.css`, `src/App.test.tsx`,
 `src/munich/MunichPilot.tsx`, `src/munich/CoupledViews.tsx`.
 
-- [ ] **5.1 Leere KPI-Ansicht und acht Cases absichern.** In App.test:
+- [x] **5.1 Leere KPI-Ansicht und acht Cases absichern.** In App.test:
 
 ```tsx
 it("uses a compact studio header without presenting initial zeros as evidence", () => {
@@ -753,7 +753,7 @@ frozen-report-Tests unveraendert erhalten. `within` importieren.
 - [ ] **5.2 Rotlauf.** `npm run test -- src/App.test.tsx`.
   Erwartet: fehlende benannte KPI-Region / initiale Nullwerte.
 
-- [ ] **5.3 Arbeitskopf und Aktionen neu anordnen.** Den vorhandenen grossen
+- [x] **5.3 Arbeitskopf und Aktionen neu anordnen.** Den vorhandenen grossen
   Hero sowie `.app-bg`-Dekorationen entfernen. `StudioHeader` mit Titel
   Airport Twin Core einsetzen, bestehenden API-/Run-/Grafana-Status als
   Kontext nutzen. Die vorhandenen Backend-Run- und Reportbuttons in den
@@ -786,7 +786,7 @@ Rail verbleiben nur Planner-Controls, Job-ID, Progress und Fehlermeldungen.
 Keine zweite Instanz und keine neue Planner-State-Eigentuemerschaft.
 Der vorhandene Capability-off-Test muss auch diese Ergebnisflaeche ausschliessen.
 
-- [ ] **5.4 Nur Darstellungs-Verfuegbarkeit von KPIs ergaenzen.**
+- [x] **5.4 Nur Darstellungs-Verfuegbarkeit von KPIs ergaenzen.**
   In App eine lokale UI-Flag einfuehren, keine AirportState-/API-Schemaaenderung:
 
 ```tsx
@@ -823,7 +823,7 @@ Die anderen Zahlen-Ausdruecke bleiben `state.avgTurnaroundMin.toFixed(2)`,
 `state.gateUtilizationAvgPct.toFixed(2)`
 und `state.delayAvgMin.toFixed(2)`. Keine Auswertungsschwelle aendern.
 
-- [ ] **5.5 Dashboard-CSS restrukturieren.** Die alten globalen Body-/Root-
+- [x] **5.5 Dashboard-CSS restrukturieren.** Die alten globalen Body-/Root-
   Regeln und Navy-Variablen aus App.css entfernen; Flughafen-Tokens sind
   Task 1. Bestehende Komponenten-/Stateklassen erhalten, scoped light basis:
 
@@ -858,7 +858,7 @@ Restliche App.css-Hardcodes in Planner, Hinweisen, Tabellen und Kontrollen
 auf diese Rollen ersetzen. Keine bestehenden Tabellen/Alternativen/Charts
 aus Platzgruenden entfernen. Kein Detailblock darf die Grid-Spalte verbreitern.
 
-- [ ] **5.6 Charts ausschliesslich visuell aendern.** chartTheme importieren.
+- [x] **5.6 Charts ausschliesslich visuell aendern.** chartTheme importieren.
   Die vorhandene Airport-`CHART_COLORS`-Definition ersetzen:
 
 ```ts
@@ -884,7 +884,7 @@ In bestehenden Serien-Tuples werden baseline/grau, priority/blau,
 ground/amber, parking/teal anhand der semantischen Theme-Schluessel ersetzt.
 Bestehende ReferenceLine/Labels und alle Einheiten bleiben erhalten.
 
-- [ ] **5.7 Gruenlauf, Browser-Zwischencheck und Commit.**
+- [x] **5.7 Gruenlauf, Browser-Zwischencheck und Commit.**
   `npm run test -- src/App.test.tsx src/munich/CoupledPanel.test.tsx src/munich/MunichPilot.test.tsx`;
   `npm run typecheck`; alle fuenf Task-Dateien explizit stagen und
   `git commit -m "feat(ui): modernize airport cockpit and telemetry visuals"`.
@@ -898,7 +898,7 @@ Modify `src/App.tsx`, `src/munich/report.ts`, `src/munich/coupledReport.ts`.
 Test `src/App.test.tsx`, `src/munich/MunichPilot.test.tsx`,
 `src/munich/CoupledPanel.test.tsx`.
 
-- [ ] **6.1 Gemeinsame CSS-Tests rot schreiben.**
+- [x] **6.1 Gemeinsame CSS-Tests rot schreiben.**
 
 ```ts
 import { expect, it } from "vitest";
@@ -916,7 +916,7 @@ Vergleichs-, fehlende Playbook-, Source-URL- und Null-Delta-Assertions behalten.
 
 - [ ] **6.2 Rotlauf.** `npm run test -- src/ui/reportStyles.test.ts`.
 
-- [ ] **6.3 Portable CSS-Konstante anlegen und drei CSS-Bloecke ersetzen.**
+- [x] **6.3 Portable CSS-Konstante anlegen und drei CSS-Bloecke ersetzen.**
 
 ```ts
 export const REPORT_STYLES = `
@@ -945,7 +945,7 @@ Nullbehandlung, URL-Pruefung, Reportkontext oder die passenden Playbook-
 Zuordnungspruefungen herausrefaktorieren. Alle bisherigen Appendix- und
 Vergleichsinhalte behalten. Backend-PDF bleibt unangetastet.
 
-- [ ] **6.4 Gruenlauf und Commit.**
+- [x] **6.4 Gruenlauf und Commit.**
 
 ```sh
 npm run test -- src/ui/reportStyles.test.ts src/App.test.tsx src/munich/MunichPilot.test.tsx src/munich/CoupledPanel.test.tsx
@@ -959,7 +959,7 @@ git commit -m "feat(reports): align frontend exports with Operations Studio"
 **Files:** Modify nur vorhandene Task-1-bis-6-Dateien fuer gefundene
 Praesentationsfehler. Create `docs/superpowers/reviews/2026-10-04-operations-studio.md`.
 
-- [ ] **7.1 Alle Quality Gates vor Browser-Abnahme ausfuehren.**
+- [x] **7.1 Alle Quality Gates vor Browser-Abnahme ausfuehren.**
 
 ```sh
 npm run typecheck
@@ -975,7 +975,7 @@ Erwartet: alle neuen und bisherigen Tests gruen, keine neuen Lintfehler,
 beide Buildvarianten erfolgreich, Archive intakt. Die bekannte Warnung zur
 nicht-modularen `runtime-config.js` ist kein Anlass fuer eine neue Architektur.
 
-- [ ] **7.2 Isolierte lokale SIL-Demo starten, nicht den geschuetzten Pilot
+- [x] **7.2 Isolierte lokale SIL-Demo starten, nicht den geschuetzten Pilot
   aktualisieren.** `docker-compose.demo.yml` setzt INFLUX_TOKEN explizit leer.
   Kein Monitoring-Overlay verwenden; Ports zuerst auf Konflikte pruefen:
 
@@ -994,7 +994,7 @@ kein Influx-Token, eigener Volume `airport-studio-qa_twin-data`.
 Bei belegten Ports zuerst klaren Konflikt melden, keine fremden Prozesse
 beenden. Keine alten Volumes loeschen, kein `down -v`.
 
-- [ ] **7.3 Synthetischen QA-Flugplan lokal erzeugen und klar als Testdaten
+- [x] **7.3 Synthetischen QA-Flugplan lokal erzeugen und klar als Testdaten
   behandeln.** Nicht als echte Muenchner Veroeffentlichung praesentieren.
   Der PDF-Inhalt entspricht dem bereits vorhandenen Parser-Testformat:
 
@@ -1018,7 +1018,7 @@ PDF im **lokalen** Browser-Import manuell fuer 03.10.2026 auswaehlen.
 Kein automatischer Abruf, kein Hochladen beim echten Pilot. Dieses Datum
 ist ein fixierter Fixture-Verkehrstag, nicht der aktuelle Nutzertag.
 
-- [ ] **7.4 Im IAB Airport und Muenchen funktional pruefen.** Browser ueber
+- [x] **7.4 Im IAB Airport und Muenchen funktional pruefen.** Browser ueber
   dokumentierte CUA-APIs bedienen, bestehende Browserbindung wiederverwenden.
   URL `http://localhost:5186/` und `?workspace=munich`. Browserdokumentation
   fuer Viewport-/Screenshot-APIs lesen; keine alternative Shell-Browserautomation.
@@ -1050,7 +1050,7 @@ Pruefpunkte:
   mindestens 4,5:1, grosse Texte 3:1. Reduced Motion pruefen; Overrides
   vor Handoff zuruecksetzen.
 
-- [ ] **7.6 Bildtreue direkt vergleichen und reparieren.** Referenz und
+- [x] **7.6 Bildtreue direkt vergleichen und reparieren.** Referenz und
   aktuelles Browserbild beide mit `view_image` ansehen. Im Review mindestens
   diese sechs konkreten Punkte mit Ist/Soll, Fix oder begruendeter Abweichung:
   Navigation/208-px-Rail, Sora-Typografie, Off-White/Blau-Palette,
@@ -1062,14 +1062,14 @@ festes Regelpaar statt Scheinauswahl; paralleles statt Serien-Schema;
 sichtbare originale Guards/Quellen; mehr echte KPI-Details im aufklappbaren
 Bereich. Keine weiteren gestalterischen Abweichungen als Geschmackssache.
 
-- [ ] **7.7 HTML-Downloads pruefen, ohne Browser-Sicherheitsblocker zu
+- [x] **7.7 HTML-Downloads pruefen, ohne Browser-Sicherheitsblocker zu
   umgehen.** Download-/Exportbuttons testen und erzeugten HTML-Inhalt auf
   Theme, eingefrorene IDs, KPI-/Delta-Werte und Warnungen pruefen.
   Wenn Browser lokale Reportdateien blockiert, nicht via anderem Browser
   oder neuem Server denselben Blocker umgehen; Inhalt/Druck-CSS pruefen
   und die fehlende visuelle Reportvorschau ehrlich festhalten.
 
-- [ ] **7.8 Reviewprotokoll und reparierte Praesentation committen.**
+- [x] **7.8 Reviewprotokoll und reparierte Praesentation committen.**
   Protokoll enthaelt getesteten Commit, Befehle/Resultate, UI-Workflows,
   Viewports, Vergleichspunkte und verbleibende Grenzen. Keine Zugangsdaten,
   echten Quelldateien, Betriebsdaten oder vollstaendigen Logs veroeffentlichen.
@@ -1132,5 +1132,18 @@ printf 'Verified remote: %s\n' "$remote_sha"
 - Responsive, reale Bedienpfade, Bildtreue, Subpath und Archive: Task 7.
 - Gepruefte Commits, Remote-SHA, PR und Deployment-Grenze: Task 8.
 
-Der Plan ist bereit zur Ausfuehrung. Keine der Implementierungsaufgaben
-ist durch die Planerstellung bereits erledigt.
+## Ausfuehrungsstand 04.10.2026
+
+Tasks 1 bis 6 implementiert und unabhaengig reviewed; finale Gruenlaeufe im
+Reviewprotokoll `../reviews/2026-10-04-operations-studio.md`. Die historischen
+Rotlauf-Checkboxen bleiben mangels separat aufbewahrter Root-Logbelege offen;
+das ist kein behaupteter erneuter Rotlauf am fertigen Commit.
+
+7.5 ist teilweise abgenommen: alle vier Viewports, Reflow, Kontrast und
+Tastatur geprueft; echter 200-%-Browserzoom und aktiv emuliertes Reduced Motion
+sind im IAB nicht verfuegbar und bleiben offen. 7.7 ist nach der vorgesehenen
+Fallback-Regel abgenommen: echte Downloads und Inhalt/Druck-CSS geprueft;
+visuelle Reportvorschau vom Browser blockiert, kein Sicherheitsbypass.
+
+Task 8 wird erst nach tatsaechlicher Regression, Remote-SHA-Pruefung und PR
+markiert. Der geschuetzte Hetzner-Pilot wird in diesem Scope nicht deployed.
