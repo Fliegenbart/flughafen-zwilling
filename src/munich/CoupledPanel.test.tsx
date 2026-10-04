@@ -379,6 +379,7 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
   it("rejects unmatched worlds and escapes report input; handles DST using UTC", () => {
     expect(() => coupledPair(records, "wrong")).toThrow(/identische/);
     const html = buildCoupledHtml(records, hash);
+    expect(html).toContain('data-report-theme="operations-studio"');
     expect(html).toContain("Fairer Regelvergleich");
     expect(html).toContain("Nicht kalibriert &lt;script&gt;");
     expect(html).not.toContain("<script>");

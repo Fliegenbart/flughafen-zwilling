@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import "./App.css";
 import { chartTheme } from "./ui/chartTheme";
+import { REPORT_STYLES } from "./ui/reportStyles";
 import { StudioHeader } from "./ui/StudioHeader";
 
 export type RemoteRunState = "queued" | "running" | "completed" | "failed" | null;
@@ -953,108 +954,8 @@ export function generateTestReport(
   </div>`
       : "";
 
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Airport Twin Core Report</title>
-<style>
-@page { size: A4; margin: 16mm; }
-:root {
-  color-scheme: dark;
-  --bg-a: #04101b;
-  --bg-b: #0c2236;
-  --surface: rgba(15, 31, 49, 0.9);
-  --surface-soft: rgba(23, 47, 72, 0.65);
-  --line: rgba(100, 146, 191, 0.38);
-  --text: #e5f0fb;
-  --text-dim: #a7c2df;
-  --cyan: #2ae6cf;
-  --amber: #ffb357;
-  --good: #39d98a;
-  --bad: #ff6c7a;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  padding: 0;
-  font-family: "Sora", "Segoe UI", Arial, sans-serif;
-  font-size: 11px;
-  color: var(--text);
-  background: radial-gradient(circle at 15% -10%, #184166 0%, transparent 45%), linear-gradient(160deg, var(--bg-a), var(--bg-b));
-}
-.wrapper {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px;
-  background: linear-gradient(180deg, rgba(13, 30, 48, 0.95), rgba(10, 22, 35, 0.93));
-}
-.head {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.brand h1 {
-  margin: 0;
-  font-size: 22px;
-  letter-spacing: 0.2px;
-}
-.brand small {
-  color: var(--text-dim);
-}
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.18);
-  font-weight: 700;
-}
-.badge.pass { background: rgba(57, 217, 138, 0.15); color: var(--good); }
-.badge.fail { background: rgba(255, 108, 122, 0.15); color: var(--bad); }
-.meta {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface-soft);
-  padding: 10px;
-  margin-bottom: 12px;
-}
-.meta b {
-  color: var(--text-dim);
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
-  overflow: hidden;
-  border-radius: 10px;
-}
-th, td {
-  border: 1px solid var(--line);
-  padding: 7px;
-  text-align: left;
-}
-th {
-  background: rgba(36, 66, 96, 0.78);
-  font-weight: 600;
-}
-tr:nth-child(even) td {
-  background: rgba(18, 37, 58, 0.5);
-}
-.ok { color: var(--good); font-weight: 700; }
-.ko { color: var(--bad); font-weight: 700; }
-.config {
-  margin-top: 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px;
-  background: rgba(18, 37, 58, 0.54);
-}
-.compare h2 {
-  margin: 16px 0 8px;
-  font-size: 15px;
-}
-.code {
-  font-family: "IBM Plex Mono", Menlo, Consolas, monospace;
-}
-</style></head><body>
+  const html = `<!DOCTYPE html><html data-report-theme="operations-studio"><head><meta charset="utf-8"><title>Airport Twin Core Report</title>
+<style>${REPORT_STYLES}</style></head><body>
 <div class="wrapper">
   <div class="head">
     <div class="brand">

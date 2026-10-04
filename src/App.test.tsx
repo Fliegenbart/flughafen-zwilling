@@ -129,6 +129,7 @@ describe("HMI smoke", () => {
       fireEvent.change(screen.getByLabelText("Gates Total"), { target: { value: "30" } });
       fireEvent.click(screen.getByRole("button", { name: "Bericht erzeugen" }));
       const html = await blobs[0]!.text();
+      expect(html).toContain('data-report-theme="operations-studio"');
       expect(html).toContain("<b>Szenario:</b> Guillotine-Test");
       expect(html).toContain("Gates: 28");
       expect(screen.getByRole("link", { name: "PDF-Bericht" })).toHaveAttribute(

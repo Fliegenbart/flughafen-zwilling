@@ -1,5 +1,6 @@
 import type { CoupledRecord, FleetKind } from "./coupledTypes";
 import { number } from "./config";
+import { REPORT_STYLES } from "../ui/reportStyles";
 
 export const FLEET_LABELS: Record<FleetKind, string> = {
   bus: "Bus",
@@ -105,8 +106,7 @@ export function buildCoupledHtml(records: CoupledRecord[], expectedHash: string)
     ],
     ["Trafoverluste", b.transformer_loss_kwh, p.transformer_loss_kwh, "kWh"],
   ];
-  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Airport Twin Core | Gekoppelter Vergleich</title><style>
-  body{margin:0;padding:40px;background:#0b1b2a;color:#eaf2f6;font:15px Sora,sans-serif}main{max-width:1100px;margin:auto}h1{font-size:32px}h2{margin-top:32px;color:#5ee3d6}.warning{border-left:4px solid #ffca78;padding:16px;background:#182c3c}table{width:100%;border-collapse:collapse}th,td{padding:12px;text-align:left;border-bottom:1px solid #31495c}code{font:12px 'IBM Plex Mono',monospace;overflow-wrap:anywhere}details{padding:16px;border:1px solid #31495c}pre{white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:600px){body{padding:16px}th,td{padding:7px;font-size:12px}}@media print{body{background:white;color:#142633;padding:0}h2{color:#142633}.warning{background:#f4f6f7}table,details{break-inside:avoid}}</style></head><body><main>
+  return `<!doctype html><html lang="de" data-report-theme="operations-studio"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Airport Twin Core | Gekoppelter Vergleich</title><style>${REPORT_STYLES}</style></head><body><main>
   <p>Airport Twin Core / MUC / SIL</p><h1>Flugplan → Fahrzeuge → Energie</h1>
   <p class="warning"><strong>Unkalibrierter Methodenprototyp.</strong> Planzeiten sind veröffentlicht; Aufgaben, Fahrzeuge, Verbrauch und Versorgung sind Modellannahmen. Aufgabenbereitschaft ist keine reale OTP/TOBT. Keine automatische Anlagensteuerung oder Sicherheits-/ROI-Aussage.</p>
   <p>Verkehrstag ${escape(plan.service_date)} / Datenstand ${escape(plan.source_data_date)}. ${b.published_entry_count} Flugplaneinträge; keine bestätigte Zahl physischer Flugbewegungen. ${number(b.model_horizon_hours, 1)} Modellstunden inklusive Vor-/Nachlauf.</p>

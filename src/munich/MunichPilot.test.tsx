@@ -228,6 +228,7 @@ describe("München Referenzpilot", () => {
   it("does not fabricate benefit and rejects mismatched worlds in reports", () => {
     const equal = { ...priority, summary: base.summary };
     const html = buildCompareHtml(base, equal);
+    expect(html).toContain('data-report-theme="operations-studio"');
     expect(html).toContain("Kein Vorteil bei Bus-Ladefristen");
     expect(html).toContain("Nicht kalibriert");
     expect(html).toContain("audit-base");
