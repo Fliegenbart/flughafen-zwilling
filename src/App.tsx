@@ -1989,51 +1989,53 @@ export default function App() {
                       {playbookRecord.pareto_options?.length ? (
                         <div className="playbook-alt">
                           <h4>{playbookForecastContext ? "Pareto Alternativen im Forecast" : "Pareto Alternativen"}</h4>
-                          <table className="playbook-table">
-                            <thead>
-                              <tr>
-                                <th>Option</th>
-                                <th>OTP</th>
-                                <th>Delay</th>
-                                <th>Kosten</th>
-                                <th>Delta OTP</th>
-                                <th>Delta Delay</th>
-                                <th>Run</th>
-                                <th>Status</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {playbookRecord.pareto_options.map((option) => (
-                                <tr key={option.option_id}>
-                                  <td>{option.option_id}</td>
-                                  <td>{pickOptionKpis(option)?.otp_rate_pct?.toFixed(2)}%</td>
-                                  <td>{pickOptionKpis(option)?.delay_avg_min?.toFixed(2)} min</td>
-                                  <td>{option.intervention_cost.toFixed(2)}</td>
-                                  <td className={deltaClass(option.delta_to_baseline?.otp_rate_pct_delta || 0, "higher_is_better")}>
-                                    {formatSigned(option.delta_to_baseline?.otp_rate_pct_delta || 0, 2, "%")}
-                                  </td>
-                                  <td className={deltaClass(option.delta_to_baseline?.delay_avg_min_delta || 0, "lower_is_better")}>
-                                    {formatSigned(option.delta_to_baseline?.delay_avg_min_delta || 0, 2, " min")}
-                                  </td>
-                                  <td>
-                                    {option.validation_run_id ? (
-                                      <a
-                                        href={`${apiBase}/api/v1/runs/${option.validation_run_id}/record`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="mono"
-                                      >
-                                        {option.validation_run_id}
-                                      </a>
-                                    ) : (
-                                      "-"
-                                    )}
-                                  </td>
-                                  <td>{option.validation_pass_fail === false ? "nicht validiert" : "validiert"}</td>
+                          <div className="planner-table-wrap" role="region" aria-label="Pareto Alternativen" tabIndex={0}>
+                            <table className="playbook-table">
+                              <thead>
+                                <tr>
+                                  <th>Option</th>
+                                  <th>OTP</th>
+                                  <th>Delay</th>
+                                  <th>Kosten</th>
+                                  <th>Delta OTP</th>
+                                  <th>Delta Delay</th>
+                                  <th>Run</th>
+                                  <th>Status</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {playbookRecord.pareto_options.map((option) => (
+                                  <tr key={option.option_id}>
+                                    <td>{option.option_id}</td>
+                                    <td>{pickOptionKpis(option)?.otp_rate_pct?.toFixed(2)}%</td>
+                                    <td>{pickOptionKpis(option)?.delay_avg_min?.toFixed(2)} min</td>
+                                    <td>{option.intervention_cost.toFixed(2)}</td>
+                                    <td className={deltaClass(option.delta_to_baseline?.otp_rate_pct_delta || 0, "higher_is_better")}>
+                                      {formatSigned(option.delta_to_baseline?.otp_rate_pct_delta || 0, 2, "%")}
+                                    </td>
+                                    <td className={deltaClass(option.delta_to_baseline?.delay_avg_min_delta || 0, "lower_is_better")}>
+                                      {formatSigned(option.delta_to_baseline?.delay_avg_min_delta || 0, 2, " min")}
+                                    </td>
+                                    <td>
+                                      {option.validation_run_id ? (
+                                        <a
+                                          href={`${apiBase}/api/v1/runs/${option.validation_run_id}/record`}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="mono"
+                                        >
+                                          {option.validation_run_id}
+                                        </a>
+                                      ) : (
+                                        "-"
+                                      )}
+                                    </td>
+                                    <td>{option.validation_pass_fail === false ? "nicht validiert" : "validiert"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       ) : null}
 
@@ -2073,7 +2075,7 @@ export default function App() {
                       labelStyle={{ color: chartTheme.tooltip.color }}
                       labelFormatter={(v) => `t=${Math.round(Number(v) / 1000)}s`}
                     />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Line type="monotone" dataKey="otp" stroke={CHART_COLORS.otp} strokeWidth={2.4} dot={false} name="OTP %" />
                     <Line type="monotone" dataKey="turnaround" stroke={CHART_COLORS.turnaround} strokeWidth={2.2} dot={false} name="Turnaround min" />
                     <Line type="monotone" dataKey="delay" stroke={CHART_COLORS.delay} strokeWidth={2.2} dot={false} name="Delay min" />
@@ -2097,7 +2099,7 @@ export default function App() {
                       contentStyle={chartTheme.tooltip}
                       labelStyle={{ color: chartTheme.tooltip.color }}
                     />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Line type="monotone" dataKey="gateUtil" stroke={CHART_COLORS.gate} strokeWidth={2.2} dot={false} name="Gate Util %" />
                     <Line type="monotone" dataKey="crewUtil" stroke={CHART_COLORS.crew} strokeWidth={2.2} dot={false} name="Crew Util %" />
                     <Line type="monotone" dataKey="depQueue" stroke={CHART_COLORS.dep} strokeWidth={2.2} dot={false} name="Dep Queue" />

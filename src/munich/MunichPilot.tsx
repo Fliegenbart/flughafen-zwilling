@@ -173,7 +173,7 @@ function PowerChart({
             ]}
             contentStyle={chartTheme.tooltip}
           />
-          <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+          <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
           {mode === "grid" && (
             <ReferenceLine
               y={config.grid_import_limit_kw}
@@ -182,7 +182,7 @@ function PowerChart({
               label={{
                 value: "Importgrenze",
                 fill: chartTheme.series.amber,
-                fontSize: 10,
+                fontSize: 12,
                 position: "insideTopRight",
               }}
             />

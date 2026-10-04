@@ -453,7 +453,12 @@
 }
 [data-studio] .planner-table-wrap {
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+}
+[data-studio] .planner-table-wrap:focus-visible {
+  outline: 3px solid #b4c7ff;
+  outline-offset: 2px;
 }
 [data-studio] .playbook-table {
   width: 100%;

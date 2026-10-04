@@ -209,6 +209,7 @@ describe("HMI smoke", () => {
     render(<App />);
     await waitFor(() => {
       expect(screen.queryByText(/Playbook Synthesizer/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: /Pareto Alternativen/i })).not.toBeInTheDocument();
     });
   });
 
@@ -330,7 +331,7 @@ describe("HMI smoke", () => {
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/api/v1/capabilities")) {
-        return mockJsonResponse({ playbook_synth_enabled: true });
+        return mockJsonResponse({ playbook_synth_enabled: !url.startsWith("http://capability-off.test") });
       }
       if (url.endsWith("/api/v1/scenarios") && init?.method === "POST") {
         return mockJsonResponse({ id: "airport_case_02_guillotine_v1" });
@@ -456,9 +457,22 @@ describe("HMI smoke", () => {
         expect(screen.getByText(/gates_open_pct/i)).toBeInTheDocument();
         expect(screen.getByText(/Pareto Alternativen/i)).toBeInTheDocument();
         expect(screen.getByText(/opt_002/i)).toBeInTheDocument();
+        const paretoRegion = screen.getByRole("region", { name: /Pareto Alternativen/i });
+        expect(paretoRegion).toHaveAttribute("tabindex", "0");
+        expect(paretoRegion).toContainElement(
+          screen.getByRole("table"),
+        );
       },
       { timeout: 8000 }
     );
+
+    fireEvent.change(screen.getByLabelText("API Base URL"), {
+      target: { value: "http://capability-off.test" },
+    });
+    await waitFor(() => {
+      expect(screen.queryByText(/Playbook Synthesizer/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: /Pareto Alternativen/i })).not.toBeInTheDocument();
+    });
   }, 10000);
 
   it("renders a clearer forecast narrative for forecast planner results", async () => {

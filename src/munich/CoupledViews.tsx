@@ -211,7 +211,7 @@ export function CoupledChart({
               }
               contentStyle={chartTheme.tooltip}
             />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
             {lines.map(([key, name, color]) => (
               <Line
                 key={key}
