@@ -74,6 +74,7 @@
 [data-studio] .muc-flightplan__stats span,
 [data-studio] .muc-flightplan__hour small,
 [data-studio] .muc-flightplan__airline {
+  display: block;
   color: #5a6b80;
   font-size: 12px;
 }

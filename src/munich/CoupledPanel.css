@@ -64,6 +64,9 @@
   gap: 12px;
   margin: 14px 0 6px;
 }
+[data-studio] .studio-test-config .coupled-form {
+  grid-template-columns: 1fr;
+}
 [data-studio] .coupled-form .muc-field span {
   color: #5a6b80;
   font-size: 12px;
