@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import dossier from "../../data/references/munich_public_facts_v1.json";
 import { DEFAULTS } from "./config";
@@ -7,6 +7,7 @@ import { buildCompareHtml } from "./report";
 import MunichPilot from "./MunichPilot";
 import type { EnergyKpis, EnergyRecord } from "./types";
 import { plan } from "./__fixtures__/flightplan";
+import { config } from "./__fixtures__/coupledConfig";
 
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -84,6 +85,8 @@ describe("München Referenzpilot", () => {
       const path = String(input);
       if (path.endsWith("/munich/reference"))
         return new Response(JSON.stringify({ defaults: DEFAULTS, dossier }));
+      if (path.endsWith("/munich/coupled-reference"))
+        return new Response(JSON.stringify({ defaults: config }));
       if (path.endsWith("/munich/flight-plans")) return new Response("[]");
       if (path.endsWith("/munich/comparisons") && init?.method === "POST")
         return new Response(
@@ -108,7 +111,8 @@ describe("München Referenzpilot", () => {
 
   it("shows a separate airport energy pilot with honest data provenance", async () => {
     render(<MunichPilot />);
-    expect(screen.getByRole("heading", { name: "Flughafen München" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Flugplan, Flotte & Energie" })).toBeVisible();
+    expect(screen.getByText("Flughafen München", { exact: true })).toBeVisible();
     await screen.findByText(/München besitzt bereits einen Energiezwilling/);
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Regeln vergleichen" })).toBeEnabled(),
@@ -125,7 +129,8 @@ describe("München Referenzpilot", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Synthetischer Testfall" }), {
       target: { value: "constraint" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Regeln vergleichen" }));
+    const legacy = screen.getByRole("region", { name: "Energie-v1 / statisch" });
+    fireEvent.click(within(legacy).getByRole("button", { name: "Regeln vergleichen" }));
     expect(await screen.findByRole("heading", { name: "Buspriorität" })).toBeVisible();
     expect(screen.getByText("+50 Bus-Ladefristen")).toBeVisible();
     expect(screen.getAllByRole("link", { name: "Run-Nachweis" })[0]).toHaveAttribute(

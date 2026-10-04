@@ -1,55 +1,11 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CoupledPanel from "./CoupledPanel";
 import { plan } from "./__fixtures__/flightplan";
 import { buildCoupledHtml, coupledPair, modelTime } from "./coupledReport";
-import type { CoupledConfig, CoupledRecord } from "./coupledTypes";
+import type { CoupledRecord } from "./coupledTypes";
+import { config } from "./__fixtures__/coupledConfig";
 
-const config: CoupledConfig = {
-  warmup_min: 120,
-  drain_min: 240,
-  shared_group_policy: "reject_unresolved",
-  stress_events: [],
-  fleets: [
-    {
-      kind: "bus",
-      vehicles: 2,
-      chargers: 1,
-      battery_capacity_kwh: 300,
-      initial_soc_pct: 50,
-      reserve_soc_pct: 10,
-      charge_target_soc_pct: 85,
-      charger_kw: 80,
-      mission_energy_kwh: 8,
-      service_duration_min: 15,
-      return_min: 10,
-      departure_lead_min: 45,
-      departure_buffer_min: 10,
-      arrival_allowance_min: 30,
-      coverage_pct: 100,
-    },
-  ],
-  power: {
-    grid_import_limit_kw: 3500,
-    grid_export_limit_kw: 2000,
-    background_load_kw: 22000,
-    chp_output_kw: 18000,
-    pv_capacity_kwp: 7000,
-    pv_peak_factor: 0.55,
-    apron_transformer_kva: 4500,
-    parking_transformer_kva: 2500,
-    power_factor: 0.95,
-    transformer_efficiency: 0.98,
-    charging_efficiency: 0.92,
-    battery_capacity_kwh: 0,
-    battery_power_kw: 1000,
-    battery_initial_soc_pct: 50,
-    battery_reserve_pct: 10,
-    battery_efficiency: 0.95,
-    parking_sessions: 200,
-    parking_charger_kw: 11,
-  },
-};
 const hash = "c".repeat(64);
 const records = (["uncontrolled", "mission_priority"] as const).map(
   (policy, i): CoupledRecord => ({
@@ -228,11 +184,31 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
     mockApi();
     render(<CoupledPanel plan={null} />);
     expect(
-      await screen.findByRole("heading", { name: "Flugplan → Fahrzeuge → Energie" }),
+      await screen.findByRole("heading", { name: "Flugplan, Flotte & Energie" }),
     ).toBeVisible();
-    await waitFor(() => expect(screen.getByText(/Versorgungsannahmen/)).toBeVisible());
+    await waitFor(() => expect(screen.getByText("Weitere Modellannahmen")).toBeVisible());
     expect(screen.getByRole("button", { name: "Gekoppelten Vergleich starten" })).toBeDisabled();
     expect(vi.mocked(fetch).mock.calls.every(([, init]) => init?.method !== "POST")).toBe(true);
+  });
+
+  it("keeps coupled controls and its own action in one studio workspace", async () => {
+    mockApi();
+    render(<CoupledPanel plan={plan} flightPlanPanel={<p>Flugplan-Importslot</p>} pollMs={20} />);
+    const configArea = await screen.findByRole("region", { name: "Testkonfiguration" });
+    expect(within(configArea).getByText("Flugplan-Importslot")).toBeVisible();
+    expect(within(configArea).getByLabelText(/Netzimportgrenze/)).toBeVisible();
+    const start = screen.getByRole("button", { name: "Gekoppelten Vergleich starten" });
+    await waitFor(() => expect(start).toBeEnabled());
+    fireEvent.click(start);
+    await screen.findByRole("heading", { name: "Fristenpriorität" });
+    const posts = vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST");
+    expect(posts).toHaveLength(1);
+    expect(String(posts[0]![0])).toContain("/munich/coupled-comparisons");
+    expect(JSON.parse(String(posts[0]![1]?.body))).toMatchObject({
+      flight_plan_snapshot_id: plan.snapshot_id,
+      seed: 42,
+      config: { power: config.power },
+    });
   });
 
   it("freezes the selected day, polls and shows traceable results with tradeoffs", async () => {
@@ -268,7 +244,7 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
     mockApi();
     render(<CoupledPanel plan={{ ...plan, possible_shared_flight_groups: 1 }} />);
     const start = screen.getByRole("button", { name: "Gekoppelten Vergleich starten" });
-    await screen.findByText(/Flotten-/);
+    await screen.findByText("Weitere Modellannahmen");
     expect(start).toBeDisabled();
     fireEvent.click(
       screen.getByRole("checkbox", { name: /Mehrfachgruppen als unabhängige Nachfrage/ }),
@@ -281,7 +257,7 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
     render(<CoupledPanel plan={plan} pollMs={20} />);
     const start = screen.getByRole("button", { name: "Gekoppelten Vergleich starten" });
     await waitFor(() => expect(start).toBeEnabled());
-    fireEvent.click(screen.getByText("Flotten-/Versorgungsannahmen"));
+    fireEvent.click(screen.getByText("Weitere Modellannahmen"));
     fireEvent.click(
       screen.getByRole("checkbox", {
         name: "Zeitlich begrenzten Netz-/Ladepunktengpass prüfen",
@@ -336,7 +312,7 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
       render(<CoupledPanel plan={plan} />);
       const start = screen.getByRole("button", { name: "Gekoppelten Vergleich starten" });
       await waitFor(() => expect(start).toBeEnabled());
-      fireEvent.click(screen.getByText("Flotten-/Versorgungsannahmen"));
+      fireEvent.click(screen.getByText("Weitere Modellannahmen"));
       if (field === "offline_chargers") {
         fireEvent.click(
           screen.getByRole("checkbox", {

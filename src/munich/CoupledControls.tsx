@@ -21,6 +21,11 @@ const POWER_FIELDS: [keyof PowerConfig, string, string][] = [
   ["parking_sessions", "Parkhaus-Ladeaufträge", "Anzahl"],
   ["parking_charger_kw", "Parkhaus je Ladepunkt", "kW"],
 ];
+const CORE_POWER_KEYS: (keyof PowerConfig)[] = [
+  "grid_import_limit_kw",
+  "chp_output_kw",
+  "background_load_kw",
+];
 const FLEET_FIELDS: [Exclude<keyof FleetSpec, "kind">, string, string][] = [
   ["vehicles", "Fahrzeuge", "Anzahl"],
   ["chargers", "Ladepunkte", "Anzahl"],
@@ -76,149 +81,166 @@ export default function CoupledControls({
   setSeed: (s: number) => void;
 }) {
   return (
-    <details className="coupled-assumptions">
-      <summary>Flotten-/Versorgungsannahmen</summary>
-      <p>
-        Alle Werte sind frei prüfbare Annahmen. Zero-Fleet lässt Nachfrage bestehen; kein
-        vorgetäuschtes PASS. Anfangs-SOC gilt vor dem Vorlauf.
-      </p>
-      <div className="coupled-form">
-        <Numeric label="Kopplungs-Seed" unit="Ganzzahl" value={seed} onChange={setSeed} />
-        <Numeric
-          label="Vorlauf"
-          unit="min"
-          value={config.warmup_min}
-          onChange={(v) => setConfig({ ...config, warmup_min: v })}
-        />
-        <Numeric
-          label="Nachlauf"
-          unit="min"
-          value={config.drain_min}
-          onChange={(v) => setConfig({ ...config, drain_min: v })}
-        />
+    <>
+      <div id="coupled-energy" className="studio-core-fields">
+        {POWER_FIELDS.filter(([key]) => CORE_POWER_KEYS.includes(key)).map(([key, label, unit]) => (
+          <Numeric
+            key={key}
+            label={label}
+            unit={unit}
+            value={config.power[key]}
+            onChange={(v) => setConfig({ ...config, power: { ...config.power, [key]: v } })}
+          />
+        ))}
       </div>
-      <details>
-        <summary>Versorgung, PV, Speicher und Parkhaus</summary>
+      <details className="coupled-assumptions">
+        <summary>Weitere Modellannahmen</summary>
+        <p>
+          Alle Werte sind frei prüfbare Annahmen. Zero-Fleet lässt Nachfrage bestehen; kein
+          vorgetäuschtes PASS. Anfangs-SOC gilt vor dem Vorlauf.
+        </p>
         <div className="coupled-form">
-          {POWER_FIELDS.map(([key, label, unit]) => (
-            <Numeric
-              key={key}
-              label={label}
-              unit={unit}
-              value={config.power[key]}
-              onChange={(v) => setConfig({ ...config, power: { ...config.power, [key]: v } })}
-            />
+          <Numeric label="Kopplungs-Seed" unit="Ganzzahl" value={seed} onChange={setSeed} />
+          <Numeric
+            label="Vorlauf"
+            unit="min"
+            value={config.warmup_min}
+            onChange={(v) => setConfig({ ...config, warmup_min: v })}
+          />
+          <Numeric
+            label="Nachlauf"
+            unit="min"
+            value={config.drain_min}
+            onChange={(v) => setConfig({ ...config, drain_min: v })}
+          />
+        </div>
+        <details>
+          <summary>Versorgung, PV, Speicher und Parkhaus</summary>
+          <div className="coupled-form">
+            {POWER_FIELDS.filter(([key]) => !CORE_POWER_KEYS.includes(key)).map(
+              ([key, label, unit]) => (
+                <Numeric
+                  key={key}
+                  label={label}
+                  unit={unit}
+                  value={config.power[key]}
+                  onChange={(v) => setConfig({ ...config, power: { ...config.power, [key]: v } })}
+                />
+              ),
+            )}
+          </div>
+        </details>
+        <div id="coupled-fleet">
+          {config.fleets.map((fleet, i) => (
+            <details key={fleet.kind}>
+              <summary>
+                {FLEET_LABELS[fleet.kind]} / {fleet.vehicles} Fahrzeuge, {fleet.chargers} Ladepunkte
+              </summary>
+              <div className="coupled-form">
+                {FLEET_FIELDS.map(([key, label, unit]) => (
+                  <Numeric
+                    key={key}
+                    label={`${FLEET_LABELS[fleet.kind]} / ${label}`}
+                    unit={unit}
+                    value={fleet[key]}
+                    onChange={(v) =>
+                      setConfig({
+                        ...config,
+                        fleets: config.fleets.map((f, j) => (j === i ? { ...f, [key]: v } : f)),
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </details>
           ))}
         </div>
-      </details>
-      {config.fleets.map((fleet, i) => (
-        <details key={fleet.kind}>
-          <summary>
-            {FLEET_LABELS[fleet.kind]} / {fleet.vehicles} Fahrzeuge, {fleet.chargers} Ladepunkte
-          </summary>
+        <label className="coupled-ack">
+          <input
+            type="checkbox"
+            checked={config.stress_events.length > 0}
+            onChange={(e) =>
+              setConfig({
+                ...config,
+                stress_events: e.target.checked
+                  ? [
+                      {
+                        start_min: 360,
+                        end_min: 540,
+                        grid_import_limit_kw: 0,
+                        fleet_kind: null,
+                        offline_chargers: 0,
+                      },
+                    ]
+                  : [],
+              })
+            }
+          />
+          Zeitlich begrenzten Netz-/Ladepunktengpass prüfen
+        </label>
+        {config.stress_events[0] && (
           <div className="coupled-form">
-            {FLEET_FIELDS.map(([key, label, unit]) => (
+            {(
+              [
+                ["start_min", "Beginn ab Verkehrstagstart", "min"],
+                ["end_min", "Ende ab Verkehrstagstart", "min"],
+                ["grid_import_limit_kw", "Netzlimit während Störung", "kW"],
+              ] as const
+            ).map(([key, label, unit]) => (
               <Numeric
                 key={key}
-                label={`${FLEET_LABELS[fleet.kind]} / ${label}`}
+                label={label}
                 unit={unit}
-                value={fleet[key]}
+                value={config.stress_events[0]![key] ?? 0}
                 onChange={(v) =>
                   setConfig({
                     ...config,
-                    fleets: config.fleets.map((f, j) => (j === i ? { ...f, [key]: v } : f)),
+                    stress_events: [{ ...config.stress_events[0]!, [key]: v }],
                   })
                 }
               />
             ))}
+            <label className="muc-field">
+              Ladepunktausfall / Fahrzeugklasse
+              <select
+                value={config.stress_events[0].fleet_kind ?? ""}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    stress_events: [
+                      {
+                        ...config.stress_events[0]!,
+                        fleet_kind: (e.target.value || null) as FleetKind | null,
+                        offline_chargers: e.target.value ? 1 : 0,
+                      },
+                    ],
+                  })
+                }
+              >
+                <option value="">Kein Ladepunktausfall</option>
+                {config.fleets.map((fleet) => (
+                  <option key={fleet.kind} value={fleet.kind}>
+                    {FLEET_LABELS[fleet.kind]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {config.stress_events[0].fleet_kind && (
+              <Numeric
+                label="Ausgefallene Ladepunkte"
+                unit="Anzahl"
+                value={config.stress_events[0].offline_chargers}
+                onChange={(v) =>
+                  setConfig({
+                    ...config,
+                    stress_events: [{ ...config.stress_events[0]!, offline_chargers: v }],
+                  })
+                }
+              />
+            )}
           </div>
-        </details>
-      ))}
-      <label className="coupled-ack">
-        <input
-          type="checkbox"
-          checked={config.stress_events.length > 0}
-          onChange={(e) =>
-            setConfig({
-              ...config,
-              stress_events: e.target.checked
-                ? [
-                    {
-                      start_min: 360,
-                      end_min: 540,
-                      grid_import_limit_kw: 0,
-                      fleet_kind: null,
-                      offline_chargers: 0,
-                    },
-                  ]
-                : [],
-            })
-          }
-        />
-        Zeitlich begrenzten Netz-/Ladepunktengpass prüfen
-      </label>
-      {config.stress_events[0] && (
-        <div className="coupled-form">
-          {(
-            [
-              ["start_min", "Beginn ab Verkehrstagstart", "min"],
-              ["end_min", "Ende ab Verkehrstagstart", "min"],
-              ["grid_import_limit_kw", "Netzlimit während Störung", "kW"],
-            ] as const
-          ).map(([key, label, unit]) => (
-            <Numeric
-              key={key}
-              label={label}
-              unit={unit}
-              value={config.stress_events[0]![key] ?? 0}
-              onChange={(v) =>
-                setConfig({
-                  ...config,
-                  stress_events: [{ ...config.stress_events[0]!, [key]: v }],
-                })
-              }
-            />
-          ))}
-          <label className="muc-field">
-            Ladepunktausfall / Fahrzeugklasse
-            <select
-              value={config.stress_events[0].fleet_kind ?? ""}
-              onChange={(e) =>
-                setConfig({
-                  ...config,
-                  stress_events: [
-                    {
-                      ...config.stress_events[0]!,
-                      fleet_kind: (e.target.value || null) as FleetKind | null,
-                      offline_chargers: e.target.value ? 1 : 0,
-                    },
-                  ],
-                })
-              }
-            >
-              <option value="">Kein Ladepunktausfall</option>
-              {config.fleets.map((fleet) => (
-                <option key={fleet.kind} value={fleet.kind}>
-                  {FLEET_LABELS[fleet.kind]}
-                </option>
-              ))}
-            </select>
-          </label>
-          {config.stress_events[0].fleet_kind && (
-            <Numeric
-              label="Ausgefallene Ladepunkte"
-              unit="Anzahl"
-              value={config.stress_events[0].offline_chargers}
-              onChange={(v) =>
-                setConfig({
-                  ...config,
-                  stress_events: [{ ...config.stress_events[0]!, offline_chargers: v }],
-                })
-              }
-            />
-          )}
-        </div>
-      )}
-    </details>
+        )}
+      </details>
+    </>
   );
 }
