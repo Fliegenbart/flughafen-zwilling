@@ -223,6 +223,7 @@
   border: 1px solid #b4c7ff;
   background: #f2f5ff;
 }
+.planner-context small { display: block; font-size: 12px; }
 [data-studio] .warn-note {
   color: #9a4a00;
   border: 1px solid #dfbd86;

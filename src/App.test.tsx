@@ -222,9 +222,9 @@ describe("HMI smoke", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Status: completed")).toBeInTheDocument();
-      expect(screen.getByText("Modellkriterium: nicht erfüllt")).toBeInTheDocument();
+      expect(screen.getByText("Modellkriterien: nicht erfüllt")).toBeInTheDocument();
     });
-    expect(screen.getByText(/SIL- und Modellkriterium, kein empirischer Nachweis/i)).toBeInTheDocument();
+    expect(screen.getByText(/Modellwerte, kein empirischer Nachweis/i)).toBeInTheDocument();
   });
 
   it("only switches to the local observability backend when fallback is explicitly enabled", async () => {

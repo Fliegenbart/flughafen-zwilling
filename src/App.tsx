@@ -1591,9 +1591,9 @@ export default function App() {
                 </div>
                 <div>Status: {state.remoteRunState || "-"}</div>
                 <div>
-                  Modellkriterium: {state.passFail === null ? "noch nicht bewertet" : state.passFail ? "erfüllt" : "nicht erfüllt"}
+                  Modellkriterien: {state.passFail === null ? "noch nicht bewertet" : state.passFail ? "erfüllt" : "nicht erfüllt"}
                 </div>
-                <div>SIL- und Modellkriterium, kein empirischer Nachweis.</div>
+                <div>Modellwerte, kein empirischer Nachweis.</div>
                 <div>Progress: {state.remoteRunProgress.toFixed(0)}%</div>
                 <div className="progress-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.remoteRunProgress}>
                   <div className="progress-bar__value" style={{ width: `${Math.max(0, Math.min(100, state.remoteRunProgress))}%` }} />
