@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { vi } from "vitest";
 import App, {
   INITIAL_STATE,
@@ -32,6 +32,15 @@ describe("HMI smoke", () => {
   it("renders the HMI dashboard without crashing", () => {
     render(<App />);
     expect(screen.getByText(/Airport Twin Core/i)).toBeInTheDocument();
+  });
+
+  it("uses a compact studio header without presenting initial zeros as evidence", () => {
+    render(<App />);
+    expect(screen.getByRole("heading", { name: "Airport Twin Core", level: 1 })).toBeVisible();
+    const band = screen.getByRole("region", { name: "Airport-Modell-KPIs" });
+    expect(within(band).getAllByText("n/a")).toHaveLength(4);
+    expect(within(band).queryByText("0.00")).toBeNull();
+    expect(screen.getByRole("button", { name: "Backend Run starten" })).toBeVisible();
   });
 
   it("shows all 8 airport cases in the test profile dropdown", () => {

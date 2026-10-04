@@ -17,6 +17,8 @@ import {
   YAxis,
 } from "recharts";
 import "./App.css";
+import { chartTheme } from "./ui/chartTheme";
+import { StudioHeader } from "./ui/StudioHeader";
 
 export type RemoteRunState = "queued" | "running" | "completed" | "failed" | null;
 export type RemoteApiStatus = "unknown" | "checking" | "ok" | "down";
@@ -187,16 +189,16 @@ interface CaseDefinition {
 }
 
 const CHART_COLORS = {
-  otp: "#2ae6cf",
-  turnaround: "#ffb357",
-  delay: "#ff6c7a",
-  gate: "#8bf5b3",
-  crew: "#9cd7ff",
-  dep: "#ff8d7b",
-  bag: "#ffd467",
-  axis: "#9db4ca",
-  grid: "rgba(157, 180, 202, 0.2)",
-  tooltipBg: "rgba(11, 24, 40, 0.94)",
+  otp: chartTheme.series.primary,
+  turnaround: chartTheme.series.amber,
+  delay: chartTheme.series.red,
+  gate: chartTheme.series.green,
+  crew: chartTheme.series.blue,
+  dep: chartTheme.series.red,
+  bag: chartTheme.series.amber,
+  axis: chartTheme.axis,
+  grid: chartTheme.grid,
+  tooltipBg: chartTheme.tooltip.background,
 };
 
 const DEFAULT_CASE_ASSERTIONS: CaseDefinition["expectedAssertions"] = [
@@ -819,7 +821,7 @@ interface StatCardProps {
   label: string;
   value: string;
   unit: string;
-  tone: "good" | "warn" | "bad";
+  tone: "good" | "warn" | "bad" | "neutral";
 }
 
 function StatCard({ label, value, unit, tone }: StatCardProps) {
@@ -1102,6 +1104,7 @@ tr:nth-child(even) td {
 export default function App() {
   const [config, setConfig] = useState<AirportConfig>(() => ({ ...DEFAULT_CONFIG, twinApiBaseUrl: resolveTwinApiBaseUrl() }));
   const [state, setState] = useState<AirportState>(INITIAL_STATE);
+  const [hasKpiSummary, setHasKpiSummary] = useState(false);
   const [selectedTest, setSelectedTest] = useState<number>(1);
   const [reportContext, setReportContext] = useState<{ testId: number; config: AirportConfig } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -1262,6 +1265,7 @@ export default function App() {
       telemetryCursorRef.current = telemetryText.length;
       telemetry = telemetrySamplesRef.current;
     }
+    setHasKpiSummary(Boolean(record?.summary?.airport_kpis));
     setState((prev) => stateFromTwinRecord(prev, record, telemetry, safety));
   }, []);
 
@@ -1382,6 +1386,7 @@ export default function App() {
       });
 
       resetTelemetryBuffer();
+      setHasKpiSummary(false);
       setReportContext({
         testId: selectedTest,
         config: { ...config, twinApiBaseUrl: resolvedBase, twinRealtimeMode: realtimeMode },
@@ -1584,30 +1589,21 @@ export default function App() {
     && Object.entries(buildPlannerConfigSnapshot(reportContext.config)).every(
       ([key, value]) => playbookRecord.model_pack_snapshot?.parameter_set[key] === value
     ) ? playbookRecord : null;
+  const hasKpiEvidence = hasKpiSummary || state.dataLog.length > 0;
 
   return (
     <div className="app-shell">
-      <div className="app-bg app-bg--one" aria-hidden="true" />
-      <div className="app-bg app-bg--two" aria-hidden="true" />
       <div className="app-frame">
-        <header className="hero reveal reveal--1">
-          <div>
-            <p className="hero__eyebrow">Airport Operations Digital Twin</p>
-            <h1 className="hero__title">Airport Twin Core</h1>
-            <p className="hero__subtitle">Flughafen-Stresstests fuer Gate- und Turnaround-Betrieb mit simulierten Schnittstellen</p>
-            <p className="hero__subtitle">Demo-Modell: unkalibriert. KPI-Werte sind Modellwerte, keine Betriebsprognose.</p>
-          </div>
-          <div className="hero__chips">
-            <div className={`status-chip ${apiTone}`}>
-              API {state.remoteApiStatus.toUpperCase()}
-              {state.remoteApiLatencyMs != null ? <span>{state.remoteApiLatencyMs} ms</span> : null}
-            </div>
-            <div className={`status-chip ${runTone}`}>Run {(state.remoteRunState || "idle").toUpperCase()}</div>
-            <div className={`status-chip ${telemetryStreamEnabled ? "status-chip--ok" : "status-chip--warn"}`}>
-              Grafana {telemetryStreamEnabled ? "STREAM ON" : "STREAM OFF"}
-            </div>
-          </div>
-        </header>
+        <StudioHeader
+          title="Airport Twin Core"
+          location="Flughafen / Turnaround-Systemtest"
+          warning="Demo-Modell: unkalibriert. KPI-Werte sind Modellwerte, keine Betriebsprognose."
+          context={<><span className={`studio-status ${apiTone}`}>API {state.remoteApiStatus.toUpperCase()}{state.remoteApiLatencyMs != null ? ` / ${state.remoteApiLatencyMs} ms` : ""}</span> · <span className={`studio-status ${runTone}`}>Run {(state.remoteRunState || "idle").toUpperCase()}</span> · <span>Grafana {telemetryStreamEnabled ? "STREAM ON" : "STREAM OFF"}</span></>}
+          actions={<>
+            <button type="button" onClick={() => reportContext && generateTestReport(state, reportContext.config, reportContext.testId, reportPlaybook)} disabled={state.remoteRunState !== "completed" || !reportContext}>Bericht erzeugen</button>
+            <button type="button" className="studio-primary" onClick={runRemoteScenario} disabled={busy}>{busy ? "Starte..." : "Backend Run starten"}</button>
+          </>}
+        />
 
         <div className="layout-grid reveal reveal--2">
           <aside className="command-rail glass-panel">
@@ -1657,6 +1653,11 @@ export default function App() {
                   <option value="sil">SIL Schnelllauf (Batch ohne Live-Effekt)</option>
                 </select>
               </label>
+              <p className="control-hint">
+                {config.twinRealtimeMode === "sil"
+                  ? "SIL Schnelllauf (Batch ohne Live-Effekt)"
+                  : "Echtzeit-Demo (simulierte Adapter, 60 s)"}
+              </p>
 
               <div className="button-stack">
                 <button className="btn btn--live" onClick={runDemoLiveScenario} disabled={busy || !telemetryStreamEnabled}>
@@ -1664,16 +1665,6 @@ export default function App() {
                 </button>
                 <button className="btn btn--secondary" onClick={checkApi}>
                   API pruefen
-                </button>
-                <button className="btn btn--primary" onClick={runRemoteScenario} disabled={busy}>
-                  {busy ? "Starte..." : "Backend Run starten"}
-                </button>
-                <button
-                  className="btn btn--ghost"
-                  onClick={() => reportContext && generateTestReport(state, reportContext.config, reportContext.testId, reportPlaybook)}
-                  disabled={state.remoteRunState !== "completed" || !reportContext}
-                >
-                  Bericht erzeugen
                 </button>
               </div>
 
@@ -1817,7 +1808,53 @@ export default function App() {
 
                   {playbookError ? <div className="error-note">{playbookError}</div> : null}
 
-                  {playbookRecord?.best_option ? (
+                </section>
+              ) : null}
+
+              <div className="control-divider" />
+
+              <LabeledInput
+                label="Gates Total"
+                value={config.gatesTotal}
+                onChange={(v: number) => setConfig((prev) => ({ ...prev, gatesTotal: v }))}
+                min={5}
+                max={120}
+              />
+              <LabeledInput
+                label="Gates Open %"
+                value={config.gatesOpenPct}
+                onChange={(v: number) => setConfig((prev) => ({ ...prev, gatesOpenPct: v }))}
+                min={40}
+                max={100}
+              />
+              <LabeledInput
+                label="Arrivals / hour"
+                value={config.arrivalsPerHour}
+                onChange={(v: number) => setConfig((prev) => ({ ...prev, arrivalsPerHour: v }))}
+                min={1}
+                max={80}
+              />
+              <LabeledInput
+                label="Departures / hour"
+                value={config.departuresPerHour}
+                onChange={(v: number) => setConfig((prev) => ({ ...prev, departuresPerHour: v }))}
+                min={1}
+                max={80}
+              />
+
+              {error ? <div className="error-note">{error}</div> : null}
+            </section>
+          </aside>
+
+          <main className="content-grid">
+            <section className="kpi-band reveal reveal--3" role="region" aria-label="Airport-Modell-KPIs">
+              <StatCard label="OTP" value={hasKpiEvidence ? state.otpRatePct.toFixed(2) : "n/a"} unit={hasKpiEvidence ? "%" : ""} tone={!hasKpiEvidence ? "neutral" : state.otpRatePct >= 85 ? "good" : "bad"} />
+              <StatCard label="Turnaround" value={hasKpiEvidence ? state.avgTurnaroundMin.toFixed(2) : "n/a"} unit={hasKpiEvidence ? "min" : ""} tone={!hasKpiEvidence ? "neutral" : state.avgTurnaroundMin <= 55 ? "good" : "bad"} />
+              <StatCard label="Gate Utilization" value={hasKpiEvidence ? state.gateUtilizationAvgPct.toFixed(2) : "n/a"} unit={hasKpiEvidence ? "%" : ""} tone={!hasKpiEvidence ? "neutral" : state.gateUtilizationAvgPct <= 92 ? "good" : "warn"} />
+              <StatCard label="Delay Avg" value={hasKpiEvidence ? state.delayAvgMin.toFixed(2) : "n/a"} unit={hasKpiEvidence ? "min" : ""} tone={!hasKpiEvidence ? "neutral" : state.delayAvgMin <= 12 ? "warn" : "bad"} />
+            </section>
+
+            {playbookEnabled && playbookRecord?.best_option ? (
                     <div className="playbook-result">
                       {playbookForecastContext ? (
                         <div className="info-note planner-context">
@@ -2018,66 +2055,7 @@ export default function App() {
                       ) : null}
                     </div>
                   ) : null}
-                </section>
-              ) : null}
 
-              <div className="control-divider" />
-
-              <LabeledInput
-                label="Gates Total"
-                value={config.gatesTotal}
-                onChange={(v: number) => setConfig((prev) => ({ ...prev, gatesTotal: v }))}
-                min={5}
-                max={120}
-              />
-              <LabeledInput
-                label="Gates Open %"
-                value={config.gatesOpenPct}
-                onChange={(v: number) => setConfig((prev) => ({ ...prev, gatesOpenPct: v }))}
-                min={40}
-                max={100}
-              />
-              <LabeledInput
-                label="Arrivals / hour"
-                value={config.arrivalsPerHour}
-                onChange={(v: number) => setConfig((prev) => ({ ...prev, arrivalsPerHour: v }))}
-                min={1}
-                max={80}
-              />
-              <LabeledInput
-                label="Departures / hour"
-                value={config.departuresPerHour}
-                onChange={(v: number) => setConfig((prev) => ({ ...prev, departuresPerHour: v }))}
-                min={1}
-                max={80}
-              />
-
-              {error ? <div className="error-note">{error}</div> : null}
-            </section>
-          </aside>
-
-          <main className="content-grid">
-            <section className="kpi-band reveal reveal--3">
-              <StatCard
-                label="OTP"
-                value={state.otpRatePct.toFixed(2)}
-                unit="%"
-                tone={state.otpRatePct >= 85 ? "good" : "bad"}
-              />
-              <StatCard
-                label="Turnaround"
-                value={state.avgTurnaroundMin.toFixed(2)}
-                unit="min"
-                tone={state.avgTurnaroundMin <= 55 ? "good" : "bad"}
-              />
-              <StatCard
-                label="Gate Utilization"
-                value={state.gateUtilizationAvgPct.toFixed(2)}
-                unit="%"
-                tone={state.gateUtilizationAvgPct <= 92 ? "good" : "warn"}
-              />
-              <StatCard label="Delay Avg" value={state.delayAvgMin.toFixed(2)} unit="min" tone={state.delayAvgMin <= 12 ? "warn" : "bad"} />
-            </section>
 
             <section className="glass-panel chart-panel reveal reveal--4">
               <div className="panel-head">
@@ -2091,13 +2069,8 @@ export default function App() {
                     <XAxis dataKey="t" stroke={CHART_COLORS.axis} tickFormatter={(v) => `${Math.round(v / 1000)}s`} />
                     <YAxis stroke={CHART_COLORS.axis} />
                     <Tooltip
-                      contentStyle={{
-                        background: CHART_COLORS.tooltipBg,
-                        border: "1px solid rgba(117, 159, 199, 0.42)",
-                        borderRadius: 10,
-                        color: "#e6f0fb",
-                      }}
-                      labelStyle={{ color: "#c9dbef" }}
+                      contentStyle={chartTheme.tooltip}
+                      labelStyle={{ color: chartTheme.tooltip.color }}
                       labelFormatter={(v) => `t=${Math.round(Number(v) / 1000)}s`}
                     />
                     <Legend />
@@ -2121,13 +2094,8 @@ export default function App() {
                     <XAxis dataKey="t" stroke={CHART_COLORS.axis} tickFormatter={(v) => `${Math.round(v / 1000)}s`} />
                     <YAxis stroke={CHART_COLORS.axis} />
                     <Tooltip
-                      contentStyle={{
-                        background: CHART_COLORS.tooltipBg,
-                        border: "1px solid rgba(117, 159, 199, 0.42)",
-                        borderRadius: 10,
-                        color: "#e6f0fb",
-                      }}
-                      labelStyle={{ color: "#c9dbef" }}
+                      contentStyle={chartTheme.tooltip}
+                      labelStyle={{ color: chartTheme.tooltip.color }}
                     />
                     <Legend />
                     <Line type="monotone" dataKey="gateUtil" stroke={CHART_COLORS.gate} strokeWidth={2.2} dot={false} name="Gate Util %" />

@@ -16,6 +16,7 @@ import {
 import { FIELDS, DEFAULTS, PRESETS, number, time } from "./config";
 import { request, telemetry, url } from "./api";
 import { assertComparable, buildCompareHtml } from "./report";
+import { chartTheme } from "../ui/chartTheme";
 import type {
   Assumptions,
   ChartRow,
@@ -122,16 +123,16 @@ function PowerChart({
   const lines =
     mode === "grid"
       ? [
-          ["baseline", "Netz / ungesteuert", "#8ca2b8"],
-          ["priority", "Netz / Buspriorität", "#5ee3d6"],
-          ["pv_kw", "PV, beide Regeln", "#ffca78"],
+          ["baseline", "Netz / ungesteuert", chartTheme.series.baseline],
+          ["priority", "Netz / Buspriorität", chartTheme.series.blue],
+          ["pv_kw", "PV, beide Regeln", chartTheme.series.amber],
         ]
       : mode === "charging"
         ? [
-            ["bus_kw", "Busdepot / Buspriorität", "#5ee3d6"],
-            ["parking_kw", "Parkhaus / Buspriorität", "#8db6ff"],
+            ["bus_kw", "Busdepot / Buspriorität", chartTheme.series.blue],
+            ["parking_kw", "Parkhaus / Buspriorität", chartTheme.series.teal],
           ]
-        : [["battery_soc_pct", "SOC / Buspriorität", "#ffca78"]];
+        : [["battery_soc_pct", "SOC / Buspriorität", chartTheme.series.amber]];
   return (
     <div
       className="muc-chart"
@@ -146,20 +147,20 @@ function PowerChart({
     >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={rows} margin={{ left: 4, right: 12, top: 12, bottom: 10 }}>
-          <CartesianGrid stroke="#253b50" strokeDasharray="3 5" vertical={false} />
+          <CartesianGrid stroke={chartTheme.grid} strokeDasharray="3 5" vertical={false} />
           <XAxis
             dataKey="minute"
             type="number"
             domain={[0, 1440]}
             ticks={[0, 360, 720, 1080, 1440]}
             tickFormatter={time}
-            stroke="#839aad"
-            tick={{ fontSize: 11 }}
+            stroke={chartTheme.axis}
+            tick={{ fontSize: 12 }}
           />
           <YAxis
-            stroke="#839aad"
+            stroke={chartTheme.axis}
             width={58}
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 12 }}
             tickFormatter={(v: number) => number(v)}
             unit={mode === "storage" ? "%" : ""}
             domain={mode === "storage" ? [0, 100] : [0, "auto"]}
@@ -170,22 +171,17 @@ function PowerChart({
               `${number(v, 1)} ${mode === "storage" ? "%" : "kW"}`,
               name,
             ]}
-            contentStyle={{
-              background: "#102438",
-              border: "1px solid #4a657d",
-              borderRadius: 8,
-              fontSize: 12,
-            }}
+            contentStyle={chartTheme.tooltip}
           />
           <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
           {mode === "grid" && (
             <ReferenceLine
               y={config.grid_import_limit_kw}
-              stroke="#f5a86a"
+              stroke={chartTheme.series.amber}
               strokeDasharray="5 4"
               label={{
                 value: "Importgrenze",
-                fill: "#f5c599",
+                fill: chartTheme.series.amber,
                 fontSize: 10,
                 position: "insideTopRight",
               }}
