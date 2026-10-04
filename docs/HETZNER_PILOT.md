@@ -74,7 +74,52 @@ Zugangsdaten nur nach Challenge und lehnt Redirects ausserhalb dieses HTTPS-
 Pilotpfads ab. Vor Freigabe unauthentifiziert 401 fuer UI/API/Artefakte pruefen.
 HTTP ohne TLS darf nur umleiten, nie Zugangsdaten abfragen oder Inhalte liefern.
 
-## Verifizierter Release vom 03.10.2026
+## Aktiver Release vom 04.10.2026
+
+Code-Release `b7e08cf625af042bf062154560bc3bc6802845ce` aus
+`codex/airport-pilot-studio` (PR #12) ist auf Hetzner aktiviert.
+Server-Checkout: `/opt/airport-twin-pilot`; der aktive Compose-Stack wurde aus
+dem unveraenderten Release-Worktree `/opt/airport-releases/b7e08cf` gebaut.
+Beide Checkouts enthalten denselben Code-Commit. Der lokale Arbeitsbereich ist
+`/Users/davidwegener/Desktop/TestingLab/DigitalerZwillingBundeswehr`.
+
+Vor dem Wechsel wurde das Backend gestoppt und das vorhandene Datenvolume
+offline gesichert (605 Dateien, Archivmodus 0600). Die hashgepruefte
+Wiederherstellung in ein separates Verzeichnis war erfolgreich. Datenvolume,
+HTTPS-Proxy, bestehender Basic-Auth-Zugang und andere Anwendungen blieben
+erhalten. Alte App-Images sind als `rollback-c16a514` vorhanden. Keine lokalen
+Betriebsdaten oder unversionierten Dateikopien wurden uebertragen.
+
+Verifiziert am aktiven Release:
+- Ein Backend-Prozess, Health/Readiness erfolgreich, Execution-Commit geprueft.
+- Geschuetzte HTTPS-Assets und neue Pilot-Endpunkte erreichbar; ohne Login
+  liefern UI, Readiness und Pilot-Projekte weiterhin HTTP 401.
+- Vier Energie-Vergleiche mit Export-/Auditpruefung; FlexLab inklusive
+  erwarteter FAIL-/INCONCLUSIVE- und Abbruchfaelle erfolgreich geprueft.
+- Gekoppelter Vergleich `a556fa82f92b4e2fb07a2373f02d9973`: beide Runs
+  abgeschlossen, gleicher Welt-Hash, Daten-/Report-Pruefsummen verifiziert.
+  Beide Laderegeln erreichen 21,49 % modellierte Abflugbereitschaft; strenge
+  Modellkriterien bleiben `false`. Kein Optimierungsvorteil nachgewiesen.
+- Neuer Pilot-Workflow im laufenden Container mit synthetischen Testdaten:
+  Import, Run-Replay, Bewertung und ZIP-Hashes erfolgreich; ungueltige Daten
+  ergeben `NOT_EVALUABLE`. Das ist keine empirische Modellvalidierung.
+
+Die Browser-Sichtpruefung des lokalen identischen Codes erfolgte vor dem
+Release. Eine erneute Live-Browserpruefung war wegen des Basic-Auth-Dialogs im
+integrierten Browser nicht moeglich; die Live-Gegenproben erfolgten authentifiziert
+ueber HTTPS sowie fuer den neuen Replay-Workflow direkt im laufenden Container.
+
+Die neue optionale persoenliche Anmeldung ist auf dieser geteilten Demo
+**nicht aktiviert**. Der bisherige Proxy-Passwortschutz bleibt wirksam.
+Weiterhin keine privaten Kundendaten hochladen; fuer einen Kundenpilot eine
+separate Instanz und persoenliche Accounts gemaess `PILOT_OPERATIONS.md` nutzen.
+
+Fuer eine Code-Uebergabe zuerst `AGENTS.md`, `PILOT_STUDIO.md`,
+`PRODUCT_READINESS.md` und `MUNICH_COUPLED.md` lesen. Neue Oberflaechen liegen
+unter `src/munich/` und `src/pilot/`, Backend unter `backend/app/munich/` und
+`backend/app/pilot/`. Keine Secrets oder Runtime-Volumes an Review-Tools geben.
+
+## Historischer Release vom 03.10.2026
 
 Code-Release `c16a514ef715e31703baace439abd36c7b5f080b`, gepruefter PR #9,
 auf dem bestehenden isolierten Pilot aktiviert. Eigenes Datenvolume vorher
