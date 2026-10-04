@@ -60,3 +60,18 @@ Sie benoetigt u.a. die Verknuepfung von Inbound-/Outbound-Fluegen und Milestones
 Solche Umlaeufe fehlen im oeffentlichen Saisonflugplan. Deshalb wird im
 gekoppelten Modell **Aufgaben-/Abfertigungsbereitschaft**, nicht echte TOBT/OTP,
 ausgewiesen. Quellenstand 03.10.2026; keine behauptete A-CDM-Konformitaet.
+
+## Software-Erweiterung vom 04.10.2026
+
+Pilot Decision Studio ergaenzt Projekt-/Entscheidungsgrenzen, SQLite-Evidenz,
+Messdaten-Qualitaetsgates, getrennte Datenrollen und serverseitigen Run-Abgleich.
+System Explorer und deterministische Vier-Varianten-Suite ergaenzen die
+bestehende gekoppelte Simulation. Ein begrenzter Netzenergie-Kostenbaustein
+verwendet eigene Tarifannahmen. Testpakete enthalten Originalquellen und Hashes.
+Optionaler persoenlicher Zugang, Rollen und Offline-Backup/Restore sind fuer
+**dedizierte** Kundeninstanzen vorgesehen, nicht fuer gemeinsame Mandanten.
+
+Das schliesst die technischen Workflow-Luecken teilweise. Echte Daten,
+Kalibrierung, unabhaengige empirische Validierung, reale Lab-Freigabe und
+wirtschaftliche Kundenabnahme bleiben unveraendert offen. Anleitung:
+[Pilot Studio](PILOT_STUDIO.md), [Betrieb](PILOT_OPERATIONS.md).

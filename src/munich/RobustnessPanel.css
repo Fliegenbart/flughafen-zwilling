@@ -1,0 +1,142 @@
+[data-studio] .muc-robustness {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 20px;
+  color: #102033;
+  background: linear-gradient(135deg, #f6f9fc 0%, #ffffff 58%, #f4f8f7 100%);
+  border: 1px solid #d9e2ea;
+  border-left: 3px solid #31746a;
+  border-radius: 6px;
+}
+[data-studio] .muc-robustness p {
+  margin: 0;
+}
+[data-studio] .muc-robustness__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+[data-studio] .muc-robustness__eyebrow {
+  color: #31746a;
+  font: 11px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+[data-studio] .muc-robustness__tag {
+  padding: 3px 7px;
+  color: #5c4300;
+  background: #fff8e8;
+  border: 1px solid #ebd39d;
+  border-radius: 999px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+[data-studio] .muc-robustness__inputs {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.5fr) minmax(0, 2fr);
+  gap: 12px;
+}
+[data-studio] .muc-robustness__inputs label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+}
+[data-studio] .muc-robustness__inputs dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+[data-studio] .muc-robustness__inputs dl > div {
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid #dce6e7;
+  border-radius: 4px;
+}
+[data-studio] .muc-robustness__inputs dt,
+[data-studio] .muc-robustness__results small,
+[data-studio] .muc-robustness__note {
+  color: #5a6b80;
+  font-size: 11px;
+}
+[data-studio] .muc-robustness__inputs dd {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+[data-studio] .muc-robustness__note {
+  border-left: 2px solid #89a1bc;
+  padding-left: 8px;
+}
+[data-studio] .muc-robustness__results {
+  display: grid;
+  gap: 10px;
+}
+[data-studio] .muc-robustness__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+}
+[data-studio] .muc-robustness__table-scroll {
+  overflow-x: auto;
+  border: 1px solid #dce6e7;
+  border-radius: 4px;
+}
+[data-studio] .muc-robustness table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+[data-studio] .muc-robustness th {
+  padding: 9px;
+  color: #42566f;
+  background: #eff4f4;
+  font-weight: 600;
+  text-align: left;
+}
+[data-studio] .muc-robustness td {
+  padding: 9px;
+  vertical-align: top;
+  border-top: 1px solid #e4eaee;
+}
+[data-studio] .muc-robustness td > strong,
+[data-studio] .muc-robustness td > code,
+[data-studio] .muc-robustness td > small {
+  display: block;
+}
+[data-studio] .muc-robustness td > a {
+  display: inline-block;
+  margin: 4px 8px 0 0;
+  font-size: 11px;
+}
+[data-studio] .muc-robustness td > code {
+  max-width: 280px;
+  color: #42566f;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+[data-studio] .muc-robustness td > small:not(:empty) {
+  margin-top: 3px;
+}
+@media (max-width: 700px) {
+  [data-studio] .muc-robustness {
+    padding: 15px;
+  }
+  [data-studio] .muc-robustness__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  [data-studio] .muc-robustness__tag {
+    align-self: start;
+  }
+  [data-studio] .muc-robustness__inputs {
+    grid-template-columns: 1fr;
+  }
+  [data-studio] .muc-robustness__inputs dl {
+    grid-template-columns: 1fr;
+  }
+}

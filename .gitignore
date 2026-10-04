@@ -18,3 +18,8 @@ data/runs/
 data/playbook_jobs/
 data/lab/
 data/munich/
+
+data/pilot/
+data/access.sqlite3*
+
+backend/data/

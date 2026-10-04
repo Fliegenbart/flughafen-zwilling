@@ -1,0 +1,263 @@
+.pilot-studio {
+  --pilot-ink: #182c40;
+  --pilot-line: #d8e1e8;
+  margin: 28px 0;
+  color: var(--pilot-ink);
+  border: 1px solid var(--pilot-line);
+  border-radius: 22px;
+  background: linear-gradient(130deg, #fff, #f2f7fb);
+  padding: clamp(18px, 3vw, 34px);
+}
+.pilot-studio * {
+  box-sizing: border-box;
+}
+.pilot-studio__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 20px;
+}
+.pilot-studio__eyebrow {
+  color: #35617d;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font:
+    11px "IBM Plex Mono",
+    monospace;
+}
+.pilot-studio h2 {
+  font-size: clamp(23px, 3vw, 34px);
+  letter-spacing: -0.045em;
+  margin: 8px 0;
+}
+.pilot-studio p {
+  color: #52677a;
+  line-height: 1.6;
+  max-width: 80ch;
+}
+.pilot-studio__grid {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.75fr) minmax(0, 1.6fr);
+  gap: 24px;
+  margin-top: 24px;
+}
+.pilot-studio__card {
+  background: #fff;
+  border: 1px solid var(--pilot-line);
+  border-radius: 15px;
+  padding: 20px;
+  min-width: 0;
+}
+.pilot-studio h3 {
+  margin: 0 0 16px;
+  font-size: 17px;
+}
+.pilot-studio label {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  color: #435d72;
+  margin: 13px 0;
+}
+.pilot-studio input,
+.pilot-studio select,
+.pilot-studio textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #bccdd9;
+  border-radius: 8px;
+  background: #fff;
+  padding: 11px;
+  color: #172d41;
+  font: inherit;
+}
+.pilot-studio textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+.pilot-studio button,
+.pilot-studio__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 8px;
+  border: 1px solid #a9bed0;
+  padding: 10px 14px;
+  background: #edf5fb;
+  color: #164f80;
+  font:
+    600 12px "Sora",
+    sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+}
+.pilot-studio button[type="submit"] {
+  background: #1b568a;
+  color: #fff;
+  border-color: #1b568a;
+}
+.pilot-studio button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pilot-studio :focus-visible {
+  outline: 3px solid #e1a849;
+  outline-offset: 3px;
+}
+.pilot-studio__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 12px 0;
+}
+.pilot-studio__steps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+  padding: 0;
+  list-style: none;
+}
+.pilot-studio__steps li {
+  padding: 8px 12px;
+  background: #e7eff5;
+  border-radius: 30px;
+  font-size: 11px;
+}
+.pilot-studio__note {
+  padding: 12px 15px;
+  background: #fff5dd;
+  border-left: 3px solid #cd941c;
+  border-radius: 5px;
+  font-size: 12px;
+}
+.pilot-studio__error {
+  color: #a72431 !important;
+  background: #fff0f1;
+  padding: 12px;
+  border-radius: 8px;
+}
+.pilot-studio__imports {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0;
+}
+.pilot-studio__import {
+  border: 1px solid var(--pilot-line);
+  padding: 14px;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+.pilot-studio__import dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-size: 12px;
+}
+.pilot-studio__import dd {
+  margin: 5px 0;
+  font:
+    16px "IBM Plex Mono",
+    monospace;
+}
+.pilot-studio__import small {
+  display: block;
+  color: #546a7d;
+  margin: 5px 0;
+}
+.pilot-studio__split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.pilot-studio__list {
+  display: grid;
+  gap: 6px;
+  margin: 15px 0;
+}
+.pilot-studio__list button {
+  justify-content: start;
+  text-align: left;
+}
+.pilot-studio__list button[aria-pressed="true"] {
+  border-color: #1b568a;
+  background: #dcecf9;
+}
+@media (max-width: 850px) {
+  .pilot-studio__grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .pilot-studio__header,
+  .pilot-studio__split {
+    display: block;
+  }
+  .pilot-studio {
+    padding: 16px;
+  }
+}
+.pilot-access {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(at 20% 10%, #dfedf7, transparent 60%), #f3f6f8;
+  font-family: Sora, sans-serif;
+}
+.pilot-access .pilot-studio {
+  width: min(100%, 520px);
+}
+.pilot-access-bar {
+  padding: 8px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 18px;
+  align-items: center;
+  background: #162c40;
+  color: #eff6fa;
+  font:
+    12px Sora,
+    sans-serif;
+}
+.pilot-access-bar button {
+  background: none;
+  color: inherit;
+  border: 1px solid #7590a6;
+  padding: 5px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.pilot-workflow-entry {
+  border: 1px solid #ccdce7;
+  border-radius: 14px;
+  background: #f8fbfd;
+  margin: 0 0 24px;
+}
+.pilot-workflow-entry > summary {
+  cursor: pointer;
+  padding: 18px 22px;
+  color: #214c6c;
+  font:
+    600 14px Sora,
+    sans-serif;
+}
+.pilot-workflow-entry > summary span {
+  display: inline-block;
+  margin-left: 18px;
+  font-size: 11px;
+  font-weight: 400;
+  color: #617686;
+}
+.pilot-workflow-entry > .pilot-studio {
+  margin: 0;
+  border: 0;
+  border-radius: 0 0 14px 14px;
+}
+@media (max-width: 600px) {
+  .pilot-workflow-entry > summary span {
+    display: block;
+    margin: 8px 0 0;
+  }
+}

@@ -14,6 +14,9 @@ import { buildCoupledHtml, coupledPair, FLEET_LABELS, modelTime } from "./couple
 import CoupledControls from "./CoupledControls";
 import { Delta, CoupledChart } from "./CoupledViews";
 import CoupledCompare from "./CoupledCompare";
+import SystemExplorer from "./SystemExplorer";
+import RobustnessPanel from "./RobustnessPanel";
+import CostWorksheet from "../pilot/CostWorksheet";
 import { StudioHeader, StudioWorkflowNav } from "../ui/StudioHeader";
 import "./CoupledPanel.css";
 
@@ -298,6 +301,7 @@ export default function CoupledPanel({
             </button>
             <button
               type="button"
+              id="coupled-start"
               className="studio-primary"
               aria-label="Gekoppelten Vergleich starten"
               disabled={
@@ -350,6 +354,15 @@ export default function CoupledPanel({
           keine reale Flug-OTP/TOBT und kein Sicherheits- oder Investitionsnachweis.
         </p>
       </details>
+      {config && (
+        <SystemExplorer
+          config={config}
+          setConfig={setConfig}
+          plan={plan}
+          records={pair}
+          startControlId="coupled-start"
+        />
+      )}
       <div className="studio-coupled-layout">
         <section className="studio-test-config" aria-label="Testkonfiguration">
           <h2>Testkonfiguration</h2>
@@ -440,11 +453,7 @@ export default function CoupledPanel({
                 · {number(pair[0].summary!.coupled_kpis.model_horizon_hours, 1)} Modellstunden
                 inklusive Vor-/Nachlauf. Aktuelle Formularänderungen ändern diese Nachweise nicht.
               </p>
-              <CoupledCompare
-                baseline={pair[0]}
-                priority={pair[1]}
-                reportsHashed={reportsHashed}
-              />
+              <CoupledCompare baseline={pair[0]} priority={pair[1]} reportsHashed={reportsHashed} />
               <div className="coupled-deltas">
                 <Delta
                   label="Energie-Warteminuten"
@@ -599,6 +608,8 @@ export default function CoupledPanel({
           )}
         </section>
       </div>
+      {pair && <CostWorksheet baseline={pair[0]} recommended={pair[1]} />}
+      <RobustnessPanel snapshot={plan} config={config ?? undefined} />
     </section>
   );
 }

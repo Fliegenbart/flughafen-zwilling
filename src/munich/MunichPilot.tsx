@@ -28,6 +28,7 @@ import type {
 import "./MunichPilot.css";
 import FlightPlanPanel from "./FlightPlanPanel";
 import CoupledPanel from "./CoupledPanel";
+import PilotStudio from "../pilot/PilotStudio";
 import { flightDate } from "./flightplanTypes";
 import type { FlightPlanSnapshot } from "./flightplanTypes";
 
@@ -205,6 +206,7 @@ function PowerChart({
 }
 
 export default function MunichPilot() {
+  const [pilotOpen, setPilotOpen] = useState(false);
   const [reference, setReference] = useState<Reference | null>(null);
   const [config, setConfig] = useState<Assumptions>(DEFAULTS);
   const [preset, setPreset] = useState("reference");
@@ -402,6 +404,16 @@ export default function MunichPilot() {
 
   return (
     <main className="muc-pilot">
+      <details
+        className="pilot-workflow-entry"
+        onToggle={(event) => setPilotOpen(event.currentTarget.open)}
+      >
+        <summary>
+          Pilotprojekt &amp; Messdaten{" "}
+          <span>Entscheidungsfrage · Modellabgleich · TestingLab-Paket</span>
+        </summary>
+        {pilotOpen && <PilotStudio />}
+      </details>
       <CoupledPanel
         plan={flightPlan}
         loadingPlan={flightPlanLoading}
