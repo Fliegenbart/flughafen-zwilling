@@ -1590,6 +1590,10 @@ export default function App() {
                   Run ID: <span className="mono">{state.remoteRunId || "-"}</span>
                 </div>
                 <div>Status: {state.remoteRunState || "-"}</div>
+                <div>
+                  Modellkriterium: {state.passFail === null ? "noch nicht bewertet" : state.passFail ? "erfüllt" : "nicht erfüllt"}
+                </div>
+                <div>SIL- und Modellkriterium, kein empirischer Nachweis.</div>
                 <div>Progress: {state.remoteRunProgress.toFixed(0)}%</div>
                 <div className="progress-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.remoteRunProgress}>
                   <div className="progress-bar__value" style={{ width: `${Math.max(0, Math.min(100, state.remoteRunProgress))}%` }} />
@@ -1756,7 +1760,16 @@ export default function App() {
             </section>
 
             {playbookEnabled && playbookRecord?.best_option ? (
-                    <div className="playbook-result">
+                    <section className="playbook-result" role="region" aria-label="Playbook-Vergleich">
+                      <div className="info-note planner-context">
+                        <h3>Eingefrorener Playbook-Vergleich</h3>
+                        <small>
+                          Szenario-ID: <span className="mono">{String(playbookRecord.request?.scenario_id || playbookRecord.build_meta?.derived_forecast_scenario_id || "n/a")}</span>
+                          {" · "}Model-Pack-ID: <span className="mono">{String(playbookRecord.request?.model_pack_id || playbookRecord.build_meta?.derived_forecast_model_pack_id || "n/a")}</span>
+                          {" · "}Seed: <span className="mono">{String(playbookRecord.request?.seed ?? "n/a")}</span>
+                        </small>
+                        <small>Eigener eingefrorener Versuch; nicht automatisch der aktuelle Run.</small>
+                      </div>
                       {playbookForecastContext ? (
                         <div className="info-note planner-context">
                           Forecast {playbookForecastContext.horizon} min · Quelle: {playbookForecastContext.sourceLabel} · Source Run:{" "}
@@ -1956,7 +1969,7 @@ export default function App() {
                           ))}
                         </div>
                       ) : null}
-                    </div>
+                    </section>
                   ) : null}
 
 

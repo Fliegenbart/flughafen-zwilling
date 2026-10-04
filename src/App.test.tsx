@@ -141,6 +141,92 @@ describe("HMI smoke", () => {
     }
   });
 
+  it("keeps frozen scenario playbook provenance visible after the selected case changes", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    const frozenRequest = {
+      seed: 2028,
+      scenario_id: "airport_case_02_guillotine_v1",
+      model_pack_id: "airport_medium_eu_v1",
+      source_kind: "scenario",
+    };
+    const option = {
+      option_id: "opt-frozen",
+      feasible: true,
+      violation_penalty: 0,
+      intervention_cost: 4,
+      estimated_airport_kpis: {
+        otp_rate_pct: 88,
+        avg_turnaround_min: 51,
+        gate_utilization_avg_pct: 89,
+        delay_avg_min: 7,
+      },
+      delta_to_baseline: {
+        otp_rate_pct_delta: 2,
+        avg_turnaround_min_delta: -2,
+        gate_utilization_avg_pct_delta: -1,
+        delay_avg_min_delta: -1,
+        intervention_cost_delta: 4,
+      },
+      actions: [],
+    };
+
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/capabilities")) return mockJsonResponse({ playbook_synth_enabled: true });
+      if (url.endsWith("/scenarios") && init?.method === "POST") return mockJsonResponse({ id: frozenRequest.scenario_id });
+      if (url.endsWith("/model-packs") && init?.method === "POST") return mockJsonResponse({ id: frozenRequest.model_pack_id });
+      if (url.endsWith("/playbook-jobs") && init?.method === "POST") {
+        return mockJsonResponse({ job_id: "pb-frozen", state: "completed", progress: 100 });
+      }
+      if (url.endsWith("/playbook-jobs/pb-frozen")) return mockJsonResponse({ state: "completed", progress: 100 });
+      if (url.endsWith("/playbook-jobs/pb-frozen/record")) {
+        return mockJsonResponse({
+          status: { job_id: "pb-frozen", state: "completed", progress: 100 },
+          request: frozenRequest,
+          best_option: option,
+          pareto_options: [],
+          artifacts: [],
+        });
+      }
+      return mockJsonResponse({ status: "ok" });
+    });
+
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Testprofil"), { target: { value: "2" } });
+    await screen.findByText("Playbook Synthesizer");
+    fireEvent.click(screen.getByRole("button", { name: "Playbook synthetisieren" }));
+
+    const comparison = await screen.findByRole("region", { name: "Playbook-Vergleich" });
+    fireEvent.change(screen.getByLabelText("Testprofil"), { target: { value: "8" } });
+
+    expect(within(comparison).getByRole("heading", { name: "Eingefrorener Playbook-Vergleich" })).toBeInTheDocument();
+    expect(within(comparison).getByText("airport_case_02_guillotine_v1")).toBeInTheDocument();
+    expect(within(comparison).getByText("airport_medium_eu_v1")).toBeInTheDocument();
+    expect(within(comparison).getByText("2028")).toBeInTheDocument();
+    expect(within(comparison).getByText(/nicht automatisch der aktuelle Run/i)).toBeInTheDocument();
+  });
+
+  it("shows a failed model criterion separately from a completed technical run", async () => {
+    const status = { run_id: "criteria-false", state: "completed", progress: 100, pass_fail: false };
+    vi.mocked(global.fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/capabilities")) return mockJsonResponse({ playbook_synth_enabled: false });
+      if (url.endsWith("/telemetry")) return mockTextResponse("");
+      if (url.endsWith("/record")) return mockJsonResponse({ status, summary: {} });
+      if (url.endsWith("/runs") || url.endsWith("/runs/criteria-false")) return mockJsonResponse(status);
+      return mockJsonResponse({ status: "ok" });
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Backend Run starten" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Status: completed")).toBeInTheDocument();
+      expect(screen.getByText("Modellkriterium: nicht erfüllt")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/SIL- und Modellkriterium, kein empirischer Nachweis/i)).toBeInTheDocument();
+  });
+
   it("only switches to the local observability backend when fallback is explicitly enabled", async () => {
     const fetchMock = vi.mocked(global.fetch);
     globalThis.__TWIN_CONFIG__ = {
