@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import RobustnessPanel from "./RobustnessPanel";
 import { config } from "./__fixtures__/coupledConfig";
 import { plan } from "./__fixtures__/flightplan";
@@ -64,9 +64,39 @@ const suite = {
 };
 
 describe("RobustnessPanel", () => {
+  beforeEach(() => {
+    const values = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    });
+  });
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.clearAllMocks();
+  });
+  it("restores a persisted suite and retries a transient polling failure", async () => {
+    localStorage.setItem("airport-robustness-v1:/api/v1", suite.suite_id);
+    const running = structuredClone(suite);
+    running.scenarios[0]!.runs[0]!.status.state = "running";
+    let calls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        calls += 1;
+        if (calls === 1) return new Response(JSON.stringify(running));
+        if (calls === 2)
+          return new Response(JSON.stringify({ detail: "Kurz unterbrochen" }), { status: 503 });
+        return new Response(JSON.stringify(suite));
+      }),
+    );
+    render(<RobustnessPanel snapshot={plan} config={config} pollMs={10} />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Robustness-Suite starten" })).toBeEnabled(),
+    );
+    await waitFor(() => expect(calls).toBeGreaterThanOrEqual(3));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText("70 %")).toBeVisible();
   });
 
   it("requires a selected snapshot and shows completed deterministic stress metrics", async () => {

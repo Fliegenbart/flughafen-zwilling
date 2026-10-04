@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { request, url } from "./api";
 import { number } from "./config";
 import type { CoupledConfig } from "./coupledTypes";
 import type { FlightPlanSnapshot } from "./flightplanTypes";
 import "./RobustnessPanel.css";
+const SUITE_CACHE = `airport-robustness-v1:${url("")}`;
 
 type MetricSummary = {
   departure_readiness_pct: number | null;
@@ -80,6 +81,28 @@ export default function RobustnessPanel({
   const [suite, setSuite] = useState<RobustnessSuite | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const restoreController = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    let id: string | null = null;
+    try {
+      id = localStorage.getItem(SUITE_CACHE);
+    } catch {
+      /* Storage is optional. */
+    }
+    if (!id || !/^[a-f0-9]{32}$/.test(id)) return;
+    const controller = new AbortController();
+    restoreController.current = controller;
+    request<RobustnessSuite>(`/munich/robustness-suites/${id}`, { signal: controller.signal })
+      .then((response) => {
+        if (!controller.signal.aborted) setSuite(response);
+      })
+      .catch((reason) => {
+        if (!controller.signal.aborted) setError(`Gespeicherte Suite: ${String(reason)}`);
+      });
+    return () => controller.abort();
+  }, []);
 
   const active = useMemo(
     () =>
@@ -93,25 +116,36 @@ export default function RobustnessPanel({
   useEffect(() => {
     if (!suite || !active) return;
     const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      void request<RobustnessSuite>(`/munich/robustness-suites/${suite.suite_id}`, {
-        signal: controller.signal,
-      })
-        .then((response) => {
-          if (!controller.signal.aborted) setSuite(response);
+    const timer = window.setTimeout(
+      () => {
+        void request<RobustnessSuite>(`/munich/robustness-suites/${suite.suite_id}`, {
+          signal: controller.signal,
         })
-        .catch((reason: Error) => {
-          if (!controller.signal.aborted) setError(reason.message);
-        });
-    }, pollMs);
+          .then((response) => {
+            if (!controller.signal.aborted) {
+              setSuite(response);
+              setRetry(0);
+              setError("");
+            }
+          })
+          .catch((reason: Error) => {
+            if (!controller.signal.aborted) {
+              setError(reason.message);
+              setRetry((value) => value + 1);
+            }
+          });
+      },
+      Math.min(pollMs * 2 ** Math.min(retry, 5), 30000),
+    );
     return () => {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [active, pollMs, suite]);
+  }, [active, pollMs, suite, retry]);
 
   async function start() {
     if (!snapshot || !config || !Number.isInteger(seed) || seed < 0 || seed > 2147483647) return;
+    restoreController.current?.abort();
     setStarting(true);
     setError("");
     try {
@@ -129,6 +163,11 @@ export default function RobustnessPanel({
       )
         throw new Error("Unpassende Robustness-Suite vom Backend.");
       setSuite(response);
+      try {
+        localStorage.setItem(SUITE_CACHE, response.suite_id);
+      } catch {
+        /* Runs remain persisted on the server. */
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Start fehlgeschlagen");
     } finally {

@@ -15,7 +15,7 @@
 
 ## Nachweise
 
-- Frontend: Lint, Typecheck, 94 Tests; Root- und `/airport/`-Build.
+- Frontend: Lint, Typecheck, 95 Tests; Root- und `/airport/`-Build.
 - Backend: 208 Tests, Ruff fuer aktive Lab-/Muenchen-/Pilotmodule und Instanzzugang.
 - Original-Snapshots: `sh scripts/check-recovery.sh` unveraendert bestanden.
 - Docker QA lokal 5186/8016, bestehendes Volume erhalten. Kein Hetzner-Deployment.
@@ -38,3 +38,7 @@ vorhandene Run-Dateien sind weiterhin nicht multiprozesssicher. Auth/Rollen sind
 unit-/integrationgetestet, kein externer Penetrationstest. Browser-HTML-Download
 ist in der IAB-Umgebung eingeschraenkt; Reportinhalt und Escaping sind getestet.
 Der Hardwarepfad bleibt unveraendert; kein realer Adapter verwendet.
+
+Nachkontrolle: Suite-ID bleibt lokal erhalten; nach Reload wird der gespeicherte
+Serverstatus geladen. Temporäre Pollingfehler werden mit begrenztem Backoff erneut
+abgefragt. Neues Starten bricht eine noch laufende Wiederherstellungsabfrage ab.
