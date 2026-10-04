@@ -35,6 +35,23 @@
 [data-studio] .muc-flightplan__selector {
   max-width: 100%;
 }
+[data-studio] .muc-flightplan__import-details,
+[data-studio] .muc-flightplan__details {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #dde3eb;
+  border-radius: 4px;
+}
+[data-studio] .muc-flightplan__import-details summary,
+[data-studio] .muc-flightplan__details summary {
+  color: #102033;
+  cursor: pointer;
+  font-weight: 600;
+}
+[data-studio] .muc-flightplan__import-details[open] > summary,
+[data-studio] .muc-flightplan__details[open] > summary {
+  margin-bottom: 10px;
+}
 [data-studio] .muc-flightplan__boundary {
   margin: 14px 0;
   padding: 12px;
@@ -58,7 +75,7 @@
 [data-studio] .muc-flightplan__hour small,
 [data-studio] .muc-flightplan__airline {
   color: #5a6b80;
-  font-size: 11px;
+  font-size: 12px;
 }
 [data-studio] .muc-flightplan__stats strong {
   display: block;
@@ -96,14 +113,14 @@
 [data-studio] .muc-flightplan__hour small {
   height: 18px;
   padding-top: 4px;
-  font-size: 9px;
+  font-size: 12px;
 }
 [data-studio] .muc-flightplan__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin: 10px 0 16px;
-  font-size: 11px;
+  font-size: 12px;
 }
 [data-studio] .muc-flightplan__legend span {
   color: #2255ee;

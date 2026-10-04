@@ -1,3 +1,4 @@
+body:has([data-studio]) { margin: 0; }
 .studio-workspace {
   --studio-bg: #f4f6f8; --studio-surface: #fff; --studio-line: #dde3eb;
   --studio-ink: #102033; --studio-muted: #5a6b80; --studio-blue: #2255ee;

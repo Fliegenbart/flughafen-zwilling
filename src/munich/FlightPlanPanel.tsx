@@ -134,64 +134,6 @@ export default function FlightPlanPanel({
         <h2 id="muc-flightplan-title">Münchner Flugplan</h2>
         <span>Manueller Snapshot / kein Live-Feed</span>
       </div>
-      <p className="muc-small">
-        Echte veröffentlichte Planzeiten statt erfundener Flugwellen. Den{" "}
-        <a href={SOURCE} target="_blank" rel="noreferrer">
-          offiziellen Saisonflugplan herunterladen
-        </a>
-        , dann PDF und Verkehrstag auswählen. Kein automatischer Abruf.
-      </p>
-      <form
-        className="muc-flightplan__import"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void upload();
-        }}
-      >
-        <label className="muc-field">
-          Verkehrstag
-          <input
-            type="date"
-            value={date}
-            required
-            disabled={disabled || loading}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </label>
-        <label className="muc-field">
-          Saisonflugplan-PDF
-          <input
-            type="file"
-            accept=".pdf,application/pdf"
-            disabled={disabled || loading}
-            onChange={(e) => {
-              const next = e.target.files?.[0] ?? null;
-              setError("");
-              if (next && (next.size > 6 * 1024 * 1024 || !/\.pdf$/i.test(next.name))) {
-                setFile(null);
-                setError("Bitte eine PDF-Datei mit maximal 6 MiB auswählen.");
-              } else setFile(next);
-            }}
-          />
-        </label>
-        <button type="submit" disabled={disabled || loading || !file || !date}>
-          {loading ? "Flugplan wird geladen…" : "PDF importieren"}
-        </button>
-      </form>
-      {error && (
-        <div className="muc-error" role="alert">
-          {error}
-          <button
-            type="button"
-            onClick={() => {
-              setError("");
-              setReload((v) => v + 1);
-            }}
-          >
-            Liste erneut laden
-          </button>
-        </div>
-      )}
       <label className="muc-field muc-flightplan__selector">
         Gespeicherter Flugplantag
         <select
@@ -210,13 +152,77 @@ export default function FlightPlanPanel({
           ))}
         </select>
       </label>
-      <aside className="muc-flightplan__boundary">
-        <strong>Planzeiten, keine Live-Bewegungen.</strong> Energie-v1 ändert noch keine Ladebedarfe
-        durch den Import. Der separate gekoppelte Systemtest unten nutzt Planzeiten für ausdrücklich
-        angenommene Fahrzeugeinsätze. Reale Energieprofile und Flugzeugumläufe fehlen.
-      </aside>
+      <p className="muc-small">Manueller Snapshot / kein Live-Feed. Kein automatischer Abruf.</p>
+      <details className="muc-flightplan__import-details" open={!selected}>
+        <summary>Flugplan importieren &amp; Quelle</summary>
+        <p className="muc-small">
+          Echte veröffentlichte Planzeiten statt erfundener Flugwellen. Den{" "}
+          <a href={SOURCE} target="_blank" rel="noreferrer">
+            offiziellen Saisonflugplan herunterladen
+          </a>
+          , dann PDF und Verkehrstag auswählen. Kein automatischer Abruf.
+        </p>
+        <form
+          className="muc-flightplan__import"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void upload();
+          }}
+        >
+          <label className="muc-field">
+            Verkehrstag
+            <input
+              type="date"
+              value={date}
+              required
+              disabled={disabled || loading}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </label>
+          <label className="muc-field">
+            Saisonflugplan-PDF
+            <input
+              type="file"
+              accept=".pdf,application/pdf"
+              disabled={disabled || loading}
+              onChange={(e) => {
+                const next = e.target.files?.[0] ?? null;
+                setError("");
+                if (next && (next.size > 6 * 1024 * 1024 || !/\.pdf$/i.test(next.name))) {
+                  setFile(null);
+                  setError("Bitte eine PDF-Datei mit maximal 6 MiB auswählen.");
+                } else setFile(next);
+              }}
+            />
+          </label>
+          <button type="submit" disabled={disabled || loading || !file || !date}>
+            {loading ? "Flugplan wird geladen…" : "PDF importieren"}
+          </button>
+        </form>
+        <aside className="muc-flightplan__boundary">
+          <strong>Planzeiten, keine Live-Bewegungen.</strong> Energie-v1 ändert noch keine
+          Ladebedarfe durch den Import. Der separate gekoppelte Systemtest nutzt Planzeiten für
+          ausdrücklich angenommene Fahrzeugeinsätze. Reale Energieprofile und Flugzeugumläufe
+          fehlen.
+        </aside>
+      </details>
+      {error && (
+        <div className="muc-error" role="alert">
+          {error}
+          <button
+            type="button"
+            onClick={() => {
+              setError("");
+              setReload((v) => v + 1);
+            }}
+          >
+            Liste erneut laden
+          </button>
+        </div>
+      )}
       {selected ? (
-        <>
+        <details className="muc-flightplan__details">
+          <summary>Flugplandetails &amp; Nachweise</summary>
           <div className="muc-flightplan__stats">
             <div>
               <span>Verkehrstag</span>
@@ -374,7 +380,7 @@ export default function FlightPlanPanel({
               Snapshot JSON
             </a>
           </div>
-        </>
+        </details>
       ) : (
         <p className="muc-small">
           Noch kein Flugplantag ausgewählt. Bestehende Energievergleiche funktionieren weiterhin

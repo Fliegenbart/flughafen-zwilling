@@ -58,6 +58,15 @@
 [data-studio] .muc-pilot button:hover:not(:disabled) {
   background: #f4f7fb;
 }
+[data-studio] .muc-pilot .studio-header-actions button.studio-primary {
+  background: #2255ee;
+  color: #fff;
+  border-color: #2255ee;
+}
+[data-studio] .muc-pilot .studio-header-actions button.studio-primary:hover:not(:disabled) {
+  background: #1944ce;
+  border-color: #1944ce;
+}
 [data-studio] .muc-pilot button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
