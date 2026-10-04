@@ -7,7 +7,7 @@ import json
 import re
 from pathlib import Path
 from threading import Lock
-from typing import Any, Callable, Literal
+from typing import Annotated, Any, Callable, Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query
@@ -361,7 +361,7 @@ def create_router(
 
     @router.post("/robustness-suites", status_code=202)
     def create_suite(
-        payload: CoupledRequest, screen: Screen = Query(default="robustness"),
+        payload: CoupledRequest, screen: Annotated[Screen, Query()] = "robustness",
     ) -> dict[str, Any]:
         policies = POLICIES if screen == "robustness" else SENSITIVITY_POLICIES
         with creation_lock:

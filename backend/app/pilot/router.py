@@ -491,7 +491,8 @@ class EvidenceStore:
             locked_at = now if (request.lock or holdout_exists) else None
             connection.execute(
                 "INSERT OR REPLACE INTO project_tolerances"
-                "(project_id, tolerances_json, sha256, created_at, locked_at) VALUES (?, ?, ?, ?, ?)",
+                "(project_id, tolerances_json, sha256, created_at, locked_at)"
+                " VALUES (?, ?, ?, ?, ?)",
                 (project_id, self._json(tolerances), digest, now, locked_at),
             )
             self._append_audit(
