@@ -37,6 +37,30 @@ export function ruleDifferenceNote(a: CoupledKpis, b: CoupledKpis): string | nul
   return null;
 }
 
+const BOTTLENECK_TEXT: Record<string, string> = {
+  none: "kein Engpass im Modell",
+  energy: "Engpass Energie/Ladeleistung",
+  resource: "Engpass Fahrzeugverfügbarkeit",
+  energy_and_resource: "Engpass Energie und Fahrzeuge",
+};
+
+/**
+ * Die Antwort des Regelvergleichs in einem Satz. Nullergebnisse sind legitime Antworten.
+ * Grundlage ist die modellierte Abflug-Aufgabenbereitschaft (keine reale OTP).
+ */
+export function compareAnswer(a: CoupledKpis, b: CoupledKpis): string {
+  const bottleneck = b.bottleneck ?? a.bottleneck;
+  const cause = bottleneck ? ` – ${BOTTLENECK_TEXT[bottleneck] ?? bottleneck}` : "";
+  if (a.departure_readiness_pct === null || b.departure_readiness_pct === null)
+    return `Keine Abflug-Aufgaben im Modell – Laderegeln nicht vergleichbar${cause}`;
+  const diff = Math.round((b.departure_readiness_pct - a.departure_readiness_pct) * 10) / 10;
+  if (Math.abs(diff) < 0.1) return `Kein messbarer Unterschied der Laderegeln${cause}`;
+  const amount = `${number(Math.abs(diff), 1)} Prozentpunkte`;
+  return diff > 0
+    ? `Fristenpriorität erhöht die modellierte Aufgabenbereitschaft um ${amount}${cause}`
+    : `Fristenpriorität senkt die modellierte Aufgabenbereitschaft um ${amount}${cause}`;
+}
+
 function deltaText(x: number, y: number): string {
   const rounded = Math.round((y - x) * 10) / 10;
   const delta = Object.is(rounded, -0) ? 0 : rounded;
@@ -132,6 +156,7 @@ export function buildCoupledHtml(records: CoupledRecord[], expectedHash: string)
   const modelWarnings = [...new Set([...(b.model_warnings ?? []), ...(p.model_warnings ?? [])])];
   return `<!doctype html><html lang="de" data-report-theme="operations-studio"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Airport Twin Core | Gekoppelter Vergleich</title><style>${REPORT_STYLES}</style></head><body><main>
   <p>Airport Twin Core / MUC / SIL</p><h1>Flugplan → Fahrzeuge → Energie</h1>
+  <p><strong>Antwort (Modell): ${escape(compareAnswer(b, p))}.</strong></p>
   <p class="warning"><strong>Unkalibrierter Methodenprototyp.</strong> Planzeiten sind veröffentlicht; Aufgaben, Fahrzeuge, Verbrauch und Versorgung sind Modellannahmen. Aufgabenbereitschaft ist keine reale OTP/TOBT. Keine automatische Anlagensteuerung oder Sicherheits-/ROI-Aussage.</p>
   <p>Verkehrstag ${escape(plan.service_date)} / Datenstand ${escape(plan.source_data_date)}. ${b.published_entry_count} Flugplaneinträge; keine bestätigte Zahl physischer Flugbewegungen. ${number(b.model_horizon_hours, 1)} Modellstunden inklusive Vor-/Nachlauf.</p>
   <p>${b.mission_count} modellierte Aufgaben; ${b.modeled_departure_count} Abflugseinträge mit mindestens einer modellierten Aufgabe. Gleicher Nenner für beide Regeln.</p>

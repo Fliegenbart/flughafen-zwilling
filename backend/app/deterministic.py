@@ -114,10 +114,17 @@ def evaluate_assertions(
     if not merged:
         if summary.domain == "airport_coupled_v1":
             merged = [
-                AssertionSpec(name="Wirkleistungsbilanz", metric="energy_kpis.balance_error_max_kw",
+                # Buchfuehrungscheck: dieselbe Gleichung, die die Bilanz schliesst; per
+                # Konstruktion ~0 und kein unabhaengiger Physiknachweis.
+                AssertionSpec(name="Wirkleistungsbilanz (Buchfuehrungscheck)",
+                              metric="energy_kpis.balance_error_max_kw",
                               op="<=", threshold=0.000001),
                 AssertionSpec(name="Fahrzeug-Energiebilanz",
                               metric="coupled_kpis.fleet_energy_balance_error_kwh",
+                              op="<=", threshold=0.000001),
+                # Unabhaengig aufsummierte Lade-/Entlade-/Verlustgroessen gegen SOC-Differenz.
+                AssertionSpec(name="Speicher-Energiebilanz",
+                              metric="coupled_kpis.storage_energy_balance_error_kwh",
                               op="<=", threshold=0.000001),
                 AssertionSpec(name="Fahrzeugreserve eingehalten",
                               metric="coupled_kpis.fleet_reserve_violations", op="<=", threshold=0),

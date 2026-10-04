@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ruleDifferenceNote } from "./coupledReport";
+import { compareAnswer, ruleDifferenceNote } from "./coupledReport";
 import type { CoupledKpis } from "./coupledTypes";
 
 const kpis = (patch: Partial<CoupledKpis>) =>
@@ -22,5 +22,22 @@ describe("ruleDifferenceNote", () => {
       ),
     ).toBe(null);
     expect(ruleDifferenceNote(kpis({}), kpis({}))).toBe(null);
+  });
+});
+
+describe("compareAnswer", () => {
+  const base = {
+    departure_readiness_pct: 21.5,
+    bottleneck: "resource",
+  } as unknown as CoupledKpis;
+  it("treats a null result as a legitimate answer with its bottleneck", () => {
+    expect(compareAnswer(base, base)).toBe(
+      "Kein messbarer Unterschied der Laderegeln – Engpass Fahrzeugverfügbarkeit",
+    );
+  });
+  it("states direction and size of a modelled difference", () => {
+    const better: CoupledKpis = { ...base, departure_readiness_pct: 24, bottleneck: "energy" };
+    expect(compareAnswer(base, better)).toMatch(/erhöht .* um 2,5 Prozentpunkte – Engpass Energie/);
+    expect(compareAnswer(better, base)).toMatch(/senkt/);
   });
 });

@@ -12,7 +12,7 @@ import type { CoupledRecord } from "./coupledTypes";
 import { number } from "./config";
 import { url } from "./api";
 import { modelTime, POLICY_LABELS } from "./coupledReport";
-import { chartTheme } from "../ui/chartTheme";
+import { chartTokens } from "../ui/chartTheme";
 
 export function ResultCard({ record }: { record: CoupledRecord }) {
   const k = record.summary!.coupled_kpis,
@@ -168,20 +168,20 @@ export function CoupledChart({
   const lines =
     mode === "power"
       ? [
-          ["baseline_grid", "Netz / ungesteuert", chartTheme.series.baseline],
-          ["grid_import_kw", "Netz / Fristenpriorität", chartTheme.series.blue],
-          ["ground_charging_kw", "Flotte / Fristenpriorität", chartTheme.series.amber],
-          ["parking_kw", "Parkhaus / Fristenpriorität", chartTheme.series.teal],
+          ["baseline_grid", "Netz / ungesteuert", chartTokens.series.baseline],
+          ["grid_import_kw", "Netz / Fristenpriorität", chartTokens.series.blue],
+          ["ground_charging_kw", "Flotte / Fristenpriorität", chartTokens.series.amber],
+          ["parking_kw", "Parkhaus / Fristenpriorität", chartTokens.series.teal],
         ]
       : mode === "soc"
         ? [
-            ["baseline_soc", "SOC / ungesteuert", chartTheme.series.baseline],
-            ["fleet_soc_avg_pct", "SOC / Fristenpriorität", chartTheme.series.blue],
-            ["fleet_soc_min_pct", "Niedrigster SOC / Fristenpriorität", chartTheme.series.amber],
+            ["baseline_soc", "SOC / ungesteuert", chartTokens.series.baseline],
+            ["fleet_soc_avg_pct", "SOC / Fristenpriorität", chartTokens.series.blue],
+            ["fleet_soc_min_pct", "Niedrigster SOC / Fristenpriorität", chartTokens.series.amber],
           ]
         : [
-            ["baseline_queue", "Offene Aufgaben / ungesteuert", chartTheme.series.baseline],
-            ["mission_queue", "Offene Aufgaben / Fristenpriorität", chartTheme.series.blue],
+            ["baseline_queue", "Offene Aufgaben / ungesteuert", chartTokens.series.baseline],
+            ["mission_queue", "Offene Aufgaben / Fristenpriorität", chartTokens.series.blue],
           ];
   return (
     <div>
@@ -205,19 +205,19 @@ export function CoupledChart({
       >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={rows}>
-            <CartesianGrid stroke={chartTheme.grid} strokeDasharray="3 5" vertical={false} />
+            <CartesianGrid stroke={chartTokens.grid} strokeDasharray="3 5" vertical={false} />
             <XAxis
               dataKey="minute"
               type="number"
               domain={["dataMin", "dataMax"]}
               tickFormatter={(v: number) => modelTime(origin, v)}
-              stroke={chartTheme.axis}
+              stroke={chartTokens.axis}
               tick={{ fontSize: 12 }}
               minTickGap={25}
             />
             <YAxis
               width={55}
-              stroke={chartTheme.axis}
+              stroke={chartTokens.axis}
               domain={mode === "soc" ? [0, 100] : [0, "auto"]}
               tick={{ fontSize: 12 }}
             />
@@ -226,7 +226,7 @@ export function CoupledChart({
               formatter={(v: number) =>
                 `${number(v, 1)} ${mode === "soc" ? "%" : mode === "power" ? "kW" : "Aufträge"}`
               }
-              contentStyle={chartTheme.tooltip}
+              contentStyle={chartTokens.tooltip}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             {lines.map(([key, name, color]) => (

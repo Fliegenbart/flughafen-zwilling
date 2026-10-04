@@ -200,3 +200,20 @@ def test_sensitivity_suite_api_creates_a_labelled_serial_stress_screen(tmp_path,
         assert suite["statistical_confidence"] == "not_provided_deterministic_stress_screen_only"
         assert len(suite["scenarios"]) == 9 and len(suite["runs"]) == 9
         assert {run["policy"] for run in suite["runs"]} == {"mission_priority"}
+
+
+def test_power_balance_is_labelled_bookkeeping_and_storage_balance_is_a_criterion():
+    plan, world = simple_world()
+    result = simulate_coupled(world, plan, "mission_priority")
+    checks, _ = evaluate_assertions(summary_for(result), [], [])
+    names = {c.name: c for c in checks}
+    assert "Wirkleistungsbilanz (Buchfuehrungscheck)" in names
+    assert "Wirkleistungsbilanz" not in names
+    storage = names["Speicher-Energiebilanz"]
+    assert storage.metric == "coupled_kpis.storage_energy_balance_error_kwh"
+    assert storage.passed is True
+    broken = result.kpis.model_copy(update={"storage_energy_balance_error_kwh": 0.5})
+    summary = summary_for(result).model_copy(update={"coupled_kpis": broken})
+    checks, passed = evaluate_assertions(summary, [], [])
+    assert passed is False
+    assert not next(c for c in checks if c.name == "Speicher-Energiebilanz").passed

@@ -91,7 +91,11 @@ interface PlaybookJobPayloadClient extends PlaybookRequestClient {
   seed: number;
   search_budget_sec: number;
   max_options: number;
-  constraints: { otp_min_pct: number; turnaround_max_min: number; gate_utilization_max_pct: number };
+  constraints: {
+    otp_min_pct: number;
+    turnaround_max_min: number;
+    gate_utilization_max_pct: number;
+  };
   metadata: Record<string, string>;
 }
 
@@ -180,7 +184,12 @@ interface CaseDefinition {
   scenarioId: string;
   durationMs: number;
   tickMs: number;
-  timelineEvents: Array<{ at_ms: number; action: "set" | "toggle" | "inject"; target: string; value: number }>;
+  timelineEvents: Array<{
+    at_ms: number;
+    action: "set" | "toggle" | "inject";
+    target: string;
+    value: number;
+  }>;
   disturbances: Array<{
     name: string;
     target: CaseDisturbanceTarget;
@@ -188,7 +197,12 @@ interface CaseDefinition {
     duration_ms: number;
     magnitude: number;
   }>;
-  expectedAssertions: Array<{ name: string; metric: string; op: "<" | "<=" | ">" | ">=" | "==" | "!="; threshold: number }>;
+  expectedAssertions: Array<{
+    name: string;
+    metric: string;
+    op: "<" | "<=" | ">" | ">=" | "==" | "!=";
+    threshold: number;
+  }>;
 }
 
 const CHART_COLORS = {
@@ -207,7 +221,12 @@ const CHART_COLORS = {
 const DEFAULT_CASE_ASSERTIONS: CaseDefinition["expectedAssertions"] = [
   { name: "OTP", metric: "airport_kpis.otp_rate_pct", op: ">=", threshold: 85 },
   { name: "Turnaround", metric: "airport_kpis.avg_turnaround_min", op: "<=", threshold: 55 },
-  { name: "Gate Utilization", metric: "airport_kpis.gate_utilization_avg_pct", op: "<=", threshold: 92 },
+  {
+    name: "Gate Utilization",
+    metric: "airport_kpis.gate_utilization_avg_pct",
+    op: "<=",
+    threshold: 92,
+  },
 ];
 
 const CASE_DEFINITIONS: CaseDefinition[] = [
@@ -223,7 +242,13 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
       { at_ms: 18000, action: "inject", target: "departures_per_hour", value: 2.5 },
     ],
     disturbances: [
-      { name: "stand-pressure", target: "gate_blockage_pct", start_ms: 12000, duration_ms: 17000, magnitude: 12.0 },
+      {
+        name: "stand-pressure",
+        target: "gate_blockage_pct",
+        start_ms: 12000,
+        duration_ms: 17000,
+        magnitude: 12.0,
+      },
     ],
     expectedAssertions: DEFAULT_CASE_ASSERTIONS,
   },
@@ -236,7 +261,13 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
     tickMs: 40,
     timelineEvents: [],
     disturbances: [
-      { name: "gate-collapse", target: "gate_blockage_pct", start_ms: 12000, duration_ms: 18000, magnitude: 34.0 },
+      {
+        name: "gate-collapse",
+        target: "gate_blockage_pct",
+        start_ms: 12000,
+        duration_ms: 18000,
+        magnitude: 34.0,
+      },
       {
         name: "runway-collapse",
         target: "runway_slot_reduction_pct",
@@ -244,8 +275,20 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
         duration_ms: 18000,
         magnitude: 32.0,
       },
-      { name: "staff-collapse", target: "staffing_shortage_pct", start_ms: 12000, duration_ms: 18000, magnitude: 30.0 },
-      { name: "security-spike", target: "security_delay_min", start_ms: 12000, duration_ms: 9000, magnitude: 8.0 },
+      {
+        name: "staff-collapse",
+        target: "staffing_shortage_pct",
+        start_ms: 12000,
+        duration_ms: 18000,
+        magnitude: 30.0,
+      },
+      {
+        name: "security-spike",
+        target: "security_delay_min",
+        start_ms: 12000,
+        duration_ms: 9000,
+        magnitude: 8.0,
+      },
     ],
     expectedAssertions: DEFAULT_CASE_ASSERTIONS,
   },
@@ -265,8 +308,20 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
         duration_ms: 22000,
         magnitude: 20.0,
       },
-      { name: "slot-cut", target: "runway_slot_reduction_pct", start_ms: 10000, duration_ms: 22000, magnitude: 18.0 },
-      { name: "deicing-add", target: "deicing_delay_min", start_ms: 12000, duration_ms: 17000, magnitude: 4.0 },
+      {
+        name: "slot-cut",
+        target: "runway_slot_reduction_pct",
+        start_ms: 10000,
+        duration_ms: 22000,
+        magnitude: 18.0,
+      },
+      {
+        name: "deicing-add",
+        target: "deicing_delay_min",
+        start_ms: 12000,
+        duration_ms: 17000,
+        magnitude: 4.0,
+      },
     ],
     expectedAssertions: DEFAULT_CASE_ASSERTIONS,
   },
@@ -279,8 +334,20 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
     tickMs: 40,
     timelineEvents: [{ at_ms: 9000, action: "inject", target: "arrivals_per_hour", value: 2.0 }],
     disturbances: [
-      { name: "baggage-jam", target: "baggage_jam_pct", start_ms: 12000, duration_ms: 22000, magnitude: 33.0 },
-      { name: "security-wave", target: "security_delay_min", start_ms: 14000, duration_ms: 17000, magnitude: 5.0 },
+      {
+        name: "baggage-jam",
+        target: "baggage_jam_pct",
+        start_ms: 12000,
+        duration_ms: 22000,
+        magnitude: 33.0,
+      },
+      {
+        name: "security-wave",
+        target: "security_delay_min",
+        start_ms: 14000,
+        duration_ms: 17000,
+        magnitude: 5.0,
+      },
     ],
     expectedAssertions: DEFAULT_CASE_ASSERTIONS,
   },
@@ -300,7 +367,13 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
         duration_ms: 24000,
         magnitude: 34.0,
       },
-      { name: "light-gate-block", target: "gate_blockage_pct", start_ms: 11000, duration_ms: 17000, magnitude: 8.0 },
+      {
+        name: "light-gate-block",
+        target: "gate_blockage_pct",
+        start_ms: 11000,
+        duration_ms: 17000,
+        magnitude: 8.0,
+      },
     ],
     expectedAssertions: DEFAULT_CASE_ASSERTIONS,
   },
@@ -313,7 +386,13 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
     tickMs: 40,
     timelineEvents: [],
     disturbances: [
-      { name: "security-burst", target: "security_delay_min", start_ms: 10000, duration_ms: 23000, magnitude: 10.0 },
+      {
+        name: "security-burst",
+        target: "security_delay_min",
+        start_ms: 10000,
+        duration_ms: 23000,
+        magnitude: 10.0,
+      },
       {
         name: "staffing-dip",
         target: "staffing_shortage_pct",
@@ -333,7 +412,13 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
     tickMs: 40,
     timelineEvents: [],
     disturbances: [
-      { name: "deicing-window", target: "deicing_delay_min", start_ms: 10000, duration_ms: 25000, magnitude: 12.0 },
+      {
+        name: "deicing-window",
+        target: "deicing_delay_min",
+        start_ms: 10000,
+        duration_ms: 25000,
+        magnitude: 12.0,
+      },
       {
         name: "weather-restrict",
         target: "weather_restriction_pct",
@@ -341,7 +426,13 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
         duration_ms: 25000,
         magnitude: 16.0,
       },
-      { name: "slot-drop", target: "runway_slot_reduction_pct", start_ms: 10000, duration_ms: 25000, magnitude: 18.0 },
+      {
+        name: "slot-drop",
+        target: "runway_slot_reduction_pct",
+        start_ms: 10000,
+        duration_ms: 25000,
+        magnitude: 18.0,
+      },
     ],
     expectedAssertions: DEFAULT_CASE_ASSERTIONS,
   },
@@ -358,8 +449,20 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
       { at_ms: 32000, action: "inject", target: "runway_slots_per_hour", value: 5.0 },
     ],
     disturbances: [
-      { name: "initial-gate-lock", target: "gate_blockage_pct", start_ms: 0, duration_ms: 22000, magnitude: 44.0 },
-      { name: "initial-staff-gap", target: "staffing_shortage_pct", start_ms: 0, duration_ms: 26000, magnitude: 40.0 },
+      {
+        name: "initial-gate-lock",
+        target: "gate_blockage_pct",
+        start_ms: 0,
+        duration_ms: 22000,
+        magnitude: 44.0,
+      },
+      {
+        name: "initial-staff-gap",
+        target: "staffing_shortage_pct",
+        start_ms: 0,
+        duration_ms: 26000,
+        magnitude: 40.0,
+      },
       {
         name: "initial-slot-loss",
         target: "runway_slot_reduction_pct",
@@ -379,7 +482,9 @@ const CASE_DEFINITIONS: CaseDefinition[] = [
   },
 ];
 
-const CASE_BY_ID: Record<number, CaseDefinition> = Object.fromEntries(CASE_DEFINITIONS.map((testCase) => [testCase.id, testCase]));
+const CASE_BY_ID: Record<number, CaseDefinition> = Object.fromEntries(
+  CASE_DEFINITIONS.map((testCase) => [testCase.id, testCase]),
+);
 
 const MQTT_TOPICS = [
   "airport/hil/turnaround/otp",
@@ -394,14 +499,17 @@ const MQTT_TOPICS = [
 function resolveRuntimeConfigUrl(
   runtimeKey: "apiBaseUrl" | "grafanaBaseUrl",
   envKey: "VITE_TWIN_API_BASE_URL" | "VITE_TWIN_GRAFANA_BASE_URL",
-  fallback: string
+  fallback: string,
 ) {
   const runtimeUrl = globalThis?.__TWIN_CONFIG__?.[runtimeKey];
   if (typeof runtimeUrl === "string" && runtimeUrl.trim()) {
     return runtimeUrl.trim();
   }
 
-  const env = typeof import.meta !== "undefined" && import.meta.env ? (import.meta.env as Record<string, string | undefined>) : {};
+  const env =
+    typeof import.meta !== "undefined" && import.meta.env
+      ? (import.meta.env as Record<string, string | undefined>)
+      : {};
   const envUrl = env?.[envKey] || "";
   if (typeof envUrl === "string" && envUrl.trim()) {
     return envUrl.trim();
@@ -416,7 +524,11 @@ function resolveTwinApiBaseUrl() {
 
 function resolveTwinGrafanaBaseUrl() {
   if (globalThis.__TWIN_CONFIG__?.grafanaBaseUrl === "") return "";
-  return resolveRuntimeConfigUrl("grafanaBaseUrl", "VITE_TWIN_GRAFANA_BASE_URL", "http://127.0.0.1:3000");
+  return resolveRuntimeConfigUrl(
+    "grafanaBaseUrl",
+    "VITE_TWIN_GRAFANA_BASE_URL",
+    "http://127.0.0.1:3000",
+  );
 }
 
 function parseAbsoluteUrl(url: string) {
@@ -435,7 +547,12 @@ function suggestLocalObservabilityApiBase(currentApiBase: string) {
   if (globalThis.__TWIN_CONFIG__?.allowLocalApiFallback !== true) return "";
   const parsed = parseAbsoluteUrl(normalizeBaseUrl(currentApiBase));
   const pageHost = typeof window !== "undefined" ? window.location.hostname : "";
-  const candidateHost = parsed && isLocalLoopbackHost(parsed.hostname) ? parsed.hostname : isLocalLoopbackHost(pageHost) ? pageHost : "";
+  const candidateHost =
+    parsed && isLocalLoopbackHost(parsed.hostname)
+      ? parsed.hostname
+      : isLocalLoopbackHost(pageHost)
+        ? pageHost
+        : "";
   if (!candidateHost) {
     return "";
   }
@@ -544,7 +661,12 @@ function buildTwinScenario(testId: number, c: AirportConfig) {
     timeline_events: testCase.timelineEvents,
     disturbances: testCase.disturbances,
     expected_assertions: testCase.expectedAssertions,
-    metadata: { test_id: testId, case_name: testCase.name, source: "airport-twin-ui", profile: c.twinProfileId },
+    metadata: {
+      test_id: testId,
+      case_name: testCase.name,
+      source: "airport-twin-ui",
+      profile: c.twinProfileId,
+    },
   };
 
   return base;
@@ -555,9 +677,24 @@ function buildTwinModelPack(c: AirportConfig) {
     id: "airport_medium_eu_v1",
     site_profile: "airport-medium-eu",
     assets: [
-      { id: "gates-main", type: "gates", name: "Terminal Main Gates", limits: { count: c.gatesTotal } },
-      { id: "ground-ops", type: "ground_ops", name: "Ground Operations", limits: { crew_teams: c.groundCrewTeams } },
-      { id: "runway-ops", type: "runway", name: "Runway Slots", limits: { slots_per_hour: c.runwaySlotsPerHour } },
+      {
+        id: "gates-main",
+        type: "gates",
+        name: "Terminal Main Gates",
+        limits: { count: c.gatesTotal },
+      },
+      {
+        id: "ground-ops",
+        type: "ground_ops",
+        name: "Ground Operations",
+        limits: { crew_teams: c.groundCrewTeams },
+      },
+      {
+        id: "runway-ops",
+        type: "runway",
+        name: "Runway Slots",
+        limits: { slots_per_hour: c.runwaySlotsPerHour },
+      },
     ],
     parameter_set: {
       gates_total: c.gatesTotal,
@@ -679,7 +816,9 @@ function modelCheckText(passFail: boolean | null | undefined): string {
   return `${modelCheckLabel(passFail)} (${MODEL_CHECK_NOTE})`;
 }
 
-function pickOptionKpis(option: PlaybookOptionClient | null | undefined): AirportKpiSummaryClient | null {
+function pickOptionKpis(
+  option: PlaybookOptionClient | null | undefined,
+): AirportKpiSummaryClient | null {
   if (!option) return null;
   return option.validated_airport_kpis || option.estimated_airport_kpis || null;
 }
@@ -712,7 +851,11 @@ function actionSummaryText(action: PlaybookActionClient) {
 function buildForecastNarrative(record: PlaybookRecordClient | null | undefined) {
   if (
     !record ||
-    !(record.build_meta?.forecast_mode || record.request?.source_kind === "config_snapshot" || record.request?.source_kind === "run_snapshot") ||
+    !(
+      record.build_meta?.forecast_mode ||
+      record.request?.source_kind === "config_snapshot" ||
+      record.request?.source_kind === "run_snapshot"
+    ) ||
     !record.baseline_option ||
     !record.best_option
   ) {
@@ -727,8 +870,12 @@ function buildForecastNarrative(record: PlaybookRecordClient | null | undefined)
     return null;
   }
 
-  const sourceLabel = forecastSourceLabel(String(record.build_meta?.forecast_source_kind || record.request?.source_kind || "scenario"));
-  const horizon = String(record.build_meta?.forecast_horizon_min || record.request?.forecast_horizon_min || "n/a");
+  const sourceLabel = forecastSourceLabel(
+    String(record.build_meta?.forecast_source_kind || record.request?.source_kind || "scenario"),
+  );
+  const horizon = String(
+    record.build_meta?.forecast_horizon_min || record.request?.forecast_horizon_min || "n/a",
+  );
   const delta = best.delta_to_baseline || {
     otp_rate_pct_delta: 0,
     avg_turnaround_min_delta: 0,
@@ -748,7 +895,7 @@ function buildForecastNarrative(record: PlaybookRecordClient | null | undefined)
       ? `Forecast-Empfehlung fuer die naechsten ${horizon} Minuten`
       : `Forecast stabil ohne zusaetzlichen Eingriff`;
   const baselineLine = `Ohne Eingriff laeuft die Projektion bei OTP ${baselineKpis.otp_rate_pct.toFixed(
-    1
+    1,
   )}%, Turnaround ${baselineKpis.avg_turnaround_min.toFixed(1)} min und Delay ${baselineKpis.delay_avg_min.toFixed(1)} min.`;
   const actionLine =
     best.actions.length > 0
@@ -762,7 +909,7 @@ function buildForecastNarrative(record: PlaybookRecordClient | null | undefined)
       : `Erwarteter Effekt: OTP ${formatSigned(delta.otp_rate_pct_delta, 2, "%")}, Turnaround ${formatSigned(
           delta.avg_turnaround_min_delta,
           2,
-          " min"
+          " min",
         )}, Delay ${formatSigned(delta.delay_avg_min_delta, 2, " min")}.`;
 
   return {
@@ -773,7 +920,12 @@ function buildForecastNarrative(record: PlaybookRecordClient | null | undefined)
   };
 }
 
-export function stateFromTwinRecord(prev: AirportState, record: any, telemetry: any[], safety: any): AirportState {
+export function stateFromTwinRecord(
+  prev: AirportState,
+  record: any,
+  telemetry: any[],
+  safety: any,
+): AirportState {
   const summary = record?.summary || {};
   const kpi = summary?.airport_kpis || {};
   const status = record?.status || {};
@@ -814,18 +966,34 @@ export function stateFromTwinRecord(prev: AirportState, record: any, telemetry: 
     remoteRunProgress: Number(status.progress ?? prev.remoteRunProgress ?? 0),
     passFail: status.pass_fail ?? prev.passFail,
     otpRatePct: Number(kpi.otp_rate_pct ?? latestPoint?.otp ?? prev.otpRatePct ?? 0),
-    avgTurnaroundMin: Number(kpi.avg_turnaround_min ?? latestPoint?.turnaround ?? prev.avgTurnaroundMin ?? 0),
-    gateUtilizationAvgPct: Number(kpi.gate_utilization_avg_pct ?? latestPoint?.gateUtil ?? prev.gateUtilizationAvgPct ?? 0),
-    groundCrewUtilizationAvgPct: Number(
-      kpi.ground_crew_utilization_avg_pct ?? latestPoint?.crewUtil ?? prev.groundCrewUtilizationAvgPct ?? 0
+    avgTurnaroundMin: Number(
+      kpi.avg_turnaround_min ?? latestPoint?.turnaround ?? prev.avgTurnaroundMin ?? 0,
     ),
-    departureQueueAvgFlights: Number(kpi.departure_queue_avg_flights ?? latestPoint?.depQueue ?? prev.departureQueueAvgFlights ?? 0),
-    baggageQueueAvgFlights: Number(kpi.baggage_queue_avg_flights ?? latestPoint?.bagQueue ?? prev.baggageQueueAvgFlights ?? 0),
+    gateUtilizationAvgPct: Number(
+      kpi.gate_utilization_avg_pct ?? latestPoint?.gateUtil ?? prev.gateUtilizationAvgPct ?? 0,
+    ),
+    groundCrewUtilizationAvgPct: Number(
+      kpi.ground_crew_utilization_avg_pct ??
+        latestPoint?.crewUtil ??
+        prev.groundCrewUtilizationAvgPct ??
+        0,
+    ),
+    departureQueueAvgFlights: Number(
+      kpi.departure_queue_avg_flights ??
+        latestPoint?.depQueue ??
+        prev.departureQueueAvgFlights ??
+        0,
+    ),
+    baggageQueueAvgFlights: Number(
+      kpi.baggage_queue_avg_flights ?? latestPoint?.bagQueue ?? prev.baggageQueueAvgFlights ?? 0,
+    ),
     delayAvgMin: Number(kpi.delay_avg_min ?? latestPoint?.delay ?? prev.delayAvgMin ?? 0),
     tickDriftAvgMs: Number(summary.tick_drift_avg_ms ?? prev.tickDriftAvgMs ?? 0),
     tickDriftMaxMs: Number(summary.tick_drift_max_ms ?? prev.tickDriftMaxMs ?? 0),
     tickDriftP99Ms: Number(summary.tick_drift_p99_ms ?? prev.tickDriftP99Ms ?? 0),
-    auditFingerprintSha256: String(summary.audit_fingerprint_sha256 || prev.auditFingerprintSha256 || ""),
+    auditFingerprintSha256: String(
+      summary.audit_fingerprint_sha256 || prev.auditFingerprintSha256 || "",
+    ),
     watchdogConfigLoaded: Boolean(watchdog.watchdog_config_loaded),
     watchdogTicksOk: Number(watchdog.watchdog_ticks_ok ?? 0),
     watchdogMisses: Number(watchdog.watchdog_misses ?? 0),
@@ -862,7 +1030,14 @@ interface LabeledInputProps {
   max?: number;
 }
 
-function LabeledInput({ label, value, onChange, step = 1, min = 0, max = 9999 }: LabeledInputProps) {
+function LabeledInput({
+  label,
+  value,
+  onChange,
+  step = 1,
+  min = 0,
+  max = 9999,
+}: LabeledInputProps) {
   return (
     <label className="control-field">
       <span className="control-field__label">{label}</span>
@@ -883,7 +1058,7 @@ export function generateTestReport(
   state: AirportState,
   config: AirportConfig,
   testId: number,
-  playbookRecord?: PlaybookRecordClient | null
+  playbookRecord?: PlaybookRecordClient | null,
 ) {
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");
   const test = CASE_BY_ID[testId] || { name: "Unbekannter Testfall", description: "n/a" };
@@ -893,9 +1068,15 @@ export function generateTestReport(
   const baselineKpis = pickOptionKpis(baseline);
   const recommendedKpis = pickOptionKpis(recommended);
   const alternatives = playbookRecord?.pareto_options || [];
-  const forecastMode = Boolean(playbookRecord?.build_meta?.forecast_mode || playbookRecord?.request?.source_kind === "run_snapshot" || playbookRecord?.request?.source_kind === "config_snapshot");
+  const forecastMode = Boolean(
+    playbookRecord?.build_meta?.forecast_mode ||
+    playbookRecord?.request?.source_kind === "run_snapshot" ||
+    playbookRecord?.request?.source_kind === "config_snapshot",
+  );
   const forecastSource = String(
-    playbookRecord?.build_meta?.forecast_source_kind || playbookRecord?.request?.source_kind || "scenario"
+    playbookRecord?.build_meta?.forecast_source_kind ||
+      playbookRecord?.request?.source_kind ||
+      "scenario",
   );
   const forecastNarrative = buildForecastNarrative(playbookRecord);
   const forecastSection = forecastMode
@@ -920,10 +1101,7 @@ export function generateTestReport(
   }`
     : "";
   const compareSection =
-    baseline &&
-    recommended &&
-    baselineKpis &&
-    recommendedKpis
+    baseline && recommended && baselineKpis && recommendedKpis
       ? `
   <div class="compare">
     <h2>Baseline vs. Empfehlung</h2>
@@ -947,7 +1125,7 @@ export function generateTestReport(
           ? recommended.actions
               .map(
                 (action) =>
-                  `t=${action.at_ms}ms · ${action.action} ${action.target} ${action.value > 0 ? "+" : ""}${action.value}`
+                  `t=${action.at_ms}ms · ${action.action} ${action.target} ${action.value > 0 ? "+" : ""}${action.value}`,
               )
               .join("<br />")
           : "Keine Intervention empfohlen."
@@ -1019,11 +1197,17 @@ export function generateTestReport(
 }
 
 export default function App() {
-  const [config, setConfig] = useState<AirportConfig>(() => ({ ...DEFAULT_CONFIG, twinApiBaseUrl: resolveTwinApiBaseUrl() }));
+  const [config, setConfig] = useState<AirportConfig>(() => ({
+    ...DEFAULT_CONFIG,
+    twinApiBaseUrl: resolveTwinApiBaseUrl(),
+  }));
   const [state, setState] = useState<AirportState>(INITIAL_STATE);
   const [hasKpiSummary, setHasKpiSummary] = useState(false);
   const [selectedTest, setSelectedTest] = useState<number>(1);
-  const [reportContext, setReportContext] = useState<{ testId: number; config: AirportConfig } | null>(null);
+  const [reportContext, setReportContext] = useState<{
+    testId: number;
+    config: AirportConfig;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [playbookEnabled, setPlaybookEnabled] = useState(false);
@@ -1043,10 +1227,19 @@ export default function App() {
   const telemetrySamplesRef = useRef<any[]>([]);
 
   const apiBase = useMemo(() => normalizeBaseUrl(config.twinApiBaseUrl), [config.twinApiBaseUrl]);
-  const localObservabilityApiBase = useMemo(() => suggestLocalObservabilityApiBase(apiBase), [apiBase]);
-  const selectedCase = CASE_BY_ID[selectedTest] || { name: "Unbekannter Testfall", description: "n/a" };
+  const localObservabilityApiBase = useMemo(
+    () => suggestLocalObservabilityApiBase(apiBase),
+    [apiBase],
+  );
+  const selectedCase = CASE_BY_ID[selectedTest] || {
+    name: "Unbekannter Testfall",
+    description: "n/a",
+  };
   const latest = state.dataLog.length ? state.dataLog[state.dataLog.length - 1] : null;
-  const grafanaRunUrl = useMemo(() => buildGrafanaRunUrl(grafanaBaseUrl, state.remoteRunId), [grafanaBaseUrl, state.remoteRunId]);
+  const grafanaRunUrl = useMemo(
+    () => buildGrafanaRunUrl(grafanaBaseUrl, state.remoteRunId),
+    [grafanaBaseUrl, state.remoteRunId],
+  );
   const telemetryStreamEnabled = Boolean(capabilities.telemetry_stream_enabled);
   const preferredLiveApiBase = useMemo(() => {
     if (telemetryStreamEnabled) {
@@ -1073,16 +1266,22 @@ export default function App() {
         const next = await fetchCapabilities(apiBase);
         if (!active) return;
 
-        if (!next?.telemetry_stream_enabled && localObservabilityApiBase && localObservabilityApiBase !== apiBase) {
+        if (
+          !next?.telemetry_stream_enabled &&
+          localObservabilityApiBase &&
+          localObservabilityApiBase !== apiBase
+        ) {
           try {
             const localCaps = await fetchCapabilities(localObservabilityApiBase);
             if (!active) return;
             if (localCaps?.telemetry_stream_enabled) {
               setObservabilityHint(
-                `Lokales Docker-Backend ${localObservabilityApiBase} erkannt und automatisch fuer Grafana-Live-Daten aktiviert.`
+                `Lokales Docker-Backend ${localObservabilityApiBase} erkannt und automatisch fuer Grafana-Live-Daten aktiviert.`,
               );
               setConfig((prev) =>
-                normalizeBaseUrl(prev.twinApiBaseUrl) === apiBase ? { ...prev, twinApiBaseUrl: localObservabilityApiBase } : prev
+                normalizeBaseUrl(prev.twinApiBaseUrl) === apiBase
+                  ? { ...prev, twinApiBaseUrl: localObservabilityApiBase }
+                  : prev,
               );
               return;
             }
@@ -1092,13 +1291,17 @@ export default function App() {
 
           applyCapabilities(next);
           setObservabilityHint(
-            `Dieses Backend speist Grafana nicht automatisch. Fuer Live-Monitoring lokal ${localObservabilityApiBase} verwenden.`
+            `Dieses Backend speist Grafana nicht automatisch. Fuer Live-Monitoring lokal ${localObservabilityApiBase} verwenden.`,
           );
           return;
         }
 
         applyCapabilities(next);
-        setObservabilityHint(next?.telemetry_stream_enabled ? "" : "Dieses Backend speist Grafana derzeit nicht automatisch.");
+        setObservabilityHint(
+          next?.telemetry_stream_enabled
+            ? ""
+            : "Dieses Backend speist Grafana derzeit nicht automatisch.",
+        );
       } catch {
         if (localObservabilityApiBase && localObservabilityApiBase !== apiBase) {
           try {
@@ -1106,10 +1309,12 @@ export default function App() {
             if (!active) return;
             if (localCaps?.telemetry_stream_enabled) {
               setObservabilityHint(
-                `API ${apiBase} nicht erreichbar. Lokales Docker-Backend ${localObservabilityApiBase} wurde aktiviert.`
+                `API ${apiBase} nicht erreichbar. Lokales Docker-Backend ${localObservabilityApiBase} wurde aktiviert.`,
               );
               setConfig((prev) =>
-                normalizeBaseUrl(prev.twinApiBaseUrl) === apiBase ? { ...prev, twinApiBaseUrl: localObservabilityApiBase } : prev
+                normalizeBaseUrl(prev.twinApiBaseUrl) === apiBase
+                  ? { ...prev, twinApiBaseUrl: localObservabilityApiBase }
+                  : prev,
               );
               return;
             }
@@ -1167,13 +1372,15 @@ export default function App() {
     let telemetry = telemetrySamplesRef.current;
     if (status.state === "queued" || status.state === "running") {
       const telemetrySlice = (await fetchJsonWithTimeout(
-        `${resolvedBase}/api/v1/runs/${runId}/telemetry-slice?cursor=${telemetryCursorRef.current}&limit=1200`
+        `${resolvedBase}/api/v1/runs/${runId}/telemetry-slice?cursor=${telemetryCursorRef.current}&limit=1200`,
       )) as TelemetrySliceResponse;
       const nextItems = Array.isArray(telemetrySlice?.items) ? telemetrySlice.items : [];
       if (nextItems.length > 0) {
         telemetrySamplesRef.current = telemetrySamplesRef.current.concat(nextItems);
       }
-      telemetryCursorRef.current = Number(telemetrySlice?.next_cursor ?? telemetryCursorRef.current);
+      telemetryCursorRef.current = Number(
+        telemetrySlice?.next_cursor ?? telemetryCursorRef.current,
+      );
       telemetry = telemetrySamplesRef.current;
     } else if (status.state === "completed" || status.state === "failed") {
       const telemetryResponse = await fetch(`${resolvedBase}/api/v1/runs/${runId}/telemetry`);
@@ -1190,7 +1397,7 @@ export default function App() {
     async (runId: string) => {
       await pullRunDataFromBase(apiBase, runId);
     },
-    [apiBase, pullRunDataFromBase]
+    [apiBase, pullRunDataFromBase],
   );
 
   const pullPlaybookData = useCallback(
@@ -1205,12 +1412,12 @@ export default function App() {
 
       if (nextState === "completed") {
         const record = (await fetchJsonWithTimeout(
-          `${apiBase}/api/v1/playbook-jobs/${jobId}/record`
+          `${apiBase}/api/v1/playbook-jobs/${jobId}/record`,
         )) as PlaybookRecordClient;
         setPlaybookRecord(record);
       }
     },
-    [apiBase]
+    [apiBase],
   );
 
   useEffect(() => {
@@ -1350,7 +1557,7 @@ export default function App() {
 
       await pullRunDataFromBase(resolvedBase, status.run_id);
     },
-    [checkApiBase, config, grafanaBaseUrl, pullRunDataFromBase, resetTelemetryBuffer, selectedTest]
+    [checkApiBase, config, grafanaBaseUrl, pullRunDataFromBase, resetTelemetryBuffer, selectedTest],
   );
 
   const runRemoteScenario = useCallback(async () => {
@@ -1374,7 +1581,8 @@ export default function App() {
     const demoPopup = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
     if (demoPopup) {
       demoPopup.document.title = "Airport Twin Core Demo";
-      demoPopup.document.body.innerHTML = "<p style='font-family:sans-serif;padding:16px'>Live-Dashboard wird vorbereitet...</p>";
+      demoPopup.document.body.innerHTML =
+        "<p style='font-family:sans-serif;padding:16px'>Live-Dashboard wird vorbereitet...</p>";
     }
     try {
       await startScenarioRun({
@@ -1462,50 +1670,77 @@ export default function App() {
     state.remoteApiStatus === "ok"
       ? "status-chip--ok"
       : state.remoteApiStatus === "down"
-      ? "status-chip--bad"
-      : state.remoteApiStatus === "checking"
-      ? "status-chip--warn"
-      : "";
+        ? "status-chip--bad"
+        : state.remoteApiStatus === "checking"
+          ? "status-chip--warn"
+          : "";
 
   const runTone =
     state.remoteRunState === "completed"
       ? "status-chip--ok"
       : state.remoteRunState === "failed"
-      ? "status-chip--bad"
-      : state.remoteRunState === "running" || state.remoteRunState === "queued"
-      ? "status-chip--warn"
-      : "";
+        ? "status-chip--bad"
+        : state.remoteRunState === "running" || state.remoteRunState === "queued"
+          ? "status-chip--warn"
+          : "";
 
   const plannerTone =
     playbookJobState === "completed"
       ? "status-chip--ok"
       : playbookJobState === "failed"
-      ? "status-chip--bad"
-      : playbookJobState === "running" || playbookJobState === "queued"
-      ? "status-chip--warn"
-      : "";
+        ? "status-chip--bad"
+        : playbookJobState === "running" || playbookJobState === "queued"
+          ? "status-chip--warn"
+          : "";
   const plannerActionDisabled =
-    playbookBusy || (plannerMode === "forecast" && forecastSource === "run_snapshot" && !state.remoteRunId);
+    playbookBusy ||
+    (plannerMode === "forecast" && forecastSource === "run_snapshot" && !state.remoteRunId);
   const playbookForecastContext =
-    playbookRecord && (playbookRecord.build_meta?.forecast_mode || playbookRecord.request?.source_kind === "config_snapshot" || playbookRecord.request?.source_kind === "run_snapshot")
+    playbookRecord &&
+    (playbookRecord.build_meta?.forecast_mode ||
+      playbookRecord.request?.source_kind === "config_snapshot" ||
+      playbookRecord.request?.source_kind === "run_snapshot")
       ? {
           sourceLabel: forecastSourceLabel(
-            String(playbookRecord.build_meta?.forecast_source_kind || playbookRecord.request?.source_kind || "scenario")
+            String(
+              playbookRecord.build_meta?.forecast_source_kind ||
+                playbookRecord.request?.source_kind ||
+                "scenario",
+            ),
           ),
-          horizon: String(playbookRecord.build_meta?.forecast_horizon_min || playbookRecord.request?.forecast_horizon_min || "n/a"),
-          sourceRunId: String(playbookRecord.build_meta?.source_run_id || playbookRecord.request?.source_run_id || "n/a"),
-          derivedScenarioId: String(playbookRecord.build_meta?.derived_forecast_scenario_id || "n/a"),
-          derivedModelPackId: String(playbookRecord.build_meta?.derived_forecast_model_pack_id || "n/a"),
+          horizon: String(
+            playbookRecord.build_meta?.forecast_horizon_min ||
+              playbookRecord.request?.forecast_horizon_min ||
+              "n/a",
+          ),
+          sourceRunId: String(
+            playbookRecord.build_meta?.source_run_id ||
+              playbookRecord.request?.source_run_id ||
+              "n/a",
+          ),
+          derivedScenarioId: String(
+            playbookRecord.build_meta?.derived_forecast_scenario_id || "n/a",
+          ),
+          derivedModelPackId: String(
+            playbookRecord.build_meta?.derived_forecast_model_pack_id || "n/a",
+          ),
         }
       : null;
   const playbookForecastNarrative = buildForecastNarrative(playbookRecord);
-  const reportPlaybook = playbookRecord?.request?.source_kind === "run_snapshot" && playbookRecord.request.source_run_id === state.remoteRunId
-    ? playbookRecord
-    : reportContext && playbookRecord?.request?.scenario_id === buildTwinScenario(reportContext.testId, reportContext.config).id
-    && playbookRecord.request.seed === reportContext.config.twinSeedBase + reportContext.testId
-    && Object.entries(buildPlannerConfigSnapshot(reportContext.config)).every(
-      ([key, value]) => playbookRecord.model_pack_snapshot?.parameter_set[key] === value
-    ) ? playbookRecord : null;
+  const reportPlaybook =
+    playbookRecord?.request?.source_kind === "run_snapshot" &&
+    playbookRecord.request.source_run_id === state.remoteRunId
+      ? playbookRecord
+      : reportContext &&
+          playbookRecord?.request?.scenario_id ===
+            buildTwinScenario(reportContext.testId, reportContext.config).id &&
+          playbookRecord.request.seed ===
+            reportContext.config.twinSeedBase + reportContext.testId &&
+          Object.entries(buildPlannerConfigSnapshot(reportContext.config)).every(
+            ([key, value]) => playbookRecord.model_pack_snapshot?.parameter_set[key] === value,
+          )
+        ? playbookRecord
+        : null;
   const hasKpiEvidence = hasKpiSummary || state.dataLog.length > 0;
 
   return (
@@ -1515,11 +1750,46 @@ export default function App() {
           title="Airport Twin Core"
           location="Flughafen / Turnaround-Systemtest"
           warning="Demo-Modell: unkalibriert. KPI-Werte sind Modellwerte, keine Betriebsprognose."
-          context={<><span className={`studio-status ${apiTone}`}>API {state.remoteApiStatus.toUpperCase()}{state.remoteApiLatencyMs != null ? ` / ${state.remoteApiLatencyMs} ms` : ""}</span> · <span className={`studio-status ${runTone}`}>Run {(state.remoteRunState || "idle").toUpperCase()}</span> · <span>Grafana {telemetryStreamEnabled ? "STREAM ON" : "STREAM OFF"}</span></>}
-          actions={<>
-            <button type="button" onClick={() => reportContext && generateTestReport(state, reportContext.config, reportContext.testId, reportPlaybook)} disabled={state.remoteRunState !== "completed" || !reportContext}>Bericht erzeugen</button>
-            <button type="button" className="studio-primary" onClick={runRemoteScenario} disabled={busy}>{busy ? "Starte..." : "Backend Run starten"}</button>
-          </>}
+          context={
+            <>
+              <span className={`studio-status ${apiTone}`}>
+                API {state.remoteApiStatus.toUpperCase()}
+                {state.remoteApiLatencyMs != null ? ` / ${state.remoteApiLatencyMs} ms` : ""}
+              </span>{" "}
+              ·{" "}
+              <span className={`studio-status ${runTone}`}>
+                Run {(state.remoteRunState || "idle").toUpperCase()}
+              </span>{" "}
+              · <span>Grafana {telemetryStreamEnabled ? "STREAM ON" : "STREAM OFF"}</span>
+            </>
+          }
+          actions={
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  reportContext &&
+                  generateTestReport(
+                    state,
+                    reportContext.config,
+                    reportContext.testId,
+                    reportPlaybook,
+                  )
+                }
+                disabled={state.remoteRunState !== "completed" || !reportContext}
+              >
+                Bericht erzeugen
+              </button>
+              <button
+                type="button"
+                className="studio-primary"
+                onClick={runRemoteScenario}
+                disabled={busy}
+              >
+                {busy ? "Starte..." : "Backend Run starten"}
+              </button>
+            </>
+          }
         />
 
         <div className="layout-grid reveal reveal--2">
@@ -1535,7 +1805,9 @@ export default function App() {
                 <input
                   className="control-field__input"
                   value={config.twinApiBaseUrl}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, twinApiBaseUrl: e.target.value }))}
+                  onChange={(e) =>
+                    setConfig((prev) => ({ ...prev, twinApiBaseUrl: e.target.value }))
+                  }
                 />
               </label>
 
@@ -1577,7 +1849,11 @@ export default function App() {
               </p>
 
               <div className="button-stack">
-                <button className="btn btn--live" onClick={runDemoLiveScenario} disabled={busy || !telemetryStreamEnabled}>
+                <button
+                  className="btn btn--live"
+                  onClick={runDemoLiveScenario}
+                  disabled={busy || !telemetryStreamEnabled}
+                >
                   {busy ? "Demo startet..." : "Demo Live starten"}
                 </button>
                 <button className="btn btn--secondary" onClick={checkApi}>
@@ -1586,15 +1862,21 @@ export default function App() {
               </div>
 
               {observabilityHint ? (
-                <div className={telemetryStreamEnabled ? "info-note" : "warn-note"}>{observabilityHint}</div>
+                <div className={telemetryStreamEnabled ? "info-note" : "warn-note"}>
+                  {observabilityHint}
+                </div>
               ) : null}
 
-              {!telemetryStreamEnabled && localObservabilityApiBase && localObservabilityApiBase !== apiBase ? (
+              {!telemetryStreamEnabled &&
+              localObservabilityApiBase &&
+              localObservabilityApiBase !== apiBase ? (
                 <div className="inline-actions">
                   <button
                     className="btn btn--ghost"
                     type="button"
-                    onClick={() => setConfig((prev) => ({ ...prev, twinApiBaseUrl: localObservabilityApiBase }))}
+                    onClick={() =>
+                      setConfig((prev) => ({ ...prev, twinApiBaseUrl: localObservabilityApiBase }))
+                    }
                   >
                     Auf Docker-Backend umstellen
                   </button>
@@ -1607,27 +1889,56 @@ export default function App() {
                 </div>
                 <div>Status: {state.remoteRunState || "-"}</div>
                 <div>
-                  Modellkriterien: {state.passFail === null ? "noch nicht bewertet" : state.passFail ? "erfüllt" : "nicht erfüllt"}
+                  Modellkriterien:{" "}
+                  {state.passFail === null
+                    ? "noch nicht bewertet"
+                    : state.passFail
+                      ? "erfüllt"
+                      : "nicht erfüllt"}
                 </div>
                 <div>Modellwerte, kein empirischer Nachweis.</div>
                 <div>Progress: {state.remoteRunProgress.toFixed(0)}%</div>
-                <div className="progress-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.remoteRunProgress}>
-                  <div className="progress-bar__value" style={{ width: `${Math.max(0, Math.min(100, state.remoteRunProgress))}%` }} />
+                <div
+                  className="progress-bar"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={state.remoteRunProgress}
+                >
+                  <div
+                    className="progress-bar__value"
+                    style={{ width: `${Math.max(0, Math.min(100, state.remoteRunProgress))}%` }}
+                  />
                 </div>
               </div>
 
               {state.remoteRunId ? (
                 <div className="planner-links run-links">
                   <span>Run Links:</span>
-                  <a href={`${apiBase}/api/v1/runs/${state.remoteRunId}/record`} target="_blank" rel="noreferrer" className="mono">
+                  <a
+                    href={`${apiBase}/api/v1/runs/${state.remoteRunId}/record`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mono"
+                  >
                     Record
                   </a>
                   {state.remoteRunState === "completed" ? (
                     <>
-                      <a href={`${apiBase}/api/v1/runs/${state.remoteRunId}/artifacts/report.pdf`} target="_blank" rel="noreferrer" className="mono">
+                      <a
+                        href={`${apiBase}/api/v1/runs/${state.remoteRunId}/artifacts/report.pdf`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mono"
+                      >
                         PDF-Bericht
                       </a>
-                      <a href={`${apiBase}/api/v1/runs/${state.remoteRunId}/telemetry.csv`} target="_blank" rel="noreferrer" className="mono">
+                      <a
+                        href={`${apiBase}/api/v1/runs/${state.remoteRunId}/telemetry.csv`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mono"
+                      >
                         Telemetrie-CSV
                       </a>
                     </>
@@ -1644,7 +1955,9 @@ export default function App() {
                 <section className="planner-panel">
                   <div className="planner-panel__head">
                     <h3>Playbook Synthesizer</h3>
-                    <span className={`status-chip ${plannerTone}`}>Job {(playbookJobState || "idle").toUpperCase()}</span>
+                    <span className={`status-chip ${plannerTone}`}>
+                      Job {(playbookJobState || "idle").toUpperCase()}
+                    </span>
                   </div>
                   <p className="section-subtitle">
                     Suche über Stellhebel im Modell (nur Empfehlung, modellinterne Gegenprüfung)
@@ -1656,7 +1969,9 @@ export default function App() {
                         aria-label="Planner Modus"
                         className="control-field__input control-field__input--select"
                         value={plannerMode}
-                        onChange={(e) => setPlannerMode(e.target.value === "forecast" ? "forecast" : "scenario")}
+                        onChange={(e) =>
+                          setPlannerMode(e.target.value === "forecast" ? "forecast" : "scenario")
+                        }
                       >
                         <option value="scenario">Szenario</option>
                         <option value="forecast">Forecast</option>
@@ -1672,7 +1987,11 @@ export default function App() {
                             className="control-field__input control-field__input--select"
                             value={forecastSource}
                             onChange={(e) =>
-                              setForecastSource(e.target.value === "run_snapshot" ? "run_snapshot" : "config_snapshot")
+                              setForecastSource(
+                                e.target.value === "run_snapshot"
+                                  ? "run_snapshot"
+                                  : "config_snapshot",
+                              )
                             }
                           >
                             <option value="config_snapshot">Aktuelle Konfiguration</option>
@@ -1699,11 +2018,19 @@ export default function App() {
                     ) : null}
                   </div>
 
-                  {plannerMode === "forecast" && forecastSource === "run_snapshot" && !state.remoteRunId ? (
-                    <div className="warn-note">Fuer Forecast aus Run-Snapshot zuerst einen Run starten.</div>
+                  {plannerMode === "forecast" &&
+                  forecastSource === "run_snapshot" &&
+                  !state.remoteRunId ? (
+                    <div className="warn-note">
+                      Fuer Forecast aus Run-Snapshot zuerst einen Run starten.
+                    </div>
                   ) : null}
 
-                  <button className="btn btn--primary" onClick={runPlaybookSynthesis} disabled={plannerActionDisabled}>
+                  <button
+                    className="btn btn--primary"
+                    onClick={runPlaybookSynthesis}
+                    disabled={plannerActionDisabled}
+                  >
                     {playbookBusy ? "Synthetisiere..." : "Playbook synthetisieren"}
                   </button>
 
@@ -1728,7 +2055,6 @@ export default function App() {
                   </div>
 
                   {playbookError ? <div className="error-note">{playbookError}</div> : null}
-
                 </section>
               ) : null}
 
@@ -1768,226 +2094,392 @@ export default function App() {
           </aside>
 
           <main className="content-grid">
-            <section className="kpi-band reveal reveal--3" role="region" aria-label="Airport-Modell-KPIs">
-              <StatCard label="OTP" value={hasKpiEvidence ? state.otpRatePct.toFixed(2) : "n/a"} unit={hasKpiEvidence ? "%" : ""} tone={!hasKpiEvidence ? "neutral" : state.otpRatePct >= 85 ? "good" : "bad"} />
-              <StatCard label="Turnaround" value={hasKpiEvidence ? state.avgTurnaroundMin.toFixed(2) : "n/a"} unit={hasKpiEvidence ? "min" : ""} tone={!hasKpiEvidence ? "neutral" : state.avgTurnaroundMin <= 55 ? "good" : "bad"} />
-              <StatCard label="Gate Utilization" value={hasKpiEvidence ? state.gateUtilizationAvgPct.toFixed(2) : "n/a"} unit={hasKpiEvidence ? "%" : ""} tone={!hasKpiEvidence ? "neutral" : state.gateUtilizationAvgPct <= 92 ? "good" : "warn"} />
-              <StatCard label="Delay Avg" value={hasKpiEvidence ? state.delayAvgMin.toFixed(2) : "n/a"} unit={hasKpiEvidence ? "min" : ""} tone={!hasKpiEvidence ? "neutral" : state.delayAvgMin <= 12 ? "warn" : "bad"} />
+            <section
+              className="kpi-band reveal reveal--3"
+              role="region"
+              aria-label="Airport-Modell-KPIs"
+            >
+              <StatCard
+                label="OTP"
+                value={hasKpiEvidence ? state.otpRatePct.toFixed(2) : "n/a"}
+                unit={hasKpiEvidence ? "%" : ""}
+                tone={!hasKpiEvidence ? "neutral" : state.otpRatePct >= 85 ? "good" : "bad"}
+              />
+              <StatCard
+                label="Turnaround"
+                value={hasKpiEvidence ? state.avgTurnaroundMin.toFixed(2) : "n/a"}
+                unit={hasKpiEvidence ? "min" : ""}
+                tone={!hasKpiEvidence ? "neutral" : state.avgTurnaroundMin <= 55 ? "good" : "bad"}
+              />
+              <StatCard
+                label="Gate Utilization"
+                value={hasKpiEvidence ? state.gateUtilizationAvgPct.toFixed(2) : "n/a"}
+                unit={hasKpiEvidence ? "%" : ""}
+                tone={
+                  !hasKpiEvidence ? "neutral" : state.gateUtilizationAvgPct <= 92 ? "good" : "warn"
+                }
+              />
+              <StatCard
+                label="Delay Avg"
+                value={hasKpiEvidence ? state.delayAvgMin.toFixed(2) : "n/a"}
+                unit={hasKpiEvidence ? "min" : ""}
+                tone={!hasKpiEvidence ? "neutral" : state.delayAvgMin <= 12 ? "warn" : "bad"}
+              />
             </section>
 
             {playbookEnabled && playbookRecord?.best_option ? (
-                    <section className="playbook-result" role="region" aria-label="Playbook-Vergleich">
-                      <div className="info-note planner-context">
-                        <h3>Eingefrorener Playbook-Vergleich</h3>
-                        <small>
-                          Szenario-ID: <span className="mono">{String(playbookRecord.request?.scenario_id || playbookRecord.build_meta?.derived_forecast_scenario_id || "n/a")}</span>
-                          {" · "}Model-Pack-ID: <span className="mono">{String(playbookRecord.request?.model_pack_id || playbookRecord.build_meta?.derived_forecast_model_pack_id || "n/a")}</span>
-                          {" · "}Seed: <span className="mono">{String(playbookRecord.request?.seed ?? "n/a")}</span>
-                        </small>
-                        <small>Eigener eingefrorener Versuch; nicht automatisch der aktuelle Run.</small>
+              <section className="playbook-result" role="region" aria-label="Playbook-Vergleich">
+                <div className="info-note planner-context">
+                  <h3>Eingefrorener Playbook-Vergleich</h3>
+                  <small>
+                    Szenario-ID:{" "}
+                    <span className="mono">
+                      {String(
+                        playbookRecord.request?.scenario_id ||
+                          playbookRecord.build_meta?.derived_forecast_scenario_id ||
+                          "n/a",
+                      )}
+                    </span>
+                    {" · "}Model-Pack-ID:{" "}
+                    <span className="mono">
+                      {String(
+                        playbookRecord.request?.model_pack_id ||
+                          playbookRecord.build_meta?.derived_forecast_model_pack_id ||
+                          "n/a",
+                      )}
+                    </span>
+                    {" · "}Seed:{" "}
+                    <span className="mono">{String(playbookRecord.request?.seed ?? "n/a")}</span>
+                  </small>
+                  <small>Eigener eingefrorener Versuch; nicht automatisch der aktuelle Run.</small>
+                </div>
+                {playbookForecastContext ? (
+                  <div className="info-note planner-context">
+                    Forecast {playbookForecastContext.horizon} min · Quelle:{" "}
+                    {playbookForecastContext.sourceLabel} · Source Run:{" "}
+                    <span className="mono">{playbookForecastContext.sourceRunId}</span> · Derived
+                    Scenario:{" "}
+                    <span className="mono">{playbookForecastContext.derivedScenarioId}</span>
+                  </div>
+                ) : null}
+                {playbookForecastNarrative ? (
+                  <div className="playbook-brief">
+                    <div className="playbook-brief__kicker">Forecast Entscheidung</div>
+                    <h4 className="playbook-brief__title">{playbookForecastNarrative.title}</h4>
+                    <div className="playbook-brief__grid">
+                      <div className="playbook-brief__step">
+                        <span className="playbook-brief__label">Projektion ohne Eingriff</span>
+                        <p>{playbookForecastNarrative.baselineLine}</p>
                       </div>
+                      <div className="playbook-brief__step">
+                        <span className="playbook-brief__label">Empfohlener Eingriff</span>
+                        <p>{playbookForecastNarrative.actionLine}</p>
+                      </div>
+                      <div className="playbook-brief__step">
+                        <span className="playbook-brief__label">Erwarteter Effekt</span>
+                        <p>{playbookForecastNarrative.effectLine}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                <div className="playbook-compare">
+                  {playbookRecord.baseline_option ? (
+                    <div className="playbook-result__card playbook-result__card--baseline">
+                      <h4>{playbookForecastContext ? "Forecast Baseline" : "Baseline"}</h4>
                       {playbookForecastContext ? (
-                        <div className="info-note planner-context">
-                          Forecast {playbookForecastContext.horizon} min · Quelle: {playbookForecastContext.sourceLabel} · Source Run:{" "}
-                          <span className="mono">{playbookForecastContext.sourceRunId}</span> · Derived Scenario:{" "}
-                          <span className="mono">{playbookForecastContext.derivedScenarioId}</span>
+                        <div className="playbook-card__eyebrow">
+                          Projektion ohne zusaetzliche Massnahme
                         </div>
                       ) : null}
-                      {playbookForecastNarrative ? (
-                        <div className="playbook-brief">
-                          <div className="playbook-brief__kicker">Forecast Entscheidung</div>
-                          <h4 className="playbook-brief__title">{playbookForecastNarrative.title}</h4>
-                          <div className="playbook-brief__grid">
-                            <div className="playbook-brief__step">
-                              <span className="playbook-brief__label">Projektion ohne Eingriff</span>
-                              <p>{playbookForecastNarrative.baselineLine}</p>
-                            </div>
-                            <div className="playbook-brief__step">
-                              <span className="playbook-brief__label">Empfohlener Eingriff</span>
-                              <p>{playbookForecastNarrative.actionLine}</p>
-                            </div>
-                            <div className="playbook-brief__step">
-                              <span className="playbook-brief__label">Erwarteter Effekt</span>
-                              <p>{playbookForecastNarrative.effectLine}</p>
-                            </div>
-                          </div>
+                      <div className="playbook-kpi-grid">
+                        <div>
+                          OTP:{" "}
+                          {pickOptionKpis(playbookRecord.baseline_option)?.otp_rate_pct?.toFixed(2)}
+                          %
                         </div>
-                      ) : null}
-                      <div className="playbook-compare">
-                        {playbookRecord.baseline_option ? (
-                          <div className="playbook-result__card playbook-result__card--baseline">
-                            <h4>{playbookForecastContext ? "Forecast Baseline" : "Baseline"}</h4>
-                            {playbookForecastContext ? (
-                              <div className="playbook-card__eyebrow">Projektion ohne zusaetzliche Massnahme</div>
-                            ) : null}
-                            <div className="playbook-kpi-grid">
-                              <div>OTP: {pickOptionKpis(playbookRecord.baseline_option)?.otp_rate_pct?.toFixed(2)}%</div>
-                              <div>
-                                Turnaround: {pickOptionKpis(playbookRecord.baseline_option)?.avg_turnaround_min?.toFixed(2)} min
-                              </div>
-                              <div>
-                                Gate Util: {pickOptionKpis(playbookRecord.baseline_option)?.gate_utilization_avg_pct?.toFixed(2)}%
-                              </div>
-                              <div>Delay: {pickOptionKpis(playbookRecord.baseline_option)?.delay_avg_min?.toFixed(2)} min</div>
-                              <div>Kosten: {playbookRecord.baseline_option.intervention_cost.toFixed(2)}</div>
-                              <div>
-                                Status: {modelCheckText(playbookRecord.baseline_option.validation_pass_fail)}
-                              </div>
-                            </div>
-                            <div className="planner-links">
-                              <span>Gegenprüf-Lauf (modellintern):</span>
-                              {playbookRecord.baseline_option.validation_run_id ? (
-                                <a
-                                  href={`${apiBase}/api/v1/runs/${playbookRecord.baseline_option.validation_run_id}/record`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="mono"
-                                >
-                                  {playbookRecord.baseline_option.validation_run_id}
-                                </a>
-                              ) : (
-                                <span className="mono">n/a</span>
-                              )}
-                            </div>
-                          </div>
-                        ) : null}
-
-                        <div className="playbook-result__card playbook-result__card--recommended">
-                          <h4>{playbookForecastContext ? "Forecast Empfehlung" : `Empfehlung: ${playbookRecord.best_option.option_id}`}</h4>
-                          <div className="playbook-card__eyebrow">
-                            {playbookForecastContext
-                              ? `Innerhalb von ${playbookForecastContext.horizon} min empfohlener Eingriff`
-                              : `Option ${playbookRecord.best_option.option_id}`}
-                          </div>
-                          <div className="playbook-kpi-grid">
-                            <div>OTP: {pickOptionKpis(playbookRecord.best_option)?.otp_rate_pct?.toFixed(2)}%</div>
-                            <div>Turnaround: {pickOptionKpis(playbookRecord.best_option)?.avg_turnaround_min?.toFixed(2)} min</div>
-                            <div>Gate Util: {pickOptionKpis(playbookRecord.best_option)?.gate_utilization_avg_pct?.toFixed(2)}%</div>
-                            <div>Delay: {pickOptionKpis(playbookRecord.best_option)?.delay_avg_min?.toFixed(2)} min</div>
-                            <div>Kosten: {playbookRecord.best_option.intervention_cost.toFixed(2)}</div>
-                            <div>
-                              Status: {modelCheckText(playbookRecord.best_option.validation_pass_fail)}
-                            </div>
-                          </div>
-                          <div className="planner-links">
-                            <span>Gegenprüf-Lauf (modellintern):</span>
-                            {playbookRecord.best_option.validation_run_id ? (
-                              <a
-                                href={`${apiBase}/api/v1/runs/${playbookRecord.best_option.validation_run_id}/record`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="mono"
-                              >
-                                {playbookRecord.best_option.validation_run_id}
-                              </a>
-                            ) : (
-                              <span className="mono">n/a</span>
-                            )}
-                          </div>
-                          <div className="playbook-delta-grid">
-                            <div className={deltaClass(playbookRecord.best_option.delta_to_baseline?.otp_rate_pct_delta || 0, "higher_is_better")}>
-                              Delta OTP: {formatSigned(playbookRecord.best_option.delta_to_baseline?.otp_rate_pct_delta || 0, 2, "%")}
-                            </div>
-                            <div className={deltaClass(playbookRecord.best_option.delta_to_baseline?.avg_turnaround_min_delta || 0, "lower_is_better")}>
-                              Delta Turnaround: {formatSigned(playbookRecord.best_option.delta_to_baseline?.avg_turnaround_min_delta || 0, 2, " min")}
-                            </div>
-                            <div className={deltaClass(playbookRecord.best_option.delta_to_baseline?.gate_utilization_avg_pct_delta || 0, "lower_is_better")}>
-                              Delta Gate Util: {formatSigned(playbookRecord.best_option.delta_to_baseline?.gate_utilization_avg_pct_delta || 0, 2, "%")}
-                            </div>
-                            <div className={deltaClass(playbookRecord.best_option.delta_to_baseline?.delay_avg_min_delta || 0, "lower_is_better")}>
-                              Delta Delay: {formatSigned(playbookRecord.best_option.delta_to_baseline?.delay_avg_min_delta || 0, 2, " min")}
-                            </div>
-                            <div className={deltaClass(playbookRecord.best_option.delta_to_baseline?.intervention_cost_delta || 0, "lower_is_better")}>
-                              Delta Kosten: {formatSigned(playbookRecord.best_option.delta_to_baseline?.intervention_cost_delta || 0)}
-                            </div>
-                          </div>
-                          <div className="playbook-actions">
-                            {(playbookRecord.best_option.actions || []).length ? (
-                              (playbookRecord.best_option.actions || []).map((action, idx) => (
-                                <div key={`${action.target}-${action.at_ms}-${idx}`} className="mono">
-                                  t={action.at_ms}ms · {action.action} {action.target} {action.value > 0 ? "+" : ""}
-                                  {action.value}
-                                </div>
-                              ))
-                            ) : (
-                              <div className="mono">Keine Intervention empfohlen.</div>
-                            )}
-                          </div>
+                        <div>
+                          Turnaround:{" "}
+                          {pickOptionKpis(
+                            playbookRecord.baseline_option,
+                          )?.avg_turnaround_min?.toFixed(2)}{" "}
+                          min
+                        </div>
+                        <div>
+                          Gate Util:{" "}
+                          {pickOptionKpis(
+                            playbookRecord.baseline_option,
+                          )?.gate_utilization_avg_pct?.toFixed(2)}
+                          %
+                        </div>
+                        <div>
+                          Delay:{" "}
+                          {pickOptionKpis(playbookRecord.baseline_option)?.delay_avg_min?.toFixed(
+                            2,
+                          )}{" "}
+                          min
+                        </div>
+                        <div>
+                          Kosten: {playbookRecord.baseline_option.intervention_cost.toFixed(2)}
+                        </div>
+                        <div>
+                          Status:{" "}
+                          {modelCheckText(playbookRecord.baseline_option.validation_pass_fail)}
                         </div>
                       </div>
-
-                      {playbookRecord.pareto_options?.length ? (
-                        <div className="playbook-alt">
-                          <h4>{playbookForecastContext ? "Pareto Alternativen im Forecast" : "Pareto Alternativen"}</h4>
-                          <div className="planner-table-wrap" role="region" aria-label="Pareto Alternativen" tabIndex={0}>
-                            <table className="playbook-table">
-                              <thead>
-                                <tr>
-                                  <th>Option</th>
-                                  <th>OTP</th>
-                                  <th>Delay</th>
-                                  <th>Kosten</th>
-                                  <th>Delta OTP</th>
-                                  <th>Delta Delay</th>
-                                  <th>Run</th>
-                                  <th>Status</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {playbookRecord.pareto_options.map((option) => (
-                                  <tr key={option.option_id}>
-                                    <td>{option.option_id}</td>
-                                    <td>{pickOptionKpis(option)?.otp_rate_pct?.toFixed(2)}%</td>
-                                    <td>{pickOptionKpis(option)?.delay_avg_min?.toFixed(2)} min</td>
-                                    <td>{option.intervention_cost.toFixed(2)}</td>
-                                    <td className={deltaClass(option.delta_to_baseline?.otp_rate_pct_delta || 0, "higher_is_better")}>
-                                      {formatSigned(option.delta_to_baseline?.otp_rate_pct_delta || 0, 2, "%")}
-                                    </td>
-                                    <td className={deltaClass(option.delta_to_baseline?.delay_avg_min_delta || 0, "lower_is_better")}>
-                                      {formatSigned(option.delta_to_baseline?.delay_avg_min_delta || 0, 2, " min")}
-                                    </td>
-                                    <td>
-                                      {option.validation_run_id ? (
-                                        <a
-                                          href={`${apiBase}/api/v1/runs/${option.validation_run_id}/record`}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="mono"
-                                        >
-                                          {option.validation_run_id}
-                                        </a>
-                                      ) : (
-                                        "-"
-                                      )}
-                                    </td>
-                                    <td>{modelCheckText(option.validation_pass_fail)}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {playbookRecord.artifacts?.length ? (
-                        <div className="planner-links">
-                          <span>Artefakte:</span>
-                          {playbookRecord.artifacts.map((artifact) => (
-                            <a
-                              key={artifact}
-                              href={`${apiBase}/api/v1/playbook-jobs/${playbookRecord.status.job_id}/artifacts/${artifact}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="mono"
-                            >
-                              {artifact}
-                            </a>
-                          ))}
-                        </div>
-                      ) : null}
-                    </section>
+                      <div className="planner-links">
+                        <span>Gegenprüf-Lauf (modellintern):</span>
+                        {playbookRecord.baseline_option.validation_run_id ? (
+                          <a
+                            href={`${apiBase}/api/v1/runs/${playbookRecord.baseline_option.validation_run_id}/record`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mono"
+                          >
+                            {playbookRecord.baseline_option.validation_run_id}
+                          </a>
+                        ) : (
+                          <span className="mono">n/a</span>
+                        )}
+                      </div>
+                    </div>
                   ) : null}
 
+                  <div className="playbook-result__card playbook-result__card--recommended">
+                    <h4>
+                      {playbookForecastContext
+                        ? "Forecast Empfehlung"
+                        : `Empfehlung: ${playbookRecord.best_option.option_id}`}
+                    </h4>
+                    <div className="playbook-card__eyebrow">
+                      {playbookForecastContext
+                        ? `Innerhalb von ${playbookForecastContext.horizon} min empfohlener Eingriff`
+                        : `Option ${playbookRecord.best_option.option_id}`}
+                    </div>
+                    <div className="playbook-kpi-grid">
+                      <div>
+                        OTP: {pickOptionKpis(playbookRecord.best_option)?.otp_rate_pct?.toFixed(2)}%
+                      </div>
+                      <div>
+                        Turnaround:{" "}
+                        {pickOptionKpis(playbookRecord.best_option)?.avg_turnaround_min?.toFixed(2)}{" "}
+                        min
+                      </div>
+                      <div>
+                        Gate Util:{" "}
+                        {pickOptionKpis(
+                          playbookRecord.best_option,
+                        )?.gate_utilization_avg_pct?.toFixed(2)}
+                        %
+                      </div>
+                      <div>
+                        Delay:{" "}
+                        {pickOptionKpis(playbookRecord.best_option)?.delay_avg_min?.toFixed(2)} min
+                      </div>
+                      <div>Kosten: {playbookRecord.best_option.intervention_cost.toFixed(2)}</div>
+                      <div>
+                        Status: {modelCheckText(playbookRecord.best_option.validation_pass_fail)}
+                      </div>
+                    </div>
+                    <div className="planner-links">
+                      <span>Gegenprüf-Lauf (modellintern):</span>
+                      {playbookRecord.best_option.validation_run_id ? (
+                        <a
+                          href={`${apiBase}/api/v1/runs/${playbookRecord.best_option.validation_run_id}/record`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mono"
+                        >
+                          {playbookRecord.best_option.validation_run_id}
+                        </a>
+                      ) : (
+                        <span className="mono">n/a</span>
+                      )}
+                    </div>
+                    <div className="playbook-delta-grid">
+                      <div
+                        className={deltaClass(
+                          playbookRecord.best_option.delta_to_baseline?.otp_rate_pct_delta || 0,
+                          "higher_is_better",
+                        )}
+                      >
+                        Delta OTP:{" "}
+                        {formatSigned(
+                          playbookRecord.best_option.delta_to_baseline?.otp_rate_pct_delta || 0,
+                          2,
+                          "%",
+                        )}
+                      </div>
+                      <div
+                        className={deltaClass(
+                          playbookRecord.best_option.delta_to_baseline?.avg_turnaround_min_delta ||
+                            0,
+                          "lower_is_better",
+                        )}
+                      >
+                        Delta Turnaround:{" "}
+                        {formatSigned(
+                          playbookRecord.best_option.delta_to_baseline?.avg_turnaround_min_delta ||
+                            0,
+                          2,
+                          " min",
+                        )}
+                      </div>
+                      <div
+                        className={deltaClass(
+                          playbookRecord.best_option.delta_to_baseline
+                            ?.gate_utilization_avg_pct_delta || 0,
+                          "lower_is_better",
+                        )}
+                      >
+                        Delta Gate Util:{" "}
+                        {formatSigned(
+                          playbookRecord.best_option.delta_to_baseline
+                            ?.gate_utilization_avg_pct_delta || 0,
+                          2,
+                          "%",
+                        )}
+                      </div>
+                      <div
+                        className={deltaClass(
+                          playbookRecord.best_option.delta_to_baseline?.delay_avg_min_delta || 0,
+                          "lower_is_better",
+                        )}
+                      >
+                        Delta Delay:{" "}
+                        {formatSigned(
+                          playbookRecord.best_option.delta_to_baseline?.delay_avg_min_delta || 0,
+                          2,
+                          " min",
+                        )}
+                      </div>
+                      <div
+                        className={deltaClass(
+                          playbookRecord.best_option.delta_to_baseline?.intervention_cost_delta ||
+                            0,
+                          "lower_is_better",
+                        )}
+                      >
+                        Delta Kosten:{" "}
+                        {formatSigned(
+                          playbookRecord.best_option.delta_to_baseline?.intervention_cost_delta ||
+                            0,
+                        )}
+                      </div>
+                    </div>
+                    <div className="playbook-actions">
+                      {(playbookRecord.best_option.actions || []).length ? (
+                        (playbookRecord.best_option.actions || []).map((action, idx) => (
+                          <div key={`${action.target}-${action.at_ms}-${idx}`} className="mono">
+                            t={action.at_ms}ms · {action.action} {action.target}{" "}
+                            {action.value > 0 ? "+" : ""}
+                            {action.value}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="mono">Keine Intervention empfohlen.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {playbookRecord.pareto_options?.length ? (
+                  <div className="playbook-alt">
+                    <h4>
+                      {playbookForecastContext
+                        ? "Pareto Alternativen im Forecast"
+                        : "Pareto Alternativen"}
+                    </h4>
+                    <div
+                      className="planner-table-wrap"
+                      role="region"
+                      aria-label="Pareto Alternativen"
+                      tabIndex={0}
+                    >
+                      <table className="playbook-table">
+                        <thead>
+                          <tr>
+                            <th>Option</th>
+                            <th>OTP</th>
+                            <th>Delay</th>
+                            <th>Kosten</th>
+                            <th>Delta OTP</th>
+                            <th>Delta Delay</th>
+                            <th>Run</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {playbookRecord.pareto_options.map((option) => (
+                            <tr key={option.option_id}>
+                              <td>{option.option_id}</td>
+                              <td>{pickOptionKpis(option)?.otp_rate_pct?.toFixed(2)}%</td>
+                              <td>{pickOptionKpis(option)?.delay_avg_min?.toFixed(2)} min</td>
+                              <td>{option.intervention_cost.toFixed(2)}</td>
+                              <td
+                                className={deltaClass(
+                                  option.delta_to_baseline?.otp_rate_pct_delta || 0,
+                                  "higher_is_better",
+                                )}
+                              >
+                                {formatSigned(
+                                  option.delta_to_baseline?.otp_rate_pct_delta || 0,
+                                  2,
+                                  "%",
+                                )}
+                              </td>
+                              <td
+                                className={deltaClass(
+                                  option.delta_to_baseline?.delay_avg_min_delta || 0,
+                                  "lower_is_better",
+                                )}
+                              >
+                                {formatSigned(
+                                  option.delta_to_baseline?.delay_avg_min_delta || 0,
+                                  2,
+                                  " min",
+                                )}
+                              </td>
+                              <td>
+                                {option.validation_run_id ? (
+                                  <a
+                                    href={`${apiBase}/api/v1/runs/${option.validation_run_id}/record`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mono"
+                                  >
+                                    {option.validation_run_id}
+                                  </a>
+                                ) : (
+                                  "-"
+                                )}
+                              </td>
+                              <td>{modelCheckText(option.validation_pass_fail)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : null}
+
+                {playbookRecord.artifacts?.length ? (
+                  <div className="planner-links">
+                    <span>Artefakte:</span>
+                    {playbookRecord.artifacts.map((artifact) => (
+                      <a
+                        key={artifact}
+                        href={`${apiBase}/api/v1/playbook-jobs/${playbookRecord.status.job_id}/artifacts/${artifact}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mono"
+                      >
+                        {artifact}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
 
             <section className="glass-panel chart-panel reveal reveal--4">
               <div className="panel-head">
@@ -1998,7 +2490,11 @@ export default function App() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={state.dataLog}>
                     <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
-                    <XAxis dataKey="t" stroke={CHART_COLORS.axis} tickFormatter={(v) => `${Math.round(v / 1000)}s`} />
+                    <XAxis
+                      dataKey="t"
+                      stroke={CHART_COLORS.axis}
+                      tickFormatter={(v) => `${Math.round(v / 1000)}s`}
+                    />
                     <YAxis stroke={CHART_COLORS.axis} />
                     <Tooltip
                       contentStyle={chartTheme.tooltip}
@@ -2006,9 +2502,30 @@ export default function App() {
                       labelFormatter={(v) => `t=${Math.round(Number(v) / 1000)}s`}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Line type="monotone" dataKey="otp" stroke={CHART_COLORS.otp} strokeWidth={2.4} dot={false} name="OTP %" />
-                    <Line type="monotone" dataKey="turnaround" stroke={CHART_COLORS.turnaround} strokeWidth={2.2} dot={false} name="Turnaround min" />
-                    <Line type="monotone" dataKey="delay" stroke={CHART_COLORS.delay} strokeWidth={2.2} dot={false} name="Delay min" />
+                    <Line
+                      type="monotone"
+                      dataKey="otp"
+                      stroke={CHART_COLORS.otp}
+                      strokeWidth={2.4}
+                      dot={false}
+                      name="OTP %"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="turnaround"
+                      stroke={CHART_COLORS.turnaround}
+                      strokeWidth={2.2}
+                      dot={false}
+                      name="Turnaround min"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="delay"
+                      stroke={CHART_COLORS.delay}
+                      strokeWidth={2.2}
+                      dot={false}
+                      name="Delay min"
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -2023,17 +2540,49 @@ export default function App() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={state.dataLog}>
                     <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" />
-                    <XAxis dataKey="t" stroke={CHART_COLORS.axis} tickFormatter={(v) => `${Math.round(v / 1000)}s`} />
+                    <XAxis
+                      dataKey="t"
+                      stroke={CHART_COLORS.axis}
+                      tickFormatter={(v) => `${Math.round(v / 1000)}s`}
+                    />
                     <YAxis stroke={CHART_COLORS.axis} />
                     <Tooltip
                       contentStyle={chartTheme.tooltip}
                       labelStyle={{ color: chartTheme.tooltip.color }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Line type="monotone" dataKey="gateUtil" stroke={CHART_COLORS.gate} strokeWidth={2.2} dot={false} name="Gate Util %" />
-                    <Line type="monotone" dataKey="crewUtil" stroke={CHART_COLORS.crew} strokeWidth={2.2} dot={false} name="Crew Util %" />
-                    <Line type="monotone" dataKey="depQueue" stroke={CHART_COLORS.dep} strokeWidth={2.2} dot={false} name="Dep Queue" />
-                    <Line type="monotone" dataKey="bagQueue" stroke={CHART_COLORS.bag} strokeWidth={2.2} dot={false} name="Bag Queue" />
+                    <Line
+                      type="monotone"
+                      dataKey="gateUtil"
+                      stroke={CHART_COLORS.gate}
+                      strokeWidth={2.2}
+                      dot={false}
+                      name="Gate Util %"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="crewUtil"
+                      stroke={CHART_COLORS.crew}
+                      strokeWidth={2.2}
+                      dot={false}
+                      name="Crew Util %"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="depQueue"
+                      stroke={CHART_COLORS.dep}
+                      strokeWidth={2.2}
+                      dot={false}
+                      name="Dep Queue"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="bagQueue"
+                      stroke={CHART_COLORS.bag}
+                      strokeWidth={2.2}
+                      dot={false}
+                      name="Bag Queue"
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -2071,7 +2620,9 @@ export default function App() {
                     Tick Drift P99: <span>{state.tickDriftP99Ms.toFixed(3)} ms</span>
                   </div>
                 </div>
-                <p className="fingerprint mono">Fingerprint: {state.auditFingerprintSha256 || "-"}</p>
+                <p className="fingerprint mono">
+                  Fingerprint: {state.auditFingerprintSha256 || "-"}
+                </p>
               </article>
 
               <article className="glass-panel detail-panel">
@@ -2085,7 +2636,10 @@ export default function App() {
                   ))}
                 </div>
                 <div className="latest-point">
-                  Letzter Punkt: {latest ? `${latest.otp.toFixed(2)}% OTP, ${latest.turnaround.toFixed(2)} min` : "-"}
+                  Letzter Punkt:{" "}
+                  {latest
+                    ? `${latest.otp.toFixed(2)}% OTP, ${latest.turnaround.toFixed(2)} min`
+                    : "-"}
                 </div>
               </article>
             </section>

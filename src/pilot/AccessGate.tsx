@@ -11,7 +11,8 @@ const ERROR_TEXTS: Record<string, string> = {
   invalid_credentials: "Benutzername oder Passwort ist falsch.",
   too_many_login_attempts:
     "Zu viele Fehlversuche. Bitte kurz warten (wenige Sekunden bis Minuten) und erneut versuchen.",
-  csrf_origin_rejected: "Die Anmeldung wurde aus Sicherheitsgründen abgelehnt. Bitte die Seite neu laden.",
+  csrf_origin_rejected:
+    "Die Anmeldung wurde aus Sicherheitsgründen abgelehnt. Bitte die Seite neu laden.",
   invalid_login_payload: "Bitte Benutzername und Passwort eingeben.",
   login_payload_too_large: "Die Eingabe ist zu lang.",
   auth_disabled: "Für diese Instanz ist keine Anmeldung eingerichtet.",
@@ -24,7 +25,8 @@ function describeError(e: unknown): string {
   if (e instanceof TypeError) return "Der Server ist nicht erreichbar. Bitte Verbindung prüfen.";
   const raw = (e instanceof Error ? e.message : String(e)).replace(/^Error:\s*/, "").trim();
   if (ERROR_TEXTS[raw]) return ERROR_TEXTS[raw];
-  if (/^API-Fehler 5\d\d$/.test(raw)) return "Der Server meldet einen Fehler. Bitte später erneut versuchen.";
+  if (/^API-Fehler 5\d\d$/.test(raw))
+    return "Der Server meldet einen Fehler. Bitte später erneut versuchen.";
   if (/^API-Fehler 4\d\d$/.test(raw)) return "Die Anfrage wurde abgelehnt. Bitte erneut anmelden.";
   return "Die Anmeldung ist fehlgeschlagen. Bitte erneut versuchen.";
 }

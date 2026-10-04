@@ -40,3 +40,15 @@ export type PilotAssessment = {
   metrics: PilotMetrics;
   not_evaluable_reasons: string[];
 };
+export type PilotTolerances = {
+  tolerances: {
+    mae_max_kw: number;
+    energy_error_max_pct: number;
+    min_rows: number;
+    min_coverage_seconds: number;
+  };
+  sha256: string;
+  created_at: string;
+  locked_at: string | null;
+  locked: boolean;
+};

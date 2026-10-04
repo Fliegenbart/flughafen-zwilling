@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { EvidenceBadge } from "./EvidenceBadge";
 
 type HeaderProps = {
   title: string;
@@ -9,7 +10,14 @@ type HeaderProps = {
   actions?: ReactNode;
 };
 
-export function StudioHeader({ title, location, headingId, context, warning, actions }: HeaderProps) {
+export function StudioHeader({
+  title,
+  location,
+  headingId,
+  context,
+  warning,
+  actions,
+}: HeaderProps) {
   return (
     <header className="studio-page-header">
       <div className="studio-page-heading">
@@ -19,7 +27,10 @@ export function StudioHeader({ title, location, headingId, context, warning, act
       <div className="studio-header-actions">{actions}</div>
       <div className="studio-context">
         <div>{context}</div>
-        <p className="studio-warning">{warning}</p>
+        <div className="studio-header-evidence">
+          <EvidenceBadge level="empirical_open" label="Methodenprototyp" />
+          <p className="studio-warning">{warning}</p>
+        </div>
       </div>
     </header>
   );
@@ -34,7 +45,7 @@ const steps = [
 
 export function StudioWorkflowNav({ current }: { current: (typeof steps)[number]["id"] }) {
   return (
-    <nav className="studio-workflow" aria-label="München Pilotbereiche">
+    <nav className="studio-workflow" aria-label="Betriebswirkung: Teilschritte">
       {steps.map((step, index) => (
         <a
           key={step.id}
