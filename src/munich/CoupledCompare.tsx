@@ -62,39 +62,46 @@ export default function CoupledCompare({ baseline, priority, reportsHashed }: Pr
           </span>
         </div>
       </details>
-      <table aria-label="Prüfnachweise" className="studio-audit-table">
-        <caption>Prüfnachweise: technische Integrität, keine empirische Validierung</caption>
-        <thead>
-          <tr>
-            <th scope="col">Nachweis</th>
-            <th scope="col">Baseline</th>
-            <th scope="col">Fristenpriorität</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">Welt &amp; Seed</th>
-            <td>Identisch</td>
-            <td>Identisch</td>
-          </tr>
-          <tr>
-            <th scope="row">Artefakt-Hashes</th>
-            <td>{hashes(baseline)}</td>
-            <td>{hashes(priority)}</td>
-          </tr>
-          <tr>
-            <th scope="row">Modellkriterien</th>
-            {[baseline, priority].map((record) => (
-              <td
-                key={record.status.run_id}
-                className={record.status.pass_fail ? "muc-ok" : "muc-warn"}
-              >
-                {record.status.pass_fail ? "Erfüllt" : "Nicht erfüllt"}
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
+      <div
+        className="studio-audit-scroll"
+        role="region"
+        aria-label="Prüfnachweise, scrollbare Tabelle"
+        tabIndex={0}
+      >
+        <table aria-label="Prüfnachweise" className="studio-audit-table">
+          <caption>Prüfnachweise: technische Integrität, keine empirische Validierung</caption>
+          <thead>
+            <tr>
+              <th scope="col">Nachweis</th>
+              <th scope="col">Baseline</th>
+              <th scope="col">Fristenpriorität</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Welt &amp; Seed</th>
+              <td>Identisch</td>
+              <td>Identisch</td>
+            </tr>
+            <tr>
+              <th scope="row">Artefakt-Hashes</th>
+              <td>{hashes(baseline)}</td>
+              <td>{hashes(priority)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Modellkriterien</th>
+              {[baseline, priority].map((record) => (
+                <td
+                  key={record.status.run_id}
+                  className={record.status.pass_fail ? "muc-ok" : "muc-warn"}
+                >
+                  {record.status.pass_fail ? "Erfüllt" : "Nicht erfüllt"}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
       {!reportsHashed && (
         <p className="muc-warn">Ältere Runs: PDF/Report-Dateien ohne ursprüngliche SHA256.</p>
       )}

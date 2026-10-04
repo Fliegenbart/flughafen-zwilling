@@ -186,7 +186,13 @@ describe("Gekoppelter Flugplan-/Energievergleich", () => {
     same[1]!.summary!.coupled_kpis = { ...same[0]!.summary!.coupled_kpis };
     render(<CoupledCompare baseline={same[0]!} priority={same[1]!} reportsHashed={false} />);
     expect(screen.getByText(/Kein modellierter Vorteil/)).toBeVisible();
-    expect(screen.getByRole("table", { name: "Prüfnachweise" })).toBeVisible();
+    const auditTable = screen.getByRole("table", { name: "Prüfnachweise" });
+    expect(auditTable).toBeVisible();
+    expect(auditTable.parentElement).toHaveClass("studio-audit-scroll");
+    expect(auditTable.parentElement).toHaveAttribute(
+      "aria-label",
+      "Prüfnachweise, scrollbare Tabelle",
+    );
     expect(screen.getAllByText(/0 \/ 1 modellierte Abflugseinträge rechtzeitig/)).toHaveLength(2);
     expect(screen.getByText(/ohne ursprüngliche SHA256/)).toBeVisible();
     expect(screen.queryByText("7 Dateien")).toBeNull();
