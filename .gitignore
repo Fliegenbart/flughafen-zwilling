@@ -13,6 +13,7 @@ __pycache__/
 .mypy_cache/
 .vite/
 .vercel/
+.superpowers/
 data/runs/
 data/playbook_jobs/
 data/lab/
