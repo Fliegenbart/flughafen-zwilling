@@ -55,6 +55,8 @@ describe("Workspace entry point", () => {
     expect(document.querySelector("[data-studio]")).not.toBeNull();
     expect(screen.getByRole("link", { name: "Zum Arbeitsbereich" }))
       .toHaveAttribute("href", "#studio-main");
+    expect(document.getElementById("studio-main")).not.toBeNull();
+    expect(document.getElementById("studio-main")).toHaveAttribute("tabindex", "-1");
   });
 
   it("preserves FlexLab under an explicit link without replacing the airport", async () => {
