@@ -321,6 +321,7 @@
 [data-studio] .chart-box {
   height: 260px;
   min-width: 0;
+  overflow: hidden;
 }
 [data-studio] .chart-box--lg {
   height: 286px;
