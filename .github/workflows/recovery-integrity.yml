@@ -39,6 +39,8 @@ jobs:
       - run: TWIN_BUILD_GIT_COMMIT="$GITHUB_SHA" docker compose -f docker-compose.hetzner.yml config --quiet
       - name: Verify packaged scenario library over HTTP
         run: sh scripts/smoke_container_library.sh
+      - name: Verify Hetzner proxy chain without production data
+        run: sh scripts/smoke_proxy_chain.sh
   snapshots:
     runs-on: ubuntu-latest
     steps:

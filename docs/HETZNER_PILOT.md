@@ -44,6 +44,14 @@ unter `/etc/letsencrypt/airport-demo.htpasswd`, lesbar fuer den Nginx-Worker.
 
 ## Release und Ruecknahme
 
+Hetzner-Ingress ist fest `10.253.251.0/24` mit Gateway `10.253.251.1`.
+Auch dieses Netz muss vor Deployment gegen Docker-IPAM und Host-Routen geprueft
+werden. Die separate `deploy/hetzner/frontend-nginx.conf` vertraut nur diesem
+Gateway fuer `X-Real-IP`; der Host-Proxy ueberschreibt den Header weiterhin.
+`scripts/smoke_proxy_chain.sh` prueft den realen Docker-DNAT-/Nginx-/Uvicorn-Pfad
+in einem separaten Testprojekt mit tmpfs statt Betriebsvolume. Nur ausfuehren,
+wenn beide Hetzner-Subnetze frei sind, niemals neben dem aktiven neuen Pilot.
+
 Das Backend-Image setzt `TWIN_SCENARIO_LIBRARY_DIR=/opt/airport-seeds/scenarios`.
 Die Bibliothek liest damit die acht unveraenderlichen Release-Seeds, nicht das
 bearbeitbare Runtime-Volume. `sh scripts/smoke_container_library.sh` prueft das
