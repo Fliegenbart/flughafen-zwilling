@@ -11,7 +11,7 @@ services:
       TWIN_ALLOWED_ORIGINS: https://labpulse.ai
       TWIN_GRAFANA_BASE_URL: ""
       INFLUX_TOKEN: ""
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--root-path", "/airport", "--proxy-headers", "--forwarded-allow-ips", "172.31.250.0/24"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--root-path", "/airport", "--proxy-headers", "--forwarded-allow-ips", "10.253.250.0/24"]
     # Nur das interne simulation-Netz (Frontend-nginx) gilt als vertrauenswuerdiger
     # Proxy; der nginx-Container reicht die echte Client-IP aus X-Real-IP weiter.
     volumes:
@@ -52,7 +52,7 @@ networks:
     internal: true
     ipam:
       config:
-        - subnet: 172.31.250.0/24
+        - subnet: 10.253.250.0/24
   ingress: {}
 volumes:
   pilot-data: {}
