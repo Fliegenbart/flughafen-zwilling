@@ -56,7 +56,12 @@ def main():
         'source_note': 'MODEL-DERIVED SYNTHETIC FIXTURE, not independent empirical data.'}, 201)
     replay = get(path + '/replays', {'import_id': imported['id'], 'run_id': args.run_id, 'metric': 'grid_import_kw'}, 201)
     assessment = get(path + '/assessments', {'import_id': replay['id'], 'mae_max_kw': 1e6, 'energy_error_max_pct': 2}, 201)
-    assert assessment['validity_status'] == 'PASS', assessment
+    # Model-derived lab fixtures are diagnostics, never independent holdout evidence.
+    assert assessment['validity_status'] == 'NOT_EVALUABLE', assessment
+    assert assessment['evaluation_kind'] == 'lab_diagnostic', assessment
+    assert {'role_not_holdout', 'tolerances_not_frozen'} <= set(
+        assessment['not_evaluable_reasons']
+    ), assessment
     assert abs(assessment['metrics']['energy_error_pct'] + 100 / 101) < .0001
     invalid = get(path + '/imports', {'filename': 'invalid.csv',
         'csv_text': 'timestamp,measured_kw\n2026-01-01T00:00:00Z,NaN\n2026-01-01T00:01:00Z,1\n',

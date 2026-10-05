@@ -1,6 +1,7 @@
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 ENV TWIN_REFERENCE_DIR=/opt/airport-references
+ENV TWIN_SCENARIO_LIBRARY_DIR=/opt/airport-seeds/scenarios
 WORKDIR /app
 COPY backend/pyproject.toml backend/README.md ./
 COPY backend/requirements-demo.txt ./

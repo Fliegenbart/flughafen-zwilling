@@ -37,6 +37,8 @@ jobs:
       - run: docker compose -f docker-compose.demo.yml config --quiet
       - run: docker compose -f docker-compose.demo.yml -f docker-compose.demo-monitoring.yml config --quiet
       - run: TWIN_BUILD_GIT_COMMIT="$GITHUB_SHA" docker compose -f docker-compose.hetzner.yml config --quiet
+      - name: Verify packaged scenario library over HTTP
+        run: sh scripts/smoke_container_library.sh
   snapshots:
     runs-on: ubuntu-latest
     steps:
