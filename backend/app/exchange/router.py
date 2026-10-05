@@ -18,9 +18,11 @@ from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..instance_access import EXCHANGE_ROLES
+from ..munich.coupled_models import CoupledConfig
 from ..pilot.router import EvidenceStore, _normalize_uuid, _verified_coupled_series
 from . import library
 from .situation import build_situation, empty_situation
+from .variants import VariantRequest, VariantRunRequest, VariantService, fleet_summary
 
 NOTICE = "Versuchsentwurf, Freigabe separat. Strikt read-only, keine Hardwarewrites."
 EVIDENCE_LEVELS = ("assumption", "synthetic", "model_checked", "empirical_open", "empirical_pass")
@@ -406,8 +408,15 @@ class ExchangeStore:
         summary = {level: 0 for level in EVIDENCE_LEVELS}
         for element in elements:
             summary[element["evidence_level"]] += 1
+        record = self.latest_coupled_record(project_id)
+        config = _record_config(record) if record is not None else None
+        fleet = fleet_summary(config, "coupled_run" if config is not None else None)
+        if config is None and any(link["kind"] == "flight_plan_snapshot"
+                                  for link in self.list_links(project_id)):
+            fleet = fleet_summary(CoupledConfig(), "default_assumptions")
         return {
             "project": project,
+            "fleet": fleet,
             "acceptance": self.pilot.get_tolerances(project_id),
             "elements": elements,
             "evidence_summary": summary,
@@ -744,8 +753,8 @@ class ExchangeStore:
         return buffer.getvalue()
 
     # ---- Lagebild ---------------------------------------------------------------
-    def situation(self, project_id: str) -> dict:
-        self.pilot.get_project(project_id)
+    def latest_coupled_record(self, project_id: str):
+        """Neuester abgeschlossener gekoppelter Lauf aus Links/Szenario-Paketen (sonst None)."""
         candidates = {link["ref_id"] for link in self.list_links(project_id)
                       if link["kind"] == "coupled_run"}
         for item in self.list_items(project_id, "scenario_package"):
@@ -761,9 +770,25 @@ class ExchangeStore:
             key = record.status.end_ts.isoformat() if record.status.end_ts else ""
             if best is None or key > best[0]:
                 best = (key, record)
-        if best is None:
-            return empty_situation("no_completed_coupled_run")
-        return build_situation(self.base_dir, best[1])
+        return best[1] if best else None
+
+    def situation(self, project_id: str) -> dict:
+        self.pilot.get_project(project_id)
+        record = self.latest_coupled_record(project_id)
+        if record is None:
+            return {**empty_situation("no_completed_coupled_run"),
+                    "fleet": fleet_summary(None, None)}
+        result = build_situation(self.base_dir, record)
+        result["fleet"] = fleet_summary(_record_config(record), "coupled_run")
+        return result
+
+
+def _record_config(record) -> CoupledConfig | None:
+    try:
+        return CoupledConfig.model_validate(
+            record.model_pack_snapshot.calibration_meta["coupled_world"]["config"])
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
 
 
 def resolve_actor(request: Request, header_role: str | None) -> Actor:
@@ -781,9 +806,11 @@ def resolve_actor(request: Request, header_role: str | None) -> Actor:
     return Actor(user=None, role=role, source="demo_header")
 
 
-def create_router(storage, lab_service, plans, base_dir: Path | None = None) -> APIRouter:
+def create_router(storage, lab_service, plans, base_dir: Path | None = None,
+                  service=None, enqueue=None) -> APIRouter:
     pilot = EvidenceStore(base_dir or storage.base_dir)
     store = ExchangeStore(pilot, storage, lab_service, plans)
+    variants = VariantService(store, service, enqueue)
     router = APIRouter(prefix="/api/v1", tags=["Airport Energy Check: Austausch (read-only)"])
     role_header = Header(default=None, alias="X-Exchange-Role")
 
@@ -817,6 +844,29 @@ def create_router(storage, lab_service, plans, base_dir: Path | None = None) -> 
     @router.get("/projects/{project_id}/situation")
     def situation(project_id: str) -> dict:
         return store.situation(pid(project_id))
+
+    @router.get("/projects/{project_id}/variants")
+    def list_variants(project_id: str) -> dict:
+        return variants.list(pid(project_id))
+
+    @router.post("/projects/{project_id}/variants", status_code=201)
+    def create_variant(project_id: str, body: VariantRequest, request: Request,
+                       x_exchange_role: str | None = role_header) -> dict:
+        return variants.create(pid(project_id), body, resolve_actor(request, x_exchange_role))
+
+    @router.delete("/projects/{project_id}/variants/{variant_id}", status_code=204)
+    def delete_variant(project_id: str, variant_id: str, request: Request,
+                       x_exchange_role: str | None = role_header) -> Response:
+        variants.delete(pid(project_id), _normalize_uuid(variant_id, "variant_id"),
+                        resolve_actor(request, x_exchange_role))
+        return Response(status_code=204)
+
+    @router.post("/projects/{project_id}/variants/run", status_code=202)
+    def run_variants(project_id: str, request: Request,
+                     body: VariantRunRequest | None = None,
+                     x_exchange_role: str | None = role_header) -> dict:
+        return variants.run(pid(project_id), body or VariantRunRequest(),
+                            resolve_actor(request, x_exchange_role))
 
     @router.get("/projects/{project_id}/exchange")
     def list_items(

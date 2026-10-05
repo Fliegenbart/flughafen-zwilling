@@ -196,3 +196,62 @@ kW); „am Limit“ = `grid_import_kw >= effective_grid_cap_kw - 0.5 kW`. Ohne R
  "peak_kw": null, "delayed_departures": null, "departures_total": null,
  "cause_shares_pct": null}, "evidence_level": null, "reason": "no_completed_coupled_run"}
 ```
+
+## Varianten („Was hilft?“)
+
+Modul `backend/app/exchange/variants.py`, Tests `backend/tests/test_variants.py`.
+
+**Basis** = Konfiguration, Seed, Laderegel und Flugplan des neuesten abgeschlossenen gekoppelten
+Projektlaufs; ohne Lauf der zuletzt verknuepfte Flugplan mit Standardannahmen (Seed 42,
+Laderegel `uncontrolled`). Ohne beides → `409 no_base: …`.
+
+`POST /api/v1/projects/{id}/variants` (airport|admin; lab/viewer → 403), max. 8 je Projekt,
+Name eindeutig (409):
+```json
+{"name": "Speicher 2 MWh",
+ "changes": {"grid_import_limit_kw": 4500, "storage_kwh": 2000, "storage_kw": 1000,
+             "extra_vehicles": {"pushback_tug": 5}, "charging_policy": "mission_priority",
+             "chargers_offline": {"bus": 1}, "pv_factor": 1.5}}
+```
+Alle Felder optional, mindestens eines. Grenzen: Netzimport 0–100 000 kW; Speicher 0–50 000 kWh,
+Leistung 0,1C–4C (Default kWh/2); zusaetzliche Fahrzeuge 1–100 je Klasse (Modellgrenzen 200 je
+Klasse, 300 gesamt); Ladepunkte offline 1–Anzahl der Klasse (ganzer Verkehrstag); PV-Faktor 0–3
+(× `pv_capacity_kwp`). Die Variante wird gegen den Flugplan gebaut; Verstoss → `422
+invalid_variant: …`, keine wirksame Aenderung → 422. `DELETE …/variants/{variant_id}` → 204.
+
+`POST …/variants/run` `{"stress": false}` (airport|admin, 202): rechnet Basis + alle Varianten
+seriell im vorhandenen Run-Worker auf demselben Flugplan-Snapshot und Seed. Alle Welten muessen
+dieselbe Missionssignatur (SHA256 der Auftraege) haben, sonst 500. `stress: true` rechnet je
+Eintrag zusaetzlich Netzimport −20 % ueber den Tag. Queue-Limit fuer Varianten: 24 offene Runs (429).
+
+`GET …/variants` → `base` (inkl. `fleet`), `variants` (Definitionen), `latest_run`:
+`status` (`queued|running|completed|partial`), `progress {done,total}`, `mission_signature`,
+`source_plan_sha256`, `seed`, `stale` (Definitionen seit dem Lauf geaendert), `entries[]` je
+Basis/Variante mit `world_hash`, `run_id`, `status`, `fleet`, `kpis`, `delta_to_base`,
+`evidence_level`, `criteria`, `stress`, sowie `answer`.
+
+`kpis`: `on_time_pct` (Anteil Abfluege, deren modellierte Auftraege fristgerecht fertig sind),
+`delayed_departures`, `departures_total`, `minutes_at_limit` (wie Lagebild, ganzer Horizont),
+`peak_kw`, `missing_kw_peak` (max. angefragte minus gelieferte Ladeleistung, kW; `null` bei
+Laeufen ohne Spalte `charging_requested_kw`), `grid_energy_mwh_day` (Netzbezug nur
+Verkehrstag), `background_unserved_kwh`, `bottleneck`, `cause_shares_pct`, Wartezeiten.
+
+`evidence_level`: `model_checked` nur wenn Artefakt versiegelt/geprueft, gleiche
+Nachfragewelt, Flotten- und Speicherbilanz ≤ 1e-6 kWh und Grundlast voll versorgt; sonst
+`synthetic` (abgeschlossen) bzw. `assumption`.
+
+`answer`: Rangfolge nach `on_time_pct`, bei Gleichstand nach `minutes_at_limit`. Messbar nur
+oberhalb Epsilon (0,5 Pp. bzw. 1 min). `status`: `winner` (mit `best_variant_id`, `headline`),
+`tie` (`tied`), `no_measurable_difference` („Keine Variante verbessert die Basis messbar.“),
+`pending`. `no_effect`/`worse` + `details` („…: kein messbarer Unterschied.“).
+
+**Speicher im Modell** (`PowerConfig`): Entladung nur, wenn der Bedarf ueber der wirksamen
+Netzimportgrenze liegt (Peak Shaving an der Grenze), begrenzt durch Leistung, Wirkungsgrad und
+Reserve-SOC. Laden aus PV/BHKW-Ueberschuss; neu optional `battery_grid_charge_below_kw`: Netzladung,
+solange der Netzbezug darunter liegt (Varianten setzen 80 % der Anschlussgrenze). Default `null`
+wird nicht serialisiert → Welt-Hashes und Ergebnisse alter Konfigurationen unveraendert, daher
+keine neue Engine-Version (`airport_coupled_v2`). Neue Serienspalte `charging_requested_kw`.
+
+**Flotte**: `overview.fleet` und `situation.fleet`
+(`{"total_vehicles", "total_chargers", "by_kind": [{kind,label,vehicles,chargers}], "source"}`;
+`source`: `coupled_run` | `default_assumptions` | `null`).

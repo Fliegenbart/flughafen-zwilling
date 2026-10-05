@@ -167,6 +167,8 @@ def simulate_coupled(
                     job.deadline_min,
                 ))
         allocation, row = supply.step(minute, requests, policy)
+        # Angefragte Ladeleistung (Fahrzeugseite) fuer "fehlende kW"; reine Zusatzspalte.
+        row["charging_requested_kw"] = math.fsum(r.kw for r in requests)
         transformer_loss += row["transformer_loss_kw"] * DT_H
         for i, job in enumerate(world.parking_jobs):
             remaining[i] = max(0, remaining[i] - allocation.get(job.id, 0) * DT_H * efficiency)

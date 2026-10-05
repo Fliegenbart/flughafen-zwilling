@@ -2044,3 +2044,184 @@ li[data-from="lab"] > .aec-msg {
     width: 100%;
   }
 }
+
+/* ------------------------------------------------- Varianten anlegen/rechnen */
+.aec-vareditor {
+  display: grid;
+  gap: var(--sp-4);
+  max-width: 72ch;
+}
+.aec-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.aec .aec-chip {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  border: 1px dashed var(--aec-line-strong);
+  background: var(--aec-surface);
+  color: var(--aec-ink);
+  font-weight: 600;
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+.aec .aec-chip:hover {
+  border-style: solid;
+  border-color: var(--aec-ink);
+}
+.aec .aec-chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.aec-varform {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--sp-3);
+  align-items: end;
+}
+.aec-varform label {
+  display: grid;
+  gap: 6px;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--aec-ink-2);
+  min-width: 0;
+}
+.aec-varform input,
+.aec-varform select {
+  width: 100%;
+  min-width: 0;
+}
+.aec-varform .aec-varform__name {
+  grid-column: 1 / -1;
+}
+.aec-vardefs {
+  display: grid;
+  gap: 1px;
+  background: var(--aec-line);
+  border: 1px solid var(--aec-line);
+  border-radius: var(--r-2);
+  overflow: hidden;
+}
+.aec-vardefs li {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  gap: var(--sp-3);
+  align-items: baseline;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--aec-surface);
+}
+.aec-vardefs span {
+  font: 400 12px/1.4 var(--font-data);
+  color: var(--aec-muted);
+  overflow-wrap: anywhere;
+}
+.aec .aec-linkbtn {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  color: var(--aec-ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+.aec-varrun {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3) var(--sp-4);
+  align-items: center;
+}
+.aec-check {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--step--1);
+  color: var(--aec-ink-2);
+}
+.aec .aec-check input {
+  min-height: 0;
+  width: 18px;
+  height: 18px;
+}
+.aec-progress {
+  position: relative;
+  flex: 1 1 220px;
+  height: 28px;
+  border-radius: var(--r-1);
+  background: var(--aec-surface-2);
+  border: 1px solid var(--aec-line);
+  overflow: hidden;
+}
+.aec-progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--aec-signal) 0 14px,
+    transparent 14px 22px
+  );
+  transition: width var(--dur-2, 300ms) var(--ease-out, ease-out);
+}
+.aec-progress em {
+  position: relative;
+  display: block;
+  padding: 0 10px;
+  font: 600 12px/28px var(--font-data);
+  font-style: normal;
+  color: var(--aec-ink);
+}
+.aec-sample-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.aec-variants dd small {
+  font-weight: 400;
+  color: var(--aec-muted);
+}
+
+/* Fragen-Navigation mobil: kompakte Schilder, nur die aktive Frage ausgeschrieben. */
+@media (max-width: 640px) {
+  .aec-qnav ol {
+    overflow: visible;
+    flex-wrap: nowrap;
+  }
+  .aec-qnav li {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+  .aec-qnav li:has([aria-current="page"]) {
+    flex: 1 1 auto;
+  }
+  .aec-qnav__item {
+    padding: 6px;
+    min-height: 44px;
+    align-content: center;
+  }
+  .aec-qnav__sign {
+    gap: 0;
+    font-size: 0;
+  }
+  .aec-qnav__letter {
+    width: 30px;
+    height: 30px;
+  }
+  .aec-qnav__item[aria-current="page"] .aec-qnav__sign {
+    gap: 8px;
+    font-size: var(--step--1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .aec-vardefs li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .aec-vardefs span {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

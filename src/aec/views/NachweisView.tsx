@@ -63,7 +63,7 @@ function reportHtml(props: ViewProps, claims: Claim[], overview: Overview | null
 <p>Airport Energy Check · Nachweis für Angebot und Lab${props.situation.source === "beispiel" ? " · <b>Beispieldaten</b>" : ""}</p>
 <h1>${esc(props.project.name)}</h1>
 <p><b>Engpass:</b> ${esc(bottleneckAnswer(props.situation))}</p>
-<p><b>Varianten:</b> ${esc(variantsAnswer(props.variants))}</p>
+<p><b>Varianten:</b> ${esc(props.board.answer?.headline ?? variantsAnswer(props.variants))}${props.board.source === "beispiel" ? " (Beispieldaten)" : ""}</p>
 <table>${rows}</table>
 <h2>Anhang: Technik</h2><ul>${tech || "<li>Keine verknüpften Läufe.</li>"}</ul>
 <p>Engine: ${CURRENT_COUPLED_ENGINE}. Kriterien gesperrt: ${overview?.locked ? `ja, SHA256 ${esc(overview.sha256 ?? "")}` : "nein"}.</p>

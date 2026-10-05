@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { getProject, getSituation, getVariants } from "./api";
+import { getProject, getSituation, getVariantBoard } from "./api";
 import { useNav } from "./context";
 import Link from "./Link";
 import { SourceTag } from "./parts";
 import { QUESTIONS, type Question, type Route } from "./routes";
-import type { Project, Situation, Variant } from "./types";
+import type { Project, Situation, Variant, VariantBoard } from "./types";
 import { WerkstattFrame } from "./Werkstatt";
 import LageView from "./views/LageView";
 import EngpassView from "./views/EngpassView";
@@ -18,6 +18,8 @@ export type ViewProps = {
   project: Project;
   situation: Situation;
   variants: Variant[];
+  board: VariantBoard;
+  reloadBoard: () => Promise<VariantBoard>;
   route: ProjectRoute;
 };
 
@@ -76,7 +78,7 @@ export default function ProjectPage({
 }) {
   const [project, setProject] = useState<Project | null>(null);
   const [situation, setSituation] = useState<Situation | null>(null);
-  const [variants, setVariants] = useState<Variant[]>([]);
+  const [board, setBoard] = useState<VariantBoard | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -84,10 +86,13 @@ export default function ProjectPage({
       const p = await getProject(route.projekt);
       if (!alive) return;
       setProject(p);
-      const [s, v] = await Promise.all([getSituation(p), getVariants()]);
+      const [s, b] = await Promise.all([getSituation(p), getVariantBoard(p)]);
       if (!alive) return;
+      // Flottengroesse aus dem Modelllauf (bzw. der Varianten-Basis) statt "unbekannt".
+      const fleet = s.fleet?.total ?? b.base?.fleet.total ?? null;
+      if (fleet) setProject({ ...p, fleetSize: fleet });
       setSituation(s);
-      setVariants(v);
+      setBoard(b);
     })();
     return () => {
       alive = false;
@@ -98,7 +103,15 @@ export default function ProjectPage({
     if (route.werkstatt) document.getElementById("werkstatt")?.scrollIntoView?.({ block: "start" });
   }, [route.werkstatt]);
 
-  const props = project && situation ? { project, situation, variants, route } : null;
+  const reloadBoard = async () => {
+    const b = project ? await getVariantBoard(project) : null;
+    if (b) setBoard(b);
+    return b!;
+  };
+  const props =
+    project && situation && board
+      ? { project, situation, variants: board.variants, board, reloadBoard, route }
+      : null;
   const next = NEXT[route.frage];
   const nextQ = QUESTIONS.find((q) => q.id === next);
 
@@ -112,7 +125,11 @@ export default function ProjectPage({
           <div>
             <span className="aec-projectbar__name">{project?.name ?? "Projekt wird geladen…"}</span>
             <span className="aec-projectbar__meta">
-              {project ? `${project.site || project.airport} · ${project.dayLabel}` : ""}
+              {project
+                ? `${project.site || project.airport} · ${project.dayLabel}${
+                    project.fleetSize ? ` · ${project.fleetSize} Fahrzeuge` : ""
+                  }`
+                : ""}
             </span>
           </div>
           {project ? <SourceTag source={situation?.source ?? project.source} /> : null}

@@ -91,6 +91,12 @@ class PowerConfig(StrictModel):
     battery_initial_soc_pct: float = Field(default=50, ge=0, le=100)
     battery_reserve_pct: float = Field(default=10, ge=0, le=100)
     battery_efficiency: float = Field(default=0.95, ge=0.01, le=1)
+    # Optional (Varianten): Speicher laedt zusaetzlich aus dem Netz, solange der Netzbezug
+    # unter dieser Schwelle liegt. None = bisheriges Verhalten (nur PV/BHKW-Ueberschuss);
+    # None wird nicht serialisiert, damit Welt-Hashes alter Laeufe gleich bleiben.
+    battery_grid_charge_below_kw: float | None = Field(
+        default=None, ge=0, le=100000, exclude_if=lambda value: value is None,
+    )
     parking_sessions: int = Field(default=200, ge=0, le=275)
     parking_charger_kw: float = Field(default=11, gt=0, le=150)
 
@@ -98,6 +104,10 @@ class PowerConfig(StrictModel):
     def valid_storage(self) -> PowerConfig:
         if self.battery_initial_soc_pct < self.battery_reserve_pct:
             raise ValueError("Speicher-Start-SOC liegt unter der Reserve")
+        if self.battery_grid_charge_below_kw is not None and (
+            self.battery_capacity_kwh <= 0 or self.battery_power_kw <= 0
+        ):
+            raise ValueError("Netzladung des Speichers benoetigt Kapazitaet und Leistung")
         return self
 
 

@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import AirportEnergyCheck from "./AirportEnergyCheck";
-import { exchangeFromApi, situationFromApi } from "./api";
+import { boardFromApi, exchangeFromApi, situationFromApi } from "./api";
 import {
   bottleneckAnswer,
   exchangeAnswer,
@@ -68,6 +68,71 @@ describe("Antwortsätze", () => {
     const a = variantsAnswer(sampleVariants());
     expect(a).toMatch(/„\+5 Schlepper“ hilft am meisten: 18 Prozentpunkte/);
     expect(a).toMatch(/Laderegel Fristpriorität: kein messbarer Unterschied/);
+  });
+});
+
+describe("Varianten aus der API", () => {
+  it("liest Kennzahlen, Antwortsatz und Fortschritt", () => {
+    const board = boardFromApi({
+      base: {
+        source: "coupled_run",
+        policy: "uncontrolled",
+        grid_import_limit_kw: 3500,
+        storage_kwh: 0,
+        fleet: { total_vehicles: 100, by_kind: [], source: "coupled_run" },
+      },
+      variants: [
+        { id: "v1", name: "+5 Schlepper", changes: { extra_vehicles: { pushback_tug: 5 } } },
+      ],
+      latest_run: {
+        status: "completed",
+        progress: { done: 2, total: 2 },
+        stress: false,
+        stale: false,
+        entries: [
+          {
+            key: "base",
+            name: "Basis",
+            changes: {},
+            evidence_level: "model_checked",
+            kpis: {
+              on_time_pct: 70,
+              minutes_at_limit: 90,
+              peak_kw: 3500,
+              grid_energy_mwh_day: 10,
+              delayed_departures: 30,
+              departures_total: 100,
+              missing_kw_peak: 400,
+            },
+          },
+          {
+            key: "v1",
+            name: "+5 Schlepper",
+            changes: { extra_vehicles: { pushback_tug: 5 } },
+            evidence_level: "synthetic",
+            delta_to_base: { on_time_pct: 12, minutes_at_limit: -3 },
+            fleet: { total_vehicles: 105, by_kind: [] },
+            kpis: { on_time_pct: 82, minutes_at_limit: 87, peak_kw: 3500, grid_energy_mwh_day: 10 },
+          },
+        ],
+        answer: {
+          status: "winner",
+          best_variant_id: "v1",
+          headline: "„+5 Schlepper“ hilft am meisten.",
+          details: [],
+        },
+      },
+    })!;
+    expect(board.source).toBe("api");
+    expect(board.base?.fleet.total).toBe(100);
+    expect(board.variants.map((v) => v.kind)).toEqual(["basis", "fahrzeuge"]);
+    expect(board.variants[1]!.deltaOnTimePct).toBe(12);
+    expect(board.variants[1]!.fleetTotal).toBe(105);
+    expect(board.answer?.bestId).toBe("v1");
+    expect(board.run?.done).toBe(2);
+  });
+  it("lehnt Unbrauchbares ab", () => {
+    expect(boardFromApi({})).toBeNull();
   });
 });
 

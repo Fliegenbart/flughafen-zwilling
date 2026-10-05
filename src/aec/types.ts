@@ -37,6 +37,8 @@ export type Situation = {
   /** Abfluege mit verspaeteter Abfertigung und Anteil fahrzeugbedingt (0..1). */
   delayedDepartures: number;
   vehicleShare: number;
+  /** Modellierte Flotte des Laufs (nur API). */
+  fleet?: Fleet;
 };
 
 export type Window = { start: number; end: number; peakKw: number; deficitKw: number };
@@ -44,13 +46,73 @@ export type Window = { start: number; end: number; peakKw: number; deficitKw: nu
 export type Variant = {
   id: string;
   name: string;
-  kind: "basis" | "speicher" | "fahrzeuge" | "laderegel" | "anschluss";
+  kind: "basis" | "speicher" | "fahrzeuge" | "laderegel" | "anschluss" | "pv" | "ausfall" | "mix";
   onTimePct: number;
   minutesAtLimit: number;
   gridEnergyMwh: number;
   peakKw: number;
   evidence: EvidenceLevel;
   source: DataSource;
+  /** Nur aus der API: weitere Kennzahlen eines gerechneten Laufs. */
+  delayedDepartures?: number;
+  departuresTotal?: number;
+  missingKw?: number | null;
+  backgroundUnservedKwh?: number;
+  bottleneck?: string | null;
+  energyShare?: number;
+  fleetTotal?: number | null;
+  deltaOnTimePct?: number | null;
+  deltaMinutes?: number | null;
+  stressOnTimePct?: number | null;
+  status?: string;
+};
+
+export type FleetKind = "bus" | "baggage_tractor" | "pushback_tug" | "gpu";
+export type Fleet = {
+  total: number | null;
+  byKind: { kind: FleetKind; label: string; vehicles: number; chargers: number }[];
+  source: string | null;
+};
+
+/** Parameteraenderungen einer Variante gegenueber der Basis (Vertrag: EXCHANGE_API.md). */
+export type VariantChanges = {
+  grid_import_limit_kw?: number;
+  storage_kwh?: number;
+  storage_kw?: number;
+  extra_vehicles?: Partial<Record<FleetKind, number>>;
+  charging_policy?: "uncontrolled" | "mission_priority";
+  chargers_offline?: Partial<Record<FleetKind, number>>;
+  pv_factor?: number;
+};
+export type VariantDefinition = { id: string; name: string; changes: VariantChanges };
+
+export type VariantBoard = {
+  source: DataSource;
+  /** Basis des Projekts; null ohne gekoppelten Lauf und ohne Flugplan. */
+  base: {
+    source: string;
+    policy: string;
+    gridLimitKw: number;
+    storageKwh: number;
+    fleet: Fleet;
+  } | null;
+  definitions: VariantDefinition[];
+  run: {
+    status: "queued" | "running" | "completed" | "partial";
+    done: number;
+    total: number;
+    stress: boolean;
+    stale: boolean;
+    createdAt: string;
+  } | null;
+  /** Gerechnete Varianten (inkl. Basis) bzw. Beispielwerte. */
+  variants: Variant[];
+  answer: {
+    status: string;
+    headline: string;
+    details: string[];
+    bestId: string | null;
+  } | null;
 };
 
 export type ExchangeStatus =
