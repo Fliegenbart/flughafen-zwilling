@@ -7,6 +7,7 @@ import {
 } from "../../ui/EvidenceBadge";
 import { CURRENT_COUPLED_ENGINE } from "../../munich/coupledTypes";
 import { getOverview, type Overview } from "../api";
+import { REPORT_STYLES } from "../../ui/reportStyles";
 import { bottleneckAnswer, powerText, variantsAnswer } from "../analysis";
 import { AnswerHead, Details, Section } from "../parts";
 import type { ViewProps } from "../ProjectPage";
@@ -59,15 +60,15 @@ function reportHtml(props: ViewProps, claims: Claim[], overview: Overview | null
     .map((e) => `<li>${esc(e.title)} · ${esc(e.status)} · <code>${esc(e.refId)}</code></li>`)
     .join("");
   return `<!doctype html><html lang="de"><meta charset="utf-8"><title>Nachweis ${esc(props.project.name)}</title>
-<style>body{font:15px/1.55 system-ui,sans-serif;max-width:760px;margin:40px auto;padding:0 20px;color:#13171c}h1{font-family:Georgia,serif;font-weight:400;font-size:34px;line-height:1.1}td{padding:6px 10px;border-bottom:1px solid #ddd;vertical-align:top}code{font-size:12px}</style>
-<p>Airport Energy Check · Nachweis für Angebot und Lab${props.situation.source === "beispiel" ? " · <b>Beispieldaten</b>" : ""}</p>
+<meta name="viewport" content="width=device-width, initial-scale=1"><style>${REPORT_STYLES}</style><body><main>
+<small>Airport Energy Check · Nachweis für Angebot und Lab${props.situation.source === "beispiel" ? " · <b>Beispieldaten</b>" : ""}</small>
 <h1>${esc(props.project.name)}</h1>
 <p><b>Engpass:</b> ${esc(bottleneckAnswer(props.situation))}</p>
 <p><b>Varianten:</b> ${esc(props.board.answer?.headline ?? variantsAnswer(props.variants))}${props.board.source === "beispiel" ? " (Beispieldaten)" : ""}</p>
 <table>${rows}</table>
 <h2>Anhang: Technik</h2><ul>${tech || "<li>Keine verknüpften Läufe.</li>"}</ul>
 <p>Engine: ${CURRENT_COUPLED_ENGINE}. Kriterien gesperrt: ${overview?.locked ? `ja, SHA256 ${esc(overview.sha256 ?? "")}` : "nein"}.</p>
-<p>Methodenprototyp, unkalibriert. Keine Anlagensteuerung, keine Hardwarewrites.</p></html>`;
+<p>Methodenprototyp, unkalibriert. Keine Anlagensteuerung, keine Hardwarewrites.</p></main></body></html>`;
 }
 
 export default function NachweisView(props: ViewProps) {

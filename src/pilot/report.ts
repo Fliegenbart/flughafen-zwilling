@@ -1,3 +1,4 @@
+import { REPORT_STYLES } from "../ui/reportStyles";
 import type { PilotAssessment, PilotImport, PilotProject } from "./types";
 export const escapeHtml = (value: unknown) =>
   String(value ?? "").replace(
@@ -10,7 +11,7 @@ export function pilotReport(
   assessments: PilotAssessment[],
 ): string {
   const e = escapeHtml;
-  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Pilotentscheidung · ${e(project.name)}</title><style>body{font:15px Sora,system-ui,sans-serif;color:#193246;background:#eef3f7;margin:0;padding:5vw}main{max-width:1000px;margin:auto;background:white;padding:4vw;border-radius:20px}h1{font-size:36px;letter-spacing:-.04em}h2{margin-top:32px}p{line-height:1.7}.tag{color:#76560a;background:#fff2c7;padding:12px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px;border-bottom:1px solid #ccdbe5;overflow-wrap:anywhere}code{font-size:11px} @media print{body{background:white;padding:0}main{padding:0}}</style></head><body><main><small>AIRPORT TWIN CORE / PILOTENTSCHEIDUNG</small><h1>${e(project.name)}</h1><p class="tag">Methodenprototyp. Keine Anlagenfreigabe, keine empirische Validierung allein durch SIL oder einen CSV-Vergleich.</p><h2>Die zu treffende Entscheidung</h2><p>${e(project.decision)}</p><h2>Systemgrenze</h2><p>${e(project.scope)}</p><h2>Vorab festzulegende Abnahme</h2><p>${e(project.acceptance_note)}</p><h2>Nachweise</h2><table><thead><tr><th>Quelle / Rolle</th><th>Messgrenze</th><th>Datenqualität</th><th>Bewertungen</th></tr></thead><tbody>${imports
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Pilotentscheidung · ${e(project.name)}</title><style>${REPORT_STYLES}</style></head><body><main><small>AIRPORT TWIN CORE / PILOTENTSCHEIDUNG</small><h1>${e(project.name)}</h1><p class="tag">Methodenprototyp. Keine Anlagenfreigabe, keine empirische Validierung allein durch SIL oder einen CSV-Vergleich.</p><h2>Die zu treffende Entscheidung</h2><p>${e(project.decision)}</p><h2>Systemgrenze</h2><p>${e(project.scope)}</p><h2>Vorab festzulegende Abnahme</h2><p>${e(project.acceptance_note)}</p><h2>Nachweise</h2><table><thead><tr><th>Quelle / Rolle</th><th>Messgrenze</th><th>Datenqualität</th><th>Bewertungen</th></tr></thead><tbody>${imports
     .map(
       (i) =>
         `<tr><td>${e(i.filename)}<br>${e(i.role)}<br><code>${e(i.quality.sha256)}</code></td><td>${e(i.measurement_boundary)}<br>${e(i.source_note)}</td><td>${e(i.quality.state)}<br>${e(i.quality.issues.join("; "))}</td><td>${

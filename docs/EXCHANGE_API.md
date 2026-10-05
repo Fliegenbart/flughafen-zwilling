@@ -232,7 +232,8 @@ Basis/Variante mit `world_hash`, `run_id`, `status`, `fleet`, `kpis`, `delta_to_
 
 `kpis`: `on_time_pct` (Anteil Abfluege, deren modellierte Auftraege fristgerecht fertig sind),
 `delayed_departures`, `departures_total`, `minutes_at_limit` (wie Lagebild, ganzer Horizont),
-`peak_kw`, `missing_kw_peak` (max. angefragte minus gelieferte Ladeleistung, kW; `null` bei
+`peak_kw`, `missing_kw_peak` (UI: „ungedeckter Ladebedarf in der Spitze“; Maximum je Minute von angefragter
+minus gelieferter Ladeleistung, kW, keine Summe; Feldname bleibt aus Kompatibilitaetsgruenden; `null` bei
 Laeufen ohne Spalte `charging_requested_kw`), `grid_energy_mwh_day` (Netzbezug nur
 Verkehrstag), `background_unserved_kwh`, `bottleneck`, `cause_shares_pct`, Wartezeiten.
 
@@ -240,9 +241,15 @@ Verkehrstag), `background_unserved_kwh`, `bottleneck`, `cause_shares_pct`, Warte
 Nachfragewelt, Flotten- und Speicherbilanz ≤ 1e-6 kWh und Grundlast voll versorgt; sonst
 `synthetic` (abgeschlossen) bzw. `assumption`.
 
-`answer`: Rangfolge nach `on_time_pct`, bei Gleichstand nach `minutes_at_limit`. Messbar nur
-oberhalb Epsilon (0,5 Pp. bzw. 1 min). `status`: `winner` (mit `best_variant_id`, `headline`),
-`tie` (`tied`), `no_measurable_difference` („Keine Variante verbessert die Basis messbar.“),
+`answer`: Puenktlichkeit und Netzentlastung getrennt bewertet. Puenktlich messbar besser ab
++0,5 Pp. `on_time_pct`, Netz messbar entlastet/belastet ab 1 min `minutes_at_limit`.
+`punctuality_best_id` (beste nach Puenktlichkeit), `grid_best_id` (staerkste Netzentlastung),
+`tradeoffs` (Puenktlichkeit besser, Netz staerker belastet → „Zielkonflikt“ in `headline`/`details`).
+`status`: `winner` (mit `best_variant_id`, `headline` „Pünktlichkeit: „X“ hilft am meisten, …“
+plus Netzsatz), `tie` (`tied`), `grid_only` („Keine Variante verbessert die Pünktlichkeit; Netz
+entlastet am stärksten: „X“ (−N Minuten am Limit).“, `best_variant_id` = `grid_best_id`),
+`no_measurable_difference` („Keine Variante verbessert die Pünktlichkeit; keine Variante
+entlastet das Netz messbar.“),
 `pending`. `no_effect`/`worse` + `details` („…: kein messbarer Unterschied.“).
 
 **Speicher im Modell** (`PowerConfig`): Entladung nur, wenn der Bedarf ueber der wirksamen

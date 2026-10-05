@@ -52,7 +52,7 @@ export default function EngpassView({ situation, route }: ViewProps) {
             unit: deficit.unit,
             label:
               situation.kind === "bedarf" && k.worst
-                ? "fehlen in der Spitze"
+                ? "Bedarf über Anschlussgrenze (Spitze)"
                 : "Spitzenlast Laden + Grundlast",
           },
           { value: int(situation.delayedDepartures), label: "Abflüge mit verspäteter Abfertigung" },

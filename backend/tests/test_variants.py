@@ -150,7 +150,7 @@ def test_run_uses_same_world_and_reports_deltas(client, tmp_path):
             continue
         for field, value in entry["delta_to_base"].items():
             assert value == pytest.approx(entry["kpis"][field] - base[field], abs=1e-3)
-    assert run["answer"]["status"] in {"winner", "tie", "no_measurable_difference"}
+    assert run["answer"]["status"] in {"winner", "tie", "grid_only", "no_measurable_difference"}
     assert run["answer"]["headline"]
     # Lagebild/Uebersicht liefern die Flottengroesse.
     overview = client.get(f"/api/v1/projects/{pid}/overview").json()
@@ -186,10 +186,26 @@ def test_answer_winner_tie_and_no_measurable_difference():
     none = build_answer([base, _entry("a", "A", 80.3, 99.5)], True)
     assert none["status"] == "no_measurable_difference" and none["best_variant_id"] is None
     minutes = build_answer([base, _entry("a", "A", 80.0, 40)], True)
-    assert minutes["status"] == "winner" and "60 Minuten weniger" in minutes["headline"]
+    assert minutes["status"] == "grid_only" and minutes["grid_best_id"] == "a"
+    assert minutes["headline"] == ("Keine Variante verbessert die Pünktlichkeit; Netz entlastet "
+                                   "am stärksten: „A“ (−60 Minuten am Limit).")
     worse = build_answer([base, _entry("a", "A", 70.0, 100)], True)
     assert worse["worse"] == ["a"] and worse["status"] == "no_measurable_difference"
     assert build_answer([base], False)["status"] == "pending"
+
+
+def test_answer_separates_punctuality_and_grid_with_tradeoff():
+    base = _entry("base", "Basis", 80.0, 100)
+    answer = build_answer([base, _entry("a", "Schlepper", 85.0, 130),
+                           _entry("b", "Speicher", 80.2, 40)], True)
+    assert answer["status"] == "winner" and answer["punctuality_best_id"] == "a"
+    assert answer["grid_best_id"] == "b" and answer["tradeoffs"] == ["a"]
+    assert "Pünktlichkeit: „Schlepper“ hilft am meisten" in answer["headline"]
+    assert "Zielkonflikt: belastet das Netz stärker (+30 Minuten am Limit)" in answer["headline"]
+    assert answer["details"][0] == "Netz entlastet am stärksten: „Speicher“ (−60 Minuten am Limit)."
+    # Genau an der Schwelle 0,5 Pp. zaehlt als messbar
+    edge = build_answer([base, _entry("a", "A", 80.0 + EPS_ON_TIME_PCT, 100)], True)
+    assert edge["status"] == "winner"
 
 
 # ---- Modell: Speicher und Fahrzeuge -------------------------------------------

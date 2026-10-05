@@ -65,7 +65,7 @@ export default function LageView({ project, situation, route }: ViewProps) {
             ? {
                 value: power(-k.minReserve).value,
                 unit: power(-k.minReserve).unit,
-                label: "fehlen in der Spitze",
+                label: "Bedarf über Anschlussgrenze (Spitze)",
                 tone: "signal",
               }
             : {

@@ -555,6 +555,22 @@ function suggestLocalObservabilityApiBase(currentApiBase: string) {
   return `${protocol}//${candidateHost}:8000`;
 }
 
+/** Laufstatus in Kaeufersprache; technische Run-ID/Status stehen im Nachweis-Aufklapper. */
+function runStatusText(state: string | null | undefined, progress: number) {
+  switch (state) {
+    case "queued":
+      return "Wartet auf Start …";
+    case "running":
+      return `Rechnet … ${Math.round(progress)} %`;
+    case "completed":
+      return "Fertig";
+    case "failed":
+      return "Abgebrochen";
+    default:
+      return "Bereit";
+  }
+}
+
 function buildGrafanaRunUrl(grafanaBase: string, runId: string | null) {
   const base = normalizeBaseUrl(grafanaBase);
   if (!base || !runId) {
@@ -1756,7 +1772,7 @@ export default function App() {
               </span>{" "}
               ·{" "}
               <span className={`studio-status ${runTone}`}>
-                Run {(state.remoteRunState || "idle").toUpperCase()}
+                {runStatusText(state.remoteRunState, state.remoteRunProgress)}
               </span>{" "}
               · <span>Grafana {telemetryStreamEnabled ? "STREAM ON" : "STREAM OFF"}</span>
             </>
@@ -1885,10 +1901,9 @@ export default function App() {
               ) : null}
 
               <div className="run-meta">
-                <div>
-                  Run ID: <span className="mono">{state.remoteRunId || "-"}</span>
+                <div aria-live="polite">
+                  <strong>{runStatusText(state.remoteRunState, state.remoteRunProgress)}</strong>
                 </div>
-                <div>Status: {state.remoteRunState || "-"}</div>
                 <div>
                   Modellkriterien:{" "}
                   {state.passFail === null
@@ -1898,7 +1913,6 @@ export default function App() {
                       : "nicht erfüllt"}
                 </div>
                 <div>Modellwerte, kein empirischer Nachweis.</div>
-                <div>Progress: {state.remoteRunProgress.toFixed(0)}%</div>
                 <div
                   className="progress-bar"
                   role="progressbar"
@@ -1912,6 +1926,19 @@ export default function App() {
                   />
                 </div>
               </div>
+
+              <details className="sim-proof sim-proof--inline">
+                <summary>Details/Nachweis: Lauf</summary>
+                <div className="run-meta">
+                  <div>
+                    Run ID: <span className="mono">{state.remoteRunId || "-"}</span>
+                  </div>
+                  <div>
+                    Status: <span className="mono">{state.remoteRunState || "-"}</span> (
+                    {state.remoteRunProgress.toFixed(0)} %)
+                  </div>
+                </div>
+              </details>
 
               {state.remoteRunId ? (
                 <div className="planner-links run-links">

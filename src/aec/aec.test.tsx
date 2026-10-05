@@ -66,8 +66,15 @@ describe("Antwortsätze", () => {
   });
   it("benennt die beste Variante und die wirkungslosen", () => {
     const a = variantsAnswer(sampleVariants());
-    expect(a).toMatch(/„\+5 Schlepper“ hilft am meisten: 18 Prozentpunkte/);
-    expect(a).toMatch(/Laderegel Fristpriorität: kein messbarer Unterschied/);
+    expect(a).toMatch(/Pünktlichkeit: „\+5 Schlepper“ hilft am meisten \(\+18,0 Pp\.\)/);
+    expect(a).toMatch(/Zielkonflikt: belastet das Netz stärker \(\+19 Minuten am Limit\)/);
+    expect(a).toMatch(/Netz entlastet am stärksten: „Speicher 2 MWh“ \(−52 Minuten am Limit\)/);
+  });
+  it("sagt ausdrücklich, wenn keine Variante die Pünktlichkeit verbessert", () => {
+    const vs = sampleVariants().map((v) => (v.kind === "basis" ? v : { ...v, onTimePct: 78.2 }));
+    expect(variantsAnswer(vs)).toMatch(
+      /^Keine Variante verbessert die Pünktlichkeit; Netz entlastet am stärksten: „Speicher 2 MWh“ \(−52 Minuten am Limit\)\./,
+    );
   });
 });
 

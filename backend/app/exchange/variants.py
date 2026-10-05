@@ -257,11 +257,27 @@ def _num(value: float, digits: int = 1) -> str:
     return text
 
 
+def _gain(e: dict, base: dict) -> float:
+    return (e["kpis"]["on_time_pct"] or 0) - (base["kpis"]["on_time_pct"] or 0)
+
+
+def _relief(e: dict, base: dict) -> float:
+    """Eingesparte Minuten am Anschlusslimit gegenueber der Basis (>0 = entlastet)."""
+    return base["kpis"]["minutes_at_limit"] - e["kpis"]["minutes_at_limit"]
+
+
 def build_answer(entries: list[dict], finished: bool) -> dict:
+    """Antwortsatz: Puenktlichkeit und Netzentlastung getrennt bewertet.
+
+    Puenktlich messbar besser ab EPS_ON_TIME_PCT Prozentpunkten, Netz messbar entlastet bzw.
+    belastet ab EPS_LIMIT_MIN Minuten am Anschlusslimit. Verbessert eine Variante die
+    Puenktlichkeit, belastet aber das Netz staerker, wird das als Zielkonflikt genannt.
+    """
     epsilon = {"on_time_pct": EPS_ON_TIME_PCT, "minutes_at_limit": EPS_LIMIT_MIN}
     base = next((e for e in entries if e["key"] == "base"), None)
     empty = {"status": "pending", "best_variant_id": None, "best_name": None, "tied": [],
-             "no_effect": [], "worse": [], "headline": None, "details": [], "epsilon": epsilon}
+             "no_effect": [], "worse": [], "headline": None, "details": [], "epsilon": epsilon,
+             "punctuality_best_id": None, "grid_best_id": None, "tradeoffs": []}
     if not finished or base is None or not base.get("kpis"):
         return empty
     candidates = [e for e in entries if e["key"] != "base" and e.get("kpis")]
@@ -271,37 +287,65 @@ def build_answer(entries: list[dict], finished: bool) -> dict:
     no_effect = [e for e in candidates
                  if not _better(e["kpis"], base["kpis"]) and not _better(base["kpis"], e["kpis"])]
     worse = [e for e in candidates if _better(base["kpis"], e["kpis"])]
-    improving = [e for e in candidates if _better(e["kpis"], base["kpis"])]
+    punctual = [e for e in candidates if _gain(e, base) >= EPS_ON_TIME_PCT]
+    relieving = [e for e in candidates if _relief(e, base) > EPS_LIMIT_MIN]
+    tradeoffs = [e for e in punctual if -_relief(e, base) > EPS_LIMIT_MIN]
+    grid_best = max(relieving, key=lambda e: (_relief(e, base), _gain(e, base)), default=None)
+    grid_text = (f"Netz entlastet am stärksten: „{grid_best['name']}“ "
+                 f"(−{int(round(_relief(grid_best, base)))} Minuten am Limit)"
+                 if grid_best else "keine Variante entlastet das Netz messbar")
     details = []
+    for e in tradeoffs:
+        details.append(f"Zielkonflikt: „{e['name']}“ verbessert die Pünktlichkeit um "
+                       f"{_num(_gain(e, base))} Pp., belastet das Netz aber stärker "
+                       f"(+{int(round(-_relief(e, base)))} Minuten am Limit).")
     if no_effect:
         details.append(", ".join(f"„{e['name']}“" for e in no_effect)
                        + ": kein messbarer Unterschied.")
     if worse:
         details.append(", ".join(f"„{e['name']}“" for e in worse) + ": schlechter als die Basis.")
     result = {**empty, "no_effect": [e["key"] for e in no_effect],
-              "worse": [e["key"] for e in worse], "details": details}
-    if not improving:
+              "worse": [e["key"] for e in worse], "details": details,
+              "grid_best_id": grid_best["key"] if grid_best else None,
+              "tradeoffs": [e["key"] for e in tradeoffs]}
+    if not punctual:
+        if grid_best:
+            return {**result, "status": "grid_only", "best_variant_id": grid_best["key"],
+                    "best_name": grid_best["name"],
+                    "headline": f"Keine Variante verbessert die Pünktlichkeit; {grid_text}."}
         return {**result, "status": "no_measurable_difference",
-                "headline": "Keine Variante verbessert die Basis messbar."}
-    best = max(improving, key=lambda e: (e["kpis"]["on_time_pct"] or 0,
-                                         -e["kpis"]["minutes_at_limit"]))
-    tied = [e for e in improving if e is not best
-            and not _better(best["kpis"], e["kpis"]) and not _better(e["kpis"], best["kpis"])]
-    gain = (best["kpis"]["on_time_pct"] or 0) - (base["kpis"]["on_time_pct"] or 0)
-    saved = base["kpis"]["minutes_at_limit"] - best["kpis"]["minutes_at_limit"]
-    if abs(gain) > EPS_ON_TIME_PCT:
-        effect = (f"{_num(gain)} Prozentpunkte mehr pünktlich abgefertigte Abflüge "
-                  f"({_num(best['kpis']['on_time_pct'])} % statt "
-                  f"{_num(base['kpis']['on_time_pct'])} %)")
-    else:
-        effect = f"gleiche Pünktlichkeit, {int(saved)} Minuten weniger am Anschlusslimit"
+                "headline": "Keine Variante verbessert die Pünktlichkeit; "
+                            "keine Variante entlastet das Netz messbar."}
+    best = max(punctual, key=lambda e: (_gain(e, base), _relief(e, base)))
+    tied = [e for e in punctual if e is not best
+            and abs(_gain(best, base) - _gain(e, base)) < EPS_ON_TIME_PCT]
+    effect = (f"+{_num(_gain(best, base))} Pp. pünktlich abgefertigte Abflüge "
+              f"({_num(best['kpis']['on_time_pct'])} % statt "
+              f"{_num(base['kpis']['on_time_pct'])} %)")
+    result = {**result, "punctuality_best_id": None if tied else best["key"]}
     if tied:
         names = " und ".join(f"„{e['name']}“" for e in [best, *tied])
         return {**result, "status": "tie", "best_variant_id": None, "best_name": None,
                 "tied": [e["key"] for e in [best, *tied]],
-                "headline": f"{names} helfen gleich viel: {effect}."}
+                "headline": f"{names} verbessern die Pünktlichkeit gleich stark: {effect}; "
+                            f"{grid_text}."}
+    if best in tradeoffs:
+        grid_part = (f"Zielkonflikt: belastet das Netz stärker "
+                     f"(+{int(round(-_relief(best, base)))} Minuten am Limit)")
+        details = [d for d in details if not d.startswith(f"Zielkonflikt: „{best['name']}“")]
+        if grid_best:
+            details.insert(0, f"{grid_text}.")
+        result = {**result, "details": details}
+    elif grid_best is best:
+        grid_part = (f"entlastet zugleich das Netz am stärksten "
+                     f"(−{int(round(_relief(best, base)))} Minuten am Limit)")
+    else:
+        grid_part = grid_text
     return {**result, "status": "winner", "best_variant_id": best["key"],
-            "best_name": best["name"], "headline": f"„{best['name']}“ hilft am meisten: {effect}."}
+            "best_name": best["name"],
+            "headline": f"Pünktlichkeit: „{best['name']}“ hilft am meisten "
+                        f"(+{_num(_gain(best, base))} Pp.). "
+                        f"{grid_part[0].upper()}{grid_part[1:]}."}
 
 
 class VariantService:

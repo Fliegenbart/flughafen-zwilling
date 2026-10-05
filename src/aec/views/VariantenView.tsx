@@ -300,11 +300,15 @@ function Editor({
             aria-valuemax={board.run.total}
             aria-valuenow={board.run.done}
           >
-            <span style={{ width: `${(board.run.done / Math.max(1, board.run.total)) * 100}%` }} />
             <em>
               {board.run.done} / {board.run.total} Läufe
               {board.run.status === "partial" ? " · nicht alle erfolgreich" : ""}
             </em>
+            <i className="aec-progress__track" aria-hidden="true">
+              <span
+                style={{ width: `${(board.run.done / Math.max(1, board.run.total)) * 100}%` }}
+              />
+            </i>
           </div>
         ) : null}
       </div>
@@ -460,7 +464,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
             ? {
                 value: powerText(best.missingKw).split(" ")[0]!,
                 unit: powerText(best.missingKw).split(" ")[1],
-                label: "fehlen in der Spitze",
+                label: "ungedeckter Ladebedarf in der Spitze",
               }
             : { value: dec1(best.gridEnergyMwh), unit: "MWh", label: "Netzenergie am Tag" },
         ]
@@ -555,7 +559,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
                   </div>
                   {v.missingKw != null ? (
                     <div>
-                      <dt>fehlt in der Spitze</dt>
+                      <dt>ungedeckter Ladebedarf in der Spitze</dt>
                       <dd>{powerText(v.missingKw)}</dd>
                     </div>
                   ) : null}

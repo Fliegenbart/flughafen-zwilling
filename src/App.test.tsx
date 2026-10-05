@@ -245,7 +245,8 @@ describe("HMI smoke", () => {
     fireEvent.click(screen.getByRole("button", { name: "Backend Run starten" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Status: completed")).toBeInTheDocument();
+      expect(screen.getAllByText("Fertig").length).toBeGreaterThan(0);
+      expect(screen.getByText("completed", { selector: ".mono" })).toBeInTheDocument();
       expect(screen.getByText("Modellkriterien: nicht erfüllt")).toBeInTheDocument();
     });
     expect(screen.getByText(/Modellwerte, kein empirischer Nachweis/i)).toBeInTheDocument();
@@ -907,7 +908,7 @@ describe("HMI smoke", () => {
           String(input).includes("/api/v1/runs/run-live/telemetry-slice"),
         ),
       ).toBe(true);
-      expect(screen.getByText(/Run RUNNING/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Rechnet …/).length).toBeGreaterThan(0);
     });
   });
 

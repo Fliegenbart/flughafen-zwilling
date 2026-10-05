@@ -2146,16 +2146,28 @@ li[data-from="lab"] > .aec-msg {
   width: 18px;
   height: 18px;
 }
+/* Fortschritt: Beschriftung oberhalb, Streifen im eigenen Balken (kein Text auf Streifen) */
 .aec-progress {
-  position: relative;
+  display: grid;
+  gap: 4px;
   flex: 1 1 220px;
-  height: 28px;
+}
+.aec-progress em {
+  display: block;
+  font: 600 12px/1.3 var(--font-data);
+  font-style: normal;
+  color: var(--aec-ink);
+}
+.aec-progress__track {
+  position: relative;
+  display: block;
+  height: 10px;
   border-radius: var(--r-1);
   background: var(--aec-surface-2);
   border: 1px solid var(--aec-line);
   overflow: hidden;
 }
-.aec-progress span {
+.aec-progress__track span {
   position: absolute;
   inset: 0 auto 0 0;
   background: repeating-linear-gradient(
@@ -2164,14 +2176,6 @@ li[data-from="lab"] > .aec-msg {
     transparent 14px 22px
   );
   transition: width var(--dur-2, 300ms) var(--ease-out, ease-out);
-}
-.aec-progress em {
-  position: relative;
-  display: block;
-  padding: 0 10px;
-  font: 600 12px/28px var(--font-data);
-  font-style: normal;
-  color: var(--aec-ink);
 }
 .aec-sample-note {
   display: flex;

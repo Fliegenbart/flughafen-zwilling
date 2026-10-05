@@ -112,18 +112,33 @@ export function bestVariant(variants: Variant[]): Variant | null {
   );
 }
 
+/** Antwortsatz: Pünktlichkeit und Netzentlastung getrennt (Schwellen wie im Backend). */
 export function variantsAnswer(variants: Variant[]): string {
   const base = variants.find((v) => v.kind === "basis") ?? variants[0];
-  const best = bestVariant(variants);
-  if (!base || !best || best.id === base.id) return "Keine Variante verbessert die Basis messbar.";
-  const gain = best.onTimePct - base.onTimePct;
-  const noEffect = variants.filter(
-    (v) => v.id !== base.id && Math.abs(v.onTimePct - base.onTimePct) < 1,
-  );
+  if (!base) return "Keine Variante verbessert die Pünktlichkeit.";
+  const others = variants.filter((v) => v.id !== base.id);
+  const gain = (v: Variant) => v.onTimePct - base.onTimePct;
+  const relief = (v: Variant) => base.minutesAtLimit - v.minutesAtLimit;
+  const punctual = others.filter((v) => gain(v) >= 0.5);
+  const gridBest = others
+    .filter((v) => relief(v) > 1)
+    .reduce<Variant | null>((a, v) => (!a || relief(v) > relief(a) ? v : a), null);
+  const gridText = gridBest
+    ? `Netz entlastet am stärksten: „${gridBest.name}“ (−${int(relief(gridBest))} Minuten am Limit)`
+    : "keine Variante entlastet das Netz messbar";
+  const noEffect = others.filter((v) => Math.abs(gain(v)) < 0.5 && Math.abs(relief(v)) <= 1);
   const tail = noEffect.length
     ? ` ${noEffect.map((v) => v.name).join(", ")}: kein messbarer Unterschied.`
     : "";
-  return `„${best.name}“ hilft am meisten: ${gain} Prozentpunkte mehr pünktlich abgefertigte Abflüge.${tail}`;
+  if (!punctual.length) return `Keine Variante verbessert die Pünktlichkeit; ${gridText}.${tail}`;
+  const best = punctual.reduce((a, v) => (gain(v) > gain(a) ? v : a));
+  let grid: string;
+  if (-relief(best) > 1)
+    grid = `Zielkonflikt: belastet das Netz stärker (+${int(-relief(best))} Minuten am Limit).${gridBest ? ` ${gridText}` : ""}`;
+  else if (gridBest === best)
+    grid = `Entlastet zugleich das Netz am stärksten (−${int(relief(best))} Minuten am Limit)`;
+  else grid = gridText.charAt(0).toUpperCase() + gridText.slice(1);
+  return `Pünktlichkeit: „${best.name}“ hilft am meisten (+${dec1(gain(best))} Pp.). ${grid}.${tail}`;
 }
 
 /* ---------------------------------------------------------------- Austausch */
