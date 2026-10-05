@@ -44,6 +44,14 @@ unter `/etc/letsencrypt/airport-demo.htpasswd`, lesbar fuer den Nginx-Worker.
 
 ## Release und Ruecknahme
 
+Das Backend-Image setzt `TWIN_SCENARIO_LIBRARY_DIR=/opt/airport-seeds/scenarios`.
+Die Bibliothek liest damit die acht unveraenderlichen Release-Seeds, nicht das
+bearbeitbare Runtime-Volume. `sh scripts/smoke_container_library.sh` prueft das
+gebaute Image isoliert per HTTP ohne Host-Quellcode, Ports oder persistente Daten;
+der Test ist Teil der Backend-CI. Der lokale `smoke_pilot.py` erwartet fuer seine
+modellabgeleiteten Labordaten ausdruecklich `NOT_EVALUABLE` / `lab_diagnostic`,
+kein empirisches PASS; berechnete Fehlerwerte und ZIP-Hashes werden trotzdem geprueft.
+
 Vor jedem Deploy Docker-IPAM, Host-Routen und Interface-Netze auf Ueberlappungen
 mit `10.253.250.0/24` pruefen. Bei Kollision stoppen, nicht auf dem Server
 abweichend konfigurieren. Am 05.10.2026 war dieses Ersatznetz konfliktfrei;
