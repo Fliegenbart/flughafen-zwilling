@@ -2577,3 +2577,11 @@ li[data-from="lab"] > .aec-msg {
 .aec-new__split {
   grid-column: 1 / -1;
 }
+/* Bewegung reduziert: Einblendungen gar nicht starten, Inhalte stehen sofort deckend. */
+@media (prefers-reduced-motion: reduce) {
+  .aec-page > *,
+  .aec-dcard {
+    animation: none !important;
+    opacity: 1;
+  }
+}

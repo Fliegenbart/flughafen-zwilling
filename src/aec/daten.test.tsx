@@ -287,3 +287,16 @@ describe("Flotte verteilen und Neuberechnung", () => {
     expect(recomputeState({ ...b, run: { ...run, status: "running" } })).toBe("laeuft");
   });
 });
+
+describe("Sichtbarkeit im Ruhezustand", () => {
+  it("Einblendungen enden deckend und entfallen bei reduzierter Bewegung", async () => {
+    const { readFileSync } = await import("node:fs");
+    const css = readFileSync(`${process.cwd()}/src/aec/aec.css`, "utf8");
+    // aec-rise endet ohne opacity (Standard 1); die Animation nutzt fill-mode both.
+    const rise = /@keyframes aec-rise\s*\{([\s\S]*?)\n\}/.exec(css)![1]!;
+    expect(rise).toMatch(/to\s*\{\s*opacity: 1;/);
+    expect(css).toMatch(
+      /prefers-reduced-motion: reduce\)\s*\{\s*\.aec-page > \*,\s*\.aec-dcard\s*\{\s*animation: none !important;\s*opacity: 1;/,
+    );
+  });
+});
