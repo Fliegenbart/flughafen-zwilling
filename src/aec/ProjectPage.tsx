@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getProject, getSituation, getVariantBoard } from "./api";
+import { getProject, getSituation, getVariantBoard, runVariants } from "./api";
 import { useNav } from "./context";
 import Link from "./Link";
 import { SourceTag } from "./parts";
@@ -92,6 +92,55 @@ function QuestionNav({ route }: { route: ProjectRoute }) {
   );
 }
 
+/** Zustand des Projekt-Basislaufs gegenueber den aktuellen Projektwerten. */
+export function recomputeState(
+  board: VariantBoard | null,
+): "aktuell" | "veraltet" | "fehlt" | "laeuft" {
+  if (!board || board.source !== "api" || !board.base) return "aktuell";
+  if (board.run && (board.run.status === "queued" || board.run.status === "running"))
+    return "laeuft";
+  if (!board.run) return "fehlt";
+  return board.run.inputsStale ? "veraltet" : "aktuell";
+}
+
+function RecomputeBanner({
+  state,
+  busy,
+  error,
+  onRun,
+}: {
+  state: ReturnType<typeof recomputeState>;
+  busy: boolean;
+  error: string;
+  onRun: () => void;
+}) {
+  if (state === "aktuell") return null;
+  const text =
+    state === "laeuft"
+      ? "Lagebild wird mit den Projektwerten neu berechnet…"
+      : state === "fehlt"
+        ? "Mit den Projektwerten wurde noch kein Lagebild gerechnet. Lage, Engpass und Varianten zeigen bis dahin keine Projektzahlen."
+        : "Projektwerte geändert – Lagebild neu berechnen. Lage, Engpass und Varianten sind bis dahin veraltet.";
+  return (
+    <div className="aec-recompute" data-state={state} role="status">
+      <p>
+        {state === "veraltet" ? <strong className="aec-recompute__tag">veraltet</strong> : null}
+        {text}
+      </p>
+      {state !== "laeuft" ? (
+        <button type="button" className="aec-button" disabled={busy} onClick={onRun}>
+          {busy ? "Wird gestartet…" : "Lagebild neu berechnen"}
+        </button>
+      ) : null}
+      {error ? (
+        <p className="aec-derror" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 /** Datenstand im Projektkopf: N von 4 echt, Mini-Leiste, fuehrt zum Schritt Daten. */
 export function DataMeter({ status, projekt }: { status: DataStatus | null; projekt: string }) {
   const label = status
@@ -174,6 +223,33 @@ export default function ProjectPage({
     setBoard(b);
   };
 
+  const [recomputing, setRecomputing] = useState(false);
+  const [recomputeError, setRecomputeError] = useState("");
+  const rstate = recomputeState(board);
+  // Waehrend ein Basislauf rechnet: Tafel nachladen, danach Lagebild aktualisieren.
+  useEffect(() => {
+    if (rstate !== "laeuft" || !project) return;
+    const timer = setInterval(() => {
+      void getVariantBoard(project).then(async (b) => {
+        setBoard(b);
+        if (recomputeState(b) !== "laeuft") setSituation(await getSituation(project));
+      });
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [rstate, project]);
+  const recompute = async () => {
+    if (!project) return;
+    setRecomputing(true);
+    setRecomputeError("");
+    try {
+      setBoard(await runVariants(project, false, true));
+    } catch (e) {
+      setRecomputeError(e instanceof Error ? e.message : "Start fehlgeschlagen");
+    } finally {
+      setRecomputing(false);
+    }
+  };
+
   const reloadBoard = async () => {
     const b = project ? await getVariantBoard(project) : null;
     if (b) setBoard(b);
@@ -210,6 +286,12 @@ export default function ProjectPage({
       </div>
 
       <div className="aec-page" key={route.frage}>
+        <RecomputeBanner
+          state={rstate}
+          busy={recomputing}
+          error={recomputeError}
+          onRun={() => void recompute()}
+        />
         {route.frage === "daten" ? (
           project && inputs && status ? (
             <DatenView

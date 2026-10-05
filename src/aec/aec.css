@@ -2539,3 +2539,41 @@ li[data-from="lab"] > .aec-msg {
     font-size: 11px;
   }
 }
+.aec-recompute {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-2);
+  border: 1px solid var(--aec-signal);
+  border-left-width: 4px;
+  background: var(--aec-surface);
+}
+.aec-recompute p {
+  max-width: 75ch;
+}
+.aec-recompute__tag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--aec-signal);
+  color: var(--aec-signal-ink);
+  font: 600 12px/1.5 var(--font-data);
+}
+/* Projektkopf in zwei Zeilen: Projekt + Datenstand, darunter alle Schilder 0, A–E. */
+.aec-projectbar {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-2);
+}
+.aec-projectbar .aec-qnav {
+  justify-self: start;
+}
+.aec-dmeter {
+  margin-left: auto;
+}
+.aec-new__split {
+  grid-column: 1 / -1;
+}

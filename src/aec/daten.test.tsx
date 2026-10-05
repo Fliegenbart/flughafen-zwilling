@@ -13,6 +13,9 @@ import { assetsFromApi, importFromApi } from "./dataApi";
 import { parseRoute, toSearch } from "./routes";
 import { SAMPLE_PROJECT } from "./sample";
 import { flightPlanError } from "./views/DatenView";
+import { distributeFleet } from "./dataStatus";
+import { recomputeState } from "./ProjectPage";
+import { sampleBoard } from "./api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -243,5 +246,44 @@ describe("Navigation zum Daten-Schritt", () => {
     render(<AirportEnergyCheck basePath="/" />);
     await waitFor(() => expect(window.location.search).toContain("frage=daten"));
     expect(await screen.findByRole("heading", { level: 1, name: /Noch keine/ })).toBeVisible();
+  });
+});
+
+describe("Flotte verteilen und Neuberechnung", () => {
+  it("verteilt die Gesamtzahl nach Standardanteilen", () => {
+    expect(distributeFleet(100).map((f) => [f.vehicles, f.chargers])).toEqual([
+      [20, 8],
+      [35, 12],
+      [10, 4],
+      [35, 10],
+    ]);
+    const odd = distributeFleet(7);
+    expect(odd.reduce((a, f) => a + f.vehicles, 0)).toBe(7);
+    for (const f of odd) expect(f.chargers).toBeLessThanOrEqual(f.vehicles);
+    expect(distributeFleet(1000).reduce((a, f) => a + f.vehicles, 0)).toBe(300);
+  });
+  it("erkennt veraltete Läufe über den Hash-Vergleich", () => {
+    const base = {
+      source: "flight_plan",
+      policy: "u",
+      gridLimitKw: 1,
+      storageKwh: 0,
+      fleet: { total: null, byKind: [], source: null },
+    };
+    const run = {
+      status: "completed" as const,
+      done: 1,
+      total: 1,
+      stress: false,
+      stale: false,
+      inputsStale: false,
+      createdAt: "",
+    };
+    const b = { ...sampleBoard(), source: "api" as const, base };
+    expect(recomputeState(sampleBoard())).toBe("aktuell");
+    expect(recomputeState({ ...b, run: null })).toBe("fehlt");
+    expect(recomputeState({ ...b, run })).toBe("aktuell");
+    expect(recomputeState({ ...b, run: { ...run, inputsStale: true } })).toBe("veraltet");
+    expect(recomputeState({ ...b, run: { ...run, status: "running" } })).toBe("laeuft");
   });
 });

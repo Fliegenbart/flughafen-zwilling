@@ -101,6 +101,8 @@ class VariantRunRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     stress: bool = False
+    # Nur den Projekt-Basislauf rechnen (z. B. nach geaenderten Projektwerten), auch ohne Varianten.
+    base_only: bool = False
 
 
 def canonical(payload: object) -> str:
@@ -533,8 +535,8 @@ class VariantService:
         if self.service is None or self.enqueue is None:
             raise HTTPException(status_code=503, detail="run service unavailable")
         with self.lock:
-            variants = self._rows(project_id)
-            if not variants:
+            variants = [] if request.base_only else self._rows(project_id)
+            if not variants and not request.base_only:
                 raise HTTPException(status_code=409, detail="no_variants: erst Varianten anlegen")
             base, plan = self._require_base(project_id)
             per_entry = 2 if request.stress else 1
@@ -599,6 +601,7 @@ class VariantService:
                 "source_plan_sha256": plan.content_sha256, "seed": base["seed"],
                 "mission_signature": signature, "base_source": base["source"],
                 "base_run_id": base["run_id"], "stress": request.stress, "entries": entries,
+                "base_only": request.base_only,
                 "project_assets": base["project_assets"],
             }
             now = self.store.pilot._now()
@@ -714,6 +717,11 @@ class VariantService:
                 "stress": batch["stress"],
                 "project_assets": batch.get("project_assets"),
                 "stale": {e["key"] for e in entries if e["key"] != "base"} != current_ids,
+                # Projektwerte oder Flugplan seit dem Lauf geaendert (Hash-Vergleich).
+                "inputs_stale": base is not None and (
+                    (batch.get("project_assets") or {}).get("sha256")
+                    != base["project_assets"].get("sha256")
+                    or batch["flight_plan_snapshot_id"] != base["flight_plan_snapshot_id"]),
                 "entries": entries,
                 "answer": build_answer(entries, finished),
             }

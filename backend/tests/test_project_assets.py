@@ -208,3 +208,26 @@ def test_example_files_parse_and_stay_assumptions():
         normalized = normalize(entries)
         assert data_status(normalized) == "annahme"
         apply_assets(CoupledConfig(), normalized)
+
+
+def test_base_only_run_and_inputs_stale(client, tmp_path):
+    from test_variants import _wait
+
+    plan = FlightPlanStore(tmp_path).save(schedule())
+    pid = project(client)["id"]
+    client.post(f"/api/v1/projects/{pid}/links", headers=AIRPORT, json={
+        "kind": "flight_plan_snapshot", "ref_id": plan.snapshot_id})
+    assert client.post(f"/api/v1/projects/{pid}/variants/run", headers=AIRPORT,
+                       json={}).status_code == 409  # ohne Varianten weiterhin abgewiesen
+    started = client.post(f"/api/v1/projects/{pid}/variants/run", headers=AIRPORT,
+                          json={"base_only": True})
+    assert started.status_code == 202, started.text
+    run = _wait(client, pid)["latest_run"]
+    assert [e["key"] for e in run["entries"]] == ["base"] and run["inputs_stale"] is False
+    assert _put(client, pid, FULL).status_code == 200
+    run = client.get(f"/api/v1/projects/{pid}/variants").json()["latest_run"]
+    assert run["inputs_stale"] is True
+    client.post(f"/api/v1/projects/{pid}/variants/run", headers=AIRPORT, json={"base_only": True})
+    assert _wait(client, pid)["latest_run"]["inputs_stale"] is False
+    assert client.post(f"/api/v1/projects/{pid}/variants/run", headers=LAB,
+                       json={"base_only": True}).status_code == 403

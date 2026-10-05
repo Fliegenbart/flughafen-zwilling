@@ -103,6 +103,8 @@ export type VariantBoard = {
     total: number;
     stress: boolean;
     stale: boolean;
+    /** Projektwerte oder Flugplan seit dem Lauf geaendert (Hash-Vergleich im Backend). */
+    inputsStale: boolean;
     createdAt: string;
   } | null;
   /** Gerechnete Varianten (inkl. Basis) bzw. Beispielwerte. */

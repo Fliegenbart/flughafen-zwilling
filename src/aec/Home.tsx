@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { createProject, listProjects } from "./api";
 import { saveAssets } from "./dataApi";
+import { distributeFleet, MAX_FLEET } from "./dataStatus";
 import { FOCUS_KEY } from "./views/DatenView";
 import { clock, limitWindows, powerText } from "./analysis";
 import { useNav } from "./context";
@@ -20,6 +21,7 @@ export default function Home() {
   const [projects, setProjects] = useState<Project[]>([SAMPLE_PROJECT]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [fleet, setFleet] = useState(100);
 
   useEffect(() => {
     let alive = true;
@@ -57,6 +59,12 @@ export default function Home() {
         { key: "pv_capacity_kwp", value: num("pv"), unit: "kWp" },
         { key: "battery_capacity_kwh", value: num("storage"), unit: "kWh" },
       ]
+        .concat(
+          distributeFleet(num("fleet")).flatMap((f) => [
+            { key: `fleet.${f.kind}.vehicles`, value: f.vehicles, unit: "Stück" },
+            { key: `fleet.${f.kind}.chargers`, value: f.chargers, unit: "Stück" },
+          ]),
+        )
         .filter((e) => Number.isFinite(e.value) && e.value >= 0)
         .map((e) => ({ ...e, source: "", source_date: null }));
       try {
@@ -235,10 +243,19 @@ export default function Home() {
                   type="number"
                   inputMode="numeric"
                   min="1"
+                  max={MAX_FLEET}
                   step="1"
                   defaultValue="100"
+                  onChange={(e) => setFleet(Number(e.target.value))}
                 />
               </label>
+              <p className="aec-fine aec-new__split" aria-live="polite">
+                Aufteilung (Annahme, im Schritt Daten änderbar):{" "}
+                {distributeFleet(fleet)
+                  .map((f) => `${f.vehicles} ${f.label}`)
+                  .join(", ")}
+                .
+              </p>
             </div>
             <label>
               Entscheidungsfrage

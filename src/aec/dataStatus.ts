@@ -398,3 +398,34 @@ export function importError(detail: string): string {
 export function isExampleFile(name: string): boolean {
   return /beispiel|example/i.test(name);
 }
+
+/**
+ * Standardflotte des gekoppelten Modells (backend/app/munich/coupled_models.py,
+ * `default_fleets`): 100 Fahrzeuge. Eine Gesamtzahl wird nach diesen Anteilen verteilt.
+ */
+export const DEFAULT_FLEET = [
+  { kind: "bus", label: "Busse", vehicles: 20, chargers: 8 },
+  { kind: "baggage_tractor", label: "Gepäckschlepper", vehicles: 35, chargers: 12 },
+  { kind: "pushback_tug", label: "Pushback-Schlepper", vehicles: 10, chargers: 4 },
+  { kind: "gpu", label: "GPU", vehicles: 35, chargers: 10 },
+] as const;
+export const MAX_FLEET = 300;
+
+/** Gesamtzahl nach Standardanteilen verteilen (groesster Rest), Ladepunkte mitskaliert. */
+export function distributeFleet(total: number) {
+  const n = Math.max(0, Math.min(MAX_FLEET, Math.round(total)));
+  const sum = DEFAULT_FLEET.reduce((a, f) => a + f.vehicles, 0);
+  const raw = DEFAULT_FLEET.map((f) => (n * f.vehicles) / sum);
+  const vehicles = raw.map(Math.floor);
+  let rest = n - vehicles.reduce((a, b) => a + b, 0);
+  const order = raw
+    .map((r, i) => [r - Math.floor(r), i] as const)
+    .sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  for (const [, i] of order) if (rest-- > 0) vehicles[i]! += 1;
+  return DEFAULT_FLEET.map((f, i) => ({
+    kind: f.kind,
+    label: f.label,
+    vehicles: vehicles[i]!,
+    chargers: Math.min(vehicles[i]!, Math.round((f.chargers * n) / sum)),
+  }));
+}

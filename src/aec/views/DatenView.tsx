@@ -105,6 +105,9 @@ function DataCard({
   children: ReactNode;
 }) {
   const id = `daten-${item.id}`;
+  // Nur der Anfangszustand haengt am Status: nach einem Import bleibt der Abschnitt offen,
+  // damit die Erfolgsmeldung sichtbar bleibt.
+  const [initiallyOpen] = useState(item.state !== "echt");
   return (
     <li className="aec-dcard" data-state={item.state} aria-labelledby={id} id={`punkt-${item.id}`}>
       <header className="aec-dcard__head">
@@ -135,7 +138,7 @@ function DataCard({
       ) : null}
       <Details
         summary={item.state === "echt" ? "Daten ergänzen oder ersetzen" : "Daten eintragen"}
-        open={item.state !== "echt"}
+        open={initiallyOpen}
       >
         {children}
       </Details>
