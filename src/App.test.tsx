@@ -36,7 +36,7 @@ describe("HMI smoke", () => {
 
   it("uses a compact studio header without presenting initial zeros as evidence", () => {
     render(<App />);
-    expect(screen.getByRole("heading", { name: "Airport Twin Core", level: 1 })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Was hält die Abfertigung aus?", level: 1 })).toBeVisible();
     const band = screen.getByRole("region", { name: "Airport-Modell-KPIs" });
     expect(within(band).getAllByText("n/a")).toHaveLength(4);
     expect(within(band).queryByText("0.00")).toBeNull();

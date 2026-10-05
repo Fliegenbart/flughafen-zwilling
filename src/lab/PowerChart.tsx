@@ -1,3 +1,4 @@
+import { chartTokens } from "../ui/chartTheme";
 import {
   CartesianGrid,
   Line,
@@ -33,7 +34,7 @@ export default function PowerChart({
     >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 18, right: 15, left: -10, bottom: 18 }}>
-          <CartesianGrid stroke="#e5eae6" vertical={false} />
+          <CartesianGrid stroke={chartTokens.grid} vertical={false} />
           <XAxis
             dataKey="ts_s"
             type="number"
@@ -41,43 +42,38 @@ export default function PowerChart({
             tickLine={false}
             axisLine={false}
             minTickGap={35}
-            tick={{ fill: "#66736e", fontSize: 11 }}
+            tick={{ fill: chartTokens.axis, fontSize: 11 }}
             label={{
               value: "Zeit / s",
               position: "insideBottomRight",
               offset: -13,
-              fill: "#66736e",
+              fill: chartTokens.axis,
               fontSize: 11,
             }}
           />
           <YAxis
             tickLine={false}
             axisLine={false}
-            tick={{ fill: "#66736e", fontSize: 11 }}
+            tick={{ fill: chartTokens.axis, fontSize: 11 }}
             label={{
               value: "kW",
               position: "insideTopLeft",
               offset: 12,
-              fill: "#66736e",
+              fill: chartTokens.axis,
               fontSize: 11,
             }}
           />
           <Tooltip
-            contentStyle={{
-              background: "#fff",
-              border: "1px solid #dce4dd",
-              borderRadius: 6,
-              fontSize: 12,
-            }}
+            contentStyle={{ ...chartTokens.tooltip, fontSize: 12 }}
             labelFormatter={(value) => `${value} s`}
             formatter={(value: number, name: string) => [`${Number(value).toFixed(2)} kW`, name]}
           />
-          <ReferenceLine x={30} stroke="#a1aca4" strokeDasharray="3 5" />
+          <ReferenceLine x={30} stroke={chartTokens.axis} strokeDasharray="3 5" />
           <Line
             name="Leistungsgrenze"
             dataKey="limit_kw"
             type="stepAfter"
-            stroke="#bc771f"
+            stroke={chartTokens.series.red}
             strokeWidth={1.5}
             strokeDasharray="6 4"
             dot={false}
@@ -87,7 +83,7 @@ export default function PowerChart({
             name="Soll-Leistung"
             dataKey="setpoint_kw"
             type="stepAfter"
-            stroke="#183f35"
+            stroke={chartTokens.series.baseline}
             strokeWidth={1.5}
             strokeDasharray="3 3"
             dot={false}
@@ -98,7 +94,7 @@ export default function PowerChart({
               name="Ist-Leistung"
               dataKey="power_kw"
               type="linear"
-              stroke="#237d8c"
+              stroke={chartTokens.series.green}
               strokeWidth={2.5}
               connectNulls={false}
               dot={false}

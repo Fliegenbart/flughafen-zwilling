@@ -1,6 +1,3 @@
-import "@fontsource/sora/400.css";
-import "@fontsource/sora/600.css";
-import "@fontsource/ibm-plex-mono/400.css";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CartesianGrid,
@@ -25,6 +22,7 @@ import type {
   Reference,
   RunStatus,
 } from "./types";
+import "../ui/operationsStudio.css";
 import "./MunichPilot.css";
 import FlightPlanPanel from "./FlightPlanPanel";
 import CoupledPanel from "./CoupledPanel";

@@ -1,10 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-import "@fontsource/sora/400.css";
-import "@fontsource/sora/500.css";
-import "@fontsource/sora/600.css";
-import "@fontsource/sora/700.css";
-import "@fontsource/ibm-plex-mono/400.css";
-import "@fontsource/ibm-plex-mono/500.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CartesianGrid,
@@ -16,8 +10,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import "./ui/operationsStudio.css";
 import "./App.css";
-import { chartTheme } from "./ui/chartTheme";
+import { chartTokens } from "./ui/chartTheme";
 import { REPORT_STYLES } from "./ui/reportStyles";
 import { StudioHeader } from "./ui/StudioHeader";
 
@@ -206,16 +201,16 @@ interface CaseDefinition {
 }
 
 const CHART_COLORS = {
-  otp: chartTheme.series.primary,
-  turnaround: chartTheme.series.amber,
-  delay: chartTheme.series.red,
-  gate: chartTheme.series.green,
-  crew: chartTheme.series.blue,
-  dep: chartTheme.series.red,
-  bag: chartTheme.series.amber,
-  axis: chartTheme.axis,
-  grid: chartTheme.grid,
-  tooltipBg: chartTheme.tooltip.background,
+  otp: chartTokens.series.primary,
+  turnaround: chartTokens.series.amber,
+  delay: chartTokens.series.red,
+  gate: chartTokens.series.green,
+  crew: chartTokens.series.teal,
+  dep: chartTokens.series.red,
+  bag: chartTokens.series.amber,
+  axis: chartTokens.axis,
+  grid: chartTokens.grid,
+  tooltipBg: chartTokens.tooltip.background,
 };
 
 const DEFAULT_CASE_ASSERTIONS: CaseDefinition["expectedAssertions"] = [
@@ -1747,9 +1742,12 @@ export default function App() {
     <div className="app-shell">
       <div className="app-frame">
         <StudioHeader
-          title="Airport Twin Core"
-          location="Flughafen / Turnaround-Systemtest"
-          warning="Demo-Modell: unkalibriert. KPI-Werte sind Modellwerte, keine Betriebsprognose."
+          title="Was hält die Abfertigung aus?"
+          location="Abfertigungssimulation · Airport Twin Core"
+          lead="Die acht Krisenfälle im Detail durchspielen und Stellhebel suchen: Pünktlichkeit, Umlaufzeit und Gate-Auslastung im Modell."
+          evidence="synthetic"
+          evidenceLabel="Demo-Modell"
+          warning="Unkalibriert. KPI-Werte sind Modellwerte, keine Betriebsprognose."
           context={
             <>
               <span className={`studio-status ${apiTone}`}>
@@ -1795,11 +1793,13 @@ export default function App() {
         <div className="layout-grid reveal reveal--2">
           <aside className="command-rail glass-panel">
             <section className="rail-section">
-              <h2 className="section-title">Run Control</h2>
+              <h2 className="section-title">Testlauf steuern</h2>
               <p className="section-subtitle">
                 {selectedCase.name}: {selectedCase.description}
               </p>
 
+              <details className="sim-proof sim-proof--inline">
+                <summary>Details/Nachweis: Verbindung</summary>
               <label className="control-field">
                 <span className="control-field__label">API Base URL</span>
                 <input
@@ -1810,6 +1810,7 @@ export default function App() {
                   }
                 />
               </label>
+              </details>
 
               <label className="control-field">
                 <span className="control-field__label">Testprofil</span>
@@ -2497,8 +2498,8 @@ export default function App() {
                     />
                     <YAxis stroke={CHART_COLORS.axis} />
                     <Tooltip
-                      contentStyle={chartTheme.tooltip}
-                      labelStyle={{ color: chartTheme.tooltip.color }}
+                      contentStyle={chartTokens.tooltip}
+                      labelStyle={{ color: chartTokens.tooltip.color }}
                       labelFormatter={(v) => `t=${Math.round(Number(v) / 1000)}s`}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -2547,8 +2548,8 @@ export default function App() {
                     />
                     <YAxis stroke={CHART_COLORS.axis} />
                     <Tooltip
-                      contentStyle={chartTheme.tooltip}
-                      labelStyle={{ color: chartTheme.tooltip.color }}
+                      contentStyle={chartTokens.tooltip}
+                      labelStyle={{ color: chartTokens.tooltip.color }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Line
@@ -2588,7 +2589,9 @@ export default function App() {
               </div>
             </section>
 
-            <section className="detail-grid reveal reveal--6">
+            <details className="sim-proof reveal reveal--6">
+              <summary>Details/Nachweis: Watchdog, Tick-Drift, Telemetrie-Topics</summary>
+            <section className="detail-grid">
               <article className="glass-panel detail-panel">
                 <div className="panel-head">
                   <h3>Safety / Audit</h3>
@@ -2643,6 +2646,7 @@ export default function App() {
                 </div>
               </article>
             </section>
+            </details>
           </main>
         </div>
       </div>

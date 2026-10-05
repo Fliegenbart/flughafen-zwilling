@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import "@fontsource/sora/400.css";
-import "@fontsource/sora/500.css";
-import "@fontsource/sora/600.css";
-import "@fontsource/ibm-plex-mono/400.css";
 import "./Workbench.css";
+import { EvidenceBadge } from "../ui/EvidenceBadge";
 import { labRequest, labUrl } from "./api";
 import RunEvidence from "./RunEvidence";
 import { configError, restoreConfig } from "./config";
@@ -400,13 +397,16 @@ export default function Workbench() {
         </header>
         <div className="lab-page-header">
           <div>
-            <p className="lab-eyebrow">LEISTUNG. REAKTION. EVIDENZ.</p>
-            <h1>FlexLab Workbench</h1>
-            <p>Lade- und Flexibilitätstests nachvollziehbar auswerten.</p>
+            <p className="lab-eyebrow">FlexLab Workbench · Messdaten realer Komponenten</p>
+            <h1>Hält die Komponente, was das Modell annimmt?</h1>
+            <p>Lade- und Flexibilitätstests nachvollziehbar auswerten: Ist, Soll und Limit im Vergleich.</p>
           </div>
-          <div className="lab-source-badge">
-            <Icon name="shield" size={15} />
-            Keine Live-Anbindung
+          <div className="lab-header-evidence">
+            <EvidenceBadge level="empirical_open" label="Messdaten, read-only" />
+            <div className="lab-source-badge">
+              <Icon name="shield" size={15} />
+              Keine Live-Anbindung
+            </div>
           </div>
         </div>
         {invalidConfig && (

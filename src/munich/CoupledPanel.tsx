@@ -297,14 +297,15 @@ export default function CoupledPanel({
       <StudioHeader
         title="Flugplan, Flotte & Energie"
         headingId="coupled-title"
-        location="München / Systemtest"
-        context={
+        location="München · Systemtest"
+        lead={
           <>
-            <span>Flughafen München</span> ·{" "}
-            {plan ? flightDate(plan.service_date) : "Kein Flugplantag"} · Seed {seed} · Manueller
-            Flugplan
+            Was der Flugplan für Fahrzeuge, Laden und den Netzanschluss bedeutet – zwei Laderegeln
+            auf demselben Tag. <span>Flughafen München</span> ·{" "}
+            {plan ? flightDate(plan.service_date) : "Kein Flugplantag"}.
           </>
         }
+        context={<>Kopplungs-Seed {seed} · Manueller Flugplan</>}
         warning="Nicht kalibriert. Keine FMG-Betriebsdaten. Modellierte Aufgabenbereitschaft, keine reale Flug-OTP."
         actions={
           <>

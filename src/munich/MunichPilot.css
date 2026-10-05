@@ -1,10 +1,10 @@
 [data-studio] .muc-pilot {
   margin: 0;
-  padding: 24px;
-  min-height: 100vh;
+  padding: clamp(16px, 3vw, 40px);
+  min-height: 0;
   background: var(--studio-bg);
   color: var(--studio-ink);
-  font: 13px/1.6 var(--font-ui);
+  font: 400 14px/1.55 var(--font-ui);
 }
 [data-studio] .muc-pilot *,
 [data-studio] .muc-pilot *::before,
@@ -18,15 +18,16 @@
   margin: 0;
 }
 [data-studio] .muc-pilot h2 {
-  font-size: 17px;
-  line-height: 1.5;
+  font: 400 var(--step-2, 24px) / 1.18 var(--font-display, Georgia, serif);
+  letter-spacing: -0.005em;
 }
 [data-studio] .muc-pilot h3 {
   font-size: 15px;
+  font-weight: 600;
 }
 [data-studio] .muc-pilot a {
-  color: var(--ds-accent);
-  text-underline-offset: 3px;
+  color: var(--ds-link);
+  text-underline-offset: 4px;
 }
 [data-studio] .muc-pilot code {
   font-family: var(--font-mono);
@@ -39,20 +40,22 @@
   padding: 9px 10px;
   color: var(--ds-ink);
   background: var(--ds-surface);
-  border: 1px solid var(--ds-line);
-  border-radius: 4px;
-  font: 12px var(--font-mono);
+  border: 1px solid var(--ds-line-strong);
+  border-radius: var(--r-1, 4px);
+  font: 13px var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 [data-studio] .muc-pilot select {
   font-family: var(--font-ui);
 }
 [data-studio] .muc-pilot button {
-  padding: 9px 12px;
+  min-height: 40px;
+  padding: 8px 16px;
   color: var(--ds-ink);
-  background: var(--ds-surface);
-  border: 1px solid var(--ds-line);
-  border-radius: 4px;
-  font: 12px var(--font-ui);
+  background: transparent;
+  border: 1px solid var(--ds-line-strong);
+  border-radius: var(--r-pill, 999px);
+  font: 600 13px var(--font-ui);
   cursor: pointer;
 }
 [data-studio] .muc-pilot button:hover:not(:disabled) {
@@ -64,8 +67,7 @@
   border-color: var(--ds-accent);
 }
 [data-studio] .muc-pilot .studio-header-actions button.studio-primary:hover:not(:disabled) {
-  background: var(--ds-accent-strong);
-  border-color: var(--ds-accent-strong);
+  transform: translateY(-1px);
 }
 [data-studio] .muc-pilot button:disabled {
   opacity: 0.55;
@@ -76,18 +78,18 @@
 [data-studio] .muc-pilot button:focus-visible,
 [data-studio] .muc-pilot a:focus-visible,
 [data-studio] .muc-pilot summary:focus-visible {
-  outline: 2px solid var(--ds-accent);
-  outline-offset: 2px;
+  outline: 3px solid var(--ds-focus);
+  outline-offset: 3px;
 }
 [data-studio] .muc-panel,
 [data-studio] .muc-command,
 [data-studio] .muc-network,
 [data-studio] .muc-compare {
   min-width: 0;
-  padding: 20px;
+  padding: clamp(16px, 2vw, 24px);
   background: var(--ds-surface);
   border: 1px solid var(--ds-line);
-  border-radius: 6px;
+  border-radius: var(--r-3, 18px);
   box-shadow: none;
 }
 [data-studio] .muc-coupled {
@@ -105,11 +107,12 @@
 [data-studio] .muc-boundary {
   margin-bottom: 16px;
   padding: 12px 14px;
-  color: var(--ds-warning);
-  background: var(--ds-warning-bg);
-  border: 1px solid var(--ds-surface-3);
-  border-left: 3px solid var(--ds-warning);
-  border-radius: 4px;
+  color: var(--ds-ink);
+  background: transparent;
+  border: 0;
+  border-left: 3px solid var(--aec-signal, #f2b705);
+  border-radius: 0;
+  font-size: 13px;
 }
 [data-studio] .muc-layout {
   display: grid;

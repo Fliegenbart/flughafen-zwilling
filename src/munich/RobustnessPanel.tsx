@@ -202,7 +202,7 @@ export default function RobustnessPanel({
     <section className="muc-robustness" aria-labelledby="robustness-heading">
       <header className="muc-robustness__header">
         <div>
-          <p className="muc-robustness__eyebrow">SIL / deterministisch</p>
+          <p className="muc-robustness__eyebrow">Stresstest · deterministisch</p>
           <h2 id="robustness-heading">Begrenzter Robustness-Screen</h2>
         </div>
         <span className="muc-robustness__tag">Keine statistische Konfidenz</span>

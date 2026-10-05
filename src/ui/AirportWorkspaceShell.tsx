@@ -1,7 +1,4 @@
 import { useEffect, useState, type ReactNode } from "react";
-import "@fontsource/sora/400.css";
-import "@fontsource/sora/600.css";
-import "@fontsource/ibm-plex-mono/400.css";
 import "./designSystem.css";
 import "./operationsStudio.css";
 

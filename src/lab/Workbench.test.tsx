@@ -116,7 +116,7 @@ describe("FlexLab Workbench", () => {
 
   it("shows a read-only energy workbench and configured cases", async () => {
     render(<Workbench />);
-    expect(await screen.findByText("FlexLab Workbench")).toBeInTheDocument();
+    expect(await screen.findByText(/FlexLab Workbench/)).toBeInTheDocument();
     expect(screen.getByText("Keine Live-Anbindung")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Flex-Abregelung" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Test starten" })).toBeEnabled();
