@@ -222,13 +222,19 @@ invalid_variant: …`, keine wirksame Aenderung → 422. `DELETE …/variants/{v
 `POST …/variants/run` `{"stress": false}` (airport|admin, 202): rechnet Basis + alle Varianten
 seriell im vorhandenen Run-Worker auf demselben Flugplan-Snapshot und Seed. Alle Welten muessen
 dieselbe Missionssignatur (SHA256 der Auftraege) haben, sonst 500. `stress: true` rechnet je
-Eintrag zusaetzlich Netzimport −20 % ueber den Tag. Queue-Limit fuer Varianten: 24 offene Runs (429).
+Eintrag zusaetzlich Netzimport −20 % ueber den Tag. `{"crisis": "airport_case_0N_…_v1"}` ersetzt
+diesen Standard durch das Energie-Abbild eines Krisenfalls der Szenario-Bibliothek
+(`backend/app/exchange/crisis.py`, schaltet `stress` ein; unbekannter Fall → 422). Das Abbild ist
+eine ausgewiesene **Annahme**: Netzgrenzen je Zeitfenster, Ladepunktausfaelle, PV-Faktor,
+Akkukapazitaet. Die Auftraege bleiben eingefroren; Slots, Positionen und Personal des Falls
+werden nicht modelliert. Queue-Limit fuer Varianten: 24 offene Runs (429).
 
 `GET …/variants` → `base` (inkl. `fleet`), `variants` (Definitionen), `latest_run`:
 `status` (`queued|running|completed|partial`), `progress {done,total}`, `mission_signature`,
 `source_plan_sha256`, `seed`, `stale` (Definitionen seit dem Lauf geaendert), `entries[]` je
 Basis/Variante mit `world_hash`, `run_id`, `status`, `fleet`, `kpis`, `delta_to_base`,
-`evidence_level`, `criteria`, `stress`, sowie `answer`.
+`evidence_level`, `criteria`, `stress`, sowie `answer`. `latest_run.stress_kind`
+(`grid_minus_20|crisis|null`) und `latest_run.crisis` (`id`, `name`, `assumption`) nennen den Stresstest.
 
 `kpis`: `on_time_pct` (Anteil Abfluege, deren modellierte Auftraege fristgerecht fertig sind),
 `delayed_departures`, `departures_total`, `minutes_at_limit` (wie Lagebild, ganzer Horizont),

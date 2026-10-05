@@ -275,6 +275,7 @@ describe("Flotte verteilen und Neuberechnung", () => {
       done: 1,
       total: 1,
       stress: false,
+      crisis: null,
       stale: false,
       inputsStale: false,
       createdAt: "",

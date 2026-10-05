@@ -383,6 +383,14 @@ export function boardFromApi(data: unknown): VariantBoard | null {
           done: num(progress.done),
           total: num(progress.total),
           stress: runRaw.stress === true,
+          crisis:
+            isObj(runRaw.crisis) && typeof runRaw.crisis.id === "string"
+              ? {
+                  id: runRaw.crisis.id,
+                  name: str(runRaw.crisis.name),
+                  assumption: str(runRaw.crisis.assumption),
+                }
+              : null,
           stale: runRaw.stale === true,
           inputsStale: runRaw.inputs_stale === true,
           createdAt: str(runRaw.created_at),
@@ -441,10 +449,12 @@ export async function runVariants(
   project: Project,
   stress: boolean,
   baseOnly = false,
+  crisis: string | null = null,
 ): Promise<VariantBoard> {
+  const body = { stress, ...(baseOnly ? { base_only: true } : {}), ...(crisis ? { crisis } : {}) };
   const data = await call<unknown>(
     `/projects/${encodeURIComponent(project.id)}/variants/run`,
-    { method: "POST", body: JSON.stringify(baseOnly ? { stress, base_only: true } : { stress }) },
+    { method: "POST", body: JSON.stringify(body) },
     30000,
   );
   return boardFromApi(data) ?? sampleBoard();

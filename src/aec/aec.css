@@ -2608,3 +2608,27 @@ li[data-from="lab"] > .aec-msg {
     opacity: 1;
   }
 }
+
+.aec-stresspick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--step--1);
+  color: var(--aec-ink-2);
+}
+.aec-stresspick select {
+  min-height: 36px;
+  padding: 4px 8px;
+  border-radius: var(--r-2);
+  border: 1px solid var(--aec-line-strong);
+  background: var(--aec-surface);
+  color: var(--aec-ink);
+  font: inherit;
+}
+.aec-case__energy-stress {
+  font-size: var(--step--1);
+  color: var(--aec-ink-2);
+}
+.aec-case__energy-stress span {
+  font-weight: 600;
+}
