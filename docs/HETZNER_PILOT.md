@@ -28,7 +28,7 @@ Grafana wird hier nicht angeboten. Kurven und Exporte liegen in der Anwendung.
 `docker-compose.hetzner.yml`: eigener Compose-Projektname `airport-twin-pilot`,
 eigenes Volume `airport-twin-pilot_pilot-data`, genau ein Backend-Prozess. Backend
 hat keine veroeffentlichten Ports und nur ein internes Simulationsnetz
-(fest `172.31.250.0/24`; uvicorn vertraut per `--proxy-headers
+(fest `10.253.250.0/24`; uvicorn vertraut per `--proxy-headers
 --forwarded-allow-ips` nur diesem Netz, der Frontend-nginx reicht `X-Real-IP`
 des Host-Proxys durch, damit die Login-Drosselung je echter Client-IP greift). Frontend
 ist nur am Host-Docker-Bridge-Interface auf Port 18576 gebunden, nicht am
@@ -43,6 +43,16 @@ danach `nginx -t` und nur graceful Reload. Das Passwortfile liegt ausserhalb Git
 unter `/etc/letsencrypt/airport-demo.htpasswd`, lesbar fuer den Nginx-Worker.
 
 ## Release und Ruecknahme
+
+Vor jedem Deploy Docker-IPAM, Host-Routen und Interface-Netze auf Ueberlappungen
+mit `10.253.250.0/24` pruefen. Bei Kollision stoppen, nicht auf dem Server
+abweichend konfigurieren. Am 05.10.2026 war dieses Ersatznetz konfliktfrei;
+`172.31.250.0/24` kollidierte dagegen mit einem vorhandenen `172.31.0.0/16`.
+Deshalb wurde Release `a025327` nicht deployt; aktiv blieb `b7e08cf`.
+Subnetz und Uvicorn `--forwarded-allow-ips` muessen gemeinsam geaendert werden.
+Nach CI/Freigabe einen neuen Remote-Commit deployen. Muss Compose das bestehende
+Projektnetz ersetzen, ausschliesslich diesen Stack mit `down` **ohne `-v`**
+anhalten und anschliessend neu starten. Datenvolume und Host-Proxy erhalten.
 
 Server-Checkout: `/opt/airport-twin-pilot`. Ausschliesslich gepruefte Remote-SHAs
 deployen. Keine lokalen Laufzeitdaten kopieren, keine GitHub-Schluessel uebertragen.

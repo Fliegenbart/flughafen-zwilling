@@ -95,7 +95,7 @@ Betriebsdaten oder Archive in Git committen.
   nicht aussperren kann.
 - Hinter einem Reverse Proxy muss das Backend die echte Client-IP sehen:
   `--proxy-headers --forwarded-allow-ips=<Proxy-Netz>` (Hetzner: internes
-  Netz `172.31.250.0/24` des Frontend-nginx, der `X-Real-IP` vom Host-Proxy
+  Netz `10.253.250.0/24` des Frontend-nginx, der `X-Real-IP` vom Host-Proxy
   uebernimmt). Ohne das teilen sich alle Clients die Proxy-Adresse und damit
   die IP-Grenze. Die lokale Demo (`docker-compose.demo.yml`) ist nicht
   oeffentlich proxied und startet ohne Proxy-Header.
