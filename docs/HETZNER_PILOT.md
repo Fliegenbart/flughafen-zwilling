@@ -2,7 +2,7 @@
 
 ## Fuer Timo
 
-- [Airport Twin Core](https://labpulse.ai/airport/)
+- [Airport Energy Check](https://labpulse.ai/airport/)
 - [Muenchen-Referenzpilot](https://labpulse.ai/airport/?workspace=munich)
 - [Separate FlexLab Workbench](https://labpulse.ai/airport/?workspace=flexlab)
 
@@ -103,7 +103,83 @@ Zugangsdaten nur nach Challenge und lehnt Redirects ausserhalb dieses HTTPS-
 Pilotpfads ab. Vor Freigabe unauthentifiziert 401 fuer UI/API/Artefakte pruefen.
 HTTP ohne TLS darf nur umleiten, nie Zugangsdaten abfragen oder Inhalte liefern.
 
-## Aktiver Release vom 04.10.2026
+## Aktiver Release vom 05.10.2026
+
+Aktiv ist der gepruefte Remote-Commit
+`5210afed5534ba9e2f87e948275da8fbda558f19` aus `codex/recovery-audit`.
+[Release-CI 37343048997](https://github.com/Fliegenbart/flughafen-zwilling/actions/runs/37343048997)
+ist erfolgreich. Release-Worktree: `/opt/airport-releases/5210afe`;
+`/opt/airport-twin-pilot` wurde nach bestandener Abnahme auf denselben Commit
+vorgezogen. Keine lokalen Codeaenderungen auf dem Server.
+
+Offline-Sicherung nach Backend-Stopp:
+- Archiv: `/opt/airport-backups/pre-5210afe-20261005.tar.gz`
+- 912 Dateien; Modus `0600`.
+- SHA256: `17db5a6b90f9872ecda8848a18fe81b00770ac465f27e6cc771581b6f00541b1`
+- Wiederherstellung separat unter
+  `/opt/airport-backups/verify-pre-5210afe-20261005` geprueft,
+  einschliesslich Manifest, Datei-Hashes und SQLite-Pruefungen.
+  Das Betriebsvolume wurde nicht ersetzt.
+
+Docker-IPAM und Host-Routen waren fuer beide Netze `10.253.250.0/24`
+(internes Simulationsnetz) und `10.253.251.0/24` (Ingress) konfliktfrei.
+Genau ein Uvicorn-Prozess mit `--workers 1`, `--proxy-headers` und
+`--forwarded-allow-ips 10.253.250.0/24` ist aktiv. Frontend-Port 18576 bleibt
+an `172.17.0.1` gebunden. Basic Auth und Host-Proxy blieben erhalten; keine
+anderen Stacks, Hardwareadapter oder Influx-Tokens wurden eingebunden.
+
+### Abnahme am Live-Release
+
+| Pruefung | Ergebnis |
+| --- | --- |
+| Ohne Login: UI, API, Run-Artefakt | Bestanden: jeweils HTTP 401 |
+| HTTP ohne TLS | Bestanden: 301 ausschliesslich auf HTTPS |
+| Health/Readiness und Runtime-Commit | Bestanden; Backend healthy/ready, Commit wie oben |
+| `smoke_munich.py` | Bestanden: vier Referenzfaelle |
+| `smoke_demo.py --planner --all-cases` | Bestanden: Baseline, acht Cases, beide Planner terminal |
+| `smoke_flexlab.py` | Bestanden, inklusive negativer Daten und Abbruch |
+| `smoke_coupled.py` | Bestanden: zwei terminale Runs, Safety und Artefakt-Hashes |
+| `smoke_pilot.py` | Bestanden: Import, Replay, negative Daten, ZIP-Hashes |
+| Exchange whoami, Projekt overview/situation | Bestanden: jeweils HTTP 200 |
+| Szenario-Bibliothek | Bestanden: HTTP 200, genau acht Cases |
+| Live-Browser in angemeldetem Safari | Bestanden: Startseite Airport Energy Check und alle drei alten Workspace-Weiterleitungen |
+| Fonts und Konsole | Bestanden: alle 33 Fontdateien HTTP 200 mit Fontsignatur; Airport-Konsole ohne CSP-Fehler |
+| Bestand | Bestanden: alle zuvor vorhandenen 126 Run-IDs, ein Projekt und ein Snapshot erhalten; abgeschlossener v1-Run lesbar |
+| Additive Migration | Bestanden: SQLite `quick_check=ok`; Exchange-, Rollen-, Toleranz- und Variantentabellen vorhanden |
+| Backend-Logs | Keine ERROR-, Traceback-, OperationalError- oder DatabaseError-Treffer in den geprueften Release-Logs |
+| Client-IP am Backend | Bestanden: echte oeffentliche Client-IP statt Docker-Gateway im Login-Probe-Log |
+
+Die persoenliche App-Anmeldung bleibt in dieser geteilten Demo deaktiviert.
+Der einzelne Probeaufruf mit nicht existierendem Benutzer liefert erwartungsgemaess
+`404 auth_disabled`; die eigentliche Login-Drosselung/429-Schwelle wurde deshalb
+**nicht getestet**. Die Proxy-IP-Kette wurde zusaetzlich im isolierten Container-
+Smoke geprueft. Externer Basic-Auth-Schutz ist davon unabhaengig weiterhin aktiv.
+
+`smoke_pilot.py` hat keine Basic-Auth-Option und lief ausschliesslich ueber einen
+anschliessend geschlossenen SSH-Localforward auf den hostgebundenen Port 18576.
+Die anderen vier Smokes liefen mit privater Netrc ueber geschuetztes HTTPS.
+Pilot-Replay `278bd0b4-7dba-4485-9f0e-7dfdd04f9d3f` ergibt fuer synthetische,
+modellabgeleitete Labordaten korrekt `NOT_EVALUABLE` / `lab_diagnostic`;
+ungueltige Daten ebenfalls `NOT_EVALUABLE`. Kein empirisches PASS.
+
+Gekoppelter Vergleich `afa20800c7104ac481f26d801b3f3785` verwendet den bereits
+vorhandenen oeffentlichen Flugplan-Snapshot mit expliziter Independent-Entries-
+Annahme. Runs `5b2ef1f5ea2a4992b38abd50de973d5b` und
+`0af359dfdeb0467bb76b00ac6822328f` sind abgeschlossen und hashgeprueft.
+Beide erreichen 21,49 Prozent modellierte Abflugbereitschaft; strenge
+Modellkriterien bleiben `false`. Die Planner-Gegenproben weisen keinen
+Optimierungsvorteil nach. SIL-Abnahme ist keine empirische Modellvalidierung.
+
+Vor diesem erfolgreichen Release wurden `b749a39` (leere Container-Bibliothek)
+und `3b5d3df` (Docker-Gateway statt Client-IP) jeweils auf `b7e08cf`
+zurueckgenommen. PR #18 behebt die Image-Bibliothek und ergaenzt einen
+Container-Smoke; PR #19 behebt die vollstaendige Ingress-Proxy-Kette mit
+eigenem Docker-Smoke. Beide Korrekturen sind im aktiven Remote-Commit enthalten.
+Rollback-Ziel bleibt `/opt/airport-releases/b7e08cf`; Backend vorher stoppen,
+alten Release bauen/starten. Daten nur bei nachgewiesener Beschaedigung aus der
+Sicherung zurueckspielen; additive Tabellen allein sind kein Restore-Grund.
+
+## Historischer Release vom 04.10.2026
 
 Code-Release `b7e08cf625af042bf062154560bc3bc6802845ce` aus
 `codex/airport-pilot-studio` (PR #12) ist auf Hetzner aktiviert.
