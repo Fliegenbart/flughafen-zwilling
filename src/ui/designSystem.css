@@ -3,6 +3,7 @@
  * Alle Komponenten lesen nur diese Variablen; Kontraste fuer Text >= 4,5:1 (WCAG AA).
  */
 .studio-workspace,
+.aec,
 .pilot-access,
 .pilot-access-bar {
   --ds-bg: #f3f5f8;
@@ -39,6 +40,10 @@
   --ev-open-bg: #fdecee;
   --ev-open-ink: #8f1a28;
   --ev-open-dot: #c43345;
+  /* einzig gruene Stufe: empirisch bestanden (Holdout-PASS) */
+  --ev-passed-bg: #e3f3ea;
+  --ev-passed-ink: #145233;
+  --ev-passed-dot: #1f7a4c;
   --ds-space-1: 4px;
   --ds-space-2: 8px;
   --ds-space-3: 12px;
@@ -60,6 +65,7 @@
 
 @media (prefers-color-scheme: dark) {
   .studio-workspace:not([data-theme="light"]),
+  .aec:not([data-theme="light"]),
   .pilot-access,
   .pilot-access-bar {
     --ds-bg: #0e141c;
@@ -93,6 +99,12 @@
     --ev-open-bg: #3a1a20;
     --ev-open-ink: #ffc0c8;
     --ev-open-dot: #ff8a99;
+  --ev-passed-bg: #12301f;
+  --ev-passed-ink: #a6e6c2;
+  --ev-passed-dot: #4fc488;
+    --ev-passed-bg: #12301f;
+    --ev-passed-ink: #a6e6c2;
+    --ev-passed-dot: #4fc488;
     --chart-axis: #a9b6c7; --chart-grid: #2b3848; --chart-tooltip-bg: #151d28;
     --chart-tooltip-line: #415168; --chart-tooltip-ink: #e7edf5;
     --chart-primary: #8aa6ff; --chart-baseline: #a9b6c7; --chart-amber: #f3b968;
@@ -100,7 +112,8 @@
     color-scheme: dark;
   }
 }
-.studio-workspace[data-theme="dark"] {
+.studio-workspace[data-theme="dark"],
+.aec[data-theme="dark"] {
   --ds-bg: #0e141c;
   --ds-surface: #151d28;
   --ds-surface-2: #1a2431;
@@ -164,6 +177,11 @@
 [data-evidence="model_checked"] .ds-evidence__chip { background: var(--ev-model-bg); color: var(--ev-model-ink); }
 [data-evidence="model_checked"] .ds-evidence__dot { background: var(--ev-model-dot); }
 [data-evidence="empirical_open"] .ds-evidence__chip { background: var(--ev-open-bg); color: var(--ev-open-ink); border-color: var(--ev-open-dot); border-style: dashed; }
+[data-evidence="empirical_passed"] .ds-evidence__chip { background: var(--ev-passed-bg); color: var(--ev-passed-ink); }
+[data-evidence="empirical_passed"] .ds-evidence__dot { background: var(--ev-passed-dot); }
+.ds-evidence__ladder { display: inline-flex; gap: 2px; margin-left: 2px; align-items: flex-end; }
+.ds-evidence__ladder i { display: block; width: 3px; height: 9px; border-radius: 1px; background: currentColor; opacity: 0.22; }
+.ds-evidence__ladder i[data-on] { opacity: 0.85; }
 [data-evidence="empirical_open"] .ds-evidence__dot { background: transparent; border: 2px solid var(--ev-open-dot); }
 .ds-evidence__tip {
   position: absolute; z-index: 40; left: 0; top: calc(100% + 6px);
