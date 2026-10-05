@@ -1,9 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getProject, getSituation, getVariantBoard } from "./api";
 import { useNav } from "./context";
 import Link from "./Link";
 import { SourceTag } from "./parts";
-import { QUESTIONS, type Question, type Route } from "./routes";
+import {
+  computeDataStatus,
+  EMPTY_INPUTS,
+  needsDataStep,
+  type DataInputs,
+  type DataStatus,
+} from "./dataStatus";
+import { loadDataInputs } from "./dataApi";
+import { DATA_STEP, QUESTIONS, STEPS, type Route, type Step } from "./routes";
+import DatenView from "./views/DatenView";
 import type { Project, Situation, Variant, VariantBoard } from "./types";
 import { WerkstattFrame } from "./Werkstatt";
 import LageView from "./views/LageView";
@@ -32,37 +41,78 @@ function QuestionNav({ route }: { route: ProjectRoute }) {
     current?.scrollIntoView?.({ block: "nearest", inline: "center" });
   }, [route.frage]);
   const index = QUESTIONS.findIndex((q) => q.id === route.frage);
+  const onData = route.frage === "daten";
   return (
-    <nav className="aec-qnav" aria-label="Fünf Fragen des Projekts">
-      <ol ref={list}>
-        {QUESTIONS.map((q, i) => (
-          <li key={q.id} data-state={i < index ? "past" : i === index ? "here" : "ahead"}>
-            <Link
-              to={{ page: "projekt", projekt: route.projekt, frage: q.id }}
-              current={q.id === route.frage ? "page" : undefined}
-              className="aec-qnav__item"
+    <div className="aec-qnav">
+      <Link
+        to={{ page: "projekt", projekt: route.projekt, frage: "daten" }}
+        current={onData ? "page" : undefined}
+        className="aec-qnav__item aec-qnav__item--data"
+      >
+        <span className="aec-qnav__sign">
+          <span className="aec-qnav__letter" aria-hidden="true">
+            0
+          </span>
+          {DATA_STEP.label}
+        </span>
+        <span className="aec-qnav__q">{DATA_STEP.question}</span>
+      </Link>
+      <nav aria-label="Fünf Fragen des Projekts">
+        <ol ref={list}>
+          {QUESTIONS.map((q, i) => (
+            <li
+              key={q.id}
+              data-state={onData ? "ahead" : i < index ? "past" : i === index ? "here" : "ahead"}
             >
-              <span className="aec-qnav__sign">
-                <span className="aec-qnav__letter" aria-hidden="true">
-                  {String.fromCharCode(65 + i)}
+              <Link
+                to={{ page: "projekt", projekt: route.projekt, frage: q.id }}
+                current={q.id === route.frage ? "page" : undefined}
+                className="aec-qnav__item"
+              >
+                <span className="aec-qnav__sign">
+                  <span className="aec-qnav__letter" aria-hidden="true">
+                    {String.fromCharCode(65 + i)}
+                  </span>
+                  {q.label}
                 </span>
-                {q.label}
-              </span>
-              <span className="aec-qnav__q">{q.question}</span>
-            </Link>
-          </li>
-        ))}
-      </ol>
-      <p className="aec-visually-hidden" aria-live="polite">
-        {nav.route.page === "projekt"
-          ? `Frage ${index + 1} von 5: ${QUESTIONS[index]!.question}`
-          : ""}
-      </p>
-    </nav>
+                <span className="aec-qnav__q">{q.question}</span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+        <p className="aec-visually-hidden" aria-live="polite">
+          {nav.route.page !== "projekt"
+            ? ""
+            : onData
+              ? `Schritt Daten: ${DATA_STEP.question}`
+              : `Frage ${index + 1} von 5: ${QUESTIONS[index]!.question}`}
+        </p>
+      </nav>
+    </div>
   );
 }
 
-const NEXT: Partial<Record<Question, Question>> = {
+/** Datenstand im Projektkopf: N von 4 echt, Mini-Leiste, fuehrt zum Schritt Daten. */
+export function DataMeter({ status, projekt }: { status: DataStatus | null; projekt: string }) {
+  const label = status
+    ? `Datenstand: ${status.real} von 4 echt. ${status.answer} Zum Schritt Daten.`
+    : "Datenstand wird geladen. Zum Schritt Daten.";
+  return (
+    <Link to={{ page: "projekt", projekt, frage: "daten" }} className="aec-dmeter" label={label}>
+      <span className="aec-dmeter__text" aria-hidden="true">
+        Datenstand <strong>{status ? `${status.real} von 4` : "…"}</strong> echt
+      </span>
+      <span className="aec-dmeter__bar" aria-hidden="true">
+        {(status?.items ?? []).map((i) => (
+          <i key={i.id} data-state={i.state} title={`${i.title}: ${i.state}`} />
+        ))}
+      </span>
+    </Link>
+  );
+}
+
+const NEXT: Partial<Record<Step, Step>> = {
+  daten: "lage",
   lage: "engpass",
   engpass: "varianten",
   varianten: "abgleich",
@@ -79,6 +129,8 @@ export default function ProjectPage({
   const [project, setProject] = useState<Project | null>(null);
   const [situation, setSituation] = useState<Situation | null>(null);
   const [board, setBoard] = useState<VariantBoard | null>(null);
+  const [inputs, setInputs] = useState<DataInputs | null>(null);
+  const nav = useNav();
 
   useEffect(() => {
     let alive = true;
@@ -86,6 +138,9 @@ export default function ProjectPage({
       const p = await getProject(route.projekt);
       if (!alive) return;
       setProject(p);
+      void loadDataInputs(p)
+        .catch(() => EMPTY_INPUTS)
+        .then((d) => alive && setInputs(d));
       const [s, b] = await Promise.all([getSituation(p), getVariantBoard(p)]);
       if (!alive) return;
       // Flottengroesse aus dem Modelllauf (bzw. der Varianten-Basis) statt "unbekannt".
@@ -103,6 +158,22 @@ export default function ProjectPage({
     if (route.werkstatt) document.getElementById("werkstatt")?.scrollIntoView?.({ block: "start" });
   }, [route.werkstatt]);
 
+  const status = useMemo(() => (inputs ? computeDataStatus(inputs) : null), [inputs]);
+  // Ohne `frage` in der Adresse: Daten zuerst, solange Flugplan und Flotte nicht echt sind.
+  useEffect(() => {
+    if (!route.auto || !project || !status) return;
+    const frage = project.source === "api" && needsDataStep(status) ? "daten" : "lage";
+    nav.navigate({ page: "projekt", projekt: route.projekt, frage }, { replace: true });
+  }, [route.auto, route.projekt, project, status, nav]);
+
+  const reloadData = async () => {
+    if (!project) return;
+    setInputs(await loadDataInputs(project));
+    // Neue Projektwerte veraendern die Varianten-Basis.
+    const b = await getVariantBoard(project);
+    setBoard(b);
+  };
+
   const reloadBoard = async () => {
     const b = project ? await getVariantBoard(project) : null;
     if (b) setBoard(b);
@@ -113,7 +184,7 @@ export default function ProjectPage({
       ? { project, situation, variants: board.variants, board, reloadBoard, route }
       : null;
   const next = NEXT[route.frage];
-  const nextQ = QUESTIONS.find((q) => q.id === next);
+  const nextQ = STEPS.find((q) => q.id === next);
 
   return (
     <div className="aec-project-page">
@@ -133,12 +204,27 @@ export default function ProjectPage({
             </span>
           </div>
           {project ? <SourceTag source={situation?.source ?? project.source} /> : null}
+          <DataMeter status={status} projekt={route.projekt} />
         </div>
         <QuestionNav route={route} />
       </div>
 
       <div className="aec-page" key={route.frage}>
-        {!props ? (
+        {route.frage === "daten" ? (
+          project && inputs && status ? (
+            <DatenView
+              project={project}
+              inputs={inputs}
+              status={status}
+              reload={reloadData}
+              route={route}
+            />
+          ) : (
+            <p className="aec-loading" role="status">
+              Datenstand wird geladen…
+            </p>
+          )
+        ) : !props ? (
           <p className="aec-loading" role="status">
             Lagebild wird geladen…
           </p>

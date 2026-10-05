@@ -293,7 +293,7 @@ describe("Oberfläche", () => {
       target: { value: "Hamburg" },
     });
     fireEvent.click(screen.getByRole("button", { name: /Anlegen/ }));
-    await waitFor(() => expect(window.location.search).toMatch(/projekt=lokal-.*frage=lage/));
+    await waitFor(() => expect(window.location.search).toMatch(/projekt=lokal-.*frage=daten/));
   });
 });
 

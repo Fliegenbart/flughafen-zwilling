@@ -29,6 +29,7 @@ from ..munich.coupled_models import (
 )
 from ..munich.coupled_world import CoupledWorld, build_world
 from ..pilot.router import _verified_coupled_series
+from .assets import base_assets
 from .situation import LIMIT_TOLERANCE_KW
 
 MAX_VARIANTS = 8
@@ -349,8 +350,9 @@ def build_answer(entries: list[dict], finished: bool) -> dict:
 
 
 class VariantService:
-    def __init__(self, store, service, enqueue: Callable[[str], None] | None):
+    def __init__(self, store, service, enqueue: Callable[[str], None] | None, assets=None):
         self.store = store  # ExchangeStore
+        self.assets = assets  # AssetStore: Projektwerte Flotte/Anlagen (Schritt "Daten")
         self.service = service
         self.enqueue = enqueue
         self.lock = Lock()
@@ -380,7 +382,15 @@ class VariantService:
     # ---- Basis ---------------------------------------------------------------
     def base_context(self, project_id: str) -> dict | None:
         """Basis = Konfiguration des neuesten abgeschlossenen gekoppelten Projektlaufs;
-        sonst verknuepfter Flugplan mit Standardannahmen. None ohne beides."""
+        sonst verknuepfter Flugplan mit Standardannahmen. None ohne beides.
+        Projektwerte (Flotte und Anlagen) ueberschreiben in beiden Faellen die passenden Felder."""
+        base = self._raw_base(project_id)
+        if base is None:
+            return None
+        config, info = base_assets(self.assets, project_id, base["config"])
+        return {**base, "config": config, "project_assets": info}
+
+    def _raw_base(self, project_id: str) -> dict | None:
         record = self.store.latest_coupled_record(project_id)
         if record is not None and record.model_pack_snapshot is not None:
             meta = record.model_pack_snapshot.calibration_meta
@@ -410,6 +420,11 @@ class VariantService:
             raise HTTPException(
                 status_code=409,
                 detail="no_base: Projekt braucht einen gekoppelten Lauf oder Flugplan-Link")
+        if base["project_assets"].get("error"):
+            raise HTTPException(
+                status_code=409,
+                detail=f"invalid_assets: Projektwerte passen nicht zur Basis: "
+                       f"{base['project_assets']['error']}")
         plan = self.store._flight_plan(base["flight_plan_snapshot_id"])
         return base, plan
 
@@ -584,6 +599,7 @@ class VariantService:
                 "source_plan_sha256": plan.content_sha256, "seed": base["seed"],
                 "mission_signature": signature, "base_source": base["source"],
                 "base_run_id": base["run_id"], "stress": request.stress, "entries": entries,
+                "project_assets": base["project_assets"],
             }
             now = self.store.pilot._now()
             with self.store.pilot._connect() as connection:
@@ -696,6 +712,7 @@ class VariantService:
                 "source_plan_sha256": batch["source_plan_sha256"], "seed": batch["seed"],
                 "mission_signature": signature, "base_source": batch["base_source"],
                 "stress": batch["stress"],
+                "project_assets": batch.get("project_assets"),
                 "stale": {e["key"] for e in entries if e["key"] != "base"} != current_ids,
                 "entries": entries,
                 "answer": build_answer(entries, finished),
@@ -709,7 +726,10 @@ class VariantService:
                 "grid_import_limit_kw": base["config"].power.grid_import_limit_kw,
                 "storage_kwh": base["config"].power.battery_capacity_kwh,
                 "pv_capacity_kwp": base["config"].power.pv_capacity_kwp,
+                "chp_output_kw": base["config"].power.chp_output_kw,
+                "battery_power_kw": base["config"].power.battery_power_kw,
                 "fleet": fleet_summary(base["config"], base["source"]),
+                "project_assets": base["project_assets"],
             },
             "variants": variants,
             "limits": {"max_variants": MAX_VARIANTS, "queue_limit": VARIANT_QUEUE_LIMIT,

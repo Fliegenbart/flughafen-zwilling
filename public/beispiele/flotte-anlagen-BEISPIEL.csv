@@ -1,0 +1,17 @@
+# BEISPIELDATEI – erfundene Werte, keine echte Quelle. Nicht so hochladen.
+# Spalten: key,value,unit,source,source_date. Ohne source bleibt ein Wert Annahme.
+# Einheiten: kW oder MW, kWh oder MWh, kWp oder MWp, Stück.
+key,value,unit,source,source_date
+grid_import_limit_kw,3.5,MW,,
+pv_capacity_kwp,7000,kWp,,
+chp_output_kw,18000,kW,,
+battery_capacity_kwh,0,kWh,,
+fleet.bus.vehicles,20,Stück,,
+fleet.bus.chargers,8,Stück,,
+fleet.bus.charger_kw,80,kW,,
+fleet.baggage_tractor.vehicles,35,Stück,,
+fleet.baggage_tractor.chargers,12,Stück,,
+fleet.pushback_tug.vehicles,10,Stück,,
+fleet.pushback_tug.chargers,4,Stück,,
+fleet.gpu.vehicles,35,Stück,,
+fleet.gpu.chargers,10,Stück,,
