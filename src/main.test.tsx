@@ -29,7 +29,9 @@ describe("Workspace entry point", () => {
 
   async function open(search = "") {
     window.history.replaceState(null, "", `/${search}`);
-    await act(async () => { await import("./main"); });
+    await act(async () => {
+      await import("./main");
+    });
   }
 
   it("opens the airport by default, not the generic flex workspace", async () => {
@@ -45,16 +47,20 @@ describe("Workspace entry point", () => {
     const airport = screen.getByRole("link", { name: /Flughafen.*Airport Twin Core/i });
     expect(airport).toHaveAttribute("href", "/?workspace=airport");
     expect(airport).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: /Messdaten.*FlexLab Workbench/i }))
-      .toHaveAttribute("href", "/?workspace=flexlab");
+    expect(screen.getByRole("link", { name: /Messdaten.*FlexLab Workbench/i })).toHaveAttribute(
+      "href",
+      "/?workspace=flexlab",
+    );
   });
 
   it("uses the studio shell only for airport workspaces", async () => {
     await open("?workspace=airport");
     await screen.findByRole("heading", { name: "Airport Twin Core" });
     expect(document.querySelector("[data-studio]")).not.toBeNull();
-    expect(screen.getByRole("link", { name: "Zum Arbeitsbereich" }))
-      .toHaveAttribute("href", "#studio-main");
+    expect(screen.getByRole("link", { name: "Zum Arbeitsbereich" })).toHaveAttribute(
+      "href",
+      "#studio-main",
+    );
     expect(document.getElementById("studio-main")).not.toBeNull();
     expect(document.getElementById("studio-main")).toHaveAttribute("tabindex", "-1");
   });
@@ -62,8 +68,10 @@ describe("Workspace entry point", () => {
   it("preserves FlexLab under an explicit link without replacing the airport", async () => {
     await open("?workspace=flexlab");
     expect(await screen.findByRole("heading", { name: "FlexLab Workbench" })).toBeVisible();
-    expect(screen.getByRole("link", { name: /Messdaten.*FlexLab Workbench/i }))
-      .toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /Messdaten.*FlexLab Workbench/i })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(screen.getByRole("link", { name: /Flughafen.*Airport Twin Core/i })).toBeVisible();
     await waitFor(() => expect(document.title).toBe("FlexLab Workbench"));
   });
@@ -76,8 +84,10 @@ describe("Workspace entry point", () => {
   it("opens Munich explicitly without replacing either existing workspace", async () => {
     await open("?workspace=munich");
     expect(await screen.findByRole("heading", { name: "Flughafen München" })).toBeVisible();
-    expect(screen.getByRole("link", { name: /Energiepilot.*München Referenz/i }))
-      .toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /Energiepilot.*München Referenz/i })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     await waitFor(() => expect(document.title).toBe("München / Airport Twin Core"));
   });
 
@@ -98,11 +108,17 @@ describe("Workspace entry point", () => {
     vi.stubEnv("BASE_URL", "/airport/");
     await open("?workspace=munich");
     expect(await screen.findByRole("heading", { name: "Flughafen München" })).toBeVisible();
-    expect(screen.getByRole("link", { name: /Flughafen.*Airport Twin Core/i }))
-      .toHaveAttribute("href", "/airport/?workspace=airport");
-    expect(screen.getByRole("link", { name: /Energiepilot.*München Referenz/i }))
-      .toHaveAttribute("href", "/airport/?workspace=munich");
-    expect(screen.getByRole("link", { name: /Messdaten.*FlexLab Workbench/i }))
-      .toHaveAttribute("href", "/airport/?workspace=flexlab");
+    expect(screen.getByRole("link", { name: /Flughafen.*Airport Twin Core/i })).toHaveAttribute(
+      "href",
+      "/airport/?workspace=airport",
+    );
+    expect(screen.getByRole("link", { name: /Energiepilot.*München Referenz/i })).toHaveAttribute(
+      "href",
+      "/airport/?workspace=munich",
+    );
+    expect(screen.getByRole("link", { name: /Messdaten.*FlexLab Workbench/i })).toHaveAttribute(
+      "href",
+      "/airport/?workspace=flexlab",
+    );
   });
 });

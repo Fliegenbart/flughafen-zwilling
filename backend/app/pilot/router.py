@@ -20,6 +20,17 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 MAX_CSV_BYTES = 5 * 1024 * 1024
 MAX_CSV_ROWS = 100_000
 ASSESSMENT_VERSION = "pilot-assessment-v1"
+# Fachliche Obergrenzen fuer vorab festgelegte Toleranzen (nicht verhandelbar je Bewertung).
+ENERGY_ERROR_MAX_PCT_CEILING = 50.0
+MAE_MAX_KW_CEILING = 100_000.0
+# MAE-Grenze darf hoechstens diesen Anteil der mittleren absoluten Messleistung betragen.
+MAE_MAX_RELATIVE_CEILING = 0.5
+MIN_ROWS_FLOOR = 60
+MIN_COVERAGE_SECONDS_FLOOR = 3600.0
+# Fachliche Obergrenze einer einzelnen Wirkleistung (1 GW); darueber Einheitenverdacht.
+PLAUSIBLE_KW_CEILING = 1_000_000.0
+UNIT_SUSPECT_RATIO = 100.0
+CIRCULAR_ABS_TOL_KW = 1e-6
 REPLAY_METRICS = {"grid_import_kw", "ground_charging_kw", "parking_kw"}
 CLAIM_BOUNDARY = (
     "Frozen quantitative check only; not empirical model, safety, or operational validation."
@@ -64,11 +75,26 @@ class ImportRequest(BaseModel):
 
 
 class AssessmentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     import_id: str
-    mae_max_kw: float = Field(ge=0, le=1_000_000_000)
-    energy_error_max_pct: float = Field(ge=0, le=1_000_000_000)
+    # Nur noch zur Gegenprobe: muessen den eingefrorenen Projekttoleranzen entsprechen.
+    mae_max_kw: float | None = Field(default=None, ge=0, le=1_000_000_000)
+    energy_error_max_pct: float | None = Field(default=None, ge=0, le=1_000_000_000)
+
+
+class TolerancesRequest(BaseModel):
+    """Projektweite, vorab festgelegte Abnahmegrenzen; nach dem Sperren unveraenderlich."""
+
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    mae_max_kw: float = Field(gt=0, le=MAE_MAX_KW_CEILING)
+    energy_error_max_pct: float = Field(gt=0, le=ENERGY_ERROR_MAX_PCT_CEILING)
+    min_rows: int = Field(default=MIN_ROWS_FLOOR, ge=MIN_ROWS_FLOOR, le=MAX_CSV_ROWS)
+    min_coverage_seconds: float = Field(
+        default=MIN_COVERAGE_SECONDS_FLOOR, ge=MIN_COVERAGE_SECONDS_FLOOR, le=366 * 86400
+    )
+    lock: bool = False
 
 
 class ReplayRequest(BaseModel):
@@ -167,6 +193,21 @@ class EvidenceStore:
                     entry_hash TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS audit_by_project ON audit(project_id, seq);
+                CREATE TABLE IF NOT EXISTS project_tolerances (
+                    project_id TEXT PRIMARY KEY REFERENCES projects(id),
+                    tolerances_json TEXT NOT NULL,
+                    sha256 TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    locked_at TEXT
+                );
+                CREATE TRIGGER IF NOT EXISTS tolerances_frozen_update
+                BEFORE UPDATE ON project_tolerances WHEN OLD.locked_at IS NOT NULL BEGIN
+                    SELECT RAISE(ABORT, 'locked tolerances are immutable');
+                END;
+                CREATE TRIGGER IF NOT EXISTS tolerances_frozen_delete
+                BEFORE DELETE ON project_tolerances WHEN OLD.locked_at IS NOT NULL BEGIN
+                    SELECT RAISE(ABORT, 'locked tolerances are immutable');
+                END;
                 CREATE TRIGGER IF NOT EXISTS audit_append_only_update
                 BEFORE UPDATE ON audit BEGIN
                     SELECT RAISE(ABORT, 'audit entries are immutable');
@@ -186,6 +227,14 @@ class EvidenceStore:
                 connection.execute(
                     "ALTER TABLE imports ADD COLUMN sample_semantics "
                     "TEXT NOT NULL DEFAULT 'point_samples'"
+                )
+            assessment_columns = {
+                row["name"] for row in connection.execute("PRAGMA table_info(assessments)")
+            }
+            if "evaluation_kind" not in assessment_columns:
+                connection.execute(
+                    "ALTER TABLE assessments ADD COLUMN evaluation_kind "
+                    "TEXT NOT NULL DEFAULT 'legacy_unclassified'"
                 )
 
     @staticmethod
@@ -248,6 +297,7 @@ class EvidenceStore:
             "metrics": json.loads(row["metrics_json"]),
             "not_evaluable_reasons": json.loads(row["reasons_json"]),
             "claim_boundary": row["claim_boundary"],
+            "evaluation_kind": row["evaluation_kind"],
             "created_at": row["created_at"],
         }
 
@@ -392,6 +442,117 @@ class EvidenceStore:
                 return True
         return False
 
+    @staticmethod
+    def _tolerances_payload(row: sqlite3.Row | None) -> dict | None:
+        if row is None:
+            return None
+        return {
+            "tolerances": json.loads(row["tolerances_json"]),
+            "sha256": row["sha256"],
+            "created_at": row["created_at"],
+            "locked_at": row["locked_at"],
+            "locked": row["locked_at"] is not None,
+        }
+
+    def _tolerances_row(self, connection: sqlite3.Connection, project_id: str):
+        return connection.execute(
+            "SELECT * FROM project_tolerances WHERE project_id = ?", (project_id,)
+        ).fetchone()
+
+    def get_tolerances(self, project_id: str) -> dict | None:
+        with self._connect() as connection:
+            self._project_row(connection, project_id)
+            return self._tolerances_payload(self._tolerances_row(connection, project_id))
+
+    def set_tolerances(self, project_id: str, request: TolerancesRequest) -> dict:
+        tolerances = {
+            "mae_max_kw": _rounded(request.mae_max_kw),
+            "energy_error_max_pct": _rounded(request.energy_error_max_pct),
+            "min_rows": request.min_rows,
+            "min_coverage_seconds": _rounded(request.min_coverage_seconds),
+        }
+        digest = hashlib.sha256(self._canonical(tolerances).encode("utf-8")).hexdigest()
+        with self._connect() as connection:
+            self._project_row(connection, project_id)
+            existing = self._tolerances_row(connection, project_id)
+            if existing is not None and existing["locked_at"] is not None:
+                raise HTTPException(
+                    status_code=409, detail="project tolerances are locked and immutable"
+                )
+            now = self._now()
+            holdout_exists = (
+                connection.execute(
+                    "SELECT 1 FROM imports WHERE project_id = ? AND role = 'holdout' LIMIT 1",
+                    (project_id,),
+                ).fetchone()
+                is not None
+            )
+            # Nach einem Holdout-Import gibt es keine offene Vorab-Festlegung mehr.
+            locked_at = now if (request.lock or holdout_exists) else None
+            connection.execute(
+                "INSERT OR REPLACE INTO project_tolerances"
+                "(project_id, tolerances_json, sha256, created_at, locked_at)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (project_id, self._json(tolerances), digest, now, locked_at),
+            )
+            self._append_audit(
+                connection,
+                project_id,
+                "tolerances_set",
+                project_id,
+                {"tolerances": tolerances, "sha256": digest, "locked": locked_at is not None},
+            )
+            return self._tolerances_payload(self._tolerances_row(connection, project_id))
+
+    def _lock_tolerances(self, connection: sqlite3.Connection, project_id: str, cause: str) -> None:
+        row = self._tolerances_row(connection, project_id)
+        if row is None or row["locked_at"] is not None:
+            return
+        connection.execute(
+            "UPDATE project_tolerances SET locked_at = ? WHERE project_id = ?",
+            (self._now(), project_id),
+        )
+        self._append_audit(
+            connection,
+            project_id,
+            "tolerances_locked",
+            project_id,
+            {"sha256": row["sha256"], "cause": cause},
+        )
+
+    def _holdout_overlap_recheck(
+        self,
+        connection: sqlite3.Connection,
+        project_id: str,
+        rows_data: list[tuple[datetime, float, float | None]],
+        sample_semantics: str,
+    ) -> str | None:
+        """Prueft gegen ALLE Kalibrierimporte, auch inzwischen ungueltige."""
+        try:
+            start, end = _coverage_bounds(rows_data, sample_semantics)
+        except ValueError:
+            return "overlap_unverifiable"
+        rows = connection.execute(
+            "SELECT id, quality_json, sample_semantics FROM imports "
+            "WHERE project_id = ? AND role = 'calibration'",
+            (project_id,),
+        ).fetchall()
+        for row in rows:
+            try:
+                source_bytes = self._raw_path(row["id"]).read_bytes()
+                parsed = _inspect_csv(source_bytes.decode("utf-8"), source_bytes)
+                timestamps = sorted({item[0] for item in parsed["rows_data"]})
+            except (OSError, UnicodeDecodeError, ValueError):
+                return "overlap_unverifiable"
+            if not timestamps:
+                continue
+            other_start, other_end = timestamps[0], timestamps[-1]
+            if row["sample_semantics"] == "interval_end_mean" and len(timestamps) >= 2:
+                other_start = other_start - (timestamps[1] - timestamps[0])
+            if start <= other_end and other_start <= end:
+                return "calibration_holdout_overlap"
+        return None
+
     def create_import(self, project_id: str, request: ImportRequest) -> dict:
         source_bytes = _source_bytes(request.csv_text)
         if len(source_bytes) > MAX_CSV_BYTES:
@@ -436,6 +597,8 @@ class EvidenceStore:
             ):
                 _add_issue(quality["issues"], "calibration_holdout_overlap")
                 quality["state"] = "invalid"
+            if request.role == "holdout":
+                self._lock_tolerances(connection, project_id, "first_holdout_import")
             _write_source(raw_path, source_bytes)
             try:
                 connection.execute(
@@ -653,11 +816,45 @@ class EvidenceStore:
             imported = self._import_row(connection, project_id, import_id)
             quality = json.loads(imported["quality_json"])
             provenance = json.loads(imported["model_provenance_json"])
+            tolerance_row = self._tolerances_row(connection, project_id)
+            frozen = json.loads(tolerance_row["tolerances_json"]) if tolerance_row else None
+            if frozen is not None:
+                for key in ("mae_max_kw", "energy_error_max_pct"):
+                    requested = getattr(request, key)
+                    if requested is not None and _rounded(requested) != frozen[key]:
+                        raise HTTPException(
+                            status_code=409,
+                            detail=f"{key} differs from the frozen project tolerances",
+                        )
+            role = imported["role"]
+            evaluation_kind = {
+                "holdout": "holdout_validation",
+                "calibration": "calibration_fit",
+                "lab": "lab_diagnostic",
+            }[role]
             reasons: list[str] = []
+            if role != "holdout":
+                # Kalibrier-/Laborabgleich ist Fit bzw. Diagnose, nie ein PASS.
+                reasons.append("role_not_holdout")
+            if tolerance_row is None:
+                reasons.append("tolerances_not_frozen")
+            elif tolerance_row["locked_at"] is None:
+                reasons.append("tolerances_not_locked")
+            else:
+                origin_created = imported["created_at"]
+                if imported["source_import_id"] is not None:
+                    source_row = connection.execute(
+                        "SELECT created_at FROM imports WHERE id = ?",
+                        (imported["source_import_id"],),
+                    ).fetchone()
+                    if source_row is not None:
+                        origin_created = min(origin_created, source_row["created_at"])
+                if tolerance_row["created_at"] > origin_created:
+                    reasons.append("tolerances_set_after_import")
             if quality["state"] != "valid":
                 reasons.append("import_quality_invalid")
             parsed = None
-            if not reasons:
+            if quality["state"] == "valid":
                 raw_path = self._raw_path(imported["id"])
                 try:
                     source_bytes = raw_path.read_bytes()
@@ -675,22 +872,46 @@ class EvidenceStore:
                             parsed = _inspect_csv(source_text, source_bytes)
                             if parsed["state"] != "valid":
                                 reasons.append("source_revalidation_failed")
+                                reasons.extend(
+                                    issue for issue in parsed["issues"] if issue == "unit_suspect"
+                                )
             metrics = _empty_metrics()
-            if parsed is not None:
+            if parsed is not None and parsed["state"] == "valid":
                 metrics, metric_reasons = _paired_metrics(
                     parsed["rows_data"], imported["sample_semantics"]
                 )
                 reasons.extend(metric_reasons)
+                if role == "holdout":
+                    overlap = self._holdout_overlap_recheck(
+                        connection, project_id, parsed["rows_data"], imported["sample_semantics"]
+                    )
+                    if overlap:
+                        reasons.append(overlap)
+                if frozen is not None:
+                    if len(parsed["rows_data"]) < frozen["min_rows"]:
+                        reasons.append("insufficient_rows")
+                    coverage = metrics["paired_coverage_seconds"]
+                    if coverage is None or coverage < frozen["min_coverage_seconds"]:
+                        reasons.append("insufficient_coverage")
+                    mean_abs = metrics.get("mean_abs_measured_kw")
+                    if (
+                        mean_abs is not None
+                        and frozen["mae_max_kw"] > MAE_MAX_RELATIVE_CEILING * mean_abs
+                    ):
+                        reasons.append("tolerance_mae_too_loose_for_measurement")
             if provenance["model_column_status"] == "user_supplied_unverified":
                 reasons.append("model_provenance_unverified")
             if provenance["model_column_status"] != "server_verified_coupled_replay":
                 reasons.append("model_provenance_not_server_verified")
             reasons = list(dict.fromkeys(reasons))
             thresholds = {
-                "mae_max_kw": _rounded(request.mae_max_kw),
-                "energy_error_max_pct": _rounded(request.energy_error_max_pct),
+                "mae_max_kw": frozen["mae_max_kw"] if frozen else None,
+                "energy_error_max_pct": frozen["energy_error_max_pct"] if frozen else None,
+                "min_rows": frozen["min_rows"] if frozen else None,
+                "min_coverage_seconds": frozen["min_coverage_seconds"] if frozen else None,
+                "tolerances_sha256": tolerance_row["sha256"] if tolerance_row else None,
             }
-            if reasons:
+            if reasons or role != "holdout" or frozen is None:
                 validity_status = "NOT_EVALUABLE"
             elif (
                 metrics["time_weighted_mae_kw"] <= thresholds["mae_max_kw"]
@@ -711,14 +932,15 @@ class EvidenceStore:
                 "metrics": metrics,
                 "not_evaluable_reasons": reasons,
                 "claim_boundary": CLAIM_BOUNDARY,
+                "evaluation_kind": evaluation_kind,
                 "created_at": created_at,
             }
             connection.execute(
                 """
                 INSERT INTO assessments(
                     id, project_id, import_id, version, validity_status, thresholds_json,
-                    metrics_json, reasons_json, claim_boundary, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    metrics_json, reasons_json, claim_boundary, created_at, evaluation_kind
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     assessment_id,
@@ -731,6 +953,7 @@ class EvidenceStore:
                     self._json(reasons),
                     CLAIM_BOUNDARY,
                     created_at,
+                    evaluation_kind,
                 ),
             )
             self._append_audit(
@@ -742,6 +965,7 @@ class EvidenceStore:
                     "import_id": import_id,
                     "version": ASSESSMENT_VERSION,
                     "validity_status": validity_status,
+                    "evaluation_kind": evaluation_kind,
                     "thresholds": thresholds,
                 },
             )
@@ -786,6 +1010,7 @@ class EvidenceStore:
             "imports.json": _json_bytes(imports),
             "assessments.json": _json_bytes(assessments),
             "audit.json": _json_bytes(audit),
+            "tolerances.json": _json_bytes(self.get_tolerances(project_id)),
             "README.md": _readme().encode("utf-8"),
             "template.csv": TEMPLATE_CSV.encode("utf-8"),
         }
@@ -917,6 +1142,8 @@ def _inspect_csv(csv_text: str, source_bytes: bytes) -> dict:
     rows_data: list[tuple[datetime, float, float | None]] = []
     row_count = 0
     model_column_present = False
+    # UTF-8-BOM (z.B. Excel-Export) entfernen; Hash bleibt ueber die Originalbytes.
+    csv_text = csv_text.removeprefix("\ufeff")
     try:
         reader = csv.DictReader(StringIO(csv_text, newline=""))
         headers = reader.fieldnames
@@ -954,6 +1181,10 @@ def _inspect_csv(csv_text: str, source_bytes: bytes) -> dict:
                     except ValueError as exc:
                         _add_issue(issues, str(exc))
                         continue
+                if abs(measured) > PLAUSIBLE_KW_CEILING or (
+                    model is not None and abs(model) > PLAUSIBLE_KW_CEILING
+                ):
+                    _add_issue(issues, "unit_suspect")
                 rows_data.append((timestamp, measured, model))
     except csv.Error:
         _add_issue(issues, "csv_parse_error")
@@ -970,6 +1201,12 @@ def _inspect_csv(csv_text: str, source_bytes: bytes) -> dict:
             _add_issue(issues, "non_monotonic_timestamp")
         else:
             deltas.append(seconds)
+    model_values = [abs(model) for _, _, model in rows_data if model is not None]
+    if model_values and rows_data:
+        measured_peak = max(abs(measured) for _, measured, _ in rows_data)
+        # Groessenordnungscheck: z.B. W statt kW geliefert.
+        if measured_peak > UNIT_SUSPECT_RATIO * max(max(model_values), 1.0):
+            _add_issue(issues, "unit_suspect")
     if not issues and len(deltas) >= 2:
         cadence = min(deltas)
         if any(delta > cadence * 1.5 for delta in deltas):
@@ -1174,6 +1411,8 @@ def _empty_metrics() -> dict:
         "time_weighted_bias_kw": None,
         "energy_error_pct": None,
         "paired_coverage_seconds": None,
+        "mean_abs_measured_kw": None,
+        "max_abs_difference_kw": None,
     }
 
 
@@ -1231,10 +1470,18 @@ def _paired_metrics(
             duration += seconds
     if duration <= 0:
         return _empty_metrics(), ["paired_coverage_missing"]
+    values = (weighted_mae, weighted_bias, measured_energy, model_energy, absolute_measured_energy)
+    if not all(math.isfinite(value) for value in values):
+        return _empty_metrics(), ["metric_overflow"]
+    max_abs_difference = max(abs(model - measured) for _, measured, model in rows)
     if math.isclose(absolute_measured_energy, 0.0, abs_tol=1e-12):
         return _empty_metrics(), ["measured_energy_zero"]
     if abs(measured_energy) <= max(1e-9, absolute_measured_energy * 0.01):
         return _empty_metrics(), ["measured_energy_signed_cancellation"]
+    reasons = []
+    if max_abs_difference < CIRCULAR_ABS_TOL_KW:
+        # Messung ist (nahezu) die Modellreihe selbst: kein unabhaengiger Vergleich.
+        reasons.append("circular")
     return (
         {
             "time_weighted_mae_kw": _rounded(weighted_mae / duration),
@@ -1243,8 +1490,10 @@ def _paired_metrics(
                 (model_energy - measured_energy) / abs(measured_energy) * 100
             ),
             "paired_coverage_seconds": _rounded(duration),
+            "mean_abs_measured_kw": _rounded(absolute_measured_energy * 3600 / duration),
+            "max_abs_difference_kw": _rounded(max_abs_difference),
         },
-        [],
+        reasons,
     )
 
 
@@ -1283,7 +1532,12 @@ The Airport Twin model remains an uncalibrated methods prototype.
    coupled run with a positive `RunService.get_run_safety` receipt and a matching sealed
    `coupled-evidence.json` hash. Source timestamps must exactly cover every UTC interval-end
    sample; interpolation and shifts are refused.
-6. A PASS is only a frozen numerical check against the stored thresholds for a server-derived
+6. Tolerances (MAE, energy error <= 50 %, min. 60 rows and 1 h) are set once per project and
+   locked explicitly or at the first holdout import; their hash is in the audit chain. Only
+   `holdout` imports can PASS; calibration/lab results are fit/diagnostic. Circular series
+   (measured == model), unit-suspect magnitudes and overlap with any calibration import are
+   NOT_EVALUABLE.
+7. A PASS is only a frozen numerical check against the stored thresholds for a server-derived
    replay. It is not empirical model validation, safety validation, a claim about airport
    operations, or permission to actuate anything.
 
@@ -1328,6 +1582,14 @@ def create_router(base_dir: Path) -> APIRouter:
     @router.post("/projects/{project_id}/replays", status_code=201)
     def create_replay(project_id: str, request: ReplayRequest) -> dict:
         return store.create_replay(_normalize_uuid(project_id, "project_id"), request)
+
+    @router.get("/projects/{project_id}/tolerances")
+    def get_tolerances(project_id: str) -> dict | None:
+        return store.get_tolerances(_normalize_uuid(project_id, "project_id"))
+
+    @router.put("/projects/{project_id}/tolerances")
+    def set_tolerances(project_id: str, request: TolerancesRequest) -> dict:
+        return store.set_tolerances(_normalize_uuid(project_id, "project_id"), request)
 
     @router.post("/projects/{project_id}/assessments", status_code=201)
     def create_assessment(project_id: str, request: AssessmentRequest) -> dict:

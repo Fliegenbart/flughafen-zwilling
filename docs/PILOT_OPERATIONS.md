@@ -86,6 +86,19 @@ Betriebsdaten oder Archive in Git committen.
 
 - Pro Instanz genau ein Backend-Prozess. Worker und JSON-Storage sind nicht
   multiprozesssicher; auch das Login-Rate-Limit ist absichtlich pro Prozess.
+  Die Fehlversuchszaehler liegen nur im Speicher: sie gelten ausschliesslich
+  mit `uvicorn --workers 1` und beginnen nach jedem Neustart bei null.
+- Login-Schutz: je IP+Benutzer nach 5 Fehlversuchen kurze Sperre mit
+  exponentiellem Backoff (15 s, 30 s, ... hoechstens 5 min); je IP hoechstens 20
+  Fehlversuche in 5 min. Global gibt es keine Sperre, ab 100 Fehlversuchen in
+  5 min nur eine Verzoegerung (bis 2 s), damit ein Angreifer berechtigte Nutzer
+  nicht aussperren kann.
+- Hinter einem Reverse Proxy muss das Backend die echte Client-IP sehen:
+  `--proxy-headers --forwarded-allow-ips=<Proxy-Netz>` (Hetzner: internes
+  Netz `172.31.250.0/24` des Frontend-nginx, der `X-Real-IP` vom Host-Proxy
+  uebernimmt). Ohne das teilen sich alle Clients die Proxy-Adresse und damit
+  die IP-Grenze. Die lokale Demo (`docker-compose.demo.yml`) ist nicht
+  oeffentlich proxied und startet ohne Proxy-Header.
 - Jede Instanz erhaelt ein separates persistentes Volume und separate
   Credentials. `docker compose -f docker-compose.demo.yml` ist nur die lokale
   Demo, nicht ein gemeinsamer Kundenbetrieb.

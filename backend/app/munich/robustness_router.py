@@ -7,7 +7,7 @@ import json
 import re
 from pathlib import Path
 from threading import Lock
-from typing import Any, Callable
+from typing import Annotated, Any, Callable, Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query
@@ -15,7 +15,13 @@ from fastapi.responses import FileResponse
 
 from ..models import ModelPack, RunRequest, RunState, ScenarioDefinition
 from ..run_service import RunService
-from .coupled_models import ENGINE_VERSION, CoupledConfig, CoupledRequest, StressEvent
+from .coupled_models import (
+    COUPLED_DOMAIN,
+    ENGINE_VERSION,
+    CoupledConfig,
+    CoupledRequest,
+    StressEvent,
+)
 from .coupled_world import CoupledWorld, build_world
 from .flightplan import FlightPlanSnapshot
 from .flightplan_router import load_snapshot
@@ -30,7 +36,25 @@ SUMMARY_METRICS = (
     "grid_peak_kw",
     "charging_unmet_kwh",
     "background_unserved_kwh",
+    "energy_wait_total_min",
+    "resource_wait_total_min",
 )
+DELTA_EPS = 1e-9
+ROBUSTNESS_VARIANTS = (
+    ("baseline", "Basis"),
+    ("grid_import_minus_20_pct", "Netzimport -20 %"),
+    ("one_bus_charger_offline", "Ein Bus-Ladepunkt ausgefallen"),
+    ("pv_peak_factor_minus_50_pct", "PV-Profilfaktor -50 %"),
+)
+# Stress-Screen Schlepperzahl x Netzimport; seriell, deterministisch, keine Optimierung.
+SENSITIVITY_TUGS = (10, 15, 20)
+SENSITIVITY_GRID_KW = (1000, 2000, 3500)
+SENSITIVITY_VARIANTS = tuple(
+    (f"tugs_{tugs}_grid_{grid}", f"{tugs} Schlepper / Netzimport {grid} kW")
+    for tugs in SENSITIVITY_TUGS for grid in SENSITIVITY_GRID_KW
+)
+SENSITIVITY_POLICIES = ("mission_priority",)
+Screen = Literal["robustness", "sensitivity"]
 
 
 def _mission_signature(world: CoupledWorld) -> str:
@@ -76,6 +100,19 @@ def _variant_config(
         return CoupledConfig.model_validate(values), {
             "stress_events.append": varied_event,
         }
+    if key.startswith("tugs_"):
+        _, tugs, _, grid = key.split("_")
+        fleet = next((f for f in values["fleets"] if f["kind"] == "pushback_tug"), None)
+        if fleet is None:
+            raise ValueError("Sensitivitaets-Screen benoetigt eine modellierte Pushback-Flotte")
+        fleet["vehicles"] = int(tugs)
+        fleet["chargers"] = min(fleet["chargers"], int(tugs))
+        values["power"]["grid_import_limit_kw"] = float(grid)
+        return CoupledConfig.model_validate(values), {
+            "fleets.pushback_tug.vehicles": int(tugs),
+            "fleets.pushback_tug.chargers": fleet["chargers"],
+            "power.grid_import_limit_kw": float(grid),
+        }
     if key == "pv_peak_factor_minus_50_pct":
         factor = base.power.pv_peak_factor
         if factor <= 0:
@@ -86,16 +123,13 @@ def _variant_config(
     raise ValueError("Unbekannte Robustness-Variante")
 
 
-def _build_variants(plan: FlightPlanSnapshot, payload: CoupledRequest) -> list[dict[str, Any]]:
+def _build_variants(
+    plan: FlightPlanSnapshot, payload: CoupledRequest, screen: Screen = "robustness",
+) -> list[dict[str, Any]]:
     baseline = build_world(plan, payload.config, payload.seed)
     signature = _mission_signature(baseline)
     variants = []
-    for key, label in (
-        ("baseline", "Basis"),
-        ("grid_import_minus_20_pct", "Netzimport -20 %"),
-        ("one_bus_charger_offline", "Ein Bus-Ladepunkt ausgefallen"),
-        ("pv_peak_factor_minus_50_pct", "PV-Profilfaktor -50 %"),
-    ):
+    for key, label in (ROBUSTNESS_VARIANTS if screen == "robustness" else SENSITIVITY_VARIANTS):
         config, varied = _variant_config(payload.config, key, baseline.day_minutes)
         world = baseline if key == "baseline" else build_world(plan, config, payload.seed)
         invariant = (
@@ -159,7 +193,7 @@ def _completed_summary(record: Any) -> dict[str, float | None] | None:
     if record.status.state != RunState.completed or summary is None:
         return None
     if (
-        summary.domain != ENGINE_VERSION
+        summary.domain != COUPLED_DOMAIN
         or summary.energy_kpis is None
         or summary.coupled_kpis is None
     ):
@@ -169,6 +203,10 @@ def _completed_summary(record: Any) -> dict[str, float | None] | None:
         "grid_peak_kw": summary.energy_kpis.grid_peak_kw,
         "charging_unmet_kwh": summary.energy_kpis.charging_unmet_kwh,
         "background_unserved_kwh": summary.energy_kpis.background_unserved_kwh,
+        "energy_wait_total_min": summary.coupled_kpis.energy_wait_total_min,
+        "resource_wait_total_min": summary.coupled_kpis.resource_wait_total_min,
+        "energy_wait_share_pct": summary.coupled_kpis.energy_wait_share_pct,
+        "bottleneck": summary.coupled_kpis.bottleneck,
     }
 
 
@@ -197,11 +235,16 @@ def _compatible(record: Any, baseline: Any, suite: dict[str, Any], policy: str) 
 def _delta(
     summary: dict[str, float | None], baseline: dict[str, float | None]
 ) -> dict[str, float | None]:
+    def difference(a: float, b: float) -> float:
+        value = a - b
+        # Rundungsrauschen (z.B. Summationsreihenfolge) nicht als Effekt ausweisen.
+        return 0.0 if abs(value) < DELTA_EPS else value
+
     return {
         metric: (
             None
-            if summary[metric] is None or baseline[metric] is None
-            else summary[metric] - baseline[metric]
+            if summary.get(metric) is None or baseline.get(metric) is None
+            else difference(summary[metric], baseline[metric])
         )
         for metric in SUMMARY_METRICS
     }
@@ -296,12 +339,14 @@ def _render_suite(
                         run["delta_to_baseline"] = _delta(summary, baseline_summary)
     return {
         "suite_id": suite["suite_id"],
-        "engine_version": ENGINE_VERSION,
+        # Gespeicherte Suiten behalten ihre Engine-Version (aeltere Laeufe bleiben erkennbar).
+        "engine_version": suite.get("engine_version", "airport_coupled_v1"),
         "seed": suite["seed"],
         "flight_plan_snapshot_id": suite["flight_plan_snapshot_id"],
         "source_plan_sha256": suite["source_plan_sha256"],
         "scenarios": rendered_scenarios,
         "runs": [run for scenario in rendered_scenarios for run in scenario["runs"]],
+        "screen": suite.get("screen", "robustness"),
         "statistical_confidence": "not_provided_deterministic_stress_screen_only",
     }
 
@@ -315,17 +360,22 @@ def create_router(
     creation_lock = Lock()
 
     @router.post("/robustness-suites", status_code=202)
-    def create_suite(payload: CoupledRequest) -> dict[str, Any]:
+    def create_suite(
+        payload: CoupledRequest, screen: Annotated[Screen, Query()] = "robustness",
+    ) -> dict[str, Any]:
+        policies = POLICIES if screen == "robustness" else SENSITIVITY_POLICIES
         with creation_lock:
             plan = load_snapshot(plans, payload.flight_plan_snapshot_id)
             pending = [
                 run for run in service.list_runs() if run.state.value in {"queued", "running"}
             ]
-            run_count = len(POLICIES) * 4
+            run_count = len(policies) * (
+                len(ROBUSTNESS_VARIANTS) if screen == "robustness" else len(SENSITIVITY_VARIANTS)
+            )
             if len(pending) + run_count > 10:
                 raise HTTPException(status_code=429, detail="Run-Queue voll. Runs abwarten.")
             try:
-                variants = _build_variants(plan, payload)
+                variants = _build_variants(plan, payload, screen)
             except ValueError as exc:
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
             except RuntimeError as exc:
@@ -337,6 +387,7 @@ def create_router(
                 "schema": SUITE_SCHEMA,
                 "suite_id": suite_id,
                 "engine_version": ENGINE_VERSION,
+                "screen": screen,
                 "seed": payload.seed,
                 "flight_plan_snapshot_id": plan.snapshot_id,
                 "source_plan_sha256": plan.content_sha256,
@@ -351,14 +402,14 @@ def create_router(
                     "demand_invariant": True,
                 }
                 saved_runs = []
-                for policy in POLICIES:
+                for policy in policies:
                     scenario_id = f"robustness_{suite_id}_{variant['key']}_{policy}_v1"
                     model_id = f"robustness_model_{suite_id}_{variant['key']}_{policy}_v1"
                     service.create_scenario(
                         ScenarioDefinition(
                             id=scenario_id,
                             version="1",
-                            domain=ENGINE_VERSION,
+                            domain=COUPLED_DOMAIN,
                             description="Begrenzter deterministischer Stress-Screen, unkalibriert",
                             duration_ms=(variant["world"].end_min - variant["world"].start_min)
                             * 60000,

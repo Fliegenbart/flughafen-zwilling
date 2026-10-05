@@ -7,7 +7,14 @@ import random
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from .coupled_models import CoupledConfig, CoupledWorld, Mission, ParkingJob
+from .coupled_models import (
+    ENGINE_VERSION,
+    LEGACY_ENGINE_VERSIONS,
+    CoupledConfig,
+    CoupledWorld,
+    Mission,
+    ParkingJob,
+)
 from .flightplan import FlightPlanSnapshot, verify_snapshot
 
 
@@ -17,7 +24,21 @@ def canonical_hash(payload: dict) -> str:
     ).encode()).hexdigest()
 
 
-def build_world(plan: FlightPlanSnapshot, config: CoupledConfig, seed: int) -> CoupledWorld:
+def local_clock_minute(midnight: datetime, origin: datetime, clock_min: int) -> int:
+    """Ortszeit (Europe/Berlin) als fortlaufende UTC-Minute seit lokaler Mitternacht."""
+    wall = midnight.replace(tzinfo=None) + timedelta(minutes=clock_min)
+    local = wall.replace(tzinfo=midnight.tzinfo, fold=0)
+    if local.astimezone(timezone.utc).astimezone(midnight.tzinfo).replace(tzinfo=None) != wall:
+        raise ValueError("Parkhaus-Ortszeit faellt in die Zeitumstellung")
+    return int((local.astimezone(timezone.utc) - origin).total_seconds() // 60)
+
+
+def build_world(
+    plan: FlightPlanSnapshot, config: CoupledConfig, seed: int,
+    engine_version: str = ENGINE_VERSION,
+) -> CoupledWorld:
+    if engine_version != ENGINE_VERSION and engine_version not in LEGACY_ENGINE_VERSIONS:
+        raise ValueError("Unbekannte Engine-Version der Kopplungswelt")
     verify_snapshot(plan)
     config = CoupledConfig.model_validate(config.model_dump())
     if not 0 <= seed <= 2147483647:
@@ -74,11 +95,21 @@ def build_world(plan: FlightPlanSnapshot, config: CoupledConfig, seed: int) -> C
     if not missions:
         raise ValueError("Keine modellierten Auftraege; Einsatzabdeckung pruefen")
     rng = random.Random(f"coupled-parking:{seed}")
-    parking = [ParkingJob(
-        id=f"P44-{i + 1:03d}", release_min=rng.choice([0, 30, 60, 90]),
-        deadline_min=rng.choice([540, 600, 720, 840]), energy_kwh=rng.randint(20, 45),
-        charger_kw=config.power.parking_charger_kw,
-    ) for i in range(config.power.parking_sessions)]
+    if engine_version in LEGACY_ENGINE_VERSIONS:
+        # v1 (nur Nachweis alter Laeufe): Minuten seit UTC-Ursprung, an DST-Tagen verschoben.
+        def window(clock_min: int) -> int:
+            return clock_min
+    else:
+        # Ankunft/Frist sind Ortszeiten 00:00..01:30 bzw. 09:00..14:00 Europe/Berlin.
+        def window(clock_min: int) -> int:
+            return local_clock_minute(midnight, origin, clock_min)
+    parking = []
+    for i in range(config.power.parking_sessions):
+        release, deadline = rng.choice([0, 30, 60, 90]), rng.choice([540, 600, 720, 840])
+        parking.append(ParkingJob(
+            id=f"P44-{i + 1:03d}", release_min=window(release), deadline_min=window(deadline),
+            energy_kwh=rng.randint(20, 45), charger_kw=config.power.parking_charger_kw,
+        ))
     warnings = [
         "Veroeffentlichte Planzeiten; Flotte, Aufgaben, Verbrauch und Versorgung sind Annahmen.",
         "Aufgabenbereitschaft ist keine reale Flug-OTP/TOBT oder Gate-/Sicherheitsprognose.",
@@ -89,11 +120,14 @@ def build_world(plan: FlightPlanSnapshot, config: CoupledConfig, seed: int) -> C
         "Eintrag erzeugt je abgedeckter Klasse einen Auftrag, ohne Gate-/Umlauf-Verknuepfung.",
         "Serviceende ist Aufgabenbereitschaft; Rueckfahrt kann am Horizont noch andauern.",
     ]
+    if engine_version == ENGINE_VERSION:
+        warnings.append("Parkhausfenster als Ortszeit Europe/Berlin (DST-sicher); "
+                        "Ladefrist je Fahrzeug aus der naechsten noch erreichbaren Frist.")
     if plan.possible_shared_flight_groups:
         warnings.append("Mehrfachgruppen bewusst als unabhaengige Nachfrageannahmen verwendet; "
                         "keine bestaetigte Zahl physischer Fluege.")
     payload = {
-        "engine_version": "airport_coupled_v1", "seed": seed,
+        "engine_version": engine_version, "seed": seed,
         "source_plan_sha256": plan.content_sha256, "config": config.model_dump(mode="json"),
         "day_start_utc": origin.isoformat(), "day_minutes": day_minutes,
         "start_min": start_min, "end_min": end_min,
@@ -107,6 +141,6 @@ def verify_world(world: CoupledWorld, plan: FlightPlanSnapshot) -> None:
     payload = world.model_dump(mode="json", exclude={"world_hash"})
     if canonical_hash(payload) != world.world_hash:
         raise ValueError("Welt-Hash stimmt nicht mit eingefrorenen Auftraegen ueberein")
-    regenerated = build_world(plan, world.config, world.seed)
+    regenerated = build_world(plan, world.config, world.seed, world.engine_version)
     if regenerated.world_hash != world.world_hash:
         raise ValueError("Welt-Hash passt nicht zum Flugplan und Engine-Vertrag")

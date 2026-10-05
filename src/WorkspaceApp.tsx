@@ -10,7 +10,11 @@ export default function WorkspaceApp() {
   const basePath = import.meta.env.BASE_URL;
   const isFlexLab = new URLSearchParams(window.location.search).get("workspace") === "flexlab";
   const isMunich = new URLSearchParams(window.location.search).get("workspace") === "munich";
-  const title = isFlexLab ? "FlexLab Workbench" : isMunich ? "München / Airport Twin Core" : "Airport Twin Core";
+  const title = isFlexLab
+    ? "FlexLab Workbench"
+    : isMunich
+      ? "München / Airport Twin Core"
+      : "Airport Twin Core";
 
   useEffect(() => {
     document.title = title;
@@ -19,7 +23,13 @@ export default function WorkspaceApp() {
   if (!isFlexLab) {
     return (
       <AirportWorkspaceShell workspace={isMunich ? "munich" : "airport"} basePath={basePath}>
-        <Suspense fallback={<p className="workspace-loading" role="status">{title} wird geladen…</p>}>
+        <Suspense
+          fallback={
+            <p className="workspace-loading" role="status">
+              {title} wird geladen…
+            </p>
+          }
+        >
           {isMunich ? <MunichApp /> : <AirportApp />}
         </Suspense>
       </AirportWorkspaceShell>
@@ -31,10 +41,16 @@ export default function WorkspaceApp() {
       <header className="workspace-selector">
         <div className="workspace-selector__intro">
           <strong>Airport Twin Core / TestingLab</strong>
-          <span>Flughafenbetrieb, Energie-Referenzpilot und separate Messdatenauswertung. Keine reale Anlagensteuerung.</span>
+          <span>
+            Flughafenbetrieb, Energie-Referenzpilot und separate Messdatenauswertung. Keine reale
+            Anlagensteuerung.
+          </span>
         </div>
         <nav className="workspace-selector__links" aria-label="Arbeitsbereich wählen">
-          <a href={`${basePath}?workspace=airport`} aria-current={!isFlexLab && !isMunich ? "page" : undefined}>
+          <a
+            href={`${basePath}?workspace=airport`}
+            aria-current={!isFlexLab && !isMunich ? "page" : undefined}
+          >
             <span>Flughafen</span>
             <strong>Airport Twin Core</strong>
           </a>
@@ -48,7 +64,13 @@ export default function WorkspaceApp() {
           </a>
         </nav>
       </header>
-      <Suspense fallback={<p className="workspace-loading" role="status">{title} wird geladen…</p>}>
+      <Suspense
+        fallback={
+          <p className="workspace-loading" role="status">
+            {title} wird geladen…
+          </p>
+        }
+      >
         <FlexLabApp />
       </Suspense>
     </div>

@@ -197,6 +197,45 @@ def analyze(trace: list[Sample], criteria: Criteria, case_id: CaseId | None = No
             ),
         ),
     ]
+    valid_pairs = [(p.power_kw, p.setpoint_kw) for p in trace if p.power_kw is not None]
+    if len(valid_pairs) >= 2 and all(power == setpoint for power, setpoint in valid_pairs):
+        # Ist-Leistung ist exakt der Sollwert: kopierte Reihe, keine unabhaengige Messung.
+        checks.insert(
+            0,
+            Check(
+                id="circular",
+                name="Unabhaengigkeit der Messung",
+                state="inconclusive",
+                actual=0,
+                threshold=None,
+                unit="kW",
+                detail="power_kw ist exakt gleich setpoint_kw (zirkulaer); kein Nachweis",
+            ),
+        )
+    if case_id in {"setpoint-step", "flex-reduction"}:
+        jumps = [
+            abs(b.setpoint_kw - a.setpoint_kw)
+            for a, b in zip(trace, trace[1:])
+            if b.setpoint_kw != a.setpoint_kw
+        ]
+        if jumps and valid_power:
+            power_span = max(valid_power) - min(valid_power)
+            required = 0.5 * max(jumps)
+            if power_span < required:
+                checks.append(
+                    Check(
+                        id="reaction",
+                        name="Reaktion auf Sollwertsprung",
+                        state="fail",
+                        actual=round(power_span, 4),
+                        threshold=round(required, 4),
+                        unit="kW",
+                        detail=(
+                            "Ist-Leistung aendert sich nicht erkennbar trotz Sollwertsprung "
+                            "(konstante/eingefrorene Reihe)"
+                        ),
+                    )
+                )
     if case_id is not None:
         predicates = {
             "setpoint-step": any(b.setpoint_kw > a.setpoint_kw for a, b in zip(trace, trace[1:])),

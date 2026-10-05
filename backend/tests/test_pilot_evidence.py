@@ -185,7 +185,10 @@ def test_user_supplied_model_run_id_cannot_unlock_assessment_pass(tmp_path):
         payload = assessment.json()
         assert payload["validity_status"] == "NOT_EVALUABLE"
         assert payload["version"] == "pilot-assessment-v1"
-        assert payload["thresholds"] == {"mae_max_kw": 1.0, "energy_error_max_pct": 10.0}
+        # Toleranzen kommen nur noch aus der eingefrorenen Projektfestlegung.
+        assert payload["thresholds"]["mae_max_kw"] is None
+        assert payload["evaluation_kind"] == "calibration_fit"
+        assert "tolerances_not_frozen" in payload["not_evaluable_reasons"]
         assert payload["metrics"]["time_weighted_mae_kw"] == 0.5
         assert payload["metrics"]["energy_error_pct"] == 4.545455
         assert "model_provenance_not_server_verified" in payload["not_evaluable_reasons"]
@@ -331,7 +334,11 @@ def test_server_derived_replay_requires_exact_utc_alignment_and_can_pass(tmp_pat
             json={"import_id": replay["id"], "mae_max_kw": 1.0, "energy_error_max_pct": 10.0},
         )
         assert assessment.status_code == 201, assessment.text
-        assert assessment.json()["validity_status"] == "PASS"
+        # Laborrolle, zwei Zeilen, keine Vorabtoleranzen: frueher PASS, jetzt nie.
+        assert assessment.json()["validity_status"] == "NOT_EVALUABLE"
+        assert {"role_not_holdout", "tolerances_not_frozen"} <= set(
+            assessment.json()["not_evaluable_reasons"]
+        )
 
         package = client.get(f"/api/v1/pilot/projects/{item['id']}/package")
         assert package.status_code == 200
@@ -550,4 +557,6 @@ def test_real_coupled_run_replay_uses_hex_run_id_and_verified_safety(tmp_path, m
             json={"import_id": replay.json()["id"], "mae_max_kw": 0, "energy_error_max_pct": 0},
         )
         assert assessment.status_code == 201, assessment.text
-        assert assessment.json()["validity_status"] == "PASS"
+        # Messreihe = Modellreihe: zirkulaer, kein PASS.
+        assert assessment.json()["validity_status"] == "NOT_EVALUABLE"
+        assert "circular" in assessment.json()["not_evaluable_reasons"]

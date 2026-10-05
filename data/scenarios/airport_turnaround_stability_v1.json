@@ -51,6 +51,14 @@
   ],
   "metadata": {
     "site_class": "medium_eu",
-    "source": "airport-seed"
+    "source": "airport-seed",
+    "calibrated": false,
+    "data_status": "synthetic_illustrative",
+    "provenance_note": "Keine Quellen, Annahmewerte: synthetisch-illustrative Seed-Daten, nicht kalibriert, keine empirische Validierung.",
+    "time_units": {
+      "duration_ms": "ms",
+      "tick_ms": "ms",
+      "timeline_events.at_ms": "ms"
+    }
   }
 }

@@ -66,3 +66,14 @@ Qualitaetsgates, Ranking-freien Vergleich, Persistenz/Recovery/Abbruch und
 UI-Flows. Docker-Start, echter CSV-Import und Export im Browser pruefen;
 Desktop und 390 px ohne Overflow. Hell gestaltete Instrumentenoberflaeche,
 Sora/IBM Plex Mono, klare Source-/Read-only-Kennzeichnung.
+
+## Datenqualitaets-Grenzen (Stand 04.10.2026)
+
+Backend und Formular pruefen dieselben Grenzen: Mindestabdeckung `min_coverage_pct`
+90–100 %, `max_gap_s` hoechstens 300 s, mindestens `expected_interval_s` und
+hoechstens das 10-fache davon. Unzulaessige Werte werden vor dem Start abgewiesen.
+
+- `circular`: Ist die Messreihe eine Kopie des Sollwerts, ist der Vergleich zirkulaer
+  und ergibt **nie** pass.
+- `reaction`: Bleibt nach einem Sollwertsprung jede messbare Reaktion aus, ist der Fall
+  nicht bestanden bzw. nicht bewertbar – nie pass.

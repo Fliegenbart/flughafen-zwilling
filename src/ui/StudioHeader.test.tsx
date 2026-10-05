@@ -27,6 +27,12 @@ it("keeps action ownership in its caller and preserves disabled controls", () =>
 
 it("uses real anchors, not a second simulation state machine", () => {
   render(<StudioWorkflowNav current="vergleich" />);
-  expect(screen.getByRole("link", { name: /1.*Flugplan/ })).toHaveAttribute("href", "#coupled-flightplan");
-  expect(screen.getByRole("link", { name: /4.*Vergleich/ })).toHaveAttribute("aria-current", "step");
+  expect(screen.getByRole("link", { name: /1.*Flugplan/ })).toHaveAttribute(
+    "href",
+    "#coupled-flightplan",
+  );
+  expect(screen.getByRole("link", { name: /4.*Vergleich/ })).toHaveAttribute(
+    "aria-current",
+    "step",
+  );
 });

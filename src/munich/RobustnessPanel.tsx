@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { request, url } from "./api";
 import { number } from "./config";
-import type { CoupledConfig } from "./coupledTypes";
+import { CURRENT_COUPLED_ENGINE } from "./coupledTypes";
+import type { Bottleneck, CoupledConfig } from "./coupledTypes";
 import type { FlightPlanSnapshot } from "./flightplanTypes";
 import "./RobustnessPanel.css";
 const SUITE_CACHE = `airport-robustness-v1:${url("")}`;
@@ -11,6 +12,17 @@ type MetricSummary = {
   grid_peak_kw: number | null;
   charging_unmet_kwh: number | null;
   background_unserved_kwh: number | null;
+  energy_wait_total_min?: number | null;
+  resource_wait_total_min?: number | null;
+  energy_wait_share_pct?: number | null;
+  bottleneck?: Bottleneck | null;
+};
+type Screen = "robustness" | "sensitivity";
+const BOTTLENECK_LABELS: Record<Bottleneck, string> = {
+  none: "kein Engpass",
+  energy: "Energie",
+  resource: "Fahrzeugverfügbarkeit",
+  energy_and_resource: "Energie und Fahrzeuge",
 };
 type SuiteRun = {
   policy: "uncontrolled" | "mission_priority";
@@ -39,6 +51,7 @@ type RobustnessSuite = {
   flight_plan_snapshot_id: string;
   source_plan_sha256: string;
   scenarios: SuiteScenario[];
+  screen?: Screen;
   statistical_confidence: "not_provided_deterministic_stress_screen_only";
 };
 
@@ -143,14 +156,16 @@ export default function RobustnessPanel({
     };
   }, [active, pollMs, suite, retry]);
 
-  async function start() {
+  async function start(screen: Screen = "robustness") {
     if (!snapshot || !config || !Number.isInteger(seed) || seed < 0 || seed > 2147483647) return;
     restoreController.current?.abort();
     setStarting(true);
     setError("");
     try {
       const response = await request<RobustnessSuite>(
-        "/munich/robustness-suites",
+        screen === "sensitivity"
+          ? "/munich/robustness-suites?screen=sensitivity"
+          : "/munich/robustness-suites",
         {
           method: "POST",
           body: JSON.stringify({ flight_plan_snapshot_id: snapshot.snapshot_id, seed, config }),
@@ -159,7 +174,7 @@ export default function RobustnessPanel({
       );
       if (
         response.flight_plan_snapshot_id !== snapshot.snapshot_id ||
-        response.engine_version !== "airport_coupled_v1"
+        response.engine_version !== CURRENT_COUPLED_ENGINE
       )
         throw new Error("Unpassende Robustness-Suite vom Backend.");
       setSuite(response);
@@ -236,7 +251,20 @@ export default function RobustnessPanel({
         onClick={() => void start()}
       >
         {starting ? "Suite wird erstellt…" : active ? "Suite läuft…" : "Robustness-Suite starten"}
+      </button>{" "}
+      <button
+        className="muc-primary"
+        type="button"
+        disabled={disabled}
+        onClick={() => void start("sensitivity")}
+      >
+        Stress-Screen Schlepper × Netzimport starten
       </button>
+      <p className="muc-small">
+        Stress-Screen: Pushback-Schlepper 10/15/20 × Netzimport 1000/2000/3500 kW, nur
+        Fristenpriorität, neun serielle deterministische Runs. Keine Optimierung, keine
+        Dimensionierungsempfehlung.
+      </p>
       {!snapshot && (
         <p className="muc-small">
           Zuerst einen gespeicherten Flugplan auswählen; es wird kein Live-Feed verwendet.
@@ -249,6 +277,9 @@ export default function RobustnessPanel({
       )}
       {suite && (
         <div className="muc-robustness__results">
+          {suite.screen === "sensitivity" && (
+            <p className="muc-warn">Stress-Screen Schlepperzahl × Netzimport (unkalibriert).</p>
+          )}
           <p className="muc-small">
             Suite <code>{suite.suite_id}</code> / Plan{" "}
             <code>{suite.source_plan_sha256.slice(0, 12)}</code>
@@ -275,6 +306,7 @@ export default function RobustnessPanel({
                   <th>Netzspitze</th>
                   <th>Ungedeckte Ladung</th>
                   <th>Grundlast unversorgt</th>
+                  <th>Engpass / Anteil Energie-Wartezeit</th>
                 </tr>
               </thead>
               <tbody>
@@ -345,6 +377,14 @@ export default function RobustnessPanel({
                           {run.delta_to_baseline
                             ? `Δ ${delta(run.delta_to_baseline.background_unserved_kwh, "kWh")}`
                             : ""}
+                        </small>
+                      </td>
+                      <td>
+                        {run.completed_summary?.bottleneck
+                          ? BOTTLENECK_LABELS[run.completed_summary.bottleneck]
+                          : "n/a"}
+                        <small>
+                          {metric(run.completed_summary?.energy_wait_share_pct ?? null, "%")}
                         </small>
                       </td>
                     </tr>

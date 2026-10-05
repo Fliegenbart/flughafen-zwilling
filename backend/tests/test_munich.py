@@ -159,3 +159,14 @@ def test_fact_dossier_keeps_unknowns_null_and_targets_out_of_current_assets():
     assert all(row["value"] is None for row in dossier["unresolved_inputs"])
     assert next(f for f in dossier["facts"] if f["id"] == "pv_target_2030")["status"] == "target"
     assert next(f for f in dossier["facts"] if f["id"] == "existing_energy_twin")["value"] is True
+
+
+def test_kpis_do_not_depend_on_summation_order_of_sessions():
+    config = MunichAssumptions(grid_import_limit_kw=100000,
+                              bus_transformer_kva=20000, parking_transformer_kva=20000)
+    sessions = generate_sessions(config, 42)
+    forward = simulate(config, 42, "uncontrolled", sessions=sessions).kpis
+    backward = simulate(config, 42, "uncontrolled", sessions=list(reversed(sessions))).kpis
+    for key, value in forward.model_dump().items():
+        other = getattr(backward, key)
+        assert other == pytest.approx(value, abs=1e-9) if isinstance(value, float) else other == value

@@ -28,7 +28,7 @@ API-Wechsel zu diesem Port. Backend-Abhaengigkeiten sind versioniert.
 `python3 scripts/smoke_demo.py --planner` wurde mit und ohne Monitoring
 erfolgreich ausgefuehrt. Baseline, Guillotine und Schwarzstart erreichen
 `completed`; Records enthalten KPIs und Artefakte. Beide Planner-Jobs liefern
-Baseline/Empfehlung, validierte KPIs, Deltas, terminale Validierungsrun-IDs und
+Baseline/Empfehlung, modellintern gegengeprüfte KPIs, Deltas, terminale Validierungsrun-IDs und
 `playbook.md`, `frontier.json`, `summary.csv`.
 
 Beispielwerte aus der API bei Seed 42 und dem versionierten Referenzmodell:
@@ -66,7 +66,7 @@ echten Betriebsdaten oder privaten Protokolle in das Repository uebernommen.
 - Mobile Breite 390px: Seitenbreite 390px, kein horizontaler Seitenueberlauf.
 - HTML-Compare-/Forecast-Report wird zusaetzlich durch Frontend-Tests geprueft.
 - Reale Schwarzstart-Synthese im Browser: `completed`, Baseline/Empfehlung,
-  validierte KPI-Deltas und Artefakt-/Validation-Run-Links sichtbar.
+  modellintern gegengeprüfte KPI-Deltas und Artefakt-/Validation-Run-Links sichtbar.
 
 Nicht geprueft: Windows/Linux als Host, echte Adapter-Hardware, Produktiv-
 Deployment, ein 100-Run-Realtime-Dauerlauf oder empirische Modellguete.

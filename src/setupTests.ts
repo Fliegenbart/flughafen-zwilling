@@ -45,5 +45,5 @@ Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
     statusText: "OK",
     json: () => Promise.resolve({ status: "ok" }),
     text: () => Promise.resolve(JSON.stringify({ status: "ok" })),
-  } as Response)
+  } as Response),
 ) as unknown as typeof fetch;

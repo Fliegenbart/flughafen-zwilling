@@ -35,7 +35,20 @@ export type PilotAssessment = {
   id: string;
   import_id: string;
   validity_status: string;
-  thresholds: { mae_max_kw: number; energy_error_max_pct: number };
+  thresholds: { mae_max_kw: number | null; energy_error_max_pct: number | null };
+  evaluation_kind?: string;
   metrics: PilotMetrics;
   not_evaluable_reasons: string[];
+};
+export type PilotTolerances = {
+  tolerances: {
+    mae_max_kw: number;
+    energy_error_max_pct: number;
+    min_rows: number;
+    min_coverage_seconds: number;
+  };
+  sha256: string;
+  created_at: string;
+  locked_at: string | null;
+  locked: boolean;
 };

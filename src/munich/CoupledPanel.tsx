@@ -10,7 +10,14 @@ import type {
   CoupledEvidence,
   CoupledRecord,
 } from "./coupledTypes";
-import { buildCoupledHtml, coupledPair, FLEET_LABELS, modelTime } from "./coupledReport";
+import { CURRENT_COUPLED_ENGINE } from "./coupledTypes";
+import {
+  buildCoupledHtml,
+  compareAnswer,
+  coupledPair,
+  FLEET_LABELS,
+  modelTime,
+} from "./coupledReport";
 import CoupledControls from "./CoupledControls";
 import { Delta, CoupledChart } from "./CoupledViews";
 import CoupledCompare from "./CoupledCompare";
@@ -18,13 +25,17 @@ import SystemExplorer from "./SystemExplorer";
 import RobustnessPanel from "./RobustnessPanel";
 import CostWorksheet from "../pilot/CostWorksheet";
 import { StudioHeader, StudioWorkflowNav } from "../ui/StudioHeader";
+import { StepFooter, StepHead, StepPanel, Stepper } from "../ui/Stepper";
+import { EvidenceBadge } from "../ui/EvidenceBadge";
+import EvidenceOverview from "./EvidenceOverview";
 import "./CoupledPanel.css";
 
 const CACHE = `airport-coupled-v1:${url("")}`;
 function cached(): CoupledComparison | null {
   try {
     const value = JSON.parse(localStorage.getItem(CACHE) ?? "null") as CoupledComparison | null;
-    return value?.engine_version === "airport_coupled_v1" &&
+    return (value?.engine_version === "airport_coupled_v1" ||
+      value?.engine_version === CURRENT_COUPLED_ENGINE) &&
       /^[a-f0-9]{64}$/.test(value.world_hash) &&
       value.runs.length === 2 &&
       value.runs.every((r) => /^[a-f0-9]{32}$/.test(r.run_id))
@@ -39,11 +50,17 @@ export default function CoupledPanel({
   loadingPlan = false,
   pollMs = 1000,
   flightPlanPanel,
+  operationsExtra,
+  children,
 }: {
   plan: FlightPlanSnapshot | null;
   loadingPlan?: boolean;
   pollMs?: number;
   flightPlanPanel?: ReactNode;
+  /** Zusaetzlicher Inhalt am Ende von Schritt 2 (z. B. statische Energie-v1-Referenz). */
+  operationsExtra?: ReactNode;
+  /** Weitere Schritte (Pilot vereinbaren), vor dem Nachweis-Schritt eingefuegt. */
+  children?: ReactNode;
 }) {
   const [config, setConfig] = useState<CoupledConfig | null>(null);
   const [seed, setSeed] = useState(42);
@@ -212,7 +229,7 @@ export default function CoupledPanel({
         30000,
       );
       if (
-        result.engine_version !== "airport_coupled_v1" ||
+        result.engine_version !== CURRENT_COUPLED_ENGINE ||
         result.flight_plan_snapshot_id !== plan.snapshot_id ||
         result.runs.length !== 2
       )
@@ -314,302 +331,407 @@ export default function CoupledPanel({
           </>
         }
       />
-      <StudioWorkflowNav current={pair && !error ? "vergleich" : plan ? "energy" : "flightplan"} />
-      <details className="studio-coupled-context">
-        <summary>Methodik &amp; Modellgrenzen</summary>
-        <p>
-          Teste, wie Flugplan-Nachfrage, Fahrzeuge und Ladeleistung zusammenwirken. Ein gemeinsamer
-          Modelltag, zwei Laderegeln. Keine automatische Anlagensteuerung.
-        </p>
-        <div className="coupled-chain" aria-label="Modellkopplung">
-          <span>
-            01
-            <br />
-            <strong>Planzeiten</strong>
-          </span>
-          <span>
-            02
-            <br />
-            <strong>Serviceaufträge</strong>
-          </span>
-          <span>
-            03
-            <br />
-            <strong>Flotte &amp; SOC</strong>
-          </span>
-          <span>
-            04
-            <br />
-            <strong>Netz &amp; Laden</strong>
-          </span>
-          <span>
-            05
-            <br />
-            <strong>Aufgabenbereitschaft</strong>
-          </span>
-        </div>
-        <p className="coupled-boundary">
-          <strong>Veröffentlichter Plan, angenommener Betrieb.</strong> Fahrzeugzahlen, Verbrauch,
-          Fristen, Lastprofile und elektrische Topologie sind nicht kalibriert. Das Ergebnis ist
-          keine reale Flug-OTP/TOBT und kein Sicherheits- oder Investitionsnachweis.
-        </p>
-      </details>
-      {config && (
-        <SystemExplorer
-          config={config}
-          setConfig={setConfig}
-          plan={plan}
-          records={pair}
-          startControlId="coupled-start"
-        />
-      )}
-      <div className="studio-coupled-layout">
-        <section className="studio-test-config" aria-label="Testkonfiguration">
-          <h2>Testkonfiguration</h2>
-          <div id="coupled-flightplan">{flightPlanPanel}</div>
-          <p>Laderegeln: Ungesteuert / Fristenpriorität</p>
-          <p className="muc-small">Annahmen, keine Messwerte.</p>
-          {Boolean(plan?.possible_shared_flight_groups) && (
-            <label className="coupled-ack">
-              <input
-                type="checkbox"
-                checked={ackFor === plan!.snapshot_id}
-                onChange={(e) => setAckFor(e.target.checked ? plan!.snapshot_id : null)}
-              />
-              Mehrfachgruppen als unabhängige Nachfrage annehmen (
-              {plan!.possible_shared_flight_groups} ungeklärt). Keine bestätigten physischen
-              Flugbewegungen.
-            </label>
-          )}
-          {config && (
-            <CoupledControls config={config} setConfig={setConfig} seed={seed} setSeed={setSeed} />
-          )}
-          <p className="muc-small">Keine reale Anlagensteuerung.</p>
-        </section>
-        <section
-          id="coupled-compare"
-          aria-label="Gekoppelter Regelvergleich"
-          className="studio-coupled-results"
+      <Stepper />
+      <StepPanel step="system">
+        <StepHead
+          step="system"
+          badges={
+            <>
+              <EvidenceBadge level="assumption" label="Parameter = Annahmen" />
+              <EvidenceBadge level="empirical_open" />
+            </>
+          }
         >
-          <h2>Vergleich</h2>
-          {!pair && !error && !busy && (
-            <p className="studio-empty">
-              Flugplantag und Annahmen prüfen, dann Vergleich starten. Noch keine Modell-KPIs.
-            </p>
-          )}
-          {referenceError && (
-            <p role="alert" className="muc-error">
-              Kopplung nicht verfügbar: {referenceError}
-            </p>
-          )}
-          {error && (
-            <div role="alert" className="muc-error">
-              {error}
-              {comparison && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError("");
-                    setRetry((v) => v + 1);
-                  }}
-                >
-                  Nachweise erneut laden
-                </button>
-              )}
-            </div>
-          )}
-          {statuses.length > 0 && (
-            <div className="coupled-status" aria-live="polite">
-              {statuses.map((s, i) => (
-                <span key={s.run_id}>
-                  {i === 0 ? "Ungesteuert" : "Fristenpriorität"}:{" "}
-                  {
-                    {
-                      queued: "Warteschlange",
-                      running: "Berechnung",
-                      completed: "Abgeschlossen",
-                      failed: "Fehlgeschlagen",
-                    }[s.state]
-                  }{" "}
-                  ({s.progress} %) <code>{s.run_id.slice(0, 8)}</code>
-                </span>
-              ))}
-            </div>
-          )}
-          {pair && !error && (
-            <div className="coupled-evidence">
-              <p className="muc-ok">
-                {reportsHashed
-                  ? "Eingaben, Telemetrie, Datenartefakte und JSON/PDF: aktuelle SHA256-Prüfung konsistent."
-                  : "Ältere Runs: Datenartefakte gehasht."}{" "}
-                KPIs, Modellkriterien und Execution-Metadaten stimmen mit dem gespeicherten Bericht
-                überein. Kein externer Echtheitsnachweis.
-              </p>
-              <p className="coupled-frozen">
-                Eingefrorener Vergleich:{" "}
-                {flightDate(
-                  pair[0].model_pack_snapshot.calibration_meta.flight_plan_snapshot.service_date,
-                )}{" "}
-                · {number(pair[0].summary!.coupled_kpis.model_horizon_hours, 1)} Modellstunden
-                inklusive Vor-/Nachlauf. Aktuelle Formularänderungen ändern diese Nachweise nicht.
-              </p>
-              <CoupledCompare baseline={pair[0]} priority={pair[1]} reportsHashed={reportsHashed} />
-              <div className="coupled-deltas">
-                <Delta
-                  label="Energie-Warteminuten"
-                  base={pair[0].summary!.coupled_kpis.energy_wait_total_min}
-                  value={pair[1].summary!.coupled_kpis.energy_wait_total_min}
-                  unit="min"
+          Was ist modelliert? Anlagen, Flotte und Grenzen ansehen und als Entwurf ändern.
+          Gespeicherte Ergebnisse bleiben eingefroren.
+        </StepHead>
+        <details className="studio-coupled-context">
+          <summary>Methodik &amp; Modellgrenzen</summary>
+          <p>
+            Teste, wie Flugplan-Nachfrage, Fahrzeuge und Ladeleistung zusammenwirken. Ein
+            gemeinsamer Modelltag, zwei Laderegeln. Keine automatische Anlagensteuerung.
+          </p>
+          <div className="coupled-chain" aria-label="Modellkopplung">
+            <span>
+              01
+              <br />
+              <strong>Planzeiten</strong>
+            </span>
+            <span>
+              02
+              <br />
+              <strong>Serviceaufträge</strong>
+            </span>
+            <span>
+              03
+              <br />
+              <strong>Flotte &amp; SOC</strong>
+            </span>
+            <span>
+              04
+              <br />
+              <strong>Netz &amp; Laden</strong>
+            </span>
+            <span>
+              05
+              <br />
+              <strong>Aufgabenbereitschaft</strong>
+            </span>
+          </div>
+          <p className="coupled-boundary">
+            <strong>Veröffentlichter Plan, angenommener Betrieb.</strong> Fahrzeugzahlen, Verbrauch,
+            Fristen, Lastprofile und elektrische Topologie sind nicht kalibriert. Das Ergebnis ist
+            keine reale Flug-OTP/TOBT und kein Sicherheits- oder Investitionsnachweis.
+          </p>
+        </details>
+        {config && (
+          <SystemExplorer
+            config={config}
+            setConfig={setConfig}
+            plan={plan}
+            records={pair}
+            startControlId="coupled-start"
+          />
+        )}
+        <StepFooter />
+      </StepPanel>
+      <StepPanel step="betrieb">
+        <StepHead
+          step="betrieb"
+          badges={
+            <>
+              <EvidenceBadge level="assumption" label="Flugplan = veröffentlichte Planzeiten" />
+              <EvidenceBadge level="model_checked" label="faire Vergleichswelt" />
+            </>
+          }
+        >
+          Gleicher Flugplantag, gleiche Flotte, zwei Laderegeln. Zuerst die Antwort, dann
+          Kennzahlen, dann Einzelnachweise je Aufgabe.
+        </StepHead>
+        <StudioWorkflowNav
+          current={pair && !error ? "vergleich" : plan ? "energy" : "flightplan"}
+        />
+        <div className="studio-coupled-layout">
+          <section className="studio-test-config" aria-label="Testkonfiguration">
+            <h2>Testkonfiguration</h2>
+            <div id="coupled-flightplan">{flightPlanPanel}</div>
+            <p>Laderegeln: Ungesteuert / Fristenpriorität</p>
+            <p className="muc-small">Annahmen, keine Messwerte.</p>
+            {Boolean(plan?.possible_shared_flight_groups) && (
+              <label className="coupled-ack">
+                <input
+                  type="checkbox"
+                  checked={ackFor === plan!.snapshot_id}
+                  onChange={(e) => setAckFor(e.target.checked ? plan!.snapshot_id : null)}
                 />
-                <Delta
-                  label="Parkhausenergie fehlt"
-                  base={pair[0].summary!.energy_kpis.charging_unmet_kwh}
-                  value={pair[1].summary!.energy_kpis.charging_unmet_kwh}
-                  unit="kWh"
-                />
-              </div>
-              <p>
-                Keine Siegergarantie: Fristenpriorität ist eine Ladeheuristik, kein optimaler
-                Fahrplan. Auch Nullvorteile und Nachteile bleiben sichtbar. Fahrzeugdisposition ist
-                in beiden Läufen gleich.
+                Mehrfachgruppen als unabhängige Nachfrage annehmen (
+                {plan!.possible_shared_flight_groups} ungeklärt). Keine bestätigten physischen
+                Flugbewegungen.
+              </label>
+            )}
+            {config && (
+              <CoupledControls
+                config={config}
+                setConfig={setConfig}
+                seed={seed}
+                setSeed={setSeed}
+              />
+            )}
+            <p className="muc-small">Keine reale Anlagensteuerung.</p>
+          </section>
+          <section
+            id="coupled-compare"
+            aria-label="Gekoppelter Regelvergleich"
+            className="studio-coupled-results"
+          >
+            <h2>Vergleich</h2>
+            {!pair && !error && !busy && (
+              <p className="studio-empty">
+                Flugplantag und Annahmen prüfen, dann Vergleich starten. Noch keine Modell-KPIs.
               </p>
-              {chart.length > 0 && (
-                <div className="coupled-charts">
-                  <CoupledChart rows={chart} origin={shown!.day_start_utc} mode="power" />
-                  <CoupledChart rows={chart} origin={shown!.day_start_utc} mode="soc" />
-                  <CoupledChart rows={chart} origin={shown!.day_start_utc} mode="queue" />
-                </div>
-              )}
-              <h3>Auftrag bis Flugplaneintrag verfolgen</h3>
-              <div className="coupled-filters">
-                <label>
-                  Nachweise der Laderegel
-                  <select
-                    value={selectedPolicy}
-                    onChange={(e) => setSelectedPolicy(e.target.value as typeof selectedPolicy)}
+            )}
+            {referenceError && (
+              <p role="alert" className="muc-error">
+                Kopplung nicht verfügbar: {referenceError}
+              </p>
+            )}
+            {error && (
+              <div role="alert" className="muc-error">
+                {error}
+                {comparison && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError("");
+                      setRetry((v) => v + 1);
+                    }}
                   >
-                    <option value="uncontrolled">Ungesteuert</option>
-                    <option value="mission_priority">Fristenpriorität</option>
-                  </select>
-                </label>
-                <label>
-                  Modellaufgaben suchen
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Flugnummer, Fahrzeug, Klasse"
-                  />
-                </label>
-                <label className="coupled-ack">
-                  <input
-                    type="checkbox"
-                    checked={lateOnly}
-                    onChange={(e) => setLateOnly(e.target.checked)}
-                  />
-                  Nur Fristverletzungen / nicht erledigt
-                </label>
+                    Nachweise erneut laden
+                  </button>
+                )}
               </div>
-              <div
-                className="muc-table-scroll"
-                role="region"
-                aria-label="Modellaufträge, scrollbare Tabelle"
-                tabIndex={0}
-              >
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Plan-Eintrag / Klasse</th>
-                      <th>Fahrzeug</th>
-                      <th>Modellfrist</th>
-                      <th>Erledigt</th>
-                      <th>Warteursache</th>
-                      <th>Frist</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((m) => (
-                      <tr key={m.mission_id}>
-                        <td>
-                          <strong>{m.flight_number}</strong>
-                          <br />
-                          {FLEET_LABELS[m.kind]} · PDF S. {m.source_pages.join(", ")}
-                        </td>
-                        <td>
-                          <code>{m.vehicle_id ?? "Nicht zugewiesen"}</code>
-                        </td>
-                        <td>{modelTime(shown!.day_start_utc, m.deadline_min)}</td>
-                        <td>{modelTime(shown!.day_start_utc, m.actual_complete_min)}</td>
-                        <td>
-                          {
-                            {
-                              none: "Keine",
-                              energy: "Energie",
-                              resource: "Fahrzeuge",
-                              energy_and_resource: "Energie + Fahrzeuge",
-                            }[m.wait_cause]
-                          }
-                          <br />
-                          {m.energy_wait_min} / {m.resource_wait_min} min
-                        </td>
-                        <td className={m.deadline_met ? "muc-ok" : "muc-warn"}>
-                          {m.deadline_met
-                            ? "Erfüllt"
-                            : `${m.delay_is_lower_bound ? "≥ " : ""}${m.delay_min} min verletzt`}
-                        </td>
+            )}
+            {statuses.length > 0 && (
+              <div className="coupled-status" aria-live="polite">
+                {statuses.map((s, i) => (
+                  <span key={s.run_id}>
+                    {i === 0 ? "Ungesteuert" : "Fristenpriorität"}:{" "}
+                    {
+                      {
+                        queued: "Warteschlange",
+                        running: "Berechnung",
+                        completed: "Abgeschlossen",
+                        failed: "Fehlgeschlagen",
+                      }[s.state]
+                    }{" "}
+                    ({s.progress} %) <code>{s.run_id.slice(0, 8)}</code>
+                  </span>
+                ))}
+              </div>
+            )}
+            {pair && !error && (
+              <div className="coupled-evidence">
+                <div className="ds-answer" aria-live="polite">
+                  <p className="ds-answer__label">Antwort im Modell</p>
+                  <p className="ds-answer__text">
+                    {compareAnswer(pair[0].summary!.coupled_kpis, pair[1].summary!.coupled_kpis)}
+                  </p>
+                  <p className="ds-answer__meta">
+                    <EvidenceBadge level="model_checked" />
+                    <EvidenceBadge level="empirical_open" label="nicht kalibriert" />
+                    <span>
+                      Modellierte Aufgabenbereitschaft, keine reale OTP. Nullergebnis ist ein
+                      gültiges Ergebnis.
+                    </span>
+                  </p>
+                </div>
+                <p className="muc-ok">
+                  {reportsHashed
+                    ? "Eingaben, Telemetrie, Datenartefakte und JSON/PDF: aktuelle SHA256-Prüfung konsistent."
+                    : "Ältere Runs: Datenartefakte gehasht."}{" "}
+                  KPIs, Modellkriterien und Execution-Metadaten stimmen mit dem gespeicherten
+                  Bericht überein. Kein externer Echtheitsnachweis.
+                </p>
+                <p className="coupled-frozen">
+                  Eingefrorener Vergleich:{" "}
+                  {flightDate(
+                    pair[0].model_pack_snapshot.calibration_meta.flight_plan_snapshot.service_date,
+                  )}{" "}
+                  · {number(pair[0].summary!.coupled_kpis.model_horizon_hours, 1)} Modellstunden
+                  inklusive Vor-/Nachlauf. Aktuelle Formularänderungen ändern diese Nachweise nicht.
+                </p>
+                <CoupledCompare
+                  baseline={pair[0]}
+                  priority={pair[1]}
+                  reportsHashed={reportsHashed}
+                />
+                <div className="coupled-deltas">
+                  <Delta
+                    label="Energie-Warteminuten"
+                    base={pair[0].summary!.coupled_kpis.energy_wait_total_min}
+                    value={pair[1].summary!.coupled_kpis.energy_wait_total_min}
+                    unit="min"
+                  />
+                  <Delta
+                    label="Parkhausenergie fehlt"
+                    base={pair[0].summary!.energy_kpis.charging_unmet_kwh}
+                    value={pair[1].summary!.energy_kpis.charging_unmet_kwh}
+                    unit="kWh"
+                  />
+                </div>
+                <p>
+                  Keine Siegergarantie: Fristenpriorität ist eine Ladeheuristik, kein optimaler
+                  Fahrplan. Auch Nullvorteile und Nachteile bleiben sichtbar. Fahrzeugdisposition
+                  ist in beiden Läufen gleich.
+                </p>
+                {chart.length > 0 && (
+                  <div className="coupled-charts">
+                    <CoupledChart rows={chart} origin={shown!.day_start_utc} mode="power" />
+                    <CoupledChart rows={chart} origin={shown!.day_start_utc} mode="soc" />
+                    <CoupledChart rows={chart} origin={shown!.day_start_utc} mode="queue" />
+                  </div>
+                )}
+                <h3>Auftrag bis Flugplaneintrag verfolgen</h3>
+                <div className="coupled-filters">
+                  <label>
+                    Nachweise der Laderegel
+                    <select
+                      value={selectedPolicy}
+                      onChange={(e) => setSelectedPolicy(e.target.value as typeof selectedPolicy)}
+                    >
+                      <option value="uncontrolled">Ungesteuert</option>
+                      <option value="mission_priority">Fristenpriorität</option>
+                    </select>
+                  </label>
+                  <label>
+                    Modellaufgaben suchen
+                    <input
+                      type="search"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Flugnummer, Fahrzeug, Klasse"
+                    />
+                  </label>
+                  <label className="coupled-ack">
+                    <input
+                      type="checkbox"
+                      checked={lateOnly}
+                      onChange={(e) => setLateOnly(e.target.checked)}
+                    />
+                    Nur Fristverletzungen / nicht erledigt
+                  </label>
+                </div>
+                <div
+                  className="muc-table-scroll"
+                  role="region"
+                  aria-label="Modellaufträge, scrollbare Tabelle"
+                  tabIndex={0}
+                >
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Plan-Eintrag / Klasse</th>
+                        <th>Fahrzeug</th>
+                        <th>Modellfrist</th>
+                        <th>Erledigt</th>
+                        <th>Warteursache</th>
+                        <th>Frist</th>
                       </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((m) => (
+                        <tr key={m.mission_id}>
+                          <td>
+                            <strong>{m.flight_number}</strong>
+                            <br />
+                            {FLEET_LABELS[m.kind]} · PDF S. {m.source_pages.join(", ")}
+                          </td>
+                          <td>
+                            <code>{m.vehicle_id ?? "Nicht zugewiesen"}</code>
+                          </td>
+                          <td>{modelTime(shown!.day_start_utc, m.deadline_min)}</td>
+                          <td>{modelTime(shown!.day_start_utc, m.actual_complete_min)}</td>
+                          <td>
+                            {
+                              {
+                                none: "Keine",
+                                energy: "Energie",
+                                resource: "Fahrzeuge",
+                                energy_and_resource: "Energie + Fahrzeuge",
+                              }[m.wait_cause]
+                            }
+                            <br />
+                            {m.energy_wait_min} / {m.resource_wait_min} min
+                          </td>
+                          <td className={m.deadline_met ? "muc-ok" : "muc-warn"}>
+                            {m.deadline_met
+                              ? "Erfüllt"
+                              : `${m.delay_is_lower_bound ? "≥ " : ""}${m.delay_min} min verletzt`}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {filtered.length === 0 && <p>Keine passenden Modellaufgaben.</p>}
+                <p>
+                  Maximal 100 Treffer angezeigt; vollständige Aufgaben und SOC-Verlauf im Export.
+                  Minuten sind Auftrag-Wartezeit, nicht Flughafen-Gesamtverspätung.
+                </p>
+                {shown && (
+                  <div className="muc-downloads">
+                    {(
+                      [
+                        ["vehicles.csv", "Fahrzeug-SOC CSV"],
+                        ["departures.csv", "Abflug-Aufgaben CSV"],
+                        ["parking.csv", "Parkhaus CSV"],
+                        ["coupled-evidence.json", "Gesamtnachweis JSON"],
+                      ] as const
+                    ).map(([file, label]) => (
+                      <a
+                        key={file}
+                        href={url(
+                          `/runs/${pair.find((r) => r.model_pack_snapshot.parameter_set.policy === selectedPolicy)!.status.run_id}/artifacts/${file}`,
+                        )}
+                      >
+                        {label}
+                      </a>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                )}
+                <details>
+                  <summary>Welt-Hash, Annahmen und Grenzen</summary>
+                  <code className="muc-run-id">{comparison!.world_hash}</code>
+                  <ul>
+                    {pair[0].model_pack_snapshot.calibration_meta.coupled_world.warnings.map(
+                      (w) => (
+                        <li key={w}>{w}</li>
+                      ),
+                    )}
+                  </ul>
+                  <pre>
+                    {JSON.stringify(
+                      pair[0].model_pack_snapshot.calibration_meta.coupled_world.config,
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </details>
               </div>
-              {filtered.length === 0 && <p>Keine passenden Modellaufgaben.</p>}
-              <p>
-                Maximal 100 Treffer angezeigt; vollständige Aufgaben und SOC-Verlauf im Export.
-                Minuten sind Auftrag-Wartezeit, nicht Flughafen-Gesamtverspätung.
-              </p>
-              {shown && (
-                <div className="muc-downloads">
-                  {(
+            )}
+          </section>
+        </div>
+        {pair && <CostWorksheet baseline={pair[0]} recommended={pair[1]} />}
+        {operationsExtra}
+        <StepFooter />
+      </StepPanel>
+      <StepPanel step="robustheit">
+        <StepHead
+          step="robustheit"
+          badges={
+            <>
+              <EvidenceBadge level="model_checked" label="deterministischer Stress-Screen" />
+              <EvidenceBadge level="empirical_open" label="keine Zuverlässigkeitsstatistik" />
+            </>
+          }
+        >
+          Hält die Antwort, wenn Netzimport, Ladepunkte oder PV schlechter werden? Gleicher
+          Flugplan, gleicher Seed, vier Varianten.
+        </StepHead>
+        <RobustnessPanel snapshot={plan} config={config ?? undefined} />
+        <StepFooter />
+      </StepPanel>
+      {children}
+      <StepPanel step="nachweise">
+        <StepHead step="nachweise">
+          Jede Aussage mit ihrem Evidenzstatus. Grün gibt es hier bewusst nicht: nichts davon ist
+          empirisch bestätigt.
+        </StepHead>
+        <EvidenceOverview
+          hasComparison={Boolean(pair && !error)}
+          onReport={exportHtml}
+          artifactLinks={
+            pair && !error
+              ? pair.flatMap((record) =>
+                  (
                     [
-                      ["vehicles.csv", "Fahrzeug-SOC CSV"],
                       ["departures.csv", "Abflug-Aufgaben CSV"],
-                      ["parking.csv", "Parkhaus CSV"],
                       ["coupled-evidence.json", "Gesamtnachweis JSON"],
                     ] as const
-                  ).map(([file, label]) => (
-                    <a
-                      key={file}
-                      href={url(
-                        `/runs/${pair.find((r) => r.model_pack_snapshot.parameter_set.policy === selectedPolicy)!.status.run_id}/artifacts/${file}`,
-                      )}
-                    >
-                      {label}
-                    </a>
-                  ))}
-                </div>
-              )}
-              <details>
-                <summary>Welt-Hash, Annahmen und Grenzen</summary>
-                <code className="muc-run-id">{comparison!.world_hash}</code>
-                <ul>
-                  {pair[0].model_pack_snapshot.calibration_meta.coupled_world.warnings.map((w) => (
-                    <li key={w}>{w}</li>
-                  ))}
-                </ul>
-                <pre>
-                  {JSON.stringify(
-                    pair[0].model_pack_snapshot.calibration_meta.coupled_world.config,
-                    null,
-                    2,
-                  )}
-                </pre>
-              </details>
-            </div>
-          )}
-        </section>
-      </div>
-      {pair && <CostWorksheet baseline={pair[0]} recommended={pair[1]} />}
-      <RobustnessPanel snapshot={plan} config={config ?? undefined} />
+                  ).map(([file, label]) => ({
+                    href: url(`/runs/${record.status.run_id}/artifacts/${file}`),
+                    label: `${label} · ${
+                      record.model_pack_snapshot.parameter_set.policy === "uncontrolled"
+                        ? "Ungesteuert"
+                        : "Fristenpriorität"
+                    }`,
+                  })),
+                )
+              : []
+          }
+        />
+        <StepFooter />
+      </StepPanel>
     </section>
   );
 }

@@ -801,7 +801,7 @@ export default function Workbench() {
                   label="Min. Zeitabdeckung"
                   value={criteria.min_coverage_pct}
                   onChange={(value) => setCriteria({ ...criteria, min_coverage_pct: value })}
-                  min={1}
+                  min={90}
                   max={100}
                   unit="%"
                 />
@@ -819,7 +819,7 @@ export default function Workbench() {
                   value={criteria.max_gap_s}
                   onChange={(value) => setCriteria({ ...criteria, max_gap_s: value })}
                   min={criteria.expected_interval_s}
-                  max={1000}
+                  max={Math.min(300, 10 * criteria.expected_interval_s)}
                   step={0.1}
                   unit="s"
                 />

@@ -17,6 +17,10 @@ Instanz verwenden: [Betrieb, Nutzer und Backup](PILOT_OPERATIONS.md).
 
 ## Zehn Minuten Vorfuehrung
 
+Die Oberflaeche fuehrt mit einem Schritt-Navigator (`?schritt=system|betrieb|
+robustheit|pilot|nachweise`, Pfeiltasten). Jede Aussage traegt einen
+Evidenzstatus: Annahme, synthetisch, modellintern geprueft, empirisch offen – nie gruen.
+
 1. **System verstehen:** Systemlandkarte oeffnen. Netz, PV, BHKW, Speicher,
    Ladeabgaenge und Fahrzeuge anklicken. Energiefluss ist die technische
    Zweitansicht, kein echter Stromlaufplan. Ein Parameterwechsel ist nur ein
@@ -30,8 +34,12 @@ Instanz verwenden: [Betrieb, Nutzer und Backup](PILOT_OPERATIONS.md).
    Laderegeln starten: Basis, 20 % weniger Netzimport, ein Bus-Ladepunkt aus,
    halber PV-Profilfaktor. Acht Runs laufen seriell. Das ist ein deterministischer
    Stress-Screen, kein statistischer Zuverlaessigkeitsnachweis.
-4. **Konkreten Pilot vereinbaren:** Oben `Pilotprojekt & Messdaten` oeffnen.
-   Projekt, Entscheidungsfrage, Systemgrenze und Abnahmekriterien erfassen.
+4. **Konkreten Pilot vereinbaren:** Schritt 4 im Navigator oeffnen.
+   Projekt, Entscheidungsfrage und Systemgrenze erfassen, dann
+   **Abnahmekriterien vorab festlegen und sperren** (MAE, Energiefehler,
+   Mindestpunkte, Mindestabdeckung). Gesperrte Kriterien sind unveraenderlich und
+   werden mit SHA256 angezeigt und exportiert. Ein Holdout-Import ist erst danach
+   moeglich.
    Fuer die Vorfuehrung `Synthetisches Beispiel laden`. Die Werte sind explizit
    erfunden. Eigene Grenzen eingeben und bewerten: CSV-Modellwerte allein
    ergeben wegen ungepruefter Herkunft bewusst `NOT_EVALUABLE`.
@@ -92,3 +100,14 @@ Technischer lokaler End-to-End-Smoke (erzeugt synthetische QA-Projekte):
 ```sh
 python3 scripts/smoke_pilot.py --base-url http://localhost:5176 --run-id RUN_ID
 ```
+
+## Toleranzen-Sperre und Bewertungsgruende
+
+API: `GET/PUT /api/v1/pilot/projects/{id}/tolerances` (`lock: true` sperrt). Der erste
+Holdout-Import sperrt einen Entwurf automatisch. **PASS nur fuer Holdout** mit vorab
+gesperrten Kriterien; Kalibrier- und Labordaten bleiben `NOT_EVALUABLE`
+(`role_not_holdout`). Weitere Gruende, in der UI auf Deutsch erklaert:
+`tolerances_not_frozen`, `tolerances_not_locked`, `tolerances_set_after_import`,
+`insufficient_rows`, `insufficient_coverage`, `tolerance_mae_too_loose_for_measurement`,
+`circular`, `unit_suspect`, `metric_overflow`, `calibration_holdout_overlap`,
+`model_provenance_*`, `source_*`.
