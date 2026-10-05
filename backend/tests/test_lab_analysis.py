@@ -12,7 +12,8 @@ from app.lab.models import Criteria, Sample
 
 
 def test_energy_uses_seconds_and_observed_intervals():
-    trace = [Sample(ts_s=i, power_kw=36, setpoint_kw=36, limit_kw=40) for i in range(101)]
+    # Sollwert bewusst != Ist-Leistung: exakte Kopie waere zirkulaer (nie pass).
+    trace = [Sample(ts_s=i, power_kw=36, setpoint_kw=35, limit_kw=40) for i in range(101)]
     result = analyze(trace, Criteria())
     assert result.metrics.energy_import_kwh == pytest.approx(1)
     assert result.metrics.limit_violation_s == 0
@@ -103,3 +104,35 @@ def test_a_case_label_alone_is_not_evidence_that_the_test_profile_occurred():
     result = analyze(trace, Criteria(), "setpoint-step")
     assert result.verdict == "inconclusive"
     assert next(check for check in result.checks if check.id == "profile").state == "inconclusive"
+
+
+def test_criteria_enforce_coverage_floor_and_gap_bound():
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        Criteria(min_coverage_pct=50)
+    with pytest.raises(ValidationError):
+        Criteria(expected_interval_s=1, max_gap_s=30)
+    with pytest.raises(ValidationError):
+        Criteria(expected_interval_s=100, max_gap_s=400)
+
+
+def test_power_copied_from_setpoint_is_never_pass():
+    trace = [
+        Sample(ts_s=i, power_kw=10 if i < 60 else 30, setpoint_kw=10 if i < 60 else 30, limit_kw=80)
+        for i in range(180)
+    ]
+    result = analyze(trace, Criteria(), "setpoint-step")
+    assert result.verdict != "pass"
+    assert any(c.id == "circular" and c.state == "inconclusive" for c in result.checks)
+
+
+def test_constant_power_without_reaction_to_step_is_not_pass():
+    # Toleranz 2 kW, Sprung 10 -> 12 kW, konstante 11 kW lagen frueher im Band.
+    trace = [
+        Sample(ts_s=i, power_kw=11, setpoint_kw=10 if i < 60 else 12, limit_kw=80)
+        for i in range(180)
+    ]
+    result = analyze(trace, Criteria(), "setpoint-step")
+    assert result.verdict != "pass"
+    assert any(c.id == "reaction" and c.state == "fail" for c in result.checks)

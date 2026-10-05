@@ -11,4 +11,13 @@ legacy
 data/runs
 data/playbook_jobs
 data/lab
+data/munich
+data/pilot
+data/access.sqlite3*
+.superpowers
+.playwright-mcp
+**/* 2.py
+**/* 2.ts
+**/* 2.tsx
+**/* 2.md
 backend/data

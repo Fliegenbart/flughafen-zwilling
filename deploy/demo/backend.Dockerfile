@@ -4,8 +4,10 @@ ENV TWIN_REFERENCE_DIR=/opt/airport-references
 WORKDIR /app
 COPY backend/pyproject.toml backend/README.md ./
 COPY backend/requirements-demo.txt ./
+RUN pip install --no-cache-dir -r requirements-demo.txt
 COPY backend/app ./app
-RUN pip install --no-cache-dir -r requirements-demo.txt && pip install --no-cache-dir --no-deps .
+COPY scripts/instance_users.py scripts/pilot_backup.py ./scripts/
+RUN pip install --no-cache-dir --no-deps .
 COPY data/scenarios /opt/airport-seeds/scenarios
 COPY data/model_packs /opt/airport-seeds/model_packs
 COPY data/references /opt/airport-references

@@ -50,7 +50,7 @@ Behauptung unveraenderter Originaldaten. Neue Records verwenden `input_freeze=qu
 | Archiv-SHA256-Manifeste | unveraendert |
 | Compose-Konfiguration / Neubau | erfolgreich, Ports nur localhost |
 | Airport Baseline + alle acht Cases | completed, KPIs, passende Audit-Fingerprints, PDF und CSV verfuegbar |
-| Guillotine-/Schwarzstart-Planner | completed, Baseline/Empfehlung, validierte KPIs, terminale Validierungsruns und Artefakte |
+| Guillotine-/Schwarzstart-Planner | completed, Baseline/Empfehlung, modellintern gegengeprüfte KPIs, terminale Gegenprüf-Läufe und Artefakte |
 | FlexLab-Smoke | Simulation, CSV-Import, Vergleich, Exporte und Abbruch erfolgreich |
 | FlexLab-Fehlerprofile | Anschlusslimit korrekt FAIL; Telemetrieausfall korrekt Nicht bewertbar |
 | Echter Backend-Neustart | FlexLab-Run mit derselben ID completed, recovery_count=1 |

@@ -186,3 +186,12 @@ data/lab/                  FlexLab-Laufzeitdaten (gitignored)
 deploy/demo/               Docker und Same-Origin-Proxy
 legacy/                    Unveraenderte Ausgangssnapshots
 ```
+
+### Pilot Decision Studio
+
+Im Muenchen-Arbeitsbereich: interaktive Systemlandkarte/Energiefluss,
+Vier-Varianten-Stresstest, Pilotprojekt mit Messdatenimport und Run-Abgleich,
+Testpaket mit Originalquellen und Hashmanifest. [Vorfuehrung und Grenzen](docs/PILOT_STUDIO.md).
+Persoenliche Anmeldung und Backup fuer dedizierte Kundeninstanzen:
+[Betriebsanleitung](docs/PILOT_OPERATIONS.md). Keine empirische Validierung
+oder reale Anlagenfreigabe allein durch diese Softwarefunktionen.

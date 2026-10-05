@@ -1,6 +1,7 @@
 import type { CoupledRecord } from "./coupledTypes";
 import { ResultCard, Delta } from "./CoupledViews";
 import { number } from "./config";
+import { FLEET_LABELS, ruleDifferenceNote } from "./coupledReport";
 
 type Props = { baseline: CoupledRecord; priority: CoupledRecord; reportsHashed: boolean };
 
@@ -17,6 +18,10 @@ export default function CoupledCompare({ baseline, priority, reportsHashed }: Pr
     b.departure_readiness_pct !== null &&
     Math.round((b.departure_readiness_pct - a.departure_readiness_pct) * 10) === 0;
   const world = baseline.model_pack_snapshot.calibration_meta.coupled_world;
+  const note = ruleDifferenceNote(a, b);
+  const priorityTasks = new Map(
+    (b.readiness_by_task ?? []).map((row) => [`${row.kind}/${row.direction}`, row]),
+  );
 
   return (
     <div className="studio-compare">
@@ -30,7 +35,8 @@ export default function CoupledCompare({ baseline, priority, reportsHashed }: Pr
             unit="pp"
             higherBetter
           />
-          {equal && <span>Kein modellierter Vorteil</span>}
+          {equal && !note && <span>Kein modellierter Vorteil</span>}
+          {note && <span className="muc-warn">{note}</span>}
         </div>
         <ResultCard record={priority} />
       </div>
@@ -39,6 +45,46 @@ export default function CoupledCompare({ baseline, priority, reportsHashed }: Pr
         <span>{number(a.missions_on_time, 0)} fristgerecht / Baseline</span>
         <span>Gleiche Welt / Seed {world.seed}</span>
       </div>
+      {(a.readiness_by_task ?? []).length > 0 && (
+        <table aria-label="Bereitschaft je Klasse und Aufgabentyp" className="studio-audit-table">
+          <caption>
+            Aufgabenbereitschaft je Fahrzeugklasse/Aufgabentyp und Wartegrund (Modell, keine OTP)
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Klasse / Aufgabe</th>
+              <th scope="col">Ungesteuert</th>
+              <th scope="col">Fristenpriorität</th>
+              <th scope="col">Anteil Energie-Wartezeit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(a.readiness_by_task ?? []).map((row) => {
+              const other = priorityTasks.get(`${row.kind}/${row.direction}`);
+              const pct = (value: number | null | undefined) =>
+                value === null || value === undefined ? "n/a" : `${number(value, 1)} %`;
+              return (
+                <tr key={`${row.kind}/${row.direction}`}>
+                  <th scope="row">
+                    {FLEET_LABELS[row.kind]} / {row.direction === "arrival" ? "Ankunft" : "Abflug"}
+                  </th>
+                  <td>
+                    {row.missions_on_time} / {row.mission_count} ({pct(row.on_time_pct)})
+                  </td>
+                  <td>
+                    {other
+                      ? `${other.missions_on_time} / ${other.mission_count} (${pct(other.on_time_pct)})`
+                      : "n/a"}
+                  </td>
+                  <td>
+                    {pct(row.energy_wait_share_pct)} / {pct(other?.energy_wait_share_pct)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
       <details className="studio-supply" open>
         <summary>Versorgung &amp; Ladebereiche</summary>
         <p className="muc-small">
@@ -53,8 +99,8 @@ export default function CoupledCompare({ baseline, priority, reportsHashed }: Pr
         <div className="studio-supply-bus">Gemeinsame Wirkleistungsbilanz</div>
         <div className="studio-supply-loads">
           <span>
-            Flotte · {world.config.fleets.reduce((sum, fleet) => sum + fleet.vehicles, 0)}
-            {" "}angenommene Fahrzeuge
+            Flotte · {world.config.fleets.reduce((sum, fleet) => sum + fleet.vehicles, 0)}{" "}
+            angenommene Fahrzeuge
           </span>
           <span>Parkhaus · {world.config.power.parking_sessions} angenommene Ladeaufträge</span>
           <span>

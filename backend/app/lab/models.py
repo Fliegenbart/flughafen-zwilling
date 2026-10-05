@@ -28,14 +28,17 @@ class Criteria(Model):
     settling_s: float = Field(default=3, gt=0, le=60)
     grace_s: float = Field(default=10, ge=0, le=300)
     limit_violation_budget_s: float = Field(default=1, ge=0, le=300)
-    min_coverage_pct: float = Field(default=98, gt=0, le=100)
+    # Untergrenze: unter 90 % Abdeckung ist keine belastbare Aussage moeglich.
+    min_coverage_pct: float = Field(default=98, ge=90, le=100)
     expected_interval_s: float = Field(default=1, gt=0, le=1000)
-    max_gap_s: float = Field(default=3, gt=0, le=1000)
+    max_gap_s: float = Field(default=3, gt=0, le=300)
 
     @model_validator(mode="after")
     def check_intervals(self):
         if self.max_gap_s < self.expected_interval_s:
             raise ValueError("max_gap_s muss >= expected_interval_s sein")
+        if self.max_gap_s > 10 * self.expected_interval_s:
+            raise ValueError("max_gap_s darf hoechstens das 10-fache von expected_interval_s sein")
         return self
 
 

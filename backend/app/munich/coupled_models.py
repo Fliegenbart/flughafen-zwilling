@@ -5,7 +5,13 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-ENGINE_VERSION = "airport_coupled_v1"
+# Szenario-/Summary-Domaene bleibt stabil; die Engine-Version beschreibt den Rechenweg.
+COUPLED_DOMAIN = "airport_coupled_v1"
+# v2: Parkhausfenster in Ortszeit (DST-sicher), Ladefrist je Fahrzeug, unabhaengige
+# Energiebilanz, Grundlast-Warnungen und Bereitschaft je Klasse/Aufgabentyp.
+ENGINE_VERSION = "airport_coupled_v2"
+LEGACY_ENGINE_VERSIONS = ("airport_coupled_v1",)
+EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2"]
 FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu"]
 CoupledPolicy = Literal["uncontrolled", "mission_priority"]
 
@@ -160,7 +166,7 @@ class ParkingJob(StrictModel):
 
 
 class CoupledWorld(StrictModel):
-    engine_version: Literal[ENGINE_VERSION] = ENGINE_VERSION
+    engine_version: EngineVersion = ENGINE_VERSION
     seed: int
     source_plan_sha256: str
     config: CoupledConfig
@@ -172,6 +178,19 @@ class CoupledWorld(StrictModel):
     parking_jobs: list[ParkingJob] = Field(max_length=275)
     warnings: list[str]
     world_hash: str
+
+
+class TaskReadiness(StrictModel):
+    """Aufgabenbereitschaft je Fahrzeugklasse und Aufgabentyp (Ankunft/Abflug)."""
+    kind: FleetKind
+    direction: Literal["arrival", "departure"]
+    mission_count: int = 0
+    missions_on_time: int = 0
+    missions_uncompleted: int = 0
+    on_time_pct: float | None = None
+    energy_wait_min: int = 0
+    resource_wait_min: int = 0
+    energy_wait_share_pct: float | None = None
 
 
 class CoupledKpis(StrictModel):
@@ -200,3 +219,14 @@ class CoupledKpis(StrictModel):
     fleet_reserve_violations: int = 0
     transformer_loss_kwh: float = 0
     model_horizon_hours: float = 0
+    # Ab airport_coupled_v2; Defaults halten aeltere Summaries lesbar.
+    storage_energy_balance_error_kwh: float = 0
+    power_balance_check: Literal["bookkeeping_identity_not_independent"] = (
+        "bookkeeping_identity_not_independent"
+    )
+    background_unserved_kwh: float = 0
+    background_unserved_minutes: int = 0
+    readiness_by_task: list[TaskReadiness] = Field(default_factory=list)
+    energy_wait_share_pct: float | None = None
+    bottleneck: Literal["none", "energy", "resource", "energy_and_resource"] | None = None
+    model_warnings: list[str] = Field(default_factory=list)

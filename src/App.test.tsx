@@ -72,13 +72,21 @@ describe("HMI smoke", () => {
 
   it("does not offer a localhost Grafana link when hosted monitoring is disabled", async () => {
     globalThis.__TWIN_CONFIG__ = { grafanaBaseUrl: "" };
-    const status = { run_id: "hosted-run", state: "completed", progress: 1, artifacts: {}, pass_fail: true };
+    const status = {
+      run_id: "hosted-run",
+      state: "completed",
+      progress: 1,
+      artifacts: {},
+      pass_fail: true,
+    };
     vi.mocked(global.fetch).mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.endsWith("/capabilities")) return mockJsonResponse({ grafana_base_url: "", playbook_synth_enabled: false });
+      if (url.endsWith("/capabilities"))
+        return mockJsonResponse({ grafana_base_url: "", playbook_synth_enabled: false });
       if (url.endsWith("/telemetry")) return mockTextResponse("");
       if (url.endsWith("/record")) return mockJsonResponse({ status, summary: {} });
-      if (url.endsWith("/runs") || url.endsWith("/runs/hosted-run")) return mockJsonResponse(status);
+      if (url.endsWith("/runs") || url.endsWith("/runs/hosted-run"))
+        return mockJsonResponse(status);
       return mockJsonResponse({ status: "ok" });
     });
     try {
@@ -100,8 +108,9 @@ describe("HMI smoke", () => {
     render(<App />);
     await screen.findByText("Playbook Synthesizer");
     expect(screen.getByDisplayValue(window.location.origin)).toBeInTheDocument();
-    expect(fetchMock.mock.calls.every(([url]) => String(url).startsWith(window.location.origin)))
-      .toBe(true);
+    expect(
+      fetchMock.mock.calls.every(([url]) => String(url).startsWith(window.location.origin)),
+    ).toBe(true);
   });
 
   it("exports the completed run's case and configuration rather than edited form values", async () => {
@@ -111,7 +120,8 @@ describe("HMI smoke", () => {
       if (url.endsWith("/telemetry")) return mockTextResponse("");
       if (url.endsWith("/capabilities")) return mockJsonResponse({ playbook_synth_enabled: false });
       if (url.endsWith("/record")) return mockJsonResponse({ status, summary: {} });
-      if (url.endsWith("/runs") || url.endsWith("/runs/frozen-run")) return mockJsonResponse(status);
+      if (url.endsWith("/runs") || url.endsWith("/runs/frozen-run"))
+        return mockJsonResponse(status);
       return mockJsonResponse({ status: "ok" });
     });
     const blobs: Blob[] = [];
@@ -124,7 +134,9 @@ describe("HMI smoke", () => {
       render(<App />);
       fireEvent.change(screen.getByLabelText("Testprofil"), { target: { value: "2" } });
       fireEvent.click(screen.getByRole("button", { name: "Backend Run starten" }));
-      await waitFor(() => expect(screen.getByRole("button", { name: "Bericht erzeugen" })).toBeEnabled());
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Bericht erzeugen" })).toBeEnabled(),
+      );
       fireEvent.change(screen.getByLabelText("Testprofil"), { target: { value: "8" } });
       fireEvent.change(screen.getByLabelText("Gates Total"), { target: { value: "30" } });
       fireEvent.click(screen.getByRole("button", { name: "Bericht erzeugen" }));
@@ -133,7 +145,8 @@ describe("HMI smoke", () => {
       expect(html).toContain("<b>Szenario:</b> Guillotine-Test");
       expect(html).toContain("Gates: 28");
       expect(screen.getByRole("link", { name: "PDF-Bericht" })).toHaveAttribute(
-        "href", `${window.location.origin}/api/v1/runs/frozen-run/artifacts/report.pdf`,
+        "href",
+        `${window.location.origin}/api/v1/runs/frozen-run/artifacts/report.pdf`,
       );
     } finally {
       blobSpy.mockRestore();
@@ -173,12 +186,15 @@ describe("HMI smoke", () => {
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/capabilities")) return mockJsonResponse({ playbook_synth_enabled: true });
-      if (url.endsWith("/scenarios") && init?.method === "POST") return mockJsonResponse({ id: frozenRequest.scenario_id });
-      if (url.endsWith("/model-packs") && init?.method === "POST") return mockJsonResponse({ id: frozenRequest.model_pack_id });
+      if (url.endsWith("/scenarios") && init?.method === "POST")
+        return mockJsonResponse({ id: frozenRequest.scenario_id });
+      if (url.endsWith("/model-packs") && init?.method === "POST")
+        return mockJsonResponse({ id: frozenRequest.model_pack_id });
       if (url.endsWith("/playbook-jobs") && init?.method === "POST") {
         return mockJsonResponse({ job_id: "pb-frozen", state: "completed", progress: 100 });
       }
-      if (url.endsWith("/playbook-jobs/pb-frozen")) return mockJsonResponse({ state: "completed", progress: 100 });
+      if (url.endsWith("/playbook-jobs/pb-frozen"))
+        return mockJsonResponse({ state: "completed", progress: 100 });
       if (url.endsWith("/playbook-jobs/pb-frozen/record")) {
         return mockJsonResponse({
           status: { job_id: "pb-frozen", state: "completed", progress: 100 },
@@ -199,7 +215,9 @@ describe("HMI smoke", () => {
     const comparison = await screen.findByRole("region", { name: "Playbook-Vergleich" });
     fireEvent.change(screen.getByLabelText("Testprofil"), { target: { value: "8" } });
 
-    expect(within(comparison).getByRole("heading", { name: "Eingefrorener Playbook-Vergleich" })).toBeInTheDocument();
+    expect(
+      within(comparison).getByRole("heading", { name: "Eingefrorener Playbook-Vergleich" }),
+    ).toBeInTheDocument();
     expect(within(comparison).getByText("airport_case_02_guillotine_v1")).toBeInTheDocument();
     expect(within(comparison).getByText("airport_medium_eu_v1")).toBeInTheDocument();
     expect(within(comparison).getByText("2028")).toBeInTheDocument();
@@ -207,13 +225,19 @@ describe("HMI smoke", () => {
   });
 
   it("shows a failed model criterion separately from a completed technical run", async () => {
-    const status = { run_id: "criteria-false", state: "completed", progress: 100, pass_fail: false };
+    const status = {
+      run_id: "criteria-false",
+      state: "completed",
+      progress: 100,
+      pass_fail: false,
+    };
     vi.mocked(global.fetch).mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith("/capabilities")) return mockJsonResponse({ playbook_synth_enabled: false });
       if (url.endsWith("/telemetry")) return mockTextResponse("");
       if (url.endsWith("/record")) return mockJsonResponse({ status, summary: {} });
-      if (url.endsWith("/runs") || url.endsWith("/runs/criteria-false")) return mockJsonResponse(status);
+      if (url.endsWith("/runs") || url.endsWith("/runs/criteria-false"))
+        return mockJsonResponse(status);
       return mockJsonResponse({ status: "ok" });
     });
 
@@ -266,18 +290,25 @@ describe("HMI smoke", () => {
   it("does not leave the demo backend when local API fallback is disabled", async () => {
     const fetchMock = vi.mocked(global.fetch);
     fetchMock.mockClear();
-    Object.assign(globalThis, { __TWIN_CONFIG__: {
-      apiBaseUrl: "http://127.0.0.1:8001", allowLocalApiFallback: false,
-    } });
-    fetchMock.mockImplementation((input: RequestInfo | URL) => mockJsonResponse({
-      playbook_synth_enabled: false,
-      telemetry_stream_enabled: String(input).startsWith("http://127.0.0.1:8000"),
-    }));
+    Object.assign(globalThis, {
+      __TWIN_CONFIG__: {
+        apiBaseUrl: "http://127.0.0.1:8001",
+        allowLocalApiFallback: false,
+      },
+    });
+    fetchMock.mockImplementation((input: RequestInfo | URL) =>
+      mockJsonResponse({
+        playbook_synth_enabled: false,
+        telemetry_stream_enabled: String(input).startsWith("http://127.0.0.1:8000"),
+      }),
+    );
     try {
       render(<App />);
       await waitFor(() => expect(screen.getByText(/Grafana STREAM OFF/i)).toBeInTheDocument());
       expect(screen.getByDisplayValue("http://127.0.0.1:8001")).toBeInTheDocument();
-      expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("http://127.0.0.1:8000"))).toBe(false);
+      expect(
+        fetchMock.mock.calls.some(([url]) => String(url).startsWith("http://127.0.0.1:8000")),
+      ).toBe(false);
     } finally {
       delete (globalThis as { __TWIN_CONFIG__?: unknown }).__TWIN_CONFIG__;
     }
@@ -296,7 +327,9 @@ describe("HMI smoke", () => {
     render(<App />);
     await waitFor(() => {
       expect(screen.queryByText(/Playbook Synthesizer/i)).not.toBeInTheDocument();
-      expect(screen.queryByRole("region", { name: /Pareto Alternativen/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("region", { name: /Pareto Alternativen/i }),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -418,7 +451,9 @@ describe("HMI smoke", () => {
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/api/v1/capabilities")) {
-        return mockJsonResponse({ playbook_synth_enabled: !url.startsWith("http://capability-off.test") });
+        return mockJsonResponse({
+          playbook_synth_enabled: !url.startsWith("http://capability-off.test"),
+        });
       }
       if (url.endsWith("/api/v1/scenarios") && init?.method === "POST") {
         return mockJsonResponse({ id: "airport_case_02_guillotine_v1" });
@@ -484,7 +519,15 @@ describe("HMI smoke", () => {
               delay_avg_min_delta: -5.4,
               intervention_cost_delta: 12,
             },
-            actions: [{ at_ms: 8000, target: "gates_open_pct", action: "inject", value: 4, cost_component: 4 }],
+            actions: [
+              {
+                at_ms: 8000,
+                target: "gates_open_pct",
+                action: "inject",
+                value: 4,
+                cost_component: 4,
+              },
+            ],
             validation_run_id: "run-best",
             validation_pass_fail: true,
           },
@@ -546,11 +589,9 @@ describe("HMI smoke", () => {
         expect(screen.getByText(/opt_002/i)).toBeInTheDocument();
         const paretoRegion = screen.getByRole("region", { name: /Pareto Alternativen/i });
         expect(paretoRegion).toHaveAttribute("tabindex", "0");
-        expect(paretoRegion).toContainElement(
-          screen.getByRole("table"),
-        );
+        expect(paretoRegion).toContainElement(screen.getByRole("table"));
       },
-      { timeout: 8000 }
+      { timeout: 8000 },
     );
 
     fireEvent.change(screen.getByLabelText("API Base URL"), {
@@ -558,7 +599,9 @@ describe("HMI smoke", () => {
     });
     await waitFor(() => {
       expect(screen.queryByText(/Playbook Synthesizer/i)).not.toBeInTheDocument();
-      expect(screen.queryByRole("region", { name: /Pareto Alternativen/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("region", { name: /Pareto Alternativen/i }),
+      ).not.toBeInTheDocument();
     });
   }, 10000);
 
@@ -646,7 +689,15 @@ describe("HMI smoke", () => {
               delay_avg_min_delta: -4.1,
               intervention_cost_delta: 8,
             },
-            actions: [{ at_ms: 12000, target: "ground_crew_teams", action: "inject", value: 2, cost_component: 12 }],
+            actions: [
+              {
+                at_ms: 12000,
+                target: "ground_crew_teams",
+                action: "inject",
+                value: 2,
+                cost_component: 12,
+              },
+            ],
             validation_run_id: "run-forecast-best",
             validation_pass_fail: true,
           },
@@ -680,7 +731,7 @@ describe("HMI smoke", () => {
         expect(screen.getByText(/Forecast Baseline/i)).toBeInTheDocument();
         expect(screen.getByText(/Forecast Empfehlung/i)).toBeInTheDocument();
       },
-      { timeout: 4000 }
+      { timeout: 4000 },
     );
   });
 
@@ -709,7 +760,12 @@ describe("HMI smoke", () => {
         return mockJsonResponse({ run_id: "run-grafana", state: "completed", progress: 100 });
       }
       if (url.endsWith("/api/v1/runs/run-grafana")) {
-        return mockJsonResponse({ run_id: "run-grafana", state: "completed", progress: 100, pass_fail: true });
+        return mockJsonResponse({
+          run_id: "run-grafana",
+          state: "completed",
+          progress: 100,
+          pass_fail: true,
+        });
       }
       if (url.endsWith("/api/v1/runs/run-grafana/record")) {
         return mockJsonResponse({
@@ -743,7 +799,9 @@ describe("HMI smoke", () => {
         });
       }
       if (url.endsWith("/api/v1/runs/run-grafana/telemetry")) {
-        return mockTextResponse([JSON.stringify({ ts: 40, metric: "otp_pct", value: 88.1 })].join("\n"));
+        return mockTextResponse(
+          [JSON.stringify({ ts: 40, metric: "otp_pct", value: 88.1 })].join("\n"),
+        );
       }
       return mockJsonResponse({ status: "ok" });
     });
@@ -753,7 +811,10 @@ describe("HMI smoke", () => {
 
     await waitFor(() => {
       const grafanaLink = screen.getByRole("link", { name: /Grafana Live/i });
-      expect(grafanaLink).toHaveAttribute("href", expect.stringContaining("var-run_id=run-grafana"));
+      expect(grafanaLink).toHaveAttribute(
+        "href",
+        expect.stringContaining("var-run_id=run-grafana"),
+      );
     });
   });
 
@@ -782,7 +843,12 @@ describe("HMI smoke", () => {
         return mockJsonResponse({ run_id: "run-live", state: "queued", progress: 0 });
       }
       if (url.endsWith("/api/v1/runs/run-live")) {
-        return mockJsonResponse({ run_id: "run-live", state: "running", progress: 25, pass_fail: null });
+        return mockJsonResponse({
+          run_id: "run-live",
+          state: "running",
+          progress: 25,
+          pass_fail: null,
+        });
       }
       if (url.endsWith("/api/v1/runs/run-live/record")) {
         return mockJsonResponse({
@@ -804,7 +870,16 @@ describe("HMI smoke", () => {
       if (url.includes("/api/v1/runs/run-live/telemetry-slice")) {
         return mockJsonResponse({
           items: [
-            { ts: 40, metric: "otp_pct", value: 86.4, source: "sim", asset_id: "airport", quality: "good", unit: "%", run_id: "run-live" },
+            {
+              ts: 40,
+              metric: "otp_pct",
+              value: 86.4,
+              source: "sim",
+              asset_id: "airport",
+              quality: "good",
+              unit: "%",
+              run_id: "run-live",
+            },
             {
               ts: 40,
               metric: "turnaround_avg_min",
@@ -828,7 +903,9 @@ describe("HMI smoke", () => {
 
     await waitFor(() => {
       expect(
-        fetchMock.mock.calls.some(([input]) => String(input).includes("/api/v1/runs/run-live/telemetry-slice"))
+        fetchMock.mock.calls.some(([input]) =>
+          String(input).includes("/api/v1/runs/run-live/telemetry-slice"),
+        ),
       ).toBe(true);
       expect(screen.getByText(/Run RUNNING/i)).toBeInTheDocument();
     });
@@ -868,7 +945,12 @@ describe("HMI smoke", () => {
         return mockJsonResponse({ run_id: "run-demo", state: "completed", progress: 100 });
       }
       if (url.endsWith("/api/v1/runs/run-demo")) {
-        return mockJsonResponse({ run_id: "run-demo", state: "completed", progress: 100, pass_fail: true });
+        return mockJsonResponse({
+          run_id: "run-demo",
+          state: "completed",
+          progress: 100,
+          pass_fail: true,
+        });
       }
       if (url.endsWith("/api/v1/runs/run-demo/record")) {
         return mockJsonResponse({
@@ -902,7 +984,9 @@ describe("HMI smoke", () => {
         });
       }
       if (url.endsWith("/api/v1/runs/run-demo/telemetry")) {
-        return mockTextResponse([JSON.stringify({ ts: 40, metric: "otp_pct", value: 91.2 })].join("\n"));
+        return mockTextResponse(
+          [JSON.stringify({ ts: 40, metric: "otp_pct", value: 91.2 })].join("\n"),
+        );
       }
       return mockJsonResponse({ status: "ok" });
     });
@@ -911,14 +995,16 @@ describe("HMI smoke", () => {
     fireEvent.change(screen.getByRole("combobox", { name: /Run Mode/i }), {
       target: { value: "sil" },
     });
-    await waitFor(() => expect(screen.getByRole("button", { name: /Demo Live starten/i })).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Demo Live starten/i })).toBeEnabled(),
+    );
     fireEvent.click(screen.getByRole("button", { name: /Demo Live starten/i }));
 
     await waitFor(() => {
       expect(runPayload?.realtime_mode).toBe("hil_realtime");
       expect(openSpy).toHaveBeenCalledWith("about:blank", "_blank");
       expect(popup.location.replace).toHaveBeenCalledWith(
-        expect.stringContaining("var-run_id=run-demo")
+        expect.stringContaining("var-run_id=run-demo"),
       );
     });
 
@@ -931,7 +1017,7 @@ describe("HMI smoke", () => {
         JSON.stringify({ ts: 40, metric: "otp_pct", value: 87.5 }),
         JSON.stringify({ ts: 40, metric: "turnaround_avg_min", value: 49.2 }),
         JSON.stringify({ ts: 40, metric: "gate_utilization_pct", value: 88.0 }),
-      ].join("\n")
+      ].join("\n"),
     );
 
     const next = stateFromTwinRecord(
@@ -963,7 +1049,7 @@ describe("HMI smoke", () => {
           watchdog_fail_safe: false,
           fail_reason: "",
         },
-      }
+      },
     );
 
     expect(next.remoteRunId).toBe("run-1");
@@ -981,10 +1067,12 @@ describe("HMI smoke", () => {
     };
     const openSpy = vi.spyOn(window, "open").mockReturnValue(popup as unknown as Window);
     let reportBlob: Blob | null = null;
-    const blobSpy = vi.spyOn(URL, "createObjectURL").mockImplementation((blob?: Blob | MediaSource) => {
-      reportBlob = blob instanceof Blob ? blob : null;
-      return "blob:report";
-    });
+    const blobSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockImplementation((blob?: Blob | MediaSource) => {
+        reportBlob = blob instanceof Blob ? blob : null;
+        return "blob:report";
+      });
     const revokeSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
 
     generateTestReport(
@@ -1059,13 +1147,21 @@ describe("HMI smoke", () => {
             delay_avg_min_delta: -6,
             intervention_cost_delta: 12,
           },
-          actions: [{ at_ms: 8000, target: "gates_open_pct", action: "inject", value: 4, cost_component: 4 }],
+          actions: [
+            {
+              at_ms: 8000,
+              target: "gates_open_pct",
+              action: "inject",
+              value: 4,
+              cost_component: 4,
+            },
+          ],
           validation_run_id: "run-best",
           validation_pass_fail: true,
         },
         pareto_options: [],
         artifacts: [],
-      }
+      },
     );
 
     await waitFor(() => expect(openSpy).toHaveBeenCalled());
@@ -1086,10 +1182,12 @@ describe("HMI smoke", () => {
     };
     const openSpy = vi.spyOn(window, "open").mockReturnValue(popup as unknown as Window);
     let reportBlob: Blob | null = null;
-    const blobSpy = vi.spyOn(URL, "createObjectURL").mockImplementation((blob?: Blob | MediaSource) => {
-      reportBlob = blob instanceof Blob ? blob : null;
-      return "blob:forecast-report";
-    });
+    const blobSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockImplementation((blob?: Blob | MediaSource) => {
+        reportBlob = blob instanceof Blob ? blob : null;
+        return "blob:forecast-report";
+      });
     const revokeSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
 
     generateTestReport(
@@ -1175,13 +1273,21 @@ describe("HMI smoke", () => {
             delay_avg_min_delta: -2,
             intervention_cost_delta: 8,
           },
-          actions: [{ at_ms: 12000, target: "ground_crew_teams", action: "inject", value: 2, cost_component: 12 }],
+          actions: [
+            {
+              at_ms: 12000,
+              target: "ground_crew_teams",
+              action: "inject",
+              value: 2,
+              cost_component: 12,
+            },
+          ],
           validation_run_id: "run-forecast-best",
           validation_pass_fail: true,
         },
         pareto_options: [],
         artifacts: [],
-      }
+      },
     );
 
     await waitFor(() => expect(openSpy).toHaveBeenCalled());

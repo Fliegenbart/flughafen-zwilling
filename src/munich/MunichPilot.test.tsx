@@ -158,7 +158,11 @@ describe("München Referenzpilot", () => {
       expect(screen.getByRole("button", { name: "Regeln vergleichen" })).toBeEnabled(),
     );
     fireEvent.click(screen.getByRole("button", { name: "Regeln vergleichen" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Run-Queue voll");
+    expect(
+      await within(screen.getByRole("region", { name: "Energie-v1 / statisch" })).findByRole(
+        "alert",
+      ),
+    ).toHaveTextContent("Run-Queue voll");
     expect(screen.getByRole("button", { name: "Regeln vergleichen" })).toBeEnabled();
   });
 
