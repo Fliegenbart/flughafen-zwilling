@@ -1361,6 +1361,29 @@ body:has(.aec) {
   color: var(--aec-bg);
   border-color: var(--aec-ink);
 }
+.aec-verdict {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-radius: var(--r-2);
+  background: var(--aec-surface);
+  border-left: 3px solid var(--aec-line-strong);
+  max-width: var(--measure);
+}
+.aec-verdict[data-pass] {
+  border-left-color: var(--aec-signal);
+}
+.aec-verdict p {
+  margin: 0;
+}
+.aec-verdict__answer {
+  font-weight: 700;
+  font-size: var(--step-1);
+  color: var(--aec-ink);
+}
+.aec-verdict .ds-evidence {
+  justify-self: start;
+}
 .aec-notice:empty {
   display: none;
 }

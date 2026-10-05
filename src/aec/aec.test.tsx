@@ -260,7 +260,14 @@ describe("Oberfläche", () => {
     ).toBeVisible();
     const msg = screen.getByRole("article", { name: "Ladepunkt 150 kW unter Spitzenwelle prüfen" });
     expect(within(msg).getByText(/Am Zug:/)).toHaveTextContent("Am Zug: Testing-Lab");
-    fireEvent.click(screen.getByRole("radio", { name: "Flughafen" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Was prüfen wir?" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Was wurde gemessen?" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Stimmt das Modell?" })).toBeVisible();
+    expect(screen.getByText("Noch nicht geprüft.")).toBeVisible();
+    // Rollenschalter nur eingeklappt unter „Vorführung“.
+    const demo = screen.getByText("Vorführung: Ansicht wechseln").closest("details")!;
+    expect(demo).not.toHaveAttribute("open");
+    fireEvent.click(within(demo).getByRole("radio", { name: "Flughafen" }));
     expect(within(msg).queryByRole("button")).toBeNull();
     fireEvent.click(screen.getByRole("radio", { name: "Testing-Lab" }));
     fireEvent.click(within(msg).getByRole("button", { name: "Als erledigt melden" }));
