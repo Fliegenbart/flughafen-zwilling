@@ -33,7 +33,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -e './backend[dev]'
       - run: python -m pytest backend/tests -q
-      - run: ruff check backend/app/lab backend/app/munich backend/app/pilot backend/app/instance_access.py
+      - run: ruff check backend/app/lab backend/app/munich backend/app/pilot backend/app/exchange backend/app/instance_access.py
       - run: docker compose -f docker-compose.demo.yml config --quiet
       - run: docker compose -f docker-compose.demo.yml -f docker-compose.demo-monitoring.yml config --quiet
       - run: TWIN_BUILD_GIT_COMMIT="$GITHUB_SHA" docker compose -f docker-compose.hetzner.yml config --quiet
