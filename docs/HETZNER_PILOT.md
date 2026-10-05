@@ -103,7 +103,26 @@ Zugangsdaten nur nach Challenge und lehnt Redirects ausserhalb dieses HTTPS-
 Pilotpfads ab. Vor Freigabe unauthentifiziert 401 fuer UI/API/Artefakte pruefen.
 HTTP ohne TLS darf nur umleiten, nie Zugangsdaten abfragen oder Inhalte liefern.
 
-## Aktiver Release vom 04.10.2026
+## Aktiver Release vom 05.10.2026
+
+Code-Release `5a18f732c37d800480dd071cebea0274c9af6af9` aus `codex/recovery-audit`
+(PR #21, Schritt „Daten“) ist aktiv, gebaut aus dem Release-Worktree
+`/opt/airport-releases/5a18f73`. Vorher aktiv: `5210afe`. Keine Netz- oder
+Compose-Aenderung; Subnetze `10.253.250.0/24` und `10.253.251.0/24` gehoeren
+weiterhin nur diesem Stack.
+
+Backend vor dem Wechsel gestoppt, Datenvolume offline gesichert
+(`/opt/airport-backups/pre-5a18f73-20261005.tar.gz`, Modus 0600, 1.082 Dateien)
+und hashgleich in ein separates Verzeichnis wiederhergestellt.
+
+Verifiziert: Execution-Commit im Container, Health/Readiness, ohne Login 401
+fuer UI/API/Assets, HTTP leitet nur auf HTTPS um. `smoke_munich.py`,
+`smoke_demo.py --planner --all-cases` und `smoke_flexlab.py` gegen den
+Frontend-Port auf der Host-Bridge erfolgreich (FlexLab mit erwarteten
+FAIL-/INCONCLUSIVE-Faellen). Authentifizierte HTTPS-Smokes stehen aus.
+
+## Release vom 04.10.2026
+
 
 Code-Release `b7e08cf625af042bf062154560bc3bc6802845ce` aus
 `codex/airport-pilot-studio` (PR #12) ist auf Hetzner aktiviert.
