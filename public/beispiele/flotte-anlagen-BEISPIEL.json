@@ -1,0 +1,33 @@
+{
+  "_hinweis": "BEISPIELDATEI – erfundene Werte, keine echte Quelle. Nicht so hochladen.",
+  "entries": [
+    {
+      "key": "grid_import_limit_kw",
+      "value": 3500,
+      "unit": "kW",
+      "source": "",
+      "source_date": null
+    },
+    {
+      "key": "fleet.bus.vehicles",
+      "value": 20,
+      "unit": "Stück",
+      "source": "",
+      "source_date": null
+    },
+    {
+      "key": "fleet.bus.chargers",
+      "value": 8,
+      "unit": "Stück",
+      "source": "",
+      "source_date": null
+    },
+    {
+      "key": "pv_capacity_kwp",
+      "value": 7,
+      "unit": "MWp",
+      "source": "",
+      "source_date": null
+    }
+  ]
+}

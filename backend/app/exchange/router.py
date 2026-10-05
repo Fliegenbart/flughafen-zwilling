@@ -21,6 +21,8 @@ from ..instance_access import EXCHANGE_ROLES
 from ..munich.coupled_models import CoupledConfig
 from ..pilot.router import EvidenceStore, _normalize_uuid, _verified_coupled_series
 from . import library
+from .assets import MAX_IMPORT_BYTES as ASSET_IMPORT_LIMIT
+from .assets import AssetsRequest, AssetStore
 from .situation import build_situation, empty_situation
 from .variants import VariantRequest, VariantRunRequest, VariantService, fleet_summary
 
@@ -759,6 +761,19 @@ class ExchangeStore:
                       if link["kind"] == "coupled_run"}
         for item in self.list_items(project_id, "scenario_package"):
             candidates.update(run["run_id"] for run in item["content"]["runs"])
+        # Basislauf jeder Variantenrechnung: gerechnet mit den Projektwerten (Schritt "Daten"),
+        # damit Lagebild und Engpass nach einem Lauf die eingetragenen Anlagen zeigen.
+        with self.pilot._connect() as connection:
+            try:
+                batches = connection.execute(
+                    "SELECT content_json FROM project_variant_batches WHERE project_id = ?",
+                    (project_id,)).fetchall()
+            except sqlite3.OperationalError:
+                batches = []
+        for row in batches:
+            for entry in json.loads(row["content_json"]).get("entries", []):
+                if entry.get("key") == "base" and entry.get("run_id"):
+                    candidates.add(entry["run_id"])
         best = None
         for run_id in sorted(candidates):
             try:
@@ -810,7 +825,8 @@ def create_router(storage, lab_service, plans, base_dir: Path | None = None,
                   service=None, enqueue=None) -> APIRouter:
     pilot = EvidenceStore(base_dir or storage.base_dir)
     store = ExchangeStore(pilot, storage, lab_service, plans)
-    variants = VariantService(store, service, enqueue)
+    assets = AssetStore(store)
+    variants = VariantService(store, service, enqueue, assets)
     router = APIRouter(prefix="/api/v1", tags=["Airport Energy Check: Austausch (read-only)"])
     role_header = Header(default=None, alias="X-Exchange-Role")
 
@@ -844,6 +860,30 @@ def create_router(storage, lab_service, plans, base_dir: Path | None = None,
     @router.get("/projects/{project_id}/situation")
     def situation(project_id: str) -> dict:
         return store.situation(pid(project_id))
+
+    @router.get("/projects/{project_id}/assets")
+    def get_assets(project_id: str) -> dict:
+        return assets.payload(pid(project_id))
+
+    @router.put("/projects/{project_id}/assets")
+    def put_assets(project_id: str, body: AssetsRequest, request: Request,
+                   x_exchange_role: str | None = role_header) -> dict:
+        return assets.save(pid(project_id), body, resolve_actor(request, x_exchange_role))
+
+    @router.post("/projects/{project_id}/assets/import", status_code=201)
+    async def import_assets(project_id: str, request: Request,
+                            filename: str = Query(default="", max_length=200),
+                            x_exchange_role: str | None = role_header) -> dict:
+        actor = resolve_actor(request, x_exchange_role)
+        normalized = pid(project_id)
+        body = bytearray()
+        async for chunk in request.stream():
+            body.extend(chunk)
+            if len(body) > ASSET_IMPORT_LIMIT:
+                raise HTTPException(status_code=413,
+                                    detail="invalid_assets: Datei größer als 256 KiB.")
+        content_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
+        return assets.import_file(normalized, bytes(body), content_type, filename, actor)
 
     @router.get("/projects/{project_id}/variants")
     def list_variants(project_id: str) -> dict:

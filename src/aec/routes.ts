@@ -14,6 +14,18 @@ export const QUESTIONS = [
 ] as const;
 export type Question = (typeof QUESTIONS)[number]["id"];
 
+/**
+ * Schritt "Daten" vor A: was ist echt, was Annahme, was fehlt. Eigenes Schild "0",
+ * damit die Buchstaben A–E der fuenf Fragen unveraendert bleiben.
+ */
+export const DATA_STEP = {
+  id: "daten",
+  label: "Daten",
+  question: "Was wissen wir schon?",
+} as const;
+export type Step = Question | "daten";
+export const STEPS = [DATA_STEP, ...QUESTIONS] as const;
+
 /** Werkstatt = vollstaendige Bestandswerkzeuge. */
 export type Werkstatt =
   | "system"
@@ -29,9 +41,16 @@ const WERKSTATT: Werkstatt[] = [...MUNICH_STEPS, "flexlab", "simulation"];
 export type Route =
   | { page: "start" }
   | { page: "bibliothek"; werkstatt?: "simulation" }
-  | { page: "projekt"; projekt: string; frage: Question; werkstatt?: Werkstatt };
+  | {
+      page: "projekt";
+      projekt: string;
+      frage: Step;
+      werkstatt?: Werkstatt;
+      /** Ohne `frage` in der Adresse: Startschritt nach Datenstand (Daten oder Lage). */
+      auto?: true;
+    };
 
-const isQuestion = (v: string | null): v is Question => QUESTIONS.some((q) => q.id === v);
+const isStep = (v: string | null): v is Step => STEPS.some((q) => q.id === v);
 const isWerkstatt = (v: string | null): v is Werkstatt => WERKSTATT.includes(v as Werkstatt);
 
 /** Welche Frage beherbergt welches Bestandswerkzeug. */
@@ -56,8 +75,9 @@ export function parseRoute(search: string): Route {
     return {
       page: "projekt",
       projekt,
-      frage: isQuestion(frage) ? frage : "lage",
+      frage: isStep(frage) ? frage : "lage",
       ...(isWerkstatt(werkstatt) ? { werkstatt } : {}),
+      ...(frage === null && !isWerkstatt(werkstatt) ? { auto: true as const } : {}),
     };
   }
   return { page: "start" };
@@ -70,7 +90,7 @@ export function toSearch(route: Route): string {
     if (route.werkstatt) p.set("werkstatt", route.werkstatt);
   } else if (route.page === "projekt") {
     p.set("projekt", route.projekt);
-    p.set("frage", route.frage);
+    if (!route.auto) p.set("frage", route.frage);
     if (route.werkstatt) {
       p.set("werkstatt", route.werkstatt);
       // Der Schritt-Navigator des Bestandswerkzeugs liest `schritt`.

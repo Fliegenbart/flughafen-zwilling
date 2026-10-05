@@ -8,7 +8,7 @@ import "../ui/aecTokens.css";
 import "./aec.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavContext, type Nav } from "./context";
-import { parseRoute, QUESTIONS, toSearch, type Route } from "./routes";
+import { parseRoute, STEPS, toSearch, type Route } from "./routes";
 import Link from "./Link";
 import { Mark } from "./parts";
 import Home from "./Home";
@@ -32,7 +32,7 @@ function storedTheme(): Theme {
 export function titleFor(route: Route): string {
   if (route.page === "bibliothek") return "Szenario-Bibliothek · Airport Energy Check";
   if (route.page === "projekt") {
-    const q = QUESTIONS.find((x) => x.id === route.frage)!;
+    const q = STEPS.find((x) => x.id === route.frage)!;
     return `${q.label} · Airport Energy Check`;
   }
   return "Airport Energy Check";

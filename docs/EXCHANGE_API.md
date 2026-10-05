@@ -262,3 +262,23 @@ keine neue Engine-Version (`airport_coupled_v2`). Neue Serienspalte `charging_re
 **Flotte**: `overview.fleet` und `situation.fleet`
 (`{"total_vehicles", "total_chargers", "by_kind": [{kind,label,vehicles,chargers}], "source"}`;
 `source`: `coupled_run` | `default_assumptions` | `null`).
+
+## Projektwerte Flotte und Anlagen (Schritt „Daten“)
+
+Modul `backend/app/exchange/assets.py`, Tests `backend/tests/test_project_assets.py`.
+
+`GET /api/v1/projects/{id}/assets` → `status` (`fehlt|annahme|echt`), `entries[]`
+(`key`, `value`, `unit`, `original_value`, `original_unit`, `source`, `source_date`, `status`),
+`fields[]` (Katalog mit Einheit, Grenzen, `default` = Standardannahme), `version` (SHA256, Herkunft).
+`PUT …/assets` `{"entries": [{"key": "grid_import_limit_kw", "value": 4.2, "unit": "MW",
+"source": "Netzvertrag", "source_date": "2025-11-01"}]}` ersetzt den Satz (neue Version, Audit
+`exchange_assets_set`). `POST …/assets/import?filename=…` mit CSV (`key,value,unit,source,source_date`,
+`#`-Kommentare) oder JSON (`{"entries": […]}`), max. 256 KiB; das Original wird mit SHA256 gespeichert.
+Rollen airport|admin (lab → 403). Fehler → `422 invalid_assets: <deutscher Satz>`.
+Einheiten kW/MW, kWh/MWh, kWp/MWp, Stück; Umrechnung in die kanonische Einheit, Original bleibt.
+Ohne Quelle bleibt ein Wert `annahme`; `echt` = Netzanschluss + Fahrzeugzahl, alle mit Quelle.
+
+Wirkung: Die Werte überschreiben in der Varianten-Basis (gekoppelter Lauf oder Flugplan-Standard)
+die passenden Felder (`base.project_assets`, im Batch eingefroren). Der Basislauf jeder
+Variantenrechnung zählt für Lagebild/Engpass als Projektlauf; bestehende Läufe ändern sich nicht.
+Frontend: Runtime-Flag `sharedDemoNotice` (Default an) blendet den Hinweis „geteilte Demo“ aus.

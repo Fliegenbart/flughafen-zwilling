@@ -58,6 +58,7 @@ const labels: Record<string, string> = {
   duplicate_timestamp: "Doppelter Zeitstempel.",
   non_monotonic_timestamp: "Zeitstempel sind nicht aufsteigend.",
   timestamp_timezone_required: "Zeitstempel benötigen eine Zeitzone.",
+  timestamp_not_iso8601: "Zeitstempel sind nicht im ISO-Format (z. B. 2026-10-04T08:00:00+02:00).",
   measured_kw_not_finite: "Messwert fehlt oder ist keine endliche Zahl.",
   model_kw_not_finite: "Modellwert ist keine endliche Zahl.",
   too_few_rows: "Mindestens zwei Messpunkte erforderlich.",

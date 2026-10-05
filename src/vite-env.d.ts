@@ -6,5 +6,7 @@ declare var __TWIN_CONFIG__:
       apiBaseUrl?: string;
       grafanaBaseUrl?: string;
       allowLocalApiFallback?: boolean;
+      /** Warnhinweis "geteilte Demo, keine Mandantentrennung" im Schritt Daten. Default: an. */
+      sharedDemoNotice?: boolean;
     }
   | undefined;

@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { createProject, listProjects } from "./api";
+import { saveAssets } from "./dataApi";
+import { distributeFleet, MAX_FLEET } from "./dataStatus";
+import { FOCUS_KEY } from "./views/DatenView";
 import { clock, limitWindows, powerText } from "./analysis";
 import { useNav } from "./context";
 import DayLandscape from "./DayLandscape";
@@ -18,6 +21,7 @@ export default function Home() {
   const [projects, setProjects] = useState<Project[]>([SAMPLE_PROJECT]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [fleet, setFleet] = useState(100);
 
   useEffect(() => {
     let alive = true;
@@ -47,8 +51,35 @@ export default function Home() {
       gridLimitKw: Math.max(100, Number(f.get("limit") ?? 3.5) * 1000),
       fleetSize: Math.max(1, Number(f.get("fleet") ?? 100)),
     });
+    if (project.source === "api") {
+      // Anlegewerte als Projektwerte (ohne Quelle = Annahme); sie wirken auf alle Läufe.
+      const num = (k: string) => Number(String(f.get(k) ?? "").replace(",", "."));
+      const entries = [
+        { key: "grid_import_limit_kw", value: Math.max(100, num("limit") * 1000), unit: "kW" },
+        { key: "pv_capacity_kwp", value: num("pv"), unit: "kWp" },
+        { key: "battery_capacity_kwh", value: num("storage"), unit: "kWh" },
+      ]
+        .concat(
+          distributeFleet(num("fleet")).flatMap((f) => [
+            { key: `fleet.${f.kind}.vehicles`, value: f.vehicles, unit: "Stück" },
+            { key: `fleet.${f.kind}.chargers`, value: f.chargers, unit: "Stück" },
+          ]),
+        )
+        .filter((e) => Number.isFinite(e.value) && e.value >= 0)
+        .map((e) => ({ ...e, source: "", source_date: null }));
+      try {
+        await saveAssets(project, entries);
+      } catch {
+        /* Werte lassen sich im Schritt Daten nachtragen */
+      }
+    }
     setCreating(false);
-    nav.navigate({ page: "projekt", projekt: project.id, frage: "lage" });
+    try {
+      sessionStorage.setItem(FOCUS_KEY, "flotte");
+    } catch {
+      /* ohne Fokus-Sprung */
+    }
+    nav.navigate({ page: "projekt", projekt: project.id, frage: "daten" });
   }
 
   return (
@@ -133,7 +164,7 @@ export default function Home() {
             {projects.map((p) => (
               <li key={p.id}>
                 <Link
-                  to={{ page: "projekt", projekt: p.id, frage: "lage" }}
+                  to={{ page: "projekt", projekt: p.id, frage: "lage", auto: true }}
                   className="aec-project"
                 >
                   <span className="aec-project__name">{p.name}</span>
@@ -184,16 +215,47 @@ export default function Home() {
                 />
               </label>
               <label>
+                PV-Leistung (kWp)
+                <input
+                  name="pv"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="any"
+                  defaultValue="7000"
+                />
+              </label>
+              <label>
+                Speicher (kWh)
+                <input
+                  name="storage"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="any"
+                  defaultValue="0"
+                />
+              </label>
+              <label>
                 Flotte (Fahrzeuge)
                 <input
                   name="fleet"
                   type="number"
                   inputMode="numeric"
                   min="1"
+                  max={MAX_FLEET}
                   step="1"
                   defaultValue="100"
+                  onChange={(e) => setFleet(Number(e.target.value))}
                 />
               </label>
+              <p className="aec-fine aec-new__split" aria-live="polite">
+                Aufteilung (Annahme, im Schritt Daten änderbar):{" "}
+                {distributeFleet(fleet)
+                  .map((f) => `${f.vehicles} ${f.label}`)
+                  .join(", ")}
+                .
+              </p>
             </div>
             <label>
               Entscheidungsfrage
@@ -209,9 +271,12 @@ export default function Home() {
               </p>
             ) : null}
             <button type="submit" className="aec-button" disabled={creating}>
-              {creating ? "Wird angelegt…" : "Anlegen und Lagebild öffnen"}
+              {creating ? "Wird angelegt…" : "Anlegen und Daten eintragen"}
             </button>
-            <p className="aec-fine">Werte sind Annahmen, bis Messdaten sie bestätigen.</p>
+            <p className="aec-fine">
+              Werte sind Annahmen, bis eine Quelle sie belegt. Danach geht es direkt zu „Flotte und
+              Anlagen“ im Schritt Daten.
+            </p>
           </form>
         </div>
       </section>

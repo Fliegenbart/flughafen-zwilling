@@ -384,6 +384,7 @@ export function boardFromApi(data: unknown): VariantBoard | null {
           total: num(progress.total),
           stress: runRaw.stress === true,
           stale: runRaw.stale === true,
+          inputsStale: runRaw.inputs_stale === true,
           createdAt: str(runRaw.created_at),
         }
       : null,
@@ -436,10 +437,14 @@ export async function deleteVariant(project: Project, id: string): Promise<void>
   if (!response.ok) throw new Error(explain(`API-Fehler ${response.status}`));
 }
 
-export async function runVariants(project: Project, stress: boolean): Promise<VariantBoard> {
+export async function runVariants(
+  project: Project,
+  stress: boolean,
+  baseOnly = false,
+): Promise<VariantBoard> {
   const data = await call<unknown>(
     `/projects/${encodeURIComponent(project.id)}/variants/run`,
-    { method: "POST", body: JSON.stringify({ stress }) },
+    { method: "POST", body: JSON.stringify(baseOnly ? { stress, base_only: true } : { stress }) },
     30000,
   );
   return boardFromApi(data) ?? sampleBoard();
