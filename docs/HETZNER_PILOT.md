@@ -87,7 +87,61 @@ Zugangsdaten nur nach Challenge und lehnt Redirects ausserhalb dieses HTTPS-
 Pilotpfads ab. Vor Freigabe unauthentifiziert 401 fuer UI/API/Artefakte pruefen.
 HTTP ohne TLS darf nur umleiten, nie Zugangsdaten abfragen oder Inhalte liefern.
 
-## Aktiver Release vom 04.10.2026
+## Aktiver Release vom 05.10.2026
+
+**Nach fehlgeschlagener Abnahme zurueckgerollt:** Aktiv bleibt
+`b7e08cf625af042bf062154560bc3bc6802845ce` aus `/opt/airport-releases/b7e08cf`.
+Der Server-Checkout `/opt/airport-twin-pilot` blieb ebenfalls auf diesem Stand.
+PR #16 wurde zusammengefuehrt. Kandidat
+`b749a395663c866a5cdc894ef640e905377c262c` wurde ausschliesslich aus dem
+verifizierten Remote-Commit in `/opt/airport-releases/b749a39` gebaut.
+Merge-CI: Backend, Frontend und Snapshots erfolgreich (Run `37338953264`).
+
+### Sicherung und Netzwerk
+
+- Offline-Archiv: `/opt/airport-backups/pre-b749a39-20261005.tar.gz`
+- 713 Dateien, Modus 0600.
+- SHA256: `e2c5e9789aeac8c18fd07f6c8e2c24b171cd8004896d68daf30db168591b9635`
+- Manifest-/SQLite-gepruefte Wiederherstellung in ein separates Verzeichnis
+  erfolgreich. Das aktive Datenvolume wurde nicht aus dem Backup ersetzt.
+- `10.253.250.0/24` war unmittelbar vorher gegen Docker-IPAM und Host-Routen
+  konfliktfrei. Compose ersetzte nur das interne Airport-Netz automatisch.
+  Nach Rollback wieder `192.168.16.0/20`. Kein `down -v`, keine anderen Stacks
+  veraendert; Basic Auth und Host-Proxy blieben durchgehend erhalten.
+
+### Abnahme des Kandidaten
+
+| Pruefung | Ergebnis |
+| --- | --- |
+| UI/API/Artefakt ohne Login | Bestanden, jeweils HTTP 401 |
+| HTTP | Bestanden, HTTP 301 statt Inhalte/Login-Challenge |
+| `smoke_munich.py` | Bestanden, alle vier Vergleiche |
+| `smoke_demo.py --planner --all-cases` | Alle acht Cases abgeschlossen; beim Planner nach Bibliotheksfehler abgebrochen, Gesamt-Smoke nicht bestanden |
+| `smoke_flexlab.py` | Nach Abbruch nicht ausgefuehrt |
+| `smoke_coupled.py` | Nach Abbruch nicht ausgefuehrt |
+| `smoke_pilot.py` | Nach Abbruch nicht ausgefuehrt; weiterhin localhost-only ohne Basic-Auth-Support |
+| `exchange/whoami` | Bestanden, HTTP 200 |
+| `library/scenarios` | **Nicht bestanden: HTTP 200, Antwort `[]`, 0 statt 8 Faelle** |
+| Projekt `overview` / `situation` | Nach Abbruch nicht ausgefuehrt |
+| Browser-Startseite | Bestanden, angemeldetes Safari zeigt Airport Energy Check und bestehendes Projekt |
+| Legacy-Weiterleitungen, Fonts, CSP-Konsole | Nach Abbruch nicht vollstaendig geprueft |
+| Client-IP / Login-Drosselung | Nicht ausgefuehrt; kein Fehlversuch gesendet |
+| Bestand | Urspruengliches Projekt, Snapshot und alle 90 Runs vor/nach Rollback vorhanden; alter gekoppelter v1-Run weiterhin `completed` lesbar |
+
+Der Kandidat startete healthy und konnte Projekte lesen; eine vollstaendige
+Migrations-/Logabnahme erfolgte wegen des sofortigen Rollbacks nicht.
+Rollback-Logs: sauberer Startup, ein Uvicorn-Prozess, Readiness HTTP 200,
+keine Fehler im abschliessend geprueften Logausschnitt.
+
+Ursache aus dem unveraenderten Releasecode: `exchange/library.py` verwendet
+`Path(__file__).resolve().parents[3] / "data" / "scenarios"`, im Container also
+`/data/scenarios`. Das Dockerfile legt Seeds unter `/opt/airport-seeds/scenarios`
+ab; der Entrypoint kopiert sie ins Runtime-Volume `/app/data/scenarios`.
+`TWIN_SCENARIO_LIBRARY_DIR` wird im Image/Hetzner-Compose nicht gesetzt.
+Vor erneutem Deploy den Pfad im Repository korrigieren und einen Image-Smoke
+mit genau acht Bibliotheksfaellen ergaenzen. Keine Server-Codekorrektur vorgenommen.
+
+## Historischer Release vom 04.10.2026
 
 Code-Release `b7e08cf625af042bf062154560bc3bc6802845ce` aus
 `codex/airport-pilot-studio` (PR #12) ist auf Hetzner aktiviert.
