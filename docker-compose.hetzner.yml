@@ -35,6 +35,7 @@ services:
       args:
         TWIN_UI_BASE_PATH: /airport/
         TWIN_RUNTIME_CONFIG: deploy/hetzner/runtime-config.js
+        TWIN_NGINX_CONFIG: deploy/hetzner/frontend-nginx.conf
     depends_on:
       twin-core:
         condition: service_healthy
@@ -53,6 +54,10 @@ networks:
     ipam:
       config:
         - subnet: 10.253.250.0/24
-  ingress: {}
+  ingress:
+    ipam:
+      config:
+        - subnet: 10.253.251.0/24
+          gateway: 10.253.251.1
 volumes:
   pilot-data: {}

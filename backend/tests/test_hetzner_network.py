@@ -22,5 +22,13 @@ def test_hetzner_proxy_network_contract():
     assert config["name"] == "airport-twin-pilot"
     assert not backend.get("ports")
     assert backend["environment"]["INFLUX_TOKEN"] == ""
+    ingress = config["networks"]["ingress"]["ipam"]["config"][0]
+    assert ingress["subnet"] == "10.253.251.0/24"
+    assert ingress["gateway"] == "10.253.251.1"
+    nginx_path = config["services"]["frontend"]["build"]["args"]["TWIN_NGINX_CONFIG"]
+    nginx = (root / nginx_path).read_text()
+    assert "set_real_ip_from 10.253.251.1;" in nginx
+    assert "real_ip_header X-Real-IP;" in nginx
+    assert "proxy_set_header X-Forwarded-For $remote_addr;" in nginx
     for document in ("HETZNER_PILOT.md", "PILOT_OPERATIONS.md"):
         assert subnet in (root / "docs" / document).read_text()

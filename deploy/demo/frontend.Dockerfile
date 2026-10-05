@@ -11,6 +11,7 @@ RUN npm run build
 
 FROM nginx:alpine
 ARG TWIN_RUNTIME_CONFIG=deploy/demo/runtime-config.js
-COPY deploy/demo/nginx.conf /etc/nginx/conf.d/default.conf
+ARG TWIN_NGINX_CONFIG=deploy/demo/nginx.conf
+COPY ${TWIN_NGINX_CONFIG} /etc/nginx/conf.d/default.conf
 COPY --from=build /ui/dist /usr/share/nginx/html
 COPY ${TWIN_RUNTIME_CONFIG} /usr/share/nginx/html/runtime-config.js
