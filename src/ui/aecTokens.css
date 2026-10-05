@@ -1,0 +1,149 @@
+/*
+ * Airport Energy Check · Designsystem "Vorfeld"
+ *
+ * Leitidee: das Vorfeld in der Dämmerung. Die Oberfläche spricht die Sprache der
+ * Rollwegbeschilderung und Befeuerung:
+ *   - Signalgelb (Rollweg-Mittellinie, Positionsschild) nur für die eine Botschaft
+ *     einer Ansicht und den aktuellen Ort in der Navigation.
+ *   - Haltebalken-Rot ist die Anschlussgrenze: eine Linie, die man nicht überfährt.
+ *   - Rollwegrand-Blau zeigt Flugwellen (Abflüge) als Rhythmus.
+ *   - Lastgänge sind Landschaft: weiche Flächen, keine Kästen.
+ * Grün kommt nur bei "empirisch bestanden" vor.
+ *
+ * Kontraste: Fließtext >= 4,5:1, große Schrift und UI-Grenzen >= 3:1 (WCAG AA).
+ */
+.aec {
+  /* Farbe · hell ("Vorfeld am Tag": warmer Beton) */
+  --aec-bg: #f3f1ec;
+  --aec-bg-2: #ebe8e1;
+  --aec-surface: #fffefb;
+  --aec-surface-2: #f7f5f0;
+  --aec-line: #dcd8ce;
+  --aec-line-strong: #a9a499;
+  --aec-ink: #13171c;
+  --aec-ink-2: #3a424c;
+  --aec-muted: #5b636d;
+  --aec-signal: #f2b705;
+  --aec-signal-ink: #13171c;
+  --aec-signal-text: #845c00;
+  --aec-stop: #c4332a;
+  --aec-edge: #2f5bd3;
+  --aec-edge-soft: #dfe6fb;
+  --aec-focus: #2f5bd3;
+  --aec-ok: #1f7a4c;
+
+  /* Lagebild bleibt immer dunkel ("Vorfeld-Dunkel") */
+  --night-bg: #090c11;
+  --night-bg-2: #0f141b;
+  --night-line: #222b37;
+  --night-ink: #eef1f5;
+  --night-muted: #a3adbb;
+  --night-signal: #ffc83d;
+  --night-stop: #ff5a4e;
+  --night-edge: #6f9bff;
+  --night-land-top: #3a4a63;
+  --night-land-bottom: #121925;
+
+  /* Typografie */
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-text: "Inter Tight Variable", "Inter Tight", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.1875rem;
+  --step-2: 1.5rem;
+  --step-3: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem);
+  --step-4: clamp(2.25rem, 1.4rem + 3vw, 3.75rem);
+  --step-5: clamp(2.75rem, 1.2rem + 5.4vw, 6rem);
+  --leading-tight: 1.04;
+  --leading-text: 1.55;
+  --tracking-label: 0.08em;
+
+  /* Abstände (4er-Raster) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 72px;
+  --sp-9: 112px;
+  --gutter: clamp(16px, 4vw, 56px);
+  --measure: 62ch;
+  --page: 1320px;
+
+  /* Radius */
+  --r-1: 4px;
+  --r-2: 10px;
+  --r-3: 18px;
+  --r-pill: 999px;
+
+  /* Bewegung */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-1: 120ms;
+  --dur-2: 240ms;
+  --dur-3: 520ms;
+  --dur-4: 1200ms;
+
+  --shadow-1: 0 1px 0 #00000008, 0 1px 3px #0000000d;
+  --shadow-2: 0 12px 40px -18px #1b1f2a40;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  .aec:not([data-theme="light"]) {
+    --aec-bg: #0b0e13;
+    --aec-bg-2: #10141a;
+    --aec-surface: #141921;
+    --aec-surface-2: #1a2029;
+    --aec-line: #262e3a;
+    --aec-line-strong: #4a5568;
+    --aec-ink: #eef1f5;
+    --aec-ink-2: #c9d0da;
+    --aec-muted: #a0aab8;
+    --aec-signal: #ffc83d;
+    --aec-signal-ink: #13171c;
+    --aec-signal-text: #ffd166;
+    --aec-stop: #ff6b5f;
+    --aec-edge: #86a8ff;
+    --aec-edge-soft: #1b2643;
+    --aec-focus: #ffc83d;
+    --aec-ok: #4fc488;
+    --shadow-1: 0 1px 0 #ffffff08;
+    --shadow-2: 0 18px 50px -20px #000000a0;
+    color-scheme: dark;
+  }
+}
+.aec[data-theme="dark"] {
+  --aec-bg: #0b0e13;
+  --aec-bg-2: #10141a;
+  --aec-surface: #141921;
+  --aec-surface-2: #1a2029;
+  --aec-line: #262e3a;
+  --aec-line-strong: #4a5568;
+  --aec-ink: #eef1f5;
+  --aec-ink-2: #c9d0da;
+  --aec-muted: #a0aab8;
+  --aec-signal: #ffc83d;
+  --aec-signal-ink: #13171c;
+  --aec-signal-text: #ffd166;
+  --aec-stop: #ff6b5f;
+  --aec-edge: #86a8ff;
+  --aec-edge-soft: #1b2643;
+  --aec-focus: #ffc83d;
+  --aec-ok: #4fc488;
+  --shadow-1: 0 1px 0 #ffffff08;
+  --shadow-2: 0 18px 50px -20px #000000a0;
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aec {
+    --dur-1: 0ms;
+    --dur-2: 0ms;
+    --dur-3: 0ms;
+    --dur-4: 0ms;
+  }
+}

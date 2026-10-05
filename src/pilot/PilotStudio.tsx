@@ -222,8 +222,8 @@ export default function PilotStudio() {
     <section className="pilot-studio" aria-labelledby="pilot-heading">
       <header className="pilot-studio__header">
         <div>
-          <span className="pilot-studio__eyebrow">Vom Szenario zum überprüfbaren Versuch</span>
-          <h2 id="pilot-heading">Pilot Decision Studio</h2>
+          <span className="pilot-studio__eyebrow">Pilot Decision Studio · Messdaten-Abgleich</span>
+          <h2 id="pilot-heading">Stimmt das Modell mit der Messung überein?</h2>
           <p>
             Eine konkrete Flughafenentscheidung, vorab gesperrte Abnahmekriterien, dokumentierte
             Messgrenzen und ein übergebbares Testpaket. Keine Einzelgerätetests statt eures

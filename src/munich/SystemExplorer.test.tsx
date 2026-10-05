@@ -198,11 +198,11 @@ describe("SystemExplorer", () => {
   });
   it("connects the repositioned components in each layout", () => {
     const { container } = render(<Explorer />);
-    const before = Array.from(container.querySelectorAll("svg.system-explorer__edges path"), (p) =>
+    const before = Array.from(container.querySelectorAll("svg.system-explorer__edges path:not(.system-explorer__flow)"), (p) =>
       p.getAttribute("d"),
     );
     fireEvent.click(screen.getByRole("tab", { name: /energiefluss/i }));
-    const after = Array.from(container.querySelectorAll("svg.system-explorer__edges path"), (p) =>
+    const after = Array.from(container.querySelectorAll("svg.system-explorer__edges path:not(.system-explorer__flow)"), (p) =>
       p.getAttribute("d"),
     );
     expect(before).toHaveLength(12);

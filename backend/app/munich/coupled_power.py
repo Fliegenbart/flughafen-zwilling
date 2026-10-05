@@ -93,16 +93,28 @@ class PowerBalance:
         imported = min(grid_cap, deficit)
         discharge = min(discharge_available, max(0, deficit - imported))
         surplus = max(0, pv + chp - demand)
-        charge = min(p.battery_power_kw, surplus,
-                     max(0, p.battery_capacity_kwh - self.stored) / DT_H / p.battery_efficiency)
+        room_kw = max(0, p.battery_capacity_kwh - self.stored) / DT_H / p.battery_efficiency
+        charge_surplus = min(p.battery_power_kw, surplus, room_kw)
+        # Peak-Shaving-Regel (optional): Netzladung nur unterhalb der Schwelle und der
+        # wirksamen Grenze; Entladung erfolgt ohnehin erst oberhalb der wirksamen Grenze,
+        # daher laden und entladen nie in derselben Minute.
+        grid_charge = 0.0
+        threshold = p.battery_grid_charge_below_kw
+        if threshold is not None and discharge <= 0:
+            grid_charge = max(0.0, min(
+                p.battery_power_kw - charge_surplus, room_kw - charge_surplus,
+                min(threshold, grid_cap) - imported,
+            ))
+            imported += grid_charge
+        charge = charge_surplus + grid_charge
         self.storage_in_terms.append(charge * p.battery_efficiency * DT_H)
         self.storage_out_terms.append(discharge / p.battery_efficiency * DT_H)
         self.stored += (charge * p.battery_efficiency - discharge / p.battery_efficiency) * DT_H
         if self.stored < self.reserve - 1e-7 or self.stored > p.battery_capacity_kwh + 1e-7:
             raise RuntimeError("Speicher-Energiegrenze verletzt")
         self.stored = min(p.battery_capacity_kwh, max(self.reserve, self.stored))
-        exported = min(p.grid_export_limit_kw, max(0, surplus - charge))
-        curtailed = max(0, surplus - charge - exported)
+        exported = min(p.grid_export_limit_kw, max(0, surplus - charge_surplus))
+        curtailed = max(0, surplus - charge_surplus - exported)
         # Buchfuehrungscheck: curtailed ist hier Rest derselben Gleichung, daher per
         # Konstruktion ~0. Unabhaengige Pruefungen: storage_closure_error, Flottenbilanz.
         error = abs(pv + chp + imported + discharge - demand - charge - exported - curtailed)
@@ -111,7 +123,7 @@ class PowerBalance:
             self.unserved_minutes.append(minute)
             self.unserved_kwh_terms.append(unserved * DT_H)
         self.apron_delivered_terms.append(apron * DT_H * p.charging_efficiency)
-        pv_used = min(pv, max(0, demand + charge - chp))
+        pv_used = min(pv, max(0, demand + charge_surplus - chp))
         pv_surplus = max(0, pv - pv_used)
         pv_curtailed = min(pv_surplus, curtailed)
         k = self.kpis

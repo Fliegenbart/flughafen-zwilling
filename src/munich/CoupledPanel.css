@@ -28,9 +28,9 @@
 }
 [data-studio] .coupled-boundary {
   padding: 12px;
-  color: var(--ds-warning);
-  background: var(--ds-warning-bg);
-  border-left: 3px solid var(--ds-warning);
+  color: var(--ds-ink);
+  background: transparent;
+  border-left: 3px solid var(--aec-signal, #f2b705);
 }
 [data-studio] .coupled-ack {
   display: flex;

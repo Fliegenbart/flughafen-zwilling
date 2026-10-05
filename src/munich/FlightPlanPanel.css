@@ -55,9 +55,9 @@
 [data-studio] .muc-flightplan__boundary {
   margin: 14px 0;
   padding: 12px;
-  color: var(--ds-warning);
-  background: var(--ds-warning-bg);
-  border-left: 3px solid var(--ds-warning);
+  color: var(--ds-ink);
+  background: transparent;
+  border-left: 3px solid var(--aec-signal, #f2b705);
   font-size: 12px;
 }
 [data-studio] .muc-flightplan__stats {

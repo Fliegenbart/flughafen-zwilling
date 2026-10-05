@@ -49,6 +49,7 @@ from .munich.coupled_router import create_router as create_coupled_router
 from .pilot.router import create_router as create_pilot_router
 from .munich.robustness_router import create_router as create_robustness_router
 from .instance_access import install_instance_access
+from .exchange.router import create_router as create_exchange_router
 
 logger = logging.getLogger("twin_core.main")
 
@@ -114,6 +115,9 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     app.include_router(create_coupled_router(service, workers.enqueue_run, flight_plans))
     app.include_router(create_pilot_router(storage.base_dir))
     app.include_router(create_robustness_router(service, workers.enqueue_run, flight_plans))
+    app.include_router(create_exchange_router(
+        storage, lab_service, flight_plans, service=service, enqueue=workers.enqueue_run,
+    ))
     install_instance_access(app, storage.base_dir)
 
     @app.get("/api/v1/health", response_model=HealthResponse)

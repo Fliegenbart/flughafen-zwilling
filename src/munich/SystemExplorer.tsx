@@ -418,14 +418,27 @@ export default function SystemExplorer({
                 preserveAspectRatio="none"
                 aria-hidden="true"
               >
-                {CONNECTIONS.map(({ from, to, demand }) => (
-                  <path
-                    key={from + to}
-                    d={connectionPath(positions, from, to)}
-                    vectorEffect="non-scaling-stroke"
-                    className={`${demand ? "is-demand" : ""} ${activePath.has(from) && activePath.has(to) ? "is-affected" : ""}`}
-                  />
-                ))}
+                {CONNECTIONS.map(({ from, to, demand }) => {
+                  const d = connectionPath(positions, from, to);
+                  const affected = activePath.has(from) && activePath.has(to);
+                  return (
+                    <g key={from + to}>
+                      <path
+                        d={d}
+                        vectorEffect="non-scaling-stroke"
+                        className={`${demand ? "is-demand" : ""} ${affected ? "is-affected" : ""}`}
+                      />
+                      {/* Lichtlinie: Energiefluss als wandernde Lichtpunkte (aus bei reduzierter Bewegung) */}
+                      {!demand && (
+                        <path
+                          d={d}
+                          vectorEffect="non-scaling-stroke"
+                          className={`system-explorer__flow ${affected ? "is-affected" : ""}`}
+                        />
+                      )}
+                    </g>
+                  );
+                })}
               </svg>
               {(Object.keys(NODES) as NodeId[]).map((id) => (
                 <button

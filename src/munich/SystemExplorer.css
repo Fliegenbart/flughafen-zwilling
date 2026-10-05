@@ -89,7 +89,7 @@
 [data-studio] .system-explorer__tabs button[aria-selected="true"] {
   color: var(--explorer-ink);
   background: var(--ds-surface);
-  box-shadow: 0 1px 4px rgb(16 32 51 / 8%);
+  box-shadow: none;
 }
 
 [data-studio] .system-explorer__tabs strong,
@@ -205,7 +205,7 @@
   background: var(--ds-surface);
   border: 1px solid var(--ds-line-strong);
   border-radius: 6px;
-  box-shadow: 0 3px 10px rgb(23 53 89 / 4%);
+  box-shadow: none;
   text-align: left;
   transform: translate(-50%, -50%);
 }
@@ -217,7 +217,7 @@
 [data-studio] .system-explorer__node.is-selected {
   padding: 8px;
   border: 2px solid var(--explorer-blue);
-  box-shadow: 0 0 0 3px rgb(34 85 238 / 8%);
+  box-shadow: none;
 }
 
 [data-studio] .system-explorer__node.is-affected {
@@ -546,3 +546,194 @@
 /* Keep all components visible on ordinary desktops; narrow screens scroll only the map. */
 [data-studio] .system-explorer__diagram { min-width: 820px; }
 [data-studio] .system-explorer__edges path.is-affected { stroke: var(--ds-warning); stroke-width: 3; }
+
+/* ------------------------------------------------------------------
+ * Systemlandkarte im Stil des Vorfelds (Dämmerung): dunkle Fläche,
+ * Leitungen als Lichtlinien, Energiefluss als wandernde Lichtpunkte.
+ * Der hervorgehobene Wirkungspfad ist die eine Botschaft (Signalgelb).
+ * ------------------------------------------------------------------ */
+[data-studio] .system-explorer__card {
+  --ds-surface: var(--night-bg-2, #0f141b);
+  --ds-surface-2: var(--night-bg, #090c11);
+  --ds-surface-3: var(--night-line, #222b37);
+  --ds-line: var(--night-line, #222b37);
+  --ds-line-strong: var(--night-land-top, #3a4a63);
+  --ds-ink: var(--night-ink, #eef1f5);
+  --ds-muted: var(--night-muted, #a3adbb);
+  --ds-warning: var(--night-signal, #ffc83d);
+  --ds-warning-bg: color-mix(in srgb, var(--night-signal, #ffc83d) 14%, var(--night-bg-2, #0f141b));
+  --ds-accent-soft: color-mix(in srgb, var(--night-edge, #6f9bff) 12%, var(--night-bg-2, #0f141b));
+  --ds-focus: var(--night-signal, #ffc83d);
+  --explorer-ink: var(--night-ink, #eef1f5);
+  --explorer-muted: var(--night-muted, #a3adbb);
+  --explorer-line: var(--night-line, #222b37);
+  --explorer-blue: var(--night-ink, #eef1f5);
+  --explorer-amber: var(--night-signal, #ffc83d);
+  --flow-light: color-mix(in srgb, var(--night-ink, #eef1f5) 85%, var(--night-edge, #6f9bff));
+  color: var(--night-ink, #eef1f5);
+  background: var(--night-bg-2, #0f141b);
+  border-color: var(--night-line, #222b37);
+  border-radius: var(--r-3, 18px);
+  overflow: hidden;
+  color-scheme: dark;
+}
+[data-studio] .system-explorer__card .system-explorer__map-head h3 {
+  font: 400 var(--step-2, 24px) / 1.15 var(--font-display, Georgia, serif);
+  letter-spacing: -0.005em;
+}
+[data-studio] .system-explorer__card .system-explorer__map-head span {
+  font-family: var(--font-data, monospace);
+  background: transparent;
+  border: 1px solid var(--night-line, #222b37);
+  border-radius: var(--r-pill, 999px);
+}
+[data-studio] .system-explorer__card .system-explorer__diagram-scroll {
+  border-block-color: var(--night-line, #222b37);
+}
+[data-studio] .system-explorer__card .system-explorer__diagram {
+  background-color: var(--night-bg, #090c11);
+  background-image:
+    radial-gradient(ellipse 70% 60% at 50% 105%, color-mix(in srgb, var(--night-edge, #6f9bff) 10%, transparent), transparent 70%),
+    radial-gradient(color-mix(in srgb, var(--night-line, #222b37) 90%, transparent) 1px, transparent 1px);
+  background-size: auto, 22px 22px;
+}
+[data-studio] .system-explorer__card .system-explorer__diagram.is-technical {
+  background-image:
+    linear-gradient(var(--night-line, #222b37) 1px, transparent 1px),
+    linear-gradient(90deg, var(--night-line, #222b37) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+[data-studio] .system-explorer__card .system-explorer__edges path {
+  stroke: color-mix(in srgb, var(--night-land-top, #3a4a63) 80%, var(--night-ink, #eef1f5));
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+[data-studio] .system-explorer__card .system-explorer__edges path.is-demand {
+  stroke: var(--night-edge, #6f9bff);
+  stroke-dasharray: 2 6;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--night-edge, #6f9bff) 70%, transparent));
+}
+[data-studio] .system-explorer__card .system-explorer__edges path.system-explorer__flow {
+  stroke: var(--flow-light);
+  stroke-width: 2.5;
+  stroke-dasharray: 1.5 26;
+  filter: drop-shadow(0 0 4px var(--flow-light));
+  animation: explorer-flow 2.4s linear infinite;
+}
+[data-studio] .system-explorer__card .system-explorer__edges path.is-affected {
+  stroke: var(--night-signal, #ffc83d);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--night-signal, #ffc83d) 70%, transparent));
+}
+[data-studio] .system-explorer__card .system-explorer__edges path.system-explorer__flow.is-affected {
+  stroke: #fff6d6;
+  stroke-width: 3;
+  animation-duration: 1.2s;
+}
+@keyframes explorer-flow {
+  to {
+    stroke-dashoffset: -55;
+  }
+}
+[data-studio] .system-explorer__card .system-explorer__node {
+  background: color-mix(in srgb, var(--night-bg-2, #0f141b) 88%, transparent);
+  border: 1px solid var(--night-line, #222b37);
+  border-radius: var(--r-2, 10px);
+  box-shadow: 0 0 0 1px #00000040, 0 10px 30px -14px #000000c0;
+  backdrop-filter: blur(4px);
+  transition: border-color var(--dur-1, 120ms), box-shadow var(--dur-2, 240ms);
+}
+[data-studio] .system-explorer__card .system-explorer__node:hover {
+  border-color: var(--night-land-top, #3a4a63);
+}
+[data-studio] .system-explorer__card .system-explorer__node strong {
+  font: 500 16px/1.2 var(--font-text, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+[data-studio] .system-explorer__card .system-explorer__node small,
+[data-studio] .system-explorer__card .system-explorer__node span {
+  font-size: 11px;
+}
+[data-studio] .system-explorer__card .system-explorer__node.is-selected {
+  border: 2px solid var(--night-ink, #eef1f5);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--night-ink, #eef1f5) 12%, transparent), 0 10px 30px -14px #000;
+}
+[data-studio] .system-explorer__card .system-explorer__node.is-affected {
+  border-color: var(--night-signal, #ffc83d);
+  background: var(--ds-warning-bg);
+  box-shadow: 0 0 22px -6px color-mix(in srgb, var(--night-signal, #ffc83d) 55%, transparent);
+}
+[data-studio] .system-explorer__card .system-explorer__node.is-hub {
+  border-color: color-mix(in srgb, var(--night-edge, #6f9bff) 45%, var(--night-line, #222b37));
+  background: var(--ds-accent-soft);
+}
+[data-studio] .system-explorer__card .system-explorer__legend {
+  font: 11px var(--font-data, monospace);
+  color: var(--night-muted, #a3adbb);
+}
+[data-studio] .system-explorer__card .system-explorer__legend i {
+  background: var(--flow-light);
+  box-shadow: 0 0 4px var(--flow-light);
+}
+[data-studio] .system-explorer__card .system-explorer__legend i.is-demand {
+  background: repeating-linear-gradient(90deg, var(--night-edge, #6f9bff) 0 2px, transparent 2px 6px);
+  box-shadow: none;
+}
+[data-studio] .system-explorer__card .system-explorer__legend i.is-affected {
+  background: var(--night-signal, #ffc83d);
+  box-shadow: 0 0 4px var(--night-signal, #ffc83d);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-studio] .system-explorer__card .system-explorer__edges path.system-explorer__flow {
+    animation: none;
+    stroke-dasharray: 1.5 12;
+  }
+}
+
+/* Ruhigere Grundformen im übrigen Explorer */
+[data-studio] .system-explorer__header h2 {
+  font: 400 var(--step-3, 32px) / 1.08 var(--font-display, Georgia, serif);
+  letter-spacing: -0.01em;
+}
+[data-studio] .system-explorer__header > div > p:last-child { font-size: 14px; }
+[data-studio] .system-explorer__draft {
+  font-family: var(--font-data, monospace);
+  border-radius: var(--r-pill, 999px);
+  padding: 6px 12px;
+}
+[data-studio] .system-explorer__tabs {
+  background: transparent;
+  border: 1px solid var(--ds-line);
+  border-radius: var(--r-pill, 999px);
+}
+[data-studio] .system-explorer__tabs button { border-radius: var(--r-pill, 999px); padding: 8px 18px; }
+[data-studio] .system-explorer__tabs button[aria-selected="true"] {
+  color: var(--ds-on-accent);
+  background: var(--ds-ink);
+  box-shadow: none;
+}
+[data-studio] .system-explorer__tabs small { font-size: 11px; opacity: 0.85; }
+[data-studio] .system-explorer__boundary {
+  color: var(--ds-ink);
+  background: transparent;
+  border: 0;
+  border-left: 3px solid var(--aec-signal, #f2b705);
+  font-size: 13px;
+}
+[data-studio] .system-explorer__inspector,
+[data-studio] .system-explorer__evidence {
+  border-radius: var(--r-3, 18px);
+}
+[data-studio] .system-explorer__inspector h3 {
+  font: 400 var(--step-2, 24px) / 1.15 var(--font-display, Georgia, serif);
+}
+[data-studio] .system-explorer__control input { border-radius: var(--r-1, 4px); font-variant-numeric: tabular-nums; }
+[data-studio] .system-explorer__impact { border-radius: var(--r-2, 10px); }
+[data-studio] .system-explorer__impact ol, [data-studio] .system-explorer__impact p { font-size: 12px; }
+[data-studio] .system-explorer__diff dt { font-size: 11px; }
+[data-studio] .system-explorer__evidence span,
+[data-studio] .system-explorer__evidence small,
+[data-studio] .system-explorer__evidence p { font-size: 12px; }
+[data-studio] .system-explorer__secondary,
+[data-studio] .system-explorer__start { border-radius: var(--r-pill, 999px); font-weight: 600; min-height: 44px; }
+[data-studio] .system-explorer__start { color: var(--ds-on-accent); background: var(--ds-ink); border-color: var(--ds-ink); }

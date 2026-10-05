@@ -36,7 +36,7 @@ describe("HMI smoke", () => {
 
   it("uses a compact studio header without presenting initial zeros as evidence", () => {
     render(<App />);
-    expect(screen.getByRole("heading", { name: "Airport Twin Core", level: 1 })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Was hält die Abfertigung aus?", level: 1 })).toBeVisible();
     const band = screen.getByRole("region", { name: "Airport-Modell-KPIs" });
     expect(within(band).getAllByText("n/a")).toHaveLength(4);
     expect(within(band).queryByText("0.00")).toBeNull();
@@ -245,7 +245,8 @@ describe("HMI smoke", () => {
     fireEvent.click(screen.getByRole("button", { name: "Backend Run starten" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Status: completed")).toBeInTheDocument();
+      expect(screen.getAllByText("Fertig").length).toBeGreaterThan(0);
+      expect(screen.getByText("completed", { selector: ".mono" })).toBeInTheDocument();
       expect(screen.getByText("Modellkriterien: nicht erfüllt")).toBeInTheDocument();
     });
     expect(screen.getByText(/Modellwerte, kein empirischer Nachweis/i)).toBeInTheDocument();
@@ -907,7 +908,7 @@ describe("HMI smoke", () => {
           String(input).includes("/api/v1/runs/run-live/telemetry-slice"),
         ),
       ).toBe(true);
-      expect(screen.getByText(/Run RUNNING/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Rechnet …/).length).toBeGreaterThan(0);
     });
   });
 

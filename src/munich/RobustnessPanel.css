@@ -4,10 +4,9 @@
   margin-top: 16px;
   padding: 20px;
   color: var(--ds-ink);
-  background: linear-gradient(135deg, var(--ds-surface-2) 0%, var(--ds-surface) 58%, var(--ds-surface-2) 100%);
-  border: 1px solid var(--ds-line-strong);
-  border-left: 3px solid var(--ds-ok);
-  border-radius: 6px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-line);
+  border-radius: var(--r-3, 18px);
 }
 [data-studio] .muc-robustness p {
   margin: 0;
@@ -19,7 +18,7 @@
   gap: 16px;
 }
 [data-studio] .muc-robustness__eyebrow {
-  color: var(--ds-ok);
+  color: var(--ds-muted);
   font: 11px var(--font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -30,7 +29,7 @@
   background: var(--ds-warning-bg);
   border: 1px solid var(--ds-surface-3);
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 [data-studio] .muc-robustness__inputs {
@@ -51,7 +50,7 @@
 }
 [data-studio] .muc-robustness__inputs dl > div {
   padding: 8px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--ds-surface-2);
   border: 1px solid var(--ds-line);
   border-radius: 4px;
 }
@@ -59,7 +58,7 @@
 [data-studio] .muc-robustness__results small,
 [data-studio] .muc-robustness__note {
   color: var(--ds-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 [data-studio] .muc-robustness__inputs dd {
   margin: 2px 0 0;
@@ -111,7 +110,7 @@
 [data-studio] .muc-robustness td > a {
   display: inline-block;
   margin: 4px 8px 0 0;
-  font-size: 11px;
+  font-size: 12px;
 }
 [data-studio] .muc-robustness td > code {
   max-width: 280px;

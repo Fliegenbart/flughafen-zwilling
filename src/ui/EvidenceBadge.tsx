@@ -2,9 +2,15 @@ import { useId } from "react";
 
 /**
  * Evidenzstatus: ueberall gleich benannt, gleich gefaerbt, mit Erklaerung.
- * Bewusst keine gruene Stufe: nichts in diesem Prototyp ist empirisch bestaetigt.
+ * Fuenf Stufen, aufsteigend. Gruen ist allein "empirisch bestanden" vorbehalten
+ * (Holdout-PASS mit vorab gesperrten Kriterien); alles Ungepruefte bleibt ungruen.
  */
-export type EvidenceLevel = "assumption" | "synthetic" | "model_checked" | "empirical_open";
+export type EvidenceLevel =
+  | "assumption"
+  | "synthetic"
+  | "model_checked"
+  | "empirical_open"
+  | "empirical_passed";
 
 export const EVIDENCE_LEVELS: Record<EvidenceLevel, { label: string; hint: string }> = {
   assumption: {
@@ -23,7 +29,20 @@ export const EVIDENCE_LEVELS: Record<EvidenceLevel, { label: string; hint: strin
     label: "empirisch offen",
     hint: "Noch nicht mit unabhängigen Messdaten nachgewiesen. Benötigt vorab gesperrte Kriterien und Holdout-Daten.",
   },
+  empirical_passed: {
+    label: "empirisch bestanden",
+    hint: "Holdout-Messdaten erfüllen die vorab gesperrten Kriterien. Gilt nur für diesen quantitativen Vergleich, nicht für elektrische Sicherheit oder Betrieb.",
+  },
 };
+
+/** Rang 0..4 fuer die Evidenzleiter (Annahme unten, bestanden oben). */
+export const EVIDENCE_ORDER: EvidenceLevel[] = [
+  "assumption",
+  "synthetic",
+  "model_checked",
+  "empirical_open",
+  "empirical_passed",
+];
 
 type Props = {
   level: EvidenceLevel;
@@ -31,6 +50,18 @@ type Props = {
   label?: string;
   detail?: string;
 };
+
+/** Kleine Leiter aus fuenf Stufen; die erreichte Stufe ist gefuellt. */
+function Ladder({ level }: { level: EvidenceLevel }) {
+  const rank = EVIDENCE_ORDER.indexOf(level);
+  return (
+    <span className="ds-evidence__ladder" aria-hidden="true">
+      {EVIDENCE_ORDER.map((l, i) => (
+        <i key={l} data-on={i <= rank ? "" : undefined} />
+      ))}
+    </span>
+  );
+}
 
 export function EvidenceBadge({ level, label, detail }: Props) {
   const id = useId();
@@ -46,6 +77,7 @@ export function EvidenceBadge({ level, label, detail }: Props) {
       >
         <span className="ds-evidence__dot" aria-hidden="true" />
         {text}
+        <Ladder level={level} />
       </span>
       <span role="tooltip" id={id} className="ds-evidence__tip">
         <strong>{meta.label}.</strong> {meta.hint}

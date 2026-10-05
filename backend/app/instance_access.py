@@ -23,6 +23,11 @@ from fastapi.responses import JSONResponse
 
 _USERNAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{2,63}$")
 _ROLES = {"viewer", "operator"}
+# Fachrollen fuer den Projektaustausch (Airport Energy Check). Basisrolle bleibt
+# viewer/operator; die Fachrolle liegt in einer eigenen Tabelle (rueckwaertskompatibel).
+EXCHANGE_ROLES = {"airport", "lab", "admin"}
+# Pfade, auf die airport/lab ohne operator-Basisrolle schreiben duerfen.
+_EXCHANGE_WRITE_PREFIXES = ("/api/v1/projects/", "/api/v1/library/")
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 _NO_STORE = {"Cache-Control": "no-store"}
 # Fehlversuchs-Grenzen. Zaehler liegen im Prozessspeicher und gelten nur mit
@@ -90,6 +95,12 @@ class AccessConfig:
 class Principal:
     username: str
     role: str
+    exchange_role: str | None = None
+
+
+def default_exchange_role(base_role: str) -> str | None:
+    """Bestehende Konten: operator -> admin, viewer -> nur lesen."""
+    return "admin" if base_role == "operator" else None
 
 
 class AccessStore:
@@ -130,6 +141,11 @@ class AccessStore:
                     last_seen_at INTEGER NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
+                CREATE TABLE IF NOT EXISTS user_exchange_roles (
+                    username TEXT PRIMARY KEY REFERENCES users(username),
+                    exchange_role TEXT NOT NULL
+                        CHECK(exchange_role IN ('airport', 'lab', 'admin'))
+                );
                 CREATE TABLE IF NOT EXISTS audit_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     occurred_at INTEGER NOT NULL,
@@ -197,16 +213,22 @@ class AccessStore:
     def create_user(self, username: str, password: str, role: str) -> None:
         if not _USERNAME.fullmatch(username):
             raise ValueError("Username must be 3-64 characters from A-Z, 0-9, ., _, or -")
-        if role not in _ROLES:
-            raise ValueError("Role must be viewer or operator")
+        if role not in _ROLES | EXCHANGE_ROLES:
+            raise ValueError("Role must be viewer, operator, airport, lab or admin")
+        base_role = role if role in _ROLES else ("operator" if role == "admin" else "viewer")
         password_hash = self._password_hash(password)
         try:
             with self._connect() as connection:
                 connection.execute(
                     "INSERT INTO users(username, password_hash, role, created_at) "
                     "VALUES (?, ?, ?, ?)",
-                    (username, password_hash, role, int(time.time())),
+                    (username, password_hash, base_role, int(time.time())),
                 )
+                if role in EXCHANGE_ROLES:
+                    connection.execute(
+                        "INSERT INTO user_exchange_roles(username, exchange_role) VALUES (?, ?)",
+                        (username, role),
+                    )
         except sqlite3.IntegrityError as exc:
             raise ValueError("Username already exists") from exc
         self._audit(username, "user_created", "role=" + role)
@@ -259,8 +281,10 @@ class AccessStore:
 
         with self._connect() as connection:
             row = connection.execute(
-                "SELECT username, password_hash, role FROM users "
-                "WHERE username = ? AND disabled_at IS NULL",
+                "SELECT users.username, users.password_hash, users.role, "
+                "user_exchange_roles.exchange_role FROM users "
+                "LEFT JOIN user_exchange_roles ON user_exchange_roles.username = users.username "
+                "WHERE users.username = ? AND users.disabled_at IS NULL",
                 (username,),
             ).fetchone()
         password_hash = (
@@ -281,7 +305,11 @@ class AccessStore:
         self._attempts.pop(rate_key, None)
         token = secrets.token_urlsafe(32)
         token_hash = _token_hash(token)
-        principal = Principal(username=row["username"], role=row["role"])
+        principal = Principal(
+            username=row["username"],
+            role=row["role"],
+            exchange_role=row["exchange_role"] or default_exchange_role(row["role"]),
+        )
         with self._connect() as connection:
             connection.execute("DELETE FROM sessions WHERE expires_at <= ?", (int(now),))
             connection.execute(
@@ -306,8 +334,11 @@ class AccessStore:
         with self._connect() as connection:
             row = connection.execute(
                 """
-                SELECT users.username, users.role FROM sessions
+                SELECT users.username, users.role, user_exchange_roles.exchange_role
+                FROM sessions
                 JOIN users ON users.username = sessions.username
+                LEFT JOIN user_exchange_roles
+                    ON user_exchange_roles.username = users.username
                 WHERE sessions.token_hash = ? AND sessions.expires_at > ?
                     AND users.disabled_at IS NULL
                 """,
@@ -317,7 +348,13 @@ class AccessStore:
                 connection.execute(
                     "UPDATE sessions SET last_seen_at = ? WHERE token_hash = ?", (now, token_hash)
                 )
-        return Principal(username=row["username"], role=row["role"]) if row else None
+        if not row:
+            return None
+        return Principal(
+            username=row["username"],
+            role=row["role"],
+            exchange_role=row["exchange_role"] or default_exchange_role(row["role"]),
+        )
 
     def logout(self, token: str | None, username: str | None, detail: str) -> None:
         if token:
@@ -482,7 +519,14 @@ def install_instance_access(app: FastAPI, base_dir: Path) -> None:
             if not _same_origin(request, config):
                 store._audit(principal.username, "csrf_rejected", request.url.path)
                 return _response(403, "csrf_origin_rejected")
-            if request.url.path != "/api/v1/auth/logout" and principal.role != "operator":
+            exchange_write = principal.exchange_role in EXCHANGE_ROLES and (
+                request.url.path.startswith(_EXCHANGE_WRITE_PREFIXES)
+            )
+            if (
+                request.url.path != "/api/v1/auth/logout"
+                and principal.role != "operator"
+                and not exchange_write
+            ):
                 store._audit(principal.username, "write_rejected", request.url.path)
                 return _response(403, "operator_role_required")
         response = await call_next(request)
