@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException
 
 from ..models import ModelPack, RunRequest, ScenarioDefinition
 from ..run_service import RunService
-from .coupled_models import ENGINE_VERSION, CoupledConfig, CoupledRequest
+from .coupled_models import COUPLED_DOMAIN, ENGINE_VERSION, CoupledConfig, CoupledRequest
 from .coupled_world import build_world
 from .flightplan_router import load_snapshot
 from .flightplan_store import FlightPlanStore
@@ -46,7 +46,7 @@ def create_router(
                 scenario_id = f"coupled_{comparison_id}_{policy}_v1"
                 model_id = f"coupled_model_{comparison_id}_{policy}_v1"
                 service.create_scenario(ScenarioDefinition(
-                    id=scenario_id, version="1", domain=ENGINE_VERSION,
+                    id=scenario_id, version="1", domain=COUPLED_DOMAIN,
                     description="Flugplanbasierte Aufgaben-/Energie-Kopplung, unkalibriert",
                     duration_ms=(world.end_min - world.start_min) * 60000, tick_ms=60000,
                     metadata={"comparison_id": comparison_id, "policy": policy},

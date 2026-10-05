@@ -1,7 +1,7 @@
 import "@fontsource/sora/400.css";
 import "@fontsource/sora/600.css";
 import "@fontsource/ibm-plex-mono/400.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CartesianGrid,
   Legend,
@@ -16,6 +16,7 @@ import {
 import { FIELDS, DEFAULTS, PRESETS, number, time } from "./config";
 import { request, telemetry, url } from "./api";
 import { assertComparable, buildCompareHtml } from "./report";
+import { chartTokens } from "../ui/chartTheme";
 import type {
   Assumptions,
   ChartRow,
@@ -27,6 +28,9 @@ import type {
 import "./MunichPilot.css";
 import FlightPlanPanel from "./FlightPlanPanel";
 import CoupledPanel from "./CoupledPanel";
+import PilotStudio from "../pilot/PilotStudio";
+import { DEMO_STEPS, StepFooter, StepHead, StepPanel, StepProvider } from "../ui/Stepper";
+import { EvidenceBadge } from "../ui/EvidenceBadge";
 import { flightDate } from "./flightplanTypes";
 import type { FlightPlanSnapshot } from "./flightplanTypes";
 
@@ -122,16 +126,16 @@ function PowerChart({
   const lines =
     mode === "grid"
       ? [
-          ["baseline", "Netz / ungesteuert", "#8ca2b8"],
-          ["priority", "Netz / Buspriorität", "#5ee3d6"],
-          ["pv_kw", "PV, beide Regeln", "#ffca78"],
+          ["baseline", "Netz / ungesteuert", chartTokens.series.baseline],
+          ["priority", "Netz / Buspriorität", chartTokens.series.blue],
+          ["pv_kw", "PV, beide Regeln", chartTokens.series.amber],
         ]
       : mode === "charging"
         ? [
-            ["bus_kw", "Busdepot / Buspriorität", "#5ee3d6"],
-            ["parking_kw", "Parkhaus / Buspriorität", "#8db6ff"],
+            ["bus_kw", "Busdepot / Buspriorität", chartTokens.series.blue],
+            ["parking_kw", "Parkhaus / Buspriorität", chartTokens.series.teal],
           ]
-        : [["battery_soc_pct", "SOC / Buspriorität", "#ffca78"]];
+        : [["battery_soc_pct", "SOC / Buspriorität", chartTokens.series.amber]];
   return (
     <div
       className="muc-chart"
@@ -146,20 +150,20 @@ function PowerChart({
     >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={rows} margin={{ left: 4, right: 12, top: 12, bottom: 10 }}>
-          <CartesianGrid stroke="#253b50" strokeDasharray="3 5" vertical={false} />
+          <CartesianGrid stroke={chartTokens.grid} strokeDasharray="3 5" vertical={false} />
           <XAxis
             dataKey="minute"
             type="number"
             domain={[0, 1440]}
             ticks={[0, 360, 720, 1080, 1440]}
             tickFormatter={time}
-            stroke="#839aad"
-            tick={{ fontSize: 11 }}
+            stroke={chartTokens.axis}
+            tick={{ fontSize: 12 }}
           />
           <YAxis
-            stroke="#839aad"
+            stroke={chartTokens.axis}
             width={58}
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 12 }}
             tickFormatter={(v: number) => number(v)}
             unit={mode === "storage" ? "%" : ""}
             domain={mode === "storage" ? [0, 100] : [0, "auto"]}
@@ -170,23 +174,18 @@ function PowerChart({
               `${number(v, 1)} ${mode === "storage" ? "%" : "kW"}`,
               name,
             ]}
-            contentStyle={{
-              background: "#102438",
-              border: "1px solid #4a657d",
-              borderRadius: 8,
-              fontSize: 12,
-            }}
+            contentStyle={chartTokens.tooltip}
           />
-          <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+          <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
           {mode === "grid" && (
             <ReferenceLine
               y={config.grid_import_limit_kw}
-              stroke="#f5a86a"
+              stroke={chartTokens.series.amber}
               strokeDasharray="5 4"
               label={{
                 value: "Importgrenze",
-                fill: "#f5c599",
-                fontSize: 10,
+                fill: chartTokens.series.amber,
+                fontSize: 12,
                 position: "insideTopRight",
               }}
             />
@@ -395,33 +394,18 @@ export default function MunichPilot() {
     );
   }
 
-  return (
-    <main className="muc-pilot">
-      <header className="muc-hero">
-        <div className="muc-hero__heading">
-          <span className="muc-location">MUC / Energie &amp; Bodenmobilität</span>
-          <h1>Flughafen München</h1>
-          <p>
-            Elektrifizierung als Systemtest.
-            <br />
-            Flugplan, elektrische Flotte und Stromversorgung gemeinsam prüfen.
-          </p>
-        </div>
-        <div className="muc-hero__meta">
-          <span className="muc-tag">Flugplanbasierte Systemtests / SIL</span>
-          <strong>
-            Öffentliche Referenz.
-            <br />
-            Synthetischer Betrieb.
-          </strong>
-          <span>Keine FMG-Betriebsdaten. Nicht kalibriert.</span>
-        </div>
-      </header>
-      <nav className="muc-pilot-nav" aria-label="München Pilotbereiche">
-        <a href="#muc-flightplan-title">1. Flugplan wählen</a>
-        <a href="#coupled-title">2. Gekoppelten Systemtest prüfen</a>
-        <a href="#muc-energy-v1">Energie-v1 / statisch</a>
-      </nav>
+  const flightPlanPanel: ReactNode = (
+    <FlightPlanPanel
+      selected={flightPlan}
+      onSelect={setFlightPlan}
+      onBusyChange={setFlightPlanLoading}
+      disabled={busy}
+    />
+  );
+
+  const legacyEnergy = (
+    <section aria-label="Energie-v1 / statisch">
+      <h2 className="muc-static-heading">Energie-v1 / statisch</h2>
       <aside className="muc-boundary">
         <strong>Referenzpilot, kein Betriebsnachweis.</strong> Keine reale Anlagensteuerung,
         CO₂-/Kostenoptimierung oder Netzfreigabe. Die Original-Airport-Fälle und FlexLab bleiben
@@ -541,13 +525,6 @@ export default function MunichPilot() {
               )}
             </aside>
           )}
-          <FlightPlanPanel
-            selected={flightPlan}
-            onSelect={setFlightPlan}
-            onBusyChange={setFlightPlanLoading}
-            disabled={busy}
-          />
-          <CoupledPanel plan={flightPlan} loadingPlan={flightPlanLoading} />
           <section className="muc-network">
             <div className="muc-section-title">
               <h2>Versorgung &amp; Ladebereiche</h2>
@@ -870,6 +847,44 @@ export default function MunichPilot() {
           </section>
         </div>
       </div>
-    </main>
+    </section>
+  );
+
+  return (
+    <StepProvider steps={DEMO_STEPS}>
+      <main className="muc-pilot">
+        <CoupledPanel
+          plan={flightPlan}
+          loadingPlan={flightPlanLoading}
+          flightPlanPanel={flightPlanPanel}
+          operationsExtra={
+            <div className="muc-legacy-energy">
+              <p className="muc-small">
+                Statische Energie-v1-Referenz: älteres Modell ohne Flugplankopplung, separat
+                erhalten.
+              </p>
+              {legacyEnergy}
+            </div>
+          }
+        >
+          <StepPanel step="pilot" lazy>
+            <StepHead
+              step="pilot"
+              badges={
+                <>
+                  <EvidenceBadge level="synthetic" label="Beispieldaten synthetisch" />
+                  <EvidenceBadge level="empirical_open" label="PASS nur mit Holdout" />
+                </>
+              }
+            >
+              Konkrete Entscheidungsfrage, vorab gesperrte Abnahmekriterien und Messdaten. Erst
+              damit wird aus dem Modell ein überprüfbarer Versuch.
+            </StepHead>
+            <PilotStudio />
+            <StepFooter />
+          </StepPanel>
+        </CoupledPanel>
+      </main>
+    </StepProvider>
   );
 }

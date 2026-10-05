@@ -12,6 +12,7 @@ import type { CoupledRecord } from "./coupledTypes";
 import { number } from "./config";
 import { url } from "./api";
 import { modelTime, POLICY_LABELS } from "./coupledReport";
+import { chartTokens } from "../ui/chartTheme";
 
 export function ResultCard({ record }: { record: CoupledRecord }) {
   const k = record.summary!.coupled_kpis,
@@ -22,6 +23,7 @@ export function ResultCard({ record }: { record: CoupledRecord }) {
       className={`muc-result ${policy === "mission_priority" ? "muc-result--priority" : ""}`}
     >
       <header>
+        {policy === "uncontrolled" && <span className="muc-small">Baseline /</span>}
         <h3>{POLICY_LABELS[policy]}</h3>
         <span className="muc-tag">SIL abgeschlossen</span>
       </header>
@@ -36,52 +38,72 @@ export function ResultCard({ record }: { record: CoupledRecord }) {
           rechtzeitig
         </span>
       </div>
-      <dl className="muc-result__metrics">
-        <div>
-          <dt>Rechtzeitige Aufgaben</dt>
-          <dd>
-            {k.missions_on_time} / {k.mission_count}
-          </dd>
-        </div>
-        <div>
-          <dt>Nicht erledigt</dt>
-          <dd>{k.missions_uncompleted}</dd>
-        </div>
-        <div>
-          <dt>Energie-Warteminuten je Auftrag, summiert</dt>
-          <dd>{number(k.energy_wait_total_min)}</dd>
-        </div>
-        <div>
-          <dt>Fahrzeug-Warteminuten je Auftrag, summiert</dt>
-          <dd>{number(k.resource_wait_total_min)}</dd>
-        </div>
-        <div>
-          <dt>Parkhaus-Ladefristen</dt>
-          <dd>
-            {e.parking_ready_count} / {e.parking_session_count}
-          </dd>
-        </div>
-        <div>
-          <dt>Parkhausenergie fehlt</dt>
-          <dd>{number(e.charging_unmet_kwh, 1)} kWh</dd>
-        </div>
-        <div>
-          <dt>Netzspitze</dt>
-          <dd>{number(e.grid_peak_kw)} kW</dd>
-        </div>
-        <div>
-          <dt>Fahrzeugverbrauch / Trafoverluste</dt>
-          <dd>
-            {number(k.fleet_consumed_kwh, 1)} / {number(k.transformer_loss_kwh, 1)} kWh
-          </dd>
-        </div>
-        <div>
-          <dt>Grundlast unversorgt / BHKW nicht absetzbar</dt>
-          <dd>
-            {number(e.background_unserved_kwh, 1)} / {number(e.chp_unabsorbed_kwh, 1)} kWh
-          </dd>
-        </div>
-      </dl>
+      <details>
+        <summary>Weitere Modellwerte</summary>
+        <dl className="muc-result__metrics">
+          <div>
+            <dt>Rechtzeitige Aufgaben</dt>
+            <dd>
+              {k.missions_on_time} / {k.mission_count}
+            </dd>
+          </div>
+          <div>
+            <dt>Nicht erledigt</dt>
+            <dd>{k.missions_uncompleted}</dd>
+          </div>
+          <div>
+            <dt>Energie-Warteminuten je Auftrag, summiert</dt>
+            <dd>{number(k.energy_wait_total_min)}</dd>
+          </div>
+          <div>
+            <dt>Fahrzeug-Warteminuten je Auftrag, summiert</dt>
+            <dd>{number(k.resource_wait_total_min)}</dd>
+          </div>
+          <div>
+            <dt>Parkhaus-Ladefristen</dt>
+            <dd>
+              {e.parking_ready_count} / {e.parking_session_count}
+            </dd>
+          </div>
+          <div>
+            <dt>Parkhausenergie fehlt</dt>
+            <dd>{number(e.charging_unmet_kwh, 1)} kWh</dd>
+          </div>
+          <div>
+            <dt>Netzspitze</dt>
+            <dd>{number(e.grid_peak_kw)} kW</dd>
+          </div>
+          <div>
+            <dt>Fahrzeugverbrauch / Trafoverluste</dt>
+            <dd>
+              {number(k.fleet_consumed_kwh, 1)} / {number(k.transformer_loss_kwh, 1)} kWh
+            </dd>
+          </div>
+          <div>
+            <dt>Energiebilanz Flotte / Speicher (unabhängig geprüft)</dt>
+            <dd>
+              {number(k.fleet_energy_balance_error_kwh, 6)} /{" "}
+              {k.storage_energy_balance_error_kwh === undefined
+                ? "n/a"
+                : number(k.storage_energy_balance_error_kwh, 6)}{" "}
+              kWh
+            </dd>
+          </div>
+          <div>
+            <dt>Grundlast unversorgt / BHKW nicht absetzbar</dt>
+            <dd>
+              {number(e.background_unserved_kwh, 1)} / {number(e.chp_unabsorbed_kwh, 1)} kWh
+            </dd>
+          </div>
+        </dl>
+      </details>
+      {(k.model_warnings ?? []).length > 0 && (
+        <ul className="muc-warn" role="alert" aria-label="Modellwarnungen">
+          {(k.model_warnings ?? []).map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+      )}
       <p className={record.status.pass_fail ? "muc-ok" : "muc-warn"}>
         Modellkriterien {record.status.pass_fail ? "erfüllt" : "nicht erfüllt"}; kein empirischer
         oder elektrischer Sicherheitsnachweis.
@@ -146,20 +168,20 @@ export function CoupledChart({
   const lines =
     mode === "power"
       ? [
-          ["baseline_grid", "Netz / ungesteuert", "#8ca2b8"],
-          ["grid_import_kw", "Netz / Fristenpriorität", "#5ee3d6"],
-          ["ground_charging_kw", "Flotte / Fristenpriorität", "#ffca78"],
-          ["parking_kw", "Parkhaus / Fristenpriorität", "#8db6ff"],
+          ["baseline_grid", "Netz / ungesteuert", chartTokens.series.baseline],
+          ["grid_import_kw", "Netz / Fristenpriorität", chartTokens.series.blue],
+          ["ground_charging_kw", "Flotte / Fristenpriorität", chartTokens.series.amber],
+          ["parking_kw", "Parkhaus / Fristenpriorität", chartTokens.series.teal],
         ]
       : mode === "soc"
         ? [
-            ["baseline_soc", "SOC / ungesteuert", "#8ca2b8"],
-            ["fleet_soc_avg_pct", "SOC / Fristenpriorität", "#5ee3d6"],
-            ["fleet_soc_min_pct", "Niedrigster SOC / Fristenpriorität", "#ffca78"],
+            ["baseline_soc", "SOC / ungesteuert", chartTokens.series.baseline],
+            ["fleet_soc_avg_pct", "SOC / Fristenpriorität", chartTokens.series.blue],
+            ["fleet_soc_min_pct", "Niedrigster SOC / Fristenpriorität", chartTokens.series.amber],
           ]
         : [
-            ["baseline_queue", "Offene Aufgaben / ungesteuert", "#8ca2b8"],
-            ["mission_queue", "Offene Aufgaben / Fristenpriorität", "#5ee3d6"],
+            ["baseline_queue", "Offene Aufgaben / ungesteuert", chartTokens.series.baseline],
+            ["mission_queue", "Offene Aufgaben / Fristenpriorität", chartTokens.series.blue],
           ];
   return (
     <div>
@@ -183,30 +205,30 @@ export function CoupledChart({
       >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={rows}>
-            <CartesianGrid stroke="#253b50" strokeDasharray="3 5" vertical={false} />
+            <CartesianGrid stroke={chartTokens.grid} strokeDasharray="3 5" vertical={false} />
             <XAxis
               dataKey="minute"
               type="number"
               domain={["dataMin", "dataMax"]}
               tickFormatter={(v: number) => modelTime(origin, v)}
-              stroke="#839aad"
-              tick={{ fontSize: 9 }}
+              stroke={chartTokens.axis}
+              tick={{ fontSize: 12 }}
               minTickGap={25}
             />
             <YAxis
               width={55}
-              stroke="#839aad"
+              stroke={chartTokens.axis}
               domain={mode === "soc" ? [0, 100] : [0, "auto"]}
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 12 }}
             />
             <Tooltip
               labelFormatter={(v) => modelTime(origin, Number(v))}
               formatter={(v: number) =>
                 `${number(v, 1)} ${mode === "soc" ? "%" : mode === "power" ? "kW" : "Aufträge"}`
               }
-              contentStyle={{ background: "#102438", border: "1px solid #4a657d", borderRadius: 8 }}
+              contentStyle={chartTokens.tooltip}
             />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
             {lines.map(([key, name, color]) => (
               <Line
                 key={key}

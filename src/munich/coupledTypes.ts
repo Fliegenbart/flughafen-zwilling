@@ -55,7 +55,21 @@ export type CoupledConfig = {
   shared_group_policy: "reject_unresolved" | "independent_entries_assumption";
   stress_events: StressEvent[];
 };
-export type CoupledComparison = Comparison & { engine_version: "airport_coupled_v1" };
+export type CoupledEngineVersion = "airport_coupled_v1" | "airport_coupled_v2";
+export const CURRENT_COUPLED_ENGINE = "airport_coupled_v2";
+export type CoupledComparison = Comparison & { engine_version: CoupledEngineVersion };
+export type TaskReadiness = {
+  kind: FleetKind;
+  direction: "arrival" | "departure";
+  mission_count: number;
+  missions_on_time: number;
+  missions_uncompleted: number;
+  on_time_pct: number | null;
+  energy_wait_min: number;
+  resource_wait_min: number;
+  energy_wait_share_pct: number | null;
+};
+export type Bottleneck = "none" | "energy" | "resource" | "energy_and_resource";
 export type CoupledKpis = {
   evidence_level: "schedule_driven_assumptions_uncalibrated";
   published_entry_count: number;
@@ -80,9 +94,17 @@ export type CoupledKpis = {
   fleet_reserve_violations: number;
   transformer_loss_kwh: number;
   model_horizon_hours: number;
+  /* Ab airport_coupled_v2; aeltere Laeufe liefern diese Felder nicht. */
+  storage_energy_balance_error_kwh?: number;
+  background_unserved_kwh?: number;
+  background_unserved_minutes?: number;
+  readiness_by_task?: TaskReadiness[];
+  energy_wait_share_pct?: number | null;
+  bottleneck?: Bottleneck | null;
+  model_warnings?: string[];
 };
 export type CoupledWorld = {
-  engine_version: "airport_coupled_v1";
+  engine_version: CoupledEngineVersion;
   world_hash: string;
   seed: number;
   source_plan_sha256: string;

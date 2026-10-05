@@ -1,166 +1,159 @@
-.muc-flightplan__import {
-  display: grid;
-  grid-template-columns: minmax(140px, 0.7fr) minmax(180px, 1.3fr) auto;
-  gap: 16px;
-  align-items: end;
-  margin: 24px 0 12px;
+[data-studio] .studio-test-config .muc-flightplan {
+  padding: 0;
+  background: transparent;
+  border: 0;
 }
-.muc-flightplan__import .muc-field {
+[data-studio] .studio-test-config .muc-flightplan .muc-section-title {
+  align-items: flex-start;
+}
+[data-studio] .muc-flightplan__import {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 14px 0 12px;
+}
+[data-studio] .muc-flightplan__import .muc-field {
   margin: 0;
 }
-.muc-flightplan__import button {
-  min-height: 44px;
+[data-studio] .muc-flightplan__import button {
+  min-height: 40px;
 }
-.muc-flightplan input[type="file"] {
+[data-studio] .muc-flightplan input[type="file"] {
   width: 100%;
   min-width: 0;
-  padding: 8px;
+  padding: 7px;
   font-size: 12px;
 }
-.muc-flightplan input::file-selector-button {
-  border: 1px solid #47637b;
-  border-radius: 5px;
-  background: #203c52;
-  color: #eaf6ff;
-  padding: 7px 9px;
+[data-studio] .muc-flightplan input::file-selector-button {
   margin-right: 8px;
+  padding: 6px 8px;
+  color: var(--ds-ink);
+  background: var(--ds-surface-3);
+  border: 1px solid var(--ds-line);
+  border-radius: 4px;
+}
+[data-studio] .muc-flightplan__selector {
+  max-width: 100%;
+}
+[data-studio] .muc-flightplan__import-details,
+[data-studio] .muc-flightplan__details {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--ds-line);
+  border-radius: 4px;
+}
+[data-studio] .muc-flightplan__import-details summary,
+[data-studio] .muc-flightplan__details summary {
+  color: var(--ds-ink);
   cursor: pointer;
+  font-weight: 600;
 }
-.muc-flightplan__selector {
-  max-width: 600px;
+[data-studio] .muc-flightplan__import-details[open] > summary,
+[data-studio] .muc-flightplan__details[open] > summary {
+  margin-bottom: 10px;
 }
-.muc-flightplan__boundary {
-  margin: 20px 0;
-  padding: 14px 16px;
-  border-left: 3px solid #ffca78;
-  background: #172c3c;
-  color: #c7d8e4;
+[data-studio] .muc-flightplan__boundary {
+  margin: 14px 0;
+  padding: 12px;
+  color: var(--ds-warning);
+  background: var(--ds-warning-bg);
+  border-left: 3px solid var(--ds-warning);
   font-size: 12px;
-  line-height: 1.7;
 }
-.muc-flightplan__stats {
+[data-studio] .muc-flightplan__stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 8px;
 }
-.muc-flightplan__stats div {
-  background: #11283b;
-  border: 1px solid #28465b;
-  border-radius: 10px;
-  padding: 14px;
+[data-studio] .muc-flightplan__stats div {
+  padding: 10px;
+  background: var(--ds-surface-2);
+  border: 1px solid var(--ds-line);
+  border-radius: 4px;
 }
-.muc-flightplan__stats span {
+[data-studio] .muc-flightplan__stats span,
+[data-studio] .muc-flightplan__hour small,
+[data-studio] .muc-flightplan__airline {
   display: block;
-  font-size: 11px;
-  color: #a9c0d0;
+  color: var(--ds-muted);
+  font-size: 12px;
 }
-.muc-flightplan__stats strong {
+[data-studio] .muc-flightplan__stats strong {
   display: block;
-  font:
-    600 23px "IBM Plex Mono",
-    monospace;
-  margin-top: 8px;
+  margin-top: 4px;
+  font: 600 18px var(--font-mono);
 }
-.muc-flightplan__histogram {
+[data-studio] .muc-flightplan__histogram {
   display: grid;
   grid-template-columns: repeat(24, minmax(0, 1fr));
-  height: 150px;
-  gap: 6px;
-  margin-top: 26px;
-  background: repeating-linear-gradient(to top, transparent 0, transparent 35px, #244359 36px);
+  gap: 3px;
+  height: 120px;
+  margin-top: 16px;
+  background: repeating-linear-gradient(to top, transparent 0, transparent 29px, var(--ds-surface-3) 30px);
 }
-.muc-flightplan__hour {
+[data-studio] .muc-flightplan__hour {
   display: flex;
-  flex-direction: column;
   min-width: 0;
+  flex-direction: column;
 }
-.muc-flightplan__bars {
-  flex: 1;
+[data-studio] .muc-flightplan__bars {
   display: flex;
+  flex: 1;
   align-items: end;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
 }
-.muc-flightplan__bars i {
+[data-studio] .muc-flightplan__bars i {
   width: 45%;
-  background: #5ee3d6;
-  border-radius: 3px 3px 0 0;
+  background: var(--ds-accent);
+  border-radius: 2px 2px 0 0;
 }
-.muc-flightplan__bars i + i {
-  background: #8db6ff;
+[data-studio] .muc-flightplan__bars i + i {
+  background: var(--ds-line-strong);
 }
-.muc-flightplan__hour small {
-  height: 23px;
-  padding-top: 7px;
-  color: #a9c0d0;
-  font:
-    10px "IBM Plex Mono",
-    monospace;
-}
-.muc-flightplan__legend {
-  display: flex;
-  gap: 18px;
-  margin: 12px 0 24px;
-  font-size: 11px;
-  flex-wrap: wrap;
-}
-.muc-flightplan__legend span {
-  color: #5ee3d6;
-}
-.muc-flightplan__legend span + span {
-  color: #8db6ff;
-}
-.muc-flightplan__legend small {
-  color: #a9c0d0;
-}
-.muc-flightplan__airline {
-  display: block;
-  color: #b0c5d5;
-  margin-top: 4px;
-}
-.muc-flightplan__pagination {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  justify-content: end;
-  margin: 16px 0;
+[data-studio] .muc-flightplan__hour small {
+  height: 18px;
+  padding-top: 4px;
   font-size: 12px;
 }
-.muc-flightplan .muc-table-controls input[type="search"] {
+[data-studio] .muc-flightplan__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0 16px;
+  font-size: 12px;
+}
+[data-studio] .muc-flightplan__legend small {
+  font-size: 12px;
+}
+[data-studio] .muc-flightplan small.muc-warn {
+  font-size: 12px;
+}
+[data-studio] .muc-flightplan__legend span {
+  color: var(--ds-accent);
+}
+[data-studio] .muc-flightplan__legend span + span {
+  color: var(--ds-muted);
+}
+[data-studio] .muc-flightplan__pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  justify-content: end;
+  margin: 12px 0;
+  font-size: 12px;
+}
+[data-studio] .muc-flightplan .muc-table-controls input[type="search"] {
   width: min(260px, 100%);
 }
-@media (max-width: 1150px) {
-  .muc-flightplan__import {
-    grid-template-columns: 1fr 1fr;
-  }
-  .muc-flightplan__import button {
-    grid-column: 1 / -1;
-  }
-  .muc-flightplan__stats {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (max-width: 520px) {
-  .muc-flightplan__import {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .muc-flightplan__stats strong {
-    font-size: 18px;
-  }
-  .muc-flightplan__histogram {
-    gap: 3px;
-  }
-  .muc-flightplan__bars {
-    gap: 1px;
-  }
-}
-.muc-flightplan .muc-table-scroll {
+[data-studio] .muc-flightplan .muc-table-scroll {
   max-height: 420px;
   overflow: auto;
 }
-.muc-flightplan thead {
+[data-studio] .muc-flightplan thead {
   position: sticky;
   top: 0;
-  background: #102438;
   z-index: 1;
+  background: var(--ds-surface);
 }

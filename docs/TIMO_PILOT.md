@@ -96,3 +96,10 @@ oeffentliche lokale Demozugangsdaten stehen im [README](../README.md).
 Bei vorhandener Monitoring-Installation die beiden Compose-Dateien auch beim
 Neuaufbau zusammen angeben. `queued` bedeutet: der serielle Worker wartet noch;
 Logs bei dauerhaftem Warten pruefen, keine Betriebsdateien manuell loeschen.
+
+## Neuer gefuehrter Pilotablauf
+
+[Systemgrafik, Stresstest-Suite und Messdaten-Testpaket](PILOT_STUDIO.md)
+verbinden den gekoppelten Flughafen mit einer konkreten Entscheidungsfrage.
+Die persoenliche Anmeldung ist fuer dedizierte Kundeninstanzen optional
+zuschaltbar; die lokale synthetische Demo bleibt ohne Login startbar.

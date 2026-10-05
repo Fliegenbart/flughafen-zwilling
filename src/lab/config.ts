@@ -39,9 +39,9 @@ export function configError(bench: Bench | null, criteria: Criteria | null): str
     ["Stabilitätsfenster", criteria.settling_s, 0.01, 60],
     ["Einschwingfrist", criteria.grace_s, 0, 300],
     ["Limitverletzungsbudget", criteria.limit_violation_budget_s, 0, 300],
-    ["Min. Abdeckung", criteria.min_coverage_pct, 0.01, 100],
+    ["Min. Abdeckung", criteria.min_coverage_pct, 90, 100],
     ["Messintervall", criteria.expected_interval_s, 0.01, 1000],
-    ["Zeitlücke", criteria.max_gap_s, 0.01, 1000],
+    ["Zeitlücke", criteria.max_gap_s, 0.01, 300],
   ];
   const bad = bounds.find(
     ([, value, min, max]) => !Number.isFinite(value) || value < min || value > max,
@@ -51,5 +51,7 @@ export function configError(bench: Bench | null, criteria: Criteria | null): str
     return "Antwortverzögerung muss eine ganze Sekundenzahl sein.";
   if (criteria.max_gap_s < criteria.expected_interval_s)
     return "Maximale Zeitlücke muss mindestens dem Messintervall entsprechen.";
+  if (criteria.max_gap_s > 10 * criteria.expected_interval_s)
+    return "Maximale Zeitlücke darf höchstens das 10-fache des Messintervalls betragen.";
   return null;
 }

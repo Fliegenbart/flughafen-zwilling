@@ -13,6 +13,9 @@ describe("Manueller MUC-Flugplan", () => {
     );
     render(<FlightPlanPanel selected={null} onSelect={onSelect} />);
     await screen.findByRole("heading", { name: "Münchner Flugplan" });
+    expect(screen.getByText("Flugplan importieren & Quelle").closest("details")).toHaveAttribute(
+      "open",
+    );
     fireEvent.change(screen.getByLabelText("Verkehrstag"), { target: { value: "2026-10-03" } });
     const file = new File(["%PDF-mini"], "flightplan.pdf", { type: "application/pdf" });
     fireEvent.change(screen.getByLabelText("Saisonflugplan-PDF"), { target: { files: [file] } });
@@ -28,6 +31,14 @@ describe("Manueller MUC-Flugplan", () => {
   it("shows the selected day, hourly distribution, filtering and exports", async () => {
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify([plan])));
     render(<FlightPlanPanel selected={plan} onSelect={vi.fn()} />);
+    const importDetails = screen.getByText("Flugplan importieren & Quelle").closest("details")!;
+    expect(importDetails).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByText("Flugplan importieren & Quelle"));
+    expect(importDetails).toHaveAttribute("open");
+    const details = screen.getByText("Flugplandetails & Nachweise").closest("details")!;
+    expect(details).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByText("Flugplandetails & Nachweise"));
+    expect(details).toHaveAttribute("open");
     expect(screen.getByText("XY101")).toBeVisible();
     expect(screen.getByText("XY102")).toBeVisible();
     expect(screen.getByText(/Datenstand: 02.10.2026/)).toBeVisible();

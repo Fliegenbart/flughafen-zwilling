@@ -178,3 +178,21 @@ Ruff, Root-/Subpath-Build und Archivpruefung bestanden. Keine Hardwaretests.
 und Energiedaten, getrennte Kalibrier-/Holdout-Pruefung, feste Kundenfrage und
 Kontrollstrategie, Rechte, Lab-Versuchsvorschrift, Wirtschaftlichkeitsvertrag
 und Mehrbenutzer-/Datenbankbetrieb. Kein Preis-/Verkaufsversprechen aus dieser Demo.
+
+## Modelllogik v2 (`airport_coupled_v2`, 04.10.2026)
+
+- **Grundlast-Kriterium:** unversorgte Grundlast (`background_unserved_kwh`) ist ein
+  hartes Modellkriterium mit sichtbarer Ursache.
+- **Bilanzen:** Die Minuten-Wirkleistungsbilanz heisst im Kriterium
+  „Wirkleistungsbilanz (Buchfuehrungscheck)“ – dieselbe Gleichung, per Konstruktion ≈ 0.
+  Unabhaengig geprueft werden Flotten- (`fleet_energy_balance_error_kwh`) und
+  Speicherbilanz (`storage_energy_balance_error_kwh`, Kriterium „Speicher-Energiebilanz“).
+- **Engpass/Bereitschaft je Aufgabe:** `readiness_by_task` je Klasse/Richtung,
+  `bottleneck` (none/energy/resource/energy_and_resource). Die UI beginnt mit einem
+  Antwortsatz, z. B. „Kein messbarer Unterschied der Laderegeln – Engpass
+  Fahrzeugverfuegbarkeit“. Nullergebnisse sind gueltige Ergebnisse.
+- **Sensitivitaets-Screen:** variiert nur Schlepper und Netzgrenze bei unveraenderter
+  Nachfrage; deterministisch, keine Statistik.
+- **Ortszeit:** Parkhausfenster folgen der Muenchner Ortszeit (auch an Umstellungstagen).
+
+Aeltere v1-Laeufe werden erkannt und nicht still neu berechnet.

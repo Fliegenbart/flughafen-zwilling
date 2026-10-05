@@ -1,5 +1,6 @@
-import type { CoupledRecord, FleetKind } from "./coupledTypes";
+import type { CoupledKpis, CoupledRecord, FleetKind } from "./coupledTypes";
 import { number } from "./config";
+import { REPORT_STYLES } from "../ui/reportStyles";
 
 export const FLEET_LABELS: Record<FleetKind, string> = {
   bus: "Bus",
@@ -20,6 +21,45 @@ const escape = (value: unknown) =>
         "'": "&#39;",
       })[c]!,
   );
+
+/** Hinweis, wenn der Regelunterschied in dieser Welt nicht energetisch messbar ist. */
+export function ruleDifferenceNote(a: CoupledKpis, b: CoupledKpis): string | null {
+  if (!a.bottleneck || !b.bottleneck) return null;
+  const same =
+    a.departure_readiness_pct !== null &&
+    b.departure_readiness_pct !== null &&
+    Math.abs(b.departure_readiness_pct - a.departure_readiness_pct) < 0.05;
+  if (!same) return null;
+  if (a.bottleneck === "resource" && b.bottleneck === "resource")
+    return "Unterschied der Laderegel nicht messbar, Engpass: Fahrzeugverfügbarkeit";
+  if (a.bottleneck === "none" && b.bottleneck === "none")
+    return "Unterschied der Laderegel nicht messbar: kein Engpass im Modell";
+  return null;
+}
+
+const BOTTLENECK_TEXT: Record<string, string> = {
+  none: "kein Engpass im Modell",
+  energy: "Engpass Energie/Ladeleistung",
+  resource: "Engpass Fahrzeugverfügbarkeit",
+  energy_and_resource: "Engpass Energie und Fahrzeuge",
+};
+
+/**
+ * Die Antwort des Regelvergleichs in einem Satz. Nullergebnisse sind legitime Antworten.
+ * Grundlage ist die modellierte Abflug-Aufgabenbereitschaft (keine reale OTP).
+ */
+export function compareAnswer(a: CoupledKpis, b: CoupledKpis): string {
+  const bottleneck = b.bottleneck ?? a.bottleneck;
+  const cause = bottleneck ? ` – ${BOTTLENECK_TEXT[bottleneck] ?? bottleneck}` : "";
+  if (a.departure_readiness_pct === null || b.departure_readiness_pct === null)
+    return `Keine Abflug-Aufgaben im Modell – Laderegeln nicht vergleichbar${cause}`;
+  const diff = Math.round((b.departure_readiness_pct - a.departure_readiness_pct) * 10) / 10;
+  if (Math.abs(diff) < 0.1) return `Kein messbarer Unterschied der Laderegeln${cause}`;
+  const amount = `${number(Math.abs(diff), 1)} Prozentpunkte`;
+  return diff > 0
+    ? `Fristenpriorität erhöht die modellierte Aufgabenbereitschaft um ${amount}${cause}`
+    : `Fristenpriorität senkt die modellierte Aufgabenbereitschaft um ${amount}${cause}`;
+}
 
 function deltaText(x: number, y: number): string {
   const rounded = Math.round((y - x) * 10) / 10;
@@ -104,14 +144,26 @@ export function buildCoupledHtml(records: CoupledRecord[], expectedHash: string)
       "kWh",
     ],
     ["Trafoverluste", b.transformer_loss_kwh, p.transformer_loss_kwh, "kWh"],
+    ...(b.readiness_by_task ?? []).map((row): [string, number | null, number | null, string] => [
+      `Bereitschaft ${FLEET_LABELS[row.kind]} / ${row.direction === "arrival" ? "Ankunft" : "Abflug"}`,
+      row.on_time_pct,
+      (p.readiness_by_task ?? []).find((o) => o.kind === row.kind && o.direction === row.direction)
+        ?.on_time_pct ?? null,
+      "%",
+    ]),
   ];
-  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Airport Twin Core | Gekoppelter Vergleich</title><style>
-  body{margin:0;padding:40px;background:#0b1b2a;color:#eaf2f6;font:15px Sora,sans-serif}main{max-width:1100px;margin:auto}h1{font-size:32px}h2{margin-top:32px;color:#5ee3d6}.warning{border-left:4px solid #ffca78;padding:16px;background:#182c3c}table{width:100%;border-collapse:collapse}th,td{padding:12px;text-align:left;border-bottom:1px solid #31495c}code{font:12px 'IBM Plex Mono',monospace;overflow-wrap:anywhere}details{padding:16px;border:1px solid #31495c}pre{white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:600px){body{padding:16px}th,td{padding:7px;font-size:12px}}@media print{body{background:white;color:#142633;padding:0}h2{color:#142633}.warning{background:#f4f6f7}table,details{break-inside:avoid}}</style></head><body><main>
+  const note = ruleDifferenceNote(b, p);
+  const modelWarnings = [...new Set([...(b.model_warnings ?? []), ...(p.model_warnings ?? [])])];
+  return `<!doctype html><html lang="de" data-report-theme="operations-studio"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Airport Twin Core | Gekoppelter Vergleich</title><style>${REPORT_STYLES}</style></head><body><main>
   <p>Airport Twin Core / MUC / SIL</p><h1>Flugplan → Fahrzeuge → Energie</h1>
+  <p><strong>Antwort (Modell): ${escape(compareAnswer(b, p))}.</strong></p>
   <p class="warning"><strong>Unkalibrierter Methodenprototyp.</strong> Planzeiten sind veröffentlicht; Aufgaben, Fahrzeuge, Verbrauch und Versorgung sind Modellannahmen. Aufgabenbereitschaft ist keine reale OTP/TOBT. Keine automatische Anlagensteuerung oder Sicherheits-/ROI-Aussage.</p>
   <p>Verkehrstag ${escape(plan.service_date)} / Datenstand ${escape(plan.source_data_date)}. ${b.published_entry_count} Flugplaneinträge; keine bestätigte Zahl physischer Flugbewegungen. ${number(b.model_horizon_hours, 1)} Modellstunden inklusive Vor-/Nachlauf.</p>
   <p>${b.mission_count} modellierte Aufgaben; ${b.modeled_departure_count} Abflugseinträge mit mindestens einer modellierten Aufgabe. Gleicher Nenner für beide Regeln.</p>
   <h2>Fairer Regelvergleich</h2><p>Gleiche Nachfrage, Start-SOC, Störungen und Versorgung; nur Laderegel und Ladepunktbelegung ändern sich. Fristenpriorität ist eine dokumentierte Heuristik, kein Optimierungsversprechen.</p>
+  ${note ? `<p class="warning"><strong>${escape(note)}</strong></p>` : ""}
+  ${modelWarnings.map((w) => `<p class="warning">Modellwarnung: ${escape(w)}</p>`).join("")}
+  <p>Bilanzprüfung: Die Minuten-Wirkleistungsbilanz ist ein Buchführungscheck derselben Gleichung (per Konstruktion ≈0). Unabhängig geprüft werden Flotten- und Speicherenergiebilanz aus getrennt aufsummierten Größen.</p>
   <table><thead><tr><th>Modellgröße</th><th>Ungesteuert</th><th>Fristenpriorität</th><th>Delta</th></tr></thead><tbody>${rows.map(([label, x, y, unit]) => `<tr><th>${escape(label)}</th><td>${x === null ? "n/a" : `${number(x, 1)} ${unit}`}</td><td>${y === null ? "n/a" : `${number(y, 1)} ${unit}`}</td><td>${x === null || y === null ? "n/a" : deltaText(x, y)}</td></tr>`).join("")}</tbody></table>
   <h2>Nachweise</h2>${[base, priority].map((r) => `<p>${POLICY_LABELS[r.model_pack_snapshot.parameter_set.policy]} / Run <code>${escape(r.status.run_id)}</code> / Modellkriterien ${r.status.pass_fail ? "erfüllt" : "nicht erfüllt"}. <br>Execution-Commit: <code>${escape(r.build_meta.execution_backend_git_commit ?? "n/a")}</code><br>Auditformat: ${r.build_meta.result_audit_version === "coupled_evidence_v2" ? "Datenartefakte sowie JSON/PDF gehasht (v2)" : "Ältere Datenartefakte; PDF/Report-Dateien ohne ursprüngliche SHA256 (v1)"}<br>Artefakt-Hashes: <code>${escape(JSON.stringify(r.build_meta.result_artifact_hashes ?? {}))}</code></p>`).join("")}
   <p>Welt-Hash: <code>${escape(expectedHash)}</code><br>Flugplan-Hash: <code>${escape(plan.content_sha256)}</code><br>PDF-Hash: <code>${escape(plan.source_pdf_sha256)}</code></p>

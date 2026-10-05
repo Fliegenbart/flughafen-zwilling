@@ -1,6 +1,7 @@
 import { FIELDS, number } from "./config";
 import type { EnergyRecord } from "./types";
 import { flightDate } from "./flightplanTypes";
+import { REPORT_STYLES } from "../ui/reportStyles";
 
 const escape = (value: unknown) =>
   String(value).replace(
@@ -73,15 +74,9 @@ export function buildCompareHtml(base: EnergyRecord, priority: EnergyRecord): st
   ];
   const meta = base.model_pack_snapshot.calibration_meta;
   const plan = meta.flight_plan_snapshot;
-  return `<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  return `<!doctype html><html lang="de" data-report-theme="operations-studio"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>München / Vergleichsreport</title><style>
-  body{margin:0;background:#081829;color:#ecf4fa;font:15px Sora,"Trebuchet MS",sans-serif;line-height:1.6}
-  main{max-width:1050px;margin:40px auto;padding:28px}h1{font-size:38px;line-height:1.2}h2{margin-top:36px}
-  .notice{border-left:4px solid #ffcb79;padding:18px;background:#1d2936}.delta{font-size:24px;color:#5ee3d6}
-  table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:12px 10px;border-bottom:1px solid #30465b;text-align:left}
-  th{color:#93adbf}code{font:12px "IBM Plex Mono",monospace;overflow-wrap:anywhere}a{color:#6fe8df}
-  @media print{body{background:white;color:#102333}.notice{background:#eef4f6}a,.delta{color:#07596a}main{margin:0;padding:0}}
-  </style><main><h1>Flughafen München<br>Elektrifizierung als Systemtest</h1>
+  ${REPORT_STYLES}</style><main><h1>Flughafen München<br>Elektrifizierung als Systemtest</h1>
   <div class="notice"><strong>Nicht kalibriert. Synthetischer Referenztest.</strong><br>
   Keine FMG-Betriebsdaten, Anlagensteuerung oder Flughafenpartnerschaft. Keine reale CO2-/Kosten-, OTP- oder Netzsicherheits-Aussage.</div>
   <h2>Ungesteuert vs. Buspriorität</h2><p>24 Modellstunden, 5-Minuten-Intervalle. Dieselben Aufträge, Profile, Grenzen und derselbe Seed ${base.request.seed}.</p>

@@ -35,6 +35,12 @@ class PowerBalance:
         self.kpis = EnergyKpiSummary(
             model_hours=(world.end_min - world.start_min) / 60, battery_initial_kwh=self.stored,
         )
+        # Getrennt gefuehrte Groessen fuer unabhaengige Bilanzpruefungen (fsum je Reihe).
+        self.apron_delivered_terms: list[float] = []
+        self.storage_in_terms: list[float] = []
+        self.storage_out_terms: list[float] = []
+        self.unserved_minutes: list[int] = []
+        self.unserved_kwh_terms: list[float] = []
 
     def step(
         self, minute: int, requests: list[ChargeRequest], policy: CoupledPolicy,
@@ -69,16 +75,17 @@ class PowerBalance:
                 limits[r.sector] -= upstream
                 available -= upstream
         else:
-            totals = {s: sum(r.kw for r in requests if r.sector == s) for s in limits}
+            totals = {s: math.fsum(r.kw for r in requests if r.sector == s) for s in limits}
             for r in requests:
                 factor = (min(1, limits[r.sector] * p.transformer_efficiency / totals[r.sector])
                           if totals[r.sector] else 1)
                 allocations[r.id] = r.kw * factor
-            upstream = sum(allocations.values()) / p.transformer_efficiency
+            upstream = math.fsum(allocations.values()) / p.transformer_efficiency
             scale = min(1, available / upstream) if upstream else 1
             allocations = {key: value * scale for key, value in allocations.items()}
-        apron = sum(allocations[r.id] for r in requests if r.sector == "apron")
-        parking = sum(allocations[r.id] for r in requests if r.sector == "parking")
+        # fsum: exakt gerundet, unabhaengig von der Zuteilungsreihenfolge der Regel.
+        apron = math.fsum(allocations[r.id] for r in requests if r.sector == "apron")
+        parking = math.fsum(allocations[r.id] for r in requests if r.sector == "parking")
         apron_up, parking_up = apron / p.transformer_efficiency, parking / p.transformer_efficiency
         loss = apron_up + parking_up - apron - parking
         demand = served + apron_up + parking_up
@@ -88,13 +95,22 @@ class PowerBalance:
         surplus = max(0, pv + chp - demand)
         charge = min(p.battery_power_kw, surplus,
                      max(0, p.battery_capacity_kwh - self.stored) / DT_H / p.battery_efficiency)
+        self.storage_in_terms.append(charge * p.battery_efficiency * DT_H)
+        self.storage_out_terms.append(discharge / p.battery_efficiency * DT_H)
         self.stored += (charge * p.battery_efficiency - discharge / p.battery_efficiency) * DT_H
         if self.stored < self.reserve - 1e-7 or self.stored > p.battery_capacity_kwh + 1e-7:
             raise RuntimeError("Speicher-Energiegrenze verletzt")
         self.stored = min(p.battery_capacity_kwh, max(self.reserve, self.stored))
         exported = min(p.grid_export_limit_kw, max(0, surplus - charge))
         curtailed = max(0, surplus - charge - exported)
+        # Buchfuehrungscheck: curtailed ist hier Rest derselben Gleichung, daher per
+        # Konstruktion ~0. Unabhaengige Pruefungen: storage_closure_error, Flottenbilanz.
         error = abs(pv + chp + imported + discharge - demand - charge - exported - curtailed)
+        unserved = background - served
+        if unserved > 1e-9:
+            self.unserved_minutes.append(minute)
+            self.unserved_kwh_terms.append(unserved * DT_H)
+        self.apron_delivered_terms.append(apron * DT_H * p.charging_efficiency)
         pv_used = min(pv, max(0, demand + charge - chp))
         pv_surplus = max(0, pv - pv_used)
         pv_curtailed = min(pv_surplus, curtailed)
@@ -126,3 +142,13 @@ class PowerBalance:
             if p.battery_capacity_kwh else 0, "curtailed_kw": curtailed,
             "balance_error_kw": error,
         }
+
+    def fleet_delivered_kwh(self) -> float:
+        """Flottenladeenergie aus der Versorgungsseite (nicht aus den Fahrzeugzustaenden)."""
+        return math.fsum(self.apron_delivered_terms)
+
+    def storage_closure_error_kwh(self) -> float:
+        """Speicher: Endstand gegen Anfang + Zufluss - Abfluss aus getrennten Reihen."""
+        expected = (self.kpis.battery_initial_kwh + math.fsum(self.storage_in_terms)
+                    - math.fsum(self.storage_out_terms))
+        return abs(self.stored - expected)
