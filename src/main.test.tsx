@@ -57,13 +57,13 @@ describe("Workspace entry point", () => {
     expect(document.querySelector("[data-studio]")).not.toBeNull();
   });
 
-  it("redirects FlexLab into Abgleich and keeps the full workbench", async () => {
+  it("redirects FlexLab into the Testing-Lab space and keeps the full workbench", async () => {
     await open("?workspace=flexlab");
     expect(await screen.findByRole("heading", { name: "FlexLab Workbench" })).toBeVisible();
-    expect(window.location.search).toContain("frage=abgleich");
+    expect(window.location.search).toContain("seite=lab");
     expect(window.location.search).toContain("werkstatt=flexlab");
-    const questions = screen.getByRole("navigation", { name: "Fünf Fragen des Projekts" });
-    expect(within(questions).getByRole("link", { name: /Abgleich/ })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Testing-Lab" })).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("navigation", { name: "Vier Fragen des Projekts" })).toBeNull();
   });
 
   it("defaults unknown workspace IDs to the airport simulation, not FlexLab", async () => {
@@ -102,7 +102,7 @@ describe("Workspace entry point", () => {
       "/airport/?seite=bibliothek",
     );
     expect(
-      within(screen.getByRole("navigation", { name: "Fünf Fragen des Projekts" })).getByRole("link", {
+      within(screen.getByRole("navigation", { name: "Vier Fragen des Projekts" })).getByRole("link", {
         name: /Nachweis/,
       }),
     ).toHaveAttribute(

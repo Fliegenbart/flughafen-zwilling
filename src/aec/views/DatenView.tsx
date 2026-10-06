@@ -554,7 +554,7 @@ function MeasurementForm({
         {locked
           ? `Abnahmekriterien vorab gesperrt (SHA256 ${inputs.tolerances?.sha256?.slice(0, 12) ?? "–"}…). Ein Holdout wird gegen diese Grenzen bewertet.`
           : "Abnahmekriterien sind noch nicht gesperrt. Ein Holdout kann nur PASS ergeben, wenn die Kriterien vorher feststehen; der erste Holdout-Import sperrt einen gespeicherten Entwurf automatisch. Kalibrierdaten ergeben nie PASS."}{" "}
-        <Link to={{ ...route, frage: "abgleich", werkstatt: "pilot", auto: undefined }}>
+        <Link to={{ page: "lab", projekt: route.projekt, werkstatt: "pilot" }}>
           Kriterien im Messdaten-Abgleich festlegen
         </Link>
       </p>

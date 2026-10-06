@@ -11,6 +11,7 @@ import { REPORT_STYLES } from "../../ui/reportStyles";
 import { bottleneckAnswer, powerText, variantsAnswer } from "../analysis";
 import { AnswerHead, Details, Section } from "../parts";
 import type { ViewProps } from "../ProjectPage";
+import Pruefstatus from "../Pruefstatus";
 import { WerkstattLinks } from "../Werkstatt";
 
 type Claim = { level: EvidenceLevel; title: string; text: string };
@@ -140,6 +141,8 @@ export default function NachweisView(props: ViewProps) {
         </div>
       </Section>
 
+      <Pruefstatus project={project} />
+
       <Details summary="Technik: Hashes, Engine-Version, Prüfprotokoll">
         <ul className="aec-facts aec-facts--mono">
           <li>
@@ -163,7 +166,7 @@ export default function NachweisView(props: ViewProps) {
             </li>
           ) : null}
         </ul>
-        <WerkstattLinks items={["nachweise", "pilot"]} base={route} />
+        <WerkstattLinks items={["nachweise"]} base={route} />
       </Details>
     </>
   );
