@@ -134,7 +134,7 @@ function flugplan(inp: DataInputs): DataItem {
   const base = {
     id: "flugplan" as const,
     title: "Flugplan",
-    evidenceDetail: "Der veröffentlichte Plan, nicht was tatsächlich geflogen wurde.",
+    evidenceDetail: "Planzeiten, keine Ist-Daten.",
   };
   if (!plan)
     return {
@@ -143,13 +143,13 @@ function flugplan(inp: DataInputs): DataItem {
       source: null,
       date: null,
       evidence: "assumption",
-      detail: "Ohne Flugplan rechnen wir mit ausgedachten Abflugwellen.",
+      detail: "Ohne Flugplan wird mit erfundenen Abflugwellen gerechnet.",
       warnings: [],
     };
   const warnings =
     plan.sharedGroups > 0
       ? [
-          `${plan.sharedGroups} Flüge stehen womöglich mehrfach drin (Codeshares). Bevor wir rechnen können, muss jemand bestätigen, dass es eigene Flüge sind.`,
+          `${plan.sharedGroups} Flüge stehen eventuell doppelt drin (Codeshares). Gerechnet wird erst, wenn jemand bestätigt, dass es eigene Flüge sind.`,
         ]
       : [];
   return {
@@ -177,7 +177,7 @@ function flotte(inp: DataInputs): DataItem {
       state: "fehlt",
       source: null,
       date: null,
-      detail: "Wir rechnen mit Standardwerten für Fahrzeuge, Ladepunkte und Anschluss.",
+      detail: "Gerechnet wird mit Standardwerten für Fahrzeuge, Ladepunkte und Anschluss.",
       warnings: [],
     };
   const sources = [...new Set(a.entries.map((e) => e.source).filter(Boolean))];
@@ -197,13 +197,13 @@ function flotte(inp: DataInputs): DataItem {
         .join(", ")}.`,
     );
   if (!hasGrid) warnings.push("Es fehlt die Leistung des Netzanschlusses.");
-  if (!hasFleet) warnings.push("Es fehlt, wie viele Fahrzeuge es gibt.");
+  if (!hasFleet) warnings.push("Die Zahl der Fahrzeuge fehlt.");
   return {
     ...base,
     state,
     source: sources.length ? sources.join(" · ") : null,
     date: dates.length ? `Quelle vom ${deDate(dates[dates.length - 1])}` : null,
-    detail: `${a.entries.length} Werte hinterlegt. Sie fließen in jede neue Berechnung ein.`,
+    detail: `${a.entries.length} Werte hinterlegt, sie gelten für jede neue Rechnung.`,
     warnings,
   };
 }
@@ -238,9 +238,7 @@ function messdaten(inp: DataInputs): DataItem {
     };
   const roles = new Set(valid.map((i) => i.role));
   if (!inp.tolerances?.locked && roles.has("holdout"))
-    warnings.push(
-      "Es gibt eine Prüfmessung, aber noch keine festgelegten Grenzen. So kann sie das Modell nicht bestätigen.",
-    );
+    warnings.push("Die Prüfmessung kann das Modell erst bestätigen, wenn Grenzen festgelegt sind.");
   return {
     ...base,
     state: "echt",
@@ -252,7 +250,7 @@ function messdaten(inp: DataInputs): DataItem {
     evidence: inp.holdoutPass ? "empirical_passed" : "empirical_open",
     evidenceDetail: inp.holdoutPass
       ? "Die Prüfmessung hält die vorher festgelegten Grenzen ein."
-      : "Messungen liegen vor. Bestätigen kann das Modell erst eine Prüfmessung mit vorher festgelegten Grenzen.",
+      : "Bestätigt ist das Modell erst durch eine Prüfmessung mit vorher festgelegten Grenzen.",
     detail: [
       roles.has("calibration") ? "Zum Abstimmen" : null,
       roles.has("holdout")
@@ -297,8 +295,7 @@ function lab(inp: DataInputs): DataItem {
       source: done.filename ?? "FlexLab-CSV",
       date: `eingelesen am ${deDate(done.createdTs)}`,
       evidence: "empirical_open",
-      evidenceDetail:
-        "Gemessen an einem Gerät im Lab. Das sagt noch nichts über den ganzen Flughafen.",
+      evidenceDetail: "Messung an einem einzelnen Gerät, nicht am Flughafen.",
       detail:
         done.verdict === "pass"
           ? "Das Gerät hat den Versuch bestanden."
@@ -340,9 +337,9 @@ export function dataAnswer(items: DataItem[]): string {
   const real = items.filter((i) => i.state === "echt").length;
   const head =
     real === items.length
-      ? `Alle ${items.length} Datenquellen sind mit Quelle belegt.`
+      ? `Alle ${items.length} Datenquellen sind belegt.`
       : real === 0
-        ? `Noch ist keine der ${items.length} Datenquellen belegt. Wir rechnen mit Annahmen.`
+        ? `Noch ist keine der ${items.length} Datenquellen belegt, gerechnet wird mit Annahmen.`
         : `${real} von ${items.length} Datenquellen ${real === 1 ? "ist" : "sind"} belegt.`;
   const missing = items.filter((i) => i.state === "fehlt").map((i) => i.id);
   const assumed = items.filter((i) => i.state === "annahme").map((i) => i.id);
@@ -360,7 +357,7 @@ export function dataAnswer(items: DataItem[]): string {
   }
   if (assumed.length)
     parts.push(
-      `Noch mit Annahmen gerechnet: ${join(assumed.map((id) => items.find((i) => i.id === id)!.title))}.`,
+      `Für ${join(assumed.map((id) => items.find((i) => i.id === id)!.title))} gelten noch Annahmen.`,
     );
   return parts.join(" ");
 }
@@ -398,10 +395,8 @@ export function importError(detail: string): string {
   if (/project not found/i.test(d)) return "Dieses Projekt gibt es nicht mehr.";
   if (/already exists/.test(d)) return "Diese Datei gehört schon zum Projekt.";
   if (/^API-Fehler 413|too large|groesser|größer/i.test(d)) return "Die Datei ist zu groß.";
-  if (/^API-Fehler 5\d\d/.test(d))
-    return "Der Server konnte die Datei nicht verarbeiten. Bitte versuchen Sie es später noch einmal.";
-  if (/Failed to fetch|NetworkError|aborted/i.test(d))
-    return "Keine Verbindung zum Server. Bitte versuchen Sie es gleich noch einmal.";
+  if (/^API-Fehler 5\d\d/.test(d)) return "Der Server konnte die Datei nicht verarbeiten.";
+  if (/Failed to fetch|NetworkError|aborted/i.test(d)) return "Keine Verbindung zum Server.";
   if (/^[a-z_]+$/.test(d)) return issueLabel(d);
   return d;
 }

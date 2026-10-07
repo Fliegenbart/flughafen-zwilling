@@ -174,10 +174,10 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
     await linkFlightPlan(project, plan.snapshot_id);
     const groups = plan.possible_shared_flight_groups;
     setOk(
-      `${imported ? "Eingelesen. " : ""}Der Flugplan für den ${deDate(plan.service_date)} gehört jetzt zum Projekt: ${plan.departure_entry_count} Abflüge.${
+      `Flugplan vom ${deDate(plan.service_date)} mit ${plan.departure_entry_count} Abflügen ${imported ? "eingelesen und " : ""}übernommen.${
         groups
-          ? ` Achtung: ${groups} Flüge stehen womöglich mehrfach drin (Codeshares). Bitte unter „Für Fachleute: Anlagenplan und Flugplan“ klären.`
-          : " Keine doppelten Flüge gefunden."
+          ? ` ${groups} Flüge stehen eventuell doppelt drin (Codeshares) und müssen unter „Anlagenplan und Flugplan“ auf der Seite Tag geklärt werden.`
+          : ""
       }`,
     );
     await reload();
@@ -187,10 +187,10 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
     e.preventDefault();
     setError("");
     setOk("");
-    if (!file) return setError("Bitte wählen Sie das PDF des Flugplans aus.");
+    if (!file) return setError("Kein PDF ausgewählt.");
     if (!/\.pdf$/i.test(file.name) || file.size > 6 * 1024 * 1024)
-      return setError("Bitte wählen Sie ein PDF mit höchstens 6 MB.");
-    if (!date) return setError("Bitte wählen Sie den Tag, den Sie rechnen wollen.");
+      return setError("Das PDF darf höchstens 6 MB groß sein.");
+    if (!date) return setError("Kein Tag ausgewählt.");
     setBusy(true);
     try {
       const plan = await munichRequest<FlightPlanSnapshot>(
@@ -229,9 +229,8 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
         <a href={FLIGHT_PLAN_SOURCE} target="_blank" rel="noreferrer">
           munich-airport.de/saisonflugplan
         </a>
-        ), höchstens 6 MB. Wählen Sie dazu einen Tag, für den der Plan gilt. Wir lesen die geplanten
-        Zeiten, nicht was tatsächlich geflogen wurde. Flüge, die womöglich mehrfach drinstehen
-        (Codeshares), markieren wir, statt sie zusammenzulegen.
+        ), höchstens 6 MB, dazu ein Tag, für den der Plan gilt. Gelesen werden die Planzeiten.
+        Codeshares, die doppelt drinstehen könnten, werden markiert und nicht zusammengelegt.
       </Format>
       <form className="aec-dgrid" onSubmit={upload} aria-label="Flugplan einlesen">
         <label>
@@ -272,7 +271,7 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
                   {deDate(p.service_date)} · Stand {deDate(p.source_data_date)} ·{" "}
                   {p.departure_entry_count} Abflüge
                   {p.possible_shared_flight_groups
-                    ? ` · ${p.possible_shared_flight_groups} womöglich doppelt`
+                    ? ` · ${p.possible_shared_flight_groups} mögliche Codeshares`
                     : ""}
                 </option>
               ))}
@@ -294,11 +293,10 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
 
 /** Flugplan-Backend meldet teils englisch bzw. ohne Umlaute; hier in klare Saetze. */
 export function flightPlanError(detail: string): string {
-  if (/application\/pdf/.test(detail)) return "Bitte laden Sie ein PDF hoch.";
+  if (/application\/pdf/.test(detail)) return "Das ist kein PDF.";
   if (/laeuft bereits/.test(detail))
-    return "Gerade wird schon ein Flugplan eingelesen. Bitte einen Moment warten.";
-  if (/Zeitlimit/.test(detail))
-    return "Das Hochladen hat zu lange gedauert. Bitte versuchen Sie es noch einmal.";
+    return "Es wird schon ein Flugplan eingelesen, danach geht es weiter.";
+  if (/Zeitlimit/.test(detail)) return "Das Hochladen hat zu lange gedauert und wurde abgebrochen.";
   if (/6 MiB/.test(detail)) return "Das PDF ist größer als 6 MB.";
   if (/^API-Fehler 422|Layout|layout|unlesbar|Flugzeile/i.test(detail))
     return `Wir konnten das PDF nicht als Saisonflugplan lesen. ${detail.startsWith("API-Fehler") ? "" : detail}`.trim();
@@ -346,7 +344,7 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
       if (!r || r.value.trim() === "") continue;
       const value = Number(r.value.replace(",", "."));
       if (!Number.isFinite(value))
-        return setError(`Bei „${f.label}“ steht „${r.value}“. Bitte eine Zahl eintragen.`);
+        return setError(`„${f.label}“ braucht eine Zahl, eingetragen ist „${r.value}“.`);
       entries.push({
         key: f.key,
         value,
@@ -359,7 +357,7 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
     try {
       const saved = await saveAssets(project, entries);
       setOk(
-        `Gespeichert: ${saved.entries.length} Werte, ${saved.entries.filter((x) => x.status === "echt").length} davon mit Quelle. Sie zählen, sobald Sie den Tag neu rechnen.`,
+        `${saved.entries.length} Werte gespeichert, ${saved.entries.filter((x) => x.status === "echt").length} davon mit Quelle. Sie gelten ab der nächsten Rechnung.`,
       );
       await reload();
     } catch (err) {
@@ -373,13 +371,13 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
     e.preventDefault();
     setError("");
     setOk("");
-    if (!file) return setError("Bitte wählen Sie eine CSV- oder JSON-Datei.");
+    if (!file) return setError("Keine Datei ausgewählt.");
     if (isExampleFile(file.name)) return setError(EXAMPLE_REFUSED);
     setBusy(true);
     try {
       const saved = await importAssets(project, file);
       setOk(
-        `Aus ${file.name} haben wir ${saved.entries.length} Werte übernommen. Die Originaldatei heben wir auf.`,
+        `${saved.entries.length} Werte aus ${file.name} übernommen, die Originaldatei bleibt gespeichert.`,
       );
       await reload();
     } catch (err) {
@@ -401,15 +399,15 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
           ["flotte-anlagen-BEISPIEL.json", "Beispieldatei JSON (erfundene Werte)"],
         ]}
       >
-        Tragen Sie je Wert eine Zahl ein und sagen Sie, woher sie stammt (z. B. „Fuhrparkliste FMG,
-        Stand 30.09.2026“). Ohne Quelle bleibt der Wert eine Annahme. Als Datei geht auch: CSV mit
-        Kopfzeile <code>key,value,unit,source,source_date</code> (Komma oder Semikolon, Zeilen mit #
-        sind Kommentare) oder JSON <code>{'{"entries": [...]}'}</code>. Einheiten kW/MW, kWh/MWh,
-        kWp/MWp, Stück. Wir rechnen in kW um und heben die Originaldatei auf.
+        je Wert eine Zahl und ihre Quelle, etwa „Fuhrparkliste FMG, Stand 30.09.2026“. Als Datei
+        geht auch CSV mit Kopfzeile <code>key,value,unit,source,source_date</code> (Komma oder
+        Semikolon, Zeilen mit # sind Kommentare) oder JSON <code>{'{"entries": [...]}'}</code>.
+        Einheiten kW/MW, kWh/MWh, kWp/MWp, Stück. MW wird in kW umgerechnet, die Originaldatei
+        bleibt gespeichert.
       </Format>
       <p className="aec-fine">
-        Ihre Werte ersetzen unsere Standardwerte, sobald Sie den Tag neu rechnen. Was Sie nicht
-        angeben, bleibt eine Annahme. Frühere Ergebnisse ändern sich dadurch nicht.
+        Ihre Werte ersetzen ab der nächsten Rechnung unsere Standardwerte. Bisherige Ergebnisse
+        bleiben, wie sie sind.
       </p>
       <form onSubmit={submit} aria-label="Fahrzeuge und Anlagen eintragen" className="aec-assets">
         {groups.map((g) => (
@@ -512,12 +510,10 @@ function MeasurementForm({
     e.preventDefault();
     setError("");
     setOk("");
-    if (!file) return setError("Bitte wählen Sie die CSV-Datei mit der Messreihe.");
+    if (!file) return setError("Keine Datei ausgewählt.");
     if (isExampleFile(file.name)) return setError(EXAMPLE_REFUSED);
     if (!boundary.trim() || !source.trim())
-      return setError(
-        "Bitte sagen Sie, wo gemessen wurde und woher die Daten stammen. Sonst lässt sich die Messreihe nicht einordnen.",
-      );
+      return setError("Ohne Messort und Herkunft lässt sich die Messreihe nicht einordnen.");
     setBusy(true);
     try {
       const result = await importMeasurement(project, {
@@ -529,11 +525,11 @@ function MeasurementForm({
       });
       if (result.valid)
         setOk(
-          `${file.name} ist eingelesen: ${result.rows} Messwerte, ${role === "holdout" ? "als Prüfmessung" : "zum Abstimmen des Modells"}.`,
+          `${result.rows} Messwerte aus ${file.name} eingelesen, ${role === "holdout" ? "als Prüfmessung" : "zum Abstimmen des Modells"}.`,
         );
       else
         setError(
-          `Diese Messreihe können wir nicht verwenden. Wir haben sie trotzdem abgelegt. Der Grund: ${result.issues.map(issueLabel).join(" ")}`,
+          `Die Messreihe ist nicht verwendbar und wird nur zur Nachvollziehbarkeit gespeichert. ${result.issues.map(issueLabel).join(" ")}`,
         );
       await reload();
     } catch (err) {
@@ -550,13 +546,13 @@ function MeasurementForm({
       >
         CSV (UTF-8) mit Kopfzeile <code>timestamp,measured_kw</code>, wahlweise dazu{" "}
         <code>model_kw</code>. Zeit mit Zeitzone (2026-10-04T08:00:00+02:00), Leistung in kW, in
-        gleichen Abständen, höchstens 5 MB oder 100.000 Zeilen. Lücken bitte nicht auffüllen.
-        Doppelte, ungeordnete oder fehlende Zeitpunkte machen die Messreihe unbrauchbar.
+        gleichen Abständen, höchstens 5 MB oder 100.000 Zeilen. Lücken nicht auffüllen. Doppelte,
+        ungeordnete oder fehlende Zeitpunkte machen die Messreihe unbrauchbar.
       </Format>
       <p className="aec-notice" data-locked={locked ? "" : undefined}>
         {locked
-          ? `Die Grenzen, an denen das Modell gemessen wird, stehen fest (Fingerabdruck ${inputs.tolerances?.sha256?.slice(0, 12) ?? "–"}…). Eine Prüfmessung wird daran gemessen.`
-          : "Noch steht nicht fest, wie weit Modell und Messung auseinanderliegen dürfen. Eine Prüfmessung kann das Modell erst bestätigen, wenn diese Grenzen vorher festgelegt sind. Messreihen zum Abstimmen bestätigen nie etwas."}{" "}
+          ? `Die Prüfgrenzen stehen fest (Fingerabdruck ${inputs.tolerances?.sha256?.slice(0, 12) ?? "–"}…).`
+          : "Noch ist nicht festgelegt, wie weit Modell und Messung auseinanderliegen dürfen. Ohne diese Grenzen kann keine Prüfmessung das Modell bestätigen."}{" "}
         <Link to={{ page: "lab", projekt: route.projekt, werkstatt: "pilot" }}>
           Grenzen festlegen (Testing-Lab)
         </Link>
@@ -658,12 +654,12 @@ function LabForm({ project, reload, disabled }: FormProps) {
     e.preventDefault();
     setError("");
     setOk("");
-    if (!file) return setError("Bitte wählen Sie die CSV-Datei aus dem Lab.");
+    if (!file) return setError("Keine Datei ausgewählt.");
     if (isExampleFile(file.name)) return setError(EXAMPLE_REFUSED);
     setBusy(true);
     try {
       await importLab(project, file, label || file.name, caseId);
-      setOk(`${file.name} ist eingelesen und gehört zum Projekt. Die Auswertung läuft.`);
+      setOk(`${file.name} eingelesen, die Auswertung läuft.`);
       await reload();
     } catch (err) {
       setError(errorText(err, "Das Einlesen hat nicht geklappt."));
@@ -677,7 +673,8 @@ function LabForm({ project, reload, disabled }: FormProps) {
       <Format files={[["flexlab-BEISPIEL-erfundene-werte.csv", "Beispieldatei (erfundene Werte)"]]}>
         CSV mit Kopfzeile <code>ts_s,power_kw,setpoint_kw,limit_kw</code>: Sekunden seit
         Versuchsbeginn, aufsteigend, Leistungen in kW, höchstens 5 MB oder 100.000 Messwerte. Ein
-        leeres <code>power_kw</code> zählt als Lücke. Wir lesen nur Messdaten, wir steuern nichts.
+        leeres <code>power_kw</code> zählt als Lücke. Gelesen werden nur Messdaten, kein Gerät wird
+        angesteuert.
       </Format>
       <form className="aec-dgrid" onSubmit={submit} aria-label="Lab-Messung einlesen">
         <label className="aec-dgrid__wide">
@@ -773,7 +770,7 @@ export default function DatenView({ project, inputs, status, reload, route }: Da
         id="aec-view-title"
         question="Ihre Daten · Was liegt schon vor?"
         answer={headline}
-        lead={`${detail} Je mehr Sie mit Quelle belegen, desto weniger rechnen wir mit Annahmen.`.trim()}
+        lead={detail || undefined}
         evidence={evidence}
         source={inputs.available ? "api" : "beispiel"}
         kpis={[
@@ -788,17 +785,15 @@ export default function DatenView({ project, inputs, status, reload, route }: Da
       />
       {sharedDemoNotice() ? (
         <aside className="aec-dwarn" role="note" aria-label="Hinweis zur Demo-Instanz">
-          <strong>Bitte keine echten Kundendaten hochladen.</strong> Diese Demo teilen sich alle,
-          die den Zugang haben, und jeder sieht alles. Nehmen Sie nur Testdaten und öffentliche
-          Flugpläne. Für echte Daten richten wir eine eigene Umgebung mit persönlicher Anmeldung
-          ein.
+          <strong>Keine echten Kundendaten hochladen.</strong> Alle mit Demo-Zugang sehen, was hier
+          liegt. Für echte Daten gibt es eine eigene Umgebung mit persönlicher Anmeldung.
         </aside>
       ) : null}
       {disabled ? (
         <p className="aec-notice">
           {project.source === "beispiel"
-            ? "Das ist das Beispielprojekt. Eigene Daten tragen Sie in einem eigenen Projekt ein."
-            : "Der Server antwortet gerade nicht. Bitte versuchen Sie es gleich noch einmal."}
+            ? "Im Beispielprojekt lassen sich keine Daten eintragen, dafür braucht es ein eigenes Projekt."
+            : "Der Server antwortet nicht, Eintragen ist gerade nicht möglich."}
         </p>
       ) : null}
       <ol className="aec-dlist-cards" aria-label="Die vier Datenquellen">

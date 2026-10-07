@@ -298,19 +298,18 @@ def build_answer(entries: list[dict], finished: bool) -> dict:
     relieving = [e for e in candidates if _relief(e, base) > EPS_LIMIT_MIN]
     tradeoffs = [e for e in punctual if -_relief(e, base) > EPS_LIMIT_MIN]
     grid_best = max(relieving, key=lambda e: (_relief(e, base), _gain(e, base)), default=None)
-    grid_text = (f"den Anschluss entlastet „{grid_best['name']}“ am meisten: "
-                 f"{int(round(_relief(grid_best, base)))} Minuten weniger am Limit"
-                 if grid_best else "keine Lösung entlastet den Anschluss spürbar")
-    grid_sentence = grid_text[0].upper() + grid_text[1:]
+    grid_sentence = (f"„{grid_best['name']}“ entlastet den Anschluss am stärksten, um "
+                     f"{int(round(_relief(grid_best, base)))} Minuten am Limit."
+                     if grid_best else
+                     "Keine Lösung verkürzt die Zeit am Limit um mehr als eine Minute.")
     details = []
     for e in tradeoffs:
-        details.append(f"Der Haken bei „{e['name']}“: {_num(_gain(e, base))} Prozentpunkte "
-                       f"mehr Abflüge pünktlich, aber der Anschluss ist "
+        details.append(f"„{e['name']}“ bringt {_num(_gain(e, base))} Prozentpunkte mehr "
+                       f"pünktliche Abflüge, hält den Anschluss aber "
                        f"{int(round(-_relief(e, base)))} Minuten länger am Limit.")
     if no_effect:
-        details.append(", ".join(f"„{e['name']}“" for e in no_effect)
-                       + (" ändert" if len(no_effect) == 1 else " ändern")
-                       + " praktisch nichts.")
+        details.append("Mit " + " und ".join(f"„{e['name']}“" for e in no_effect)
+                       + " ändert sich weniger als ein halber Prozentpunkt.")
     if worse:
         details.append(", ".join(f"„{e['name']}“" for e in worse)
                        + (" schneidet" if len(worse) == 1 else " schneiden")
@@ -323,14 +322,15 @@ def build_answer(entries: list[dict], finished: bool) -> dict:
         if grid_best:
             return {**result, "status": "grid_only", "best_variant_id": grid_best["key"],
                     "best_name": grid_best["name"],
-                    "headline": f"Keine Lösung macht die Abflüge pünktlicher. {grid_sentence}."}
+                    "headline": "Keine Lösung bringt mehr als einen halben Prozentpunkt "
+                                f"mehr pünktliche Abflüge. {grid_sentence}"}
         return {**result, "status": "no_measurable_difference",
-                "headline": "Keine Lösung macht die Abflüge pünktlicher, "
-                            "und keine entlastet den Anschluss spürbar."}
+                "headline": "Keine Lösung bringt mehr als einen halben Prozentpunkt mehr "
+                            "pünktliche Abflüge oder eine Minute weniger am Limit."}
     best = max(punctual, key=lambda e: (_gain(e, base), _relief(e, base)))
     tied = [e for e in punctual if e is not best
             and abs(_gain(best, base) - _gain(e, base)) < EPS_ON_TIME_PCT]
-    effect = (f"{_num(_gain(best, base))} Prozentpunkte mehr Abflüge pünktlich "
+    effect = (f"{_num(_gain(best, base))} Prozentpunkte mehr pünktliche Abflüge "
               f"({_num(best['kpis']['on_time_pct'])} % statt "
               f"{_num(base['kpis']['on_time_pct'])} %)")
     result = {**result, "punctuality_best_id": None if tied else best["key"]}
@@ -338,23 +338,23 @@ def build_answer(entries: list[dict], finished: bool) -> dict:
         names = " und ".join(f"„{e['name']}“" for e in [best, *tied])
         return {**result, "status": "tie", "best_variant_id": None, "best_name": None,
                 "tied": [e["key"] for e in [best, *tied]],
-                "headline": f"{names} helfen gleich viel: {effect}. {grid_sentence}."}
+                "headline": f"{names} bringen gleich viel, jeweils {effect}. {grid_sentence}"}
     if best in tradeoffs:
-        grid_part = (f"Der Haken: Der Anschluss ist damit "
-                     f"{int(round(-_relief(best, base)))} Minuten länger am Limit")
-        details = [d for d in details if not d.startswith(f"Der Haken bei „{best['name']}“")]
+        grid_part = (f"Dafür ist der Anschluss "
+                     f"{int(round(-_relief(best, base)))} Minuten länger am Limit.")
+        details = [d for d in details if not d.startswith(f"„{best['name']}“ bringt")]
         if grid_best:
-            details.insert(0, f"{grid_sentence}.")
+            details.insert(0, grid_sentence)
         result = {**result, "details": details}
     elif grid_best is best:
-        grid_part = (f"Sie entlastet zugleich den Anschluss am meisten: "
-                     f"{int(round(_relief(best, base)))} Minuten weniger am Limit")
+        grid_part = (f"Den Anschluss entlastet sie ebenfalls am stärksten, um "
+                     f"{int(round(_relief(best, base)))} Minuten am Limit.")
     else:
         grid_part = grid_sentence
     return {**result, "status": "winner", "best_variant_id": best["key"],
             "best_name": best["name"],
-            "headline": f"Am meisten hilft „{best['name']}“: {_num(_gain(best, base))} "
-                        f"Prozentpunkte mehr Abflüge pünktlich. {grid_part}."}
+            "headline": f"„{best['name']}“ hilft am meisten, mit {_num(_gain(best, base))} "
+                        f"Prozentpunkten mehr pünktlichen Abflügen. {grid_part}"}
 
 
 class VariantService:

@@ -55,30 +55,28 @@ describe("Antwortsätze", () => {
   it("nennt das Engpassfenster und die fehlende Leistung aus den Daten", () => {
     const w = situationKpis(s).worst!;
     expect(w.deficitKw).toBeGreaterThan(0);
-    expect(bottleneckAnswer(s)).toMatch(
-      /^Zwischen 06:\d\d und 07:\d\d Uhr fehlen bis zu \d+\skW\./,
-    );
-    expect(situationAnswer(s)).toMatch(/Knapp wird es zwischen/);
+    expect(bottleneckAnswer(s)).toMatch(/^Von 06:\d\d bis 07:\d\d Uhr fehlen bis zu \d+\skW\./);
+    expect(situationAnswer(s)).toMatch(/^Von 06:\d\d bis 07:\d\d Uhr reicht der Anschluss nicht\./);
   });
   it("sagt ehrlich, wenn nichts eng wird", () => {
     const calm = { ...s, gridLimitKw: 10000 };
-    expect(bottleneckAnswer(calm)).toMatch(/^Es wird nie eng\./);
+    expect(bottleneckAnswer(calm)).toBe("Es wird an keinem Punkt des Tages eng.");
     expect(situationAnswer(calm)).toMatch(/reicht den ganzen Tag/);
   });
   it("benennt die beste Variante und die wirkungslosen", () => {
     const a = variantsAnswer(sampleVariants());
     expect(a).toMatch(
-      /^Am meisten hilft „5 Schlepper mehr“: 18,0 Prozentpunkte mehr Abflüge pünktlich\./,
+      /^„5 Schlepper mehr“ hilft am meisten, mit 18,0 Prozentpunkten mehr pünktlichen Abflügen\./,
     );
-    expect(a).toMatch(/Der Haken: Der Anschluss ist damit 19 Minuten länger am Limit/);
+    expect(a).toMatch(/Dafür ist der Anschluss 19 Minuten länger am Limit\./);
     expect(a).toMatch(
-      /Limit\. Den Anschluss entlastet „Batteriespeicher 2 MWh“ am meisten: 52 Minuten weniger am Limit/,
+      /„Batteriespeicher 2 MWh“ entlastet den Anschluss am stärksten, um 52 Minuten am Limit\./,
     );
   });
   it("sagt ausdrücklich, wenn keine Variante die Pünktlichkeit verbessert", () => {
     const vs = sampleVariants().map((v) => (v.kind === "basis" ? v : { ...v, onTimePct: 78.2 }));
     expect(variantsAnswer(vs)).toMatch(
-      /^Keine Lösung macht die Abflüge pünktlicher\. Den Anschluss entlastet „Batteriespeicher 2 MWh“ am meisten: 52 Minuten weniger am Limit\./,
+      /^Keine Lösung bringt mehr als einen halben Prozentpunkt mehr pünktliche Abflüge\. „Batteriespeicher 2 MWh“ entlastet den Anschluss am stärksten, um 52 Minuten am Limit\./,
     );
   });
 });
@@ -226,9 +224,7 @@ describe("Austausch-Status", () => {
     })!;
     expect(s.kind).toBe("bezug");
     expect(s.windows).toEqual([{ start: 360, end: 390, peakKw: 3500, deficitKw: 0 }]);
-    expect(bottleneckAnswer(s)).toBe(
-      "Zwischen 06:00 und 06:30 Uhr ist der Anschluss voll ausgereizt.",
-    );
+    expect(bottleneckAnswer(s)).toBe("Von 06:00 bis 06:30 Uhr ist der Anschluss voll ausgelastet.");
     expect(situationFromApi(SAMPLE_PROJECT, { available: false, series: [] })).toBeNull();
   });
 });
@@ -237,7 +233,7 @@ describe("Oberfläche", () => {
   it("navigiert über die vier Fragen und beginnt jede mit dem Antwortsatz", async () => {
     openApp(`?projekt=${SAMPLE_PROJECT.id}&frage=lage`);
     expect(
-      await screen.findByRole("heading", { level: 1, name: /Knapp wird es zwischen/ }),
+      await screen.findByRole("heading", { level: 1, name: /reicht der Anschluss nicht/ }),
     ).toBeVisible();
     const nav = screen.getByRole("navigation", { name: "Vier Fragen des Projekts" });
     expect(within(nav).getAllByRole("link")).toHaveLength(4);
@@ -253,7 +249,7 @@ describe("Oberfläche", () => {
     expect(screen.getAllByText("Beispielwerte").length).toBeGreaterThan(0);
     fireEvent.click(within(nav).getByRole("link", { name: /Lösungen/ }));
     expect(
-      await screen.findByRole("heading", { level: 1, name: /Am meisten hilft/ }),
+      await screen.findByRole("heading", { level: 1, name: /hilft am meisten/ }),
     ).toBeVisible();
     fireEvent.click(within(nav).getByRole("link", { name: /Zusage/ }));
     expect(
@@ -262,9 +258,12 @@ describe("Oberfläche", () => {
     await waitFor(() => expect(document.title).toBe("Zusage · Airport Energy Check"));
     // Kunde sieht nur den Pruefstatus, ohne Lab-Aktionen.
     expect(
-      await screen.findByText("Das Testing-Lab prüft gerade 2 Punkte. Einer ist schon geprüft.", {
-        exact: false,
-      }),
+      await screen.findByText(
+        "Das Testing-Lab prüft gerade 2 Punkte, einen hat es abgeschlossen.",
+        {
+          exact: false,
+        },
+      ),
     ).toBeVisible();
     const status = screen.getByRole("heading", {
       level: 2,
@@ -295,14 +294,12 @@ describe("Oberfläche", () => {
     ).toBeVisible();
     const msg = screen.getByRole("article", { name: "Ladepunkt 150 kW unter Spitzenwelle prüfen" });
     expect(within(msg).getByText(/Am Zug:/)).toHaveTextContent("Am Zug: Testing-Lab");
-    expect(screen.getByRole("heading", { level: 2, name: "Was sollen wir prüfen?" })).toBeVisible();
-    expect(screen.getByRole("heading", { level: 2, name: "Was wurde gemessen?" })).toBeVisible();
-    expect(screen.getByRole("heading", { level: 2, name: "Stimmt das Modell?" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Offene Anfragen" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Ergebnisse aus dem Lab" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Modell gegen Messung" })).toBeVisible();
     expect(screen.getByText("Noch nicht geprüft.")).toBeVisible();
     // Rollenschalter nur eingeklappt unter „Vorführung“.
-    const demo = screen
-      .getByText("Für Vorführungen: aus Sicht von Flughafen oder Lab")
-      .closest("details")!;
+    const demo = screen.getByText("Ansicht für Vorführungen wechseln").closest("details")!;
     expect(demo).not.toHaveAttribute("open");
     fireEvent.click(within(demo).getByRole("radio", { name: "Flughafen" }));
     expect(within(msg).queryByRole("button")).toBeNull();
@@ -323,9 +320,9 @@ describe("Oberfläche", () => {
     expect(document.querySelectorAll(".aec-sv[data-viz]")).toHaveLength(8);
     fireEvent.click(screen.getByRole("button", { name: "Enteisung ins Projekt holen" }));
     expect(
-      await screen.findByText(/„Enteisung“ liegt jetzt in MUC · Vorfeld Süd \(Beispiel\)/),
+      await screen.findByText(/„Enteisung“ gehört jetzt zu MUC · Vorfeld Süd \(Beispiel\)/),
     ).toBeVisible();
-    expect(screen.getByText(/Kälte: Akkukapazität aller Fahrzeuge −20 %/)).toBeVisible();
+    expect(screen.getByText(/Kälte nimmt allen Akkus 20 % Kapazität/)).toBeVisible();
     fireEvent.click(screen.getByRole("link", { name: "Jetzt durchrechnen" }));
     await waitFor(() => expect(window.location.search).toMatch(/frage=varianten&krise=enteisung/));
   });

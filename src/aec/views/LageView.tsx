@@ -20,20 +20,20 @@ export default function LageView({ project, situation, route }: ViewProps) {
           at: `${clock(k.worst.start)}–${clock(k.worst.end)}`,
           text:
             situation.kind === "bezug"
-              ? "Der Anschluss ist voll ausgereizt."
-              : `Der Strom reicht nicht. Es fehlen bis zu ${powerText(k.worst.deficitKw)}.`,
+              ? "Anschluss voll ausgelastet"
+              : `bis zu ${powerText(k.worst.deficitKw)} fehlen`,
           tone: "signal",
         }
       : null,
     {
       at: `${clock(busiest.minute)}–${clock(busiest.minute + 30)}`,
-      text: `Die dichteste Abflugwelle: ${busiest.count} Abflüge in einer halben Stunde.`,
+      text: `${busiest.count} Abflüge in einer halben Stunde, die dichteste Welle des Tages`,
       tone: "edge",
     },
     pvPeak && pvPeak.pvKw > 0
       ? {
           at: clock(pvPeak.minute),
-          text: `Die Sonne liefert am meisten: bis zu ${powerText(pvPeak.pvKw)} vom Dach.`,
+          text: `Photovoltaik auf dem Höchststand, ${powerText(pvPeak.pvKw)}`,
           tone: "muted",
         }
       : null,
@@ -78,11 +78,7 @@ export default function LageView({ project, situation, route }: ViewProps) {
       <div className="aec-stage">
         <DayLandscape situation={situation} size="hero" />
       </div>
-      <Section
-        title="Drei Momente, auf die es ankommt"
-        kicker="Der Tag im Überblick"
-        id="lage-moments"
-      >
+      <Section title="Die drei Momente des Tages" kicker="Überblick" id="lage-moments">
         <ol className="aec-moments">
           {moments.map((m) => (
             <li key={m.at} data-tone={m.tone}>
@@ -98,21 +94,21 @@ export default function LageView({ project, situation, route }: ViewProps) {
             <span>Strombedarf</span>
             {situation.source === "api"
               ? `gerechnet in ${situation.stepMinutes}-Minuten-Schritten, aus der letzten Berechnung Ihres Projekts`
-              : "Beispielwerte, weder gemessen noch gerechnet"}
+              : "Beispielwerte"}
           </li>
           <li>
             <span>Netzanschluss</span>
-            {powerText(situation.gridLimitKw)}, solange keine Quelle vorliegt eine Annahme
+            {powerText(situation.gridLimitKw)} (Annahme)
           </li>
           <li>
             <span>Flugplan</span>
             {situation.source === "api"
-              ? "der veröffentlichte Plan, nicht was tatsächlich geflogen wurde"
-              : "ausgedachte Abflugwellen"}
+              ? "Planzeiten aus dem veröffentlichten Flugplan"
+              : "erfundene Abflugwellen"}
           </li>
         </ul>
       </Details>
-      <Details summary="Für Fachleute: Anlagenplan und Flugplan im Detail">
+      <Details summary="Anlagenplan und Flugplan im Detail (für Fachleute)">
         <WerkstattLinks items={["system"]} base={route} />
       </Details>
     </>

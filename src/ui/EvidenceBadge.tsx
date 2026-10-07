@@ -15,23 +15,23 @@ export type EvidenceLevel =
 export const EVIDENCE_LEVELS: Record<EvidenceLevel, { label: string; hint: string }> = {
   assumption: {
     label: "Annahme",
-    hint: "Ein eingesetzter Wert, noch ohne Beleg. Weder gemessen noch am Modell abgestimmt.",
+    hint: "Eingesetzter Wert ohne Beleg.",
   },
   synthetic: {
     label: "ausgedacht",
-    hint: "Erfundene oder vom Modell erzeugte Werte. Sie zeigen, wie es funktioniert, nicht wie es ist.",
+    hint: "Erfundene oder vom Modell erzeugte Werte, nur zum Ausprobieren.",
   },
   model_checked: {
     label: "rechnerisch geprüft",
-    hint: "Das Modell rechnet in sich stimmig: Energie geht nicht verloren, Vergleiche laufen unter gleichen Bedingungen. Mit der Wirklichkeit verglichen ist es noch nicht.",
+    hint: "Die Rechnung ist in sich stimmig, etwa ohne Energieverluste und mit gleichen Bedingungen für alle Vergleiche. Mit Messungen verglichen wurde sie nicht.",
   },
   empirical_open: {
     label: "noch nicht gemessen",
-    hint: "Eine echte Messung, die das bestätigt, steht noch aus. Dafür braucht es vorher festgelegte Grenzen und eine eigene Prüfmessung.",
+    hint: "Die Bestätigung durch eine Messung steht aus. Dafür braucht es vorher festgelegte Grenzen und eine eigene Prüfmessung.",
   },
   empirical_passed: {
     label: "durch Messung bestätigt",
-    hint: "Eine Prüfmessung hat die vorher festgelegten Grenzen eingehalten. Das gilt für genau diesen Vergleich, nicht für elektrische Sicherheit oder den Betrieb.",
+    hint: "Eine Prüfmessung hat die vorher festgelegten Grenzen eingehalten. Das gilt für diesen Vergleich, nicht für elektrische Sicherheit oder den Betrieb.",
   },
 };
 

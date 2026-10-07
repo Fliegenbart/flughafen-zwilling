@@ -46,46 +46,51 @@ class CrisisStress:
 CRISIS_STRESS: dict[str, CrisisStress] = {
     "airport_case_01_spitzenwelle_v1": CrisisStress(
         "Spitzenwelle",
-        "Blockierte Positionen binden Ladepunkte: je Flotte 2 Ladepunkte offline 06–09 Uhr.",
+        "Von 06 bis 09 Uhr fallen je Flotte 2 Ladepunkte aus, weil Positionen blockiert sind.",
         chargers=(ChargerOutage(6 * H, 9 * H, 0.0, minimum=2),),
     ),
     "airport_case_02_guillotine_v1": CrisisStress(
         "Guillotine",
-        "Gleichzeitiger Einbruch: Netzimport −30 % und 25 % der Ladepunkte offline 07–11 Uhr.",
+        "Von 07 bis 11 Uhr liefert der Anschluss 30 % weniger, und ein Viertel der Ladepunkte "
+        "fällt aus.",
         grid=(GridCut(7 * H, 11 * H, 0.7),),
         chargers=(ChargerOutage(7 * H, 11 * H, 0.25),),
     ),
     "airport_case_03_wetter_kompression_v1": CrisisStress(
         "Wetter",
-        "Bewölkung und kürzere Ladefenster: PV ×0,4 ganztags, Netzimport −10 % ganztags.",
+        "Den ganzen Tag liefert die Photovoltaik 60 % weniger und der Anschluss 10 % weniger.",
         grid=(GridCut(0, 24 * H, 0.9),),
         pv_factor=0.4,
     ),
     "airport_case_04_gepaeckstau_v1": CrisisStress(
         "Gepäckstau",
-        "Gepäckschlepper stehen im Stau statt am Lader: 30 % ihrer Ladepunkte offline 08–14 Uhr.",
+        "Von 08 bis 14 Uhr fallen 30 % der Ladepunkte für Gepäckschlepper aus, weil die "
+        "Schlepper im Stau stehen.",
         chargers=(ChargerOutage(8 * H, 14 * H, 0.3, kinds=("baggage_tractor",)),),
     ),
     "airport_case_05_personalengpass_v1": CrisisStress(
         "Personal",
-        "Niemand steckt um: 20 % aller Ladepunkte ganztags ungenutzt.",
+        "Weil niemand umsteckt, bleiben den ganzen Tag 20 % der Ladepunkte ungenutzt.",
         chargers=(ChargerOutage(0, 24 * H, 0.2),),
     ),
     "airport_case_06_sicherheitswelle_v1": CrisisStress(
         "Sicherheit",
-        "Busse warten an der Position: 25 % der Bus-Ladepunkte offline 10–16 Uhr.",
+        "Von 10 bis 16 Uhr fällt ein Viertel der Bus-Ladepunkte aus, weil Busse an den "
+        "Positionen warten.",
         chargers=(ChargerOutage(10 * H, 16 * H, 0.25, kinds=("bus",)),),
     ),
     "airport_case_07_enteisungsfenster_v1": CrisisStress(
         "Enteisung",
-        "Kälte: Akkukapazität aller Fahrzeuge −20 %, PV ×0,3, Netzimport −15 % 05–09 Uhr.",
+        "Kälte nimmt allen Akkus 20 % Kapazität, die Photovoltaik liefert 70 % weniger und der "
+        "Anschluss von 05 bis 09 Uhr 15 % weniger.",
         grid=(GridCut(5 * H, 9 * H, 0.85),),
         pv_factor=0.3,
         battery_factor=0.8,
     ),
     "airport_case_08_schwarzstart_v1": CrisisStress(
         "Schwarzstart",
-        "Gestufter Wiederanlauf: Netzimport −60 % 00–02 Uhr, −30 % 02–04 Uhr, −10 % 04–06 Uhr.",
+        "Beim Wiederanlauf liefert der Anschluss bis 02 Uhr 60 % weniger, bis 04 Uhr 30 % und "
+        "bis 06 Uhr 10 % weniger.",
         grid=(GridCut(0, 2 * H, 0.4), GridCut(2 * H, 4 * H, 0.7), GridCut(4 * H, 6 * H, 0.9)),
     ),
 }

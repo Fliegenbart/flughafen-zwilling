@@ -116,10 +116,10 @@ function RecomputeBanner({
   if (state === "aktuell") return null;
   const text =
     state === "laeuft"
-      ? "Wir rechnen den Tag mit Ihren Werten neu. Das dauert einen Moment …"
+      ? "Der Tag wird mit Ihren Werten neu gerechnet …"
       : state === "fehlt"
-        ? "Mit Ihren Werten ist der Tag noch nicht gerechnet. Bis dahin zeigen die Seiten keine Zahlen für Ihr Projekt."
-        : "Sie haben Werte geändert. Rechnen Sie den Tag neu, sonst zeigen die Seiten noch den alten Stand.";
+        ? "Ihr Tag ist noch nicht gerechnet, deshalb fehlen auf den folgenden Seiten Ihre Zahlen."
+        : "Seit der letzten Rechnung haben sich Ihre Werte geändert, die Seiten zeigen noch den alten Stand.";
   return (
     <div className="aec-recompute" data-state={state} role="status">
       <p>

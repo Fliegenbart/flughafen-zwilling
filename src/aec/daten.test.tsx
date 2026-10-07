@@ -63,7 +63,7 @@ describe("Datenstand", () => {
     expect(s.real).toBe(0);
     expect(s.items.map((i) => i.state)).toEqual(["fehlt", "fehlt", "fehlt", "fehlt"]);
     expect(s.answer).toBe(
-      "Noch ist keine der 4 Datenquellen belegt. Wir rechnen mit Annahmen. Es fehlen der offizielle Flugplan, Angaben zu Fahrzeugen und Anlagen sowie Messungen vom Flughafen und aus dem Testing-Lab.",
+      "Noch ist keine der 4 Datenquellen belegt, gerechnet wird mit Annahmen. Es fehlen der offizielle Flugplan, Angaben zu Fahrzeugen und Anlagen sowie Messungen vom Flughafen und aus dem Testing-Lab.",
     );
     expect(needsDataStep(s)).toBe(true);
   });
@@ -91,9 +91,9 @@ describe("Datenstand", () => {
     );
     const [fp, fl] = s.items;
     expect(fp!.state).toBe("echt");
-    expect(fp!.warnings[0]).toMatch(/3 Flüge stehen womöglich mehrfach drin/);
+    expect(fp!.warnings[0]).toMatch(/3 Flüge stehen eventuell doppelt drin/);
     expect(fl!.state).toBe("annahme");
-    expect(s.answer).toMatch(/Noch mit Annahmen gerechnet: Fahrzeuge und Anlagen\./);
+    expect(s.answer).toMatch(/Für Fahrzeuge und Anlagen gelten noch Annahmen\./);
     expect(needsDataStep(s)).toBe(true);
   });
 
@@ -123,7 +123,7 @@ describe("Datenstand", () => {
     s = computeDataStatus(input({ imports: [bad, good] }));
     expect(s.items[2]!.state).toBe("echt");
     expect(s.items[2]!.evidence).toBe("empirical_open");
-    expect(s.items[2]!.warnings.join(" ")).toMatch(/noch keine festgelegten Grenzen/);
+    expect(s.items[2]!.warnings.join(" ")).toMatch(/wenn Grenzen festgelegt sind/);
     s = computeDataStatus(
       input({ imports: [good], holdoutPass: true, tolerances: { locked: true, sha256: "x" } }),
     );
@@ -155,7 +155,7 @@ describe("Datenstand", () => {
       imports: [imp],
       labRuns: [lab],
     });
-    expect(computeDataStatus(full).answer).toBe("Alle 4 Datenquellen sind mit Quelle belegt.");
+    expect(computeDataStatus(full).answer).toBe("Alle 4 Datenquellen sind belegt.");
     const sim = computeDataStatus({ ...full, labRuns: [{ ...lab, source: "simulation" }] });
     expect(sim.items[3]!.state).toBe("annahme");
     expect(sim.items[3]!.evidence).toBe("synthetic");
@@ -170,9 +170,7 @@ describe("Datenstand", () => {
     );
     expect(importError("timestamp_timezone_required")).toBe("Zeitstempel benötigen eine Zeitzone.");
     expect(importError("Failed to fetch")).toMatch(/Keine Verbindung/);
-    expect(flightPlanError("PDF als application/pdf hochladen")).toBe(
-      "Bitte laden Sie ein PDF hoch.",
-    );
+    expect(flightPlanError("PDF als application/pdf hochladen")).toBe("Das ist kein PDF.");
     expect(isExampleFile("lastgang-BEISPIEL-erfundene-werte.csv")).toBe(true);
     expect(
       assetsFromApi({ entries: [], status: "fehlt", fields: [{ key: "k", default: 3 }] })!
@@ -207,7 +205,7 @@ describe("Navigation zum Daten-Schritt", () => {
     ).toBeVisible();
     expect(window.location.search).toContain("frage=daten");
     expect(screen.getByRole("note", { name: "Hinweis zur Demo-Instanz" })).toHaveTextContent(
-      /keine echten Kundendaten/,
+      /Keine echten Kundendaten/,
     );
     expect(
       within(screen.getByRole("list", { name: "Die vier Datenquellen" })).getAllByRole("heading"),

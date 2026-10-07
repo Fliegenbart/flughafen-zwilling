@@ -21,6 +21,43 @@ Ingenieurinnen und Ingenieure; dort darf es fachlicher sein, aber nie maschinell
    gemessen“), ohne Juristendeutsch. Keine Versprechen, die das Modell nicht hält.
 7. **Kurz.** Ein Gedanke pro Satz, selten mehr als 20 Wörter.
 
+## Was wir nicht schreiben
+
+Diese Muster lassen Texte maschinell klingen. Sie kommen nicht vor.
+
+- **Doppelpunkt-Enthüllungen.** Nicht „Der Haken: Der Anschluss …“, sondern ein
+  normaler Satz: „Dafür ist der Anschluss …“.
+- **Kurz-kurz-Takt.** Nicht zwei Mini-Sätze, die einander erklären („Noch nichts
+  belegt. Wir rechnen mit Annahmen.“). Ein Satz, der den Gedanken trägt.
+- **Dreierreihen** („wann, ob und was“), wenn zwei Dinge reichen.
+- **Text über die Seite.** Kein „Hier steht …“, „Sie sehen …“, „Diese Seite …“.
+- **Dauernde Absicherung.** Wie sicher eine Zahl ist, steht an der Sicherheitsstufe.
+  Fließtext wiederholt das nicht.
+- **Weichmacher** wie „schlicht“, „praktisch“, „spürbar“, „genau“, „womöglich“. Wo
+  eine Schwelle dahintersteht, nennen wir sie.
+- **Rhetorische Fragen.** Die Frage im Seitenkopf ist die einzige Frage der Seite.
+  Abschnittstitel sind Aussagen.
+- **Höflichkeitskaskaden** in Meldungen. Was ist passiert, was kann man tun. Kein
+  „Bitte versuchen Sie es gleich noch einmal“.
+
+Zum Schluss jede Seite einmal laut lesen. Was man einem Kollegen so nicht sagen
+würde, wird umgeschrieben.
+
+## Tonlage je Seite
+
+Meist sitzt ein E.ON-Drive-Projektmanager mit dem Flughafen vor dem Bildschirm. Der
+Text muss also nicht alles erklären, aber jede Zahl muss für sich stehen.
+
+| Seite | Ton |
+| --- | --- |
+| Startseite | einladend, konkret, wenig Text |
+| Daten | sachlich wie eine Checkliste |
+| Tag, Engpass | knapp wie ein Lagebericht: Uhrzeit, Menge, Folge |
+| Lösungen | vergleichend, mit Zahlen statt Wertungen |
+| Zusage | nüchtern, verbindlich |
+| Meldungen | trocken und hilfreich |
+| Testing-Lab | kollegial unter Fachleuten; Fachbegriffe sind erlaubt |
+
 ## Wörterbuch
 
 | Statt | Schreiben wir |

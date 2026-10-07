@@ -20,7 +20,7 @@ it("is focusable and explains itself through a linked tooltip", () => {
   expect(chip).toHaveAttribute("tabindex", "0");
   const tip = document.getElementById(chip.getAttribute("aria-describedby")!)!;
   expect(tip).toHaveAttribute("role", "tooltip");
-  expect(tip).toHaveTextContent(/noch nicht/);
+  expect(tip).toHaveTextContent(/Mit Messungen verglichen wurde sie nicht/);
 });
 
 it("renders a legend with every level", () => {

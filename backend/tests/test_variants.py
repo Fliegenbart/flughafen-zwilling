@@ -177,9 +177,9 @@ def test_answer_winner_tie_and_no_measurable_difference():
     winner = build_answer([base, _entry("a", "Speicher", 90.0, 60),
                            _entry("b", "PV", 80.0 + EPS_ON_TIME_PCT / 2, 100)], True)
     assert winner["status"] == "winner" and winner["best_variant_id"] == "a"
-    assert "Am meisten hilft „Speicher“" in winner["headline"]
+    assert winner["headline"].startswith("„Speicher“ hilft am meisten, mit 10,0 Prozentpunkten")
     assert winner["no_effect"] == ["b"]
-    assert winner["details"][0] == "„PV“ ändert praktisch nichts."
+    assert winner["details"][0] == "Mit „PV“ ändert sich weniger als ein halber Prozentpunkt."
     tie = build_answer([base, _entry("a", "A", 90.0, 60), _entry("b", "B", 90.2, 60.5)], True)
     assert tie["status"] == "tie" and tie["best_variant_id"] is None
     assert set(tie["tied"]) == {"a", "b"}
@@ -187,8 +187,9 @@ def test_answer_winner_tie_and_no_measurable_difference():
     assert none["status"] == "no_measurable_difference" and none["best_variant_id"] is None
     minutes = build_answer([base, _entry("a", "A", 80.0, 40)], True)
     assert minutes["status"] == "grid_only" and minutes["grid_best_id"] == "a"
-    assert minutes["headline"] == ("Keine Lösung macht die Abflüge pünktlicher. Den Anschluss "
-                                   "entlastet „A“ am meisten: 60 Minuten weniger am Limit.")
+    assert minutes["headline"] == ("Keine Lösung bringt mehr als einen halben Prozentpunkt mehr "
+                                   "pünktliche Abflüge. „A“ entlastet den Anschluss am "
+                                   "stärksten, um 60 Minuten am Limit.")
     worse = build_answer([base, _entry("a", "A", 70.0, 100)], True)
     assert worse["worse"] == ["a"] and worse["status"] == "no_measurable_difference"
     assert build_answer([base], False)["status"] == "pending"
@@ -200,10 +201,10 @@ def test_answer_separates_punctuality_and_grid_with_tradeoff():
                            _entry("b", "Speicher", 80.2, 40)], True)
     assert answer["status"] == "winner" and answer["punctuality_best_id"] == "a"
     assert answer["grid_best_id"] == "b" and answer["tradeoffs"] == ["a"]
-    assert "Am meisten hilft „Schlepper“: 5,0 Prozentpunkte" in answer["headline"]
-    assert "Der Haken: Der Anschluss ist damit 30 Minuten länger am Limit" in answer["headline"]
-    assert answer["details"][0] == ("Den Anschluss entlastet „Speicher“ am meisten: "
-                                 "60 Minuten weniger am Limit.")
+    assert answer["headline"].startswith("„Schlepper“ hilft am meisten, mit 5,0 Prozentpunkten")
+    assert "Dafür ist der Anschluss 30 Minuten länger am Limit." in answer["headline"]
+    assert answer["details"][0] == ("„Speicher“ entlastet den Anschluss am stärksten, "
+                                 "um 60 Minuten am Limit.")
     # Genau an der Schwelle 0,5 Pp. zaehlt als messbar
     edge = build_answer([base, _entry("a", "A", 80.0 + EPS_ON_TIME_PCT, 100)], True)
     assert edge["status"] == "winner"

@@ -243,8 +243,8 @@ function Editor({
         {board.base.policy === "mission_priority"
           ? "Wer zuerst los muss, lädt zuerst."
           : "Jedes Fahrzeug lädt, sobald es steckt."}
-        {board.base.source === "coupled_run" ? "" : " Das sind vorerst Standardwerte."} Jede Lösung
-        ändert genau eine Sache daran.
+        {board.base.source === "coupled_run" ? "" : " Vorerst sind das Standardwerte."} Jede Lösung
+        ändert eine Sache daran.
       </p>
       {sugg.length && !full ? (
         <div className="aec-chips" role="group" aria-label="Vorschläge zum Ausprobieren">
@@ -285,10 +285,7 @@ function Editor({
           ))}
         </ul>
       ) : (
-        <p className="aec-muted">
-          Noch nichts ausgewählt. Tippen Sie auf einen Vorschlag oder stellen Sie eine eigene Lösung
-          zusammen.
-        </p>
+        <p className="aec-muted">Noch nichts ausgewählt.</p>
       )}
       <div className="aec-varrun">
         <button
@@ -340,9 +337,9 @@ function Editor({
       </div>
       {crisis ? (
         <p className="aec-fine" role="note">
-          <b>So rechnen wir „{crisis.name}“:</b> {crisis.energyStress} Das ist eine Annahme. Der
-          Flugplan bleibt gleich; heutiger Stand und jede Lösung werden zusätzlich unter dieser
-          Störung gerechnet.
+          <b>So rechnen wir „{crisis.name}“ (Annahme):</b> {crisis.energyStress} Der Flugplan bleibt
+          derselbe, gerechnet werden der heutige Stand und jede Lösung zusätzlich unter dieser
+          Störung.
         </p>
       ) : null}
       {board.run?.crisis && board.run.crisis.id !== crisis?.scenarioId ? (
@@ -398,7 +395,7 @@ function Runway({
             role="listitem"
             data-best={v.id === bestId ? "" : undefined}
             style={{ "--i": i } as React.CSSProperties}
-            aria-label={`${v.name}: ${dec1(v.onTimePct)} Prozent pünktlich, ${v.minutesAtLimit} Minuten Anschluss ausgereizt, höchster Bedarf ${powerText(v.peakKw)}`}
+            aria-label={`${v.name}: ${dec1(v.onTimePct)} Prozent pünktlich, ${v.minutesAtLimit} Minuten Anschluss voll ausgelastet, höchster Bedarf ${powerText(v.peakKw)}`}
           >
             <span className="aec-runway__name">{v.name}</span>
             <span className="aec-runway__track" aria-hidden="true">
@@ -411,7 +408,7 @@ function Runway({
             <span
               className="aec-runway__limit"
               aria-hidden="true"
-              title={`${v.minutesAtLimit} Minuten Anschluss ausgereizt`}
+              title={`${v.minutesAtLimit} Minuten Anschluss voll ausgelastet`}
             >
               {Array.from(
                 { length: Math.min(12, Math.ceil(v.minutesAtLimit / perDot)) },
@@ -426,8 +423,8 @@ function Runway({
       </div>
       <p className="aec-muted aec-runway__legend">
         <i className="aec-legend__basis" aria-hidden="true" /> heutiger Stand ·{" "}
-        <i className="aec-legend__stopdots" aria-hidden="true" /> jeder Punkt: {perDot} Minuten
-        Anschluss ausgereizt
+        <i className="aec-legend__stopdots" aria-hidden="true" /> ein Punkt steht für {perDot}{" "}
+        Minuten voll ausgelasteten Anschluss
       </p>
     </>
   );
@@ -469,17 +466,18 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
     lead = `${board.run!.done} von ${board.run!.total} Berechnungen fertig.`;
   } else if (api) {
     answer = board.definitions.length
-      ? "Ihre Auswahl steht. Jetzt durchrechnen."
-      : "Was wollen Sie gegen den heutigen Stand antreten lassen?";
-    lead =
-      "Wählen Sie Vorschläge oder stellen Sie eigene Lösungen zusammen. Dann rechnen wir alle am selben Tag durch.";
+      ? "Ausgewählt, aber noch nicht gerechnet."
+      : "Noch ist keine Lösung ausgewählt.";
+    lead = "Vorschläge antippen oder eine eigene Lösung zusammenstellen, dann durchrechnen.";
   } else {
     const full = variantsAnswer(variants);
     const cut = full.indexOf(". ") >= 0 ? full.indexOf(". ") + 1 : full.length;
     answer = full.slice(0, cut);
     lead = full.slice(cut).trim();
   }
-  lead = `${lead} Alle Lösungen laufen am selben Tag mit denselben Annahmen.`.trim();
+  if (computed)
+    lead = `${lead} Alle Lösungen wurden am selben Tag mit denselben Annahmen gerechnet.`;
+  lead = lead.trim();
 
   const delta = best && base ? best.onTimePct - base.onTimePct : 0;
   const kpis =
@@ -498,7 +496,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
             value: `${delta >= 0 ? "+" : "−"}${dec1(Math.abs(delta))}`,
             label: "Prozentpunkte gegenüber heute",
           },
-          { value: int(best.minutesAtLimit), unit: "min", label: "Anschluss ausgereizt" },
+          { value: int(best.minutesAtLimit), unit: "min", label: "Anschluss voll ausgelastet" },
           computed && best.missingKw != null
             ? {
                 value: powerText(best.missingKw).split(" ")[0]!,
@@ -528,7 +526,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
       />
 
       {api ? (
-        <Section title="Was wollen Sie ausprobieren?" kicker="Ihre Auswahl" id="var-edit">
+        <Section title="Lösungen auswählen" kicker="Auswahl" id="var-edit">
           <Editor board={board} project={project} reload={reloadBoard} krise={route.krise} />
         </Section>
       ) : null}
@@ -545,8 +543,8 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
         >
           {sample ? (
             <p className="aec-muted aec-sample-note">
-              <SourceTag source="beispiel" /> Ausgedachte Werte, damit Sie sehen, wie es aussieht
-              {api ? ". Ihre Zahlen erscheinen, sobald Sie Lösungen durchrechnen." : "."}
+              <SourceTag source="beispiel" />
+              {api ? " Ihre eigenen Zahlen erscheinen nach dem ersten Durchrechnen." : ""}
             </p>
           ) : null}
           <Runway variants={variants} base={base} bestId={bestId} />
@@ -589,7 +587,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
                     </div>
                   ) : null}
                   <div>
-                    <dt>Anschluss ausgereizt</dt>
+                    <dt>Anschluss voll ausgelastet</dt>
                     <dd>{int(v.minutesAtLimit)}</dd>
                   </div>
                   <div>
@@ -639,7 +637,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
           </ul>
           <p className="aec-muted">
             {computed
-              ? "Gerechnet, noch nicht gemessen. „Rechnerisch geprüft“ heißt: Die Berechnung ist vollständig, alle Lösungen hatten denselben Tag, keine Energie ging verloren und der übrige Verbrauch war gedeckt. "
+              ? "„Rechnerisch geprüft“ heißt, die Berechnung ist vollständig, alle Lösungen hatten denselben Tag, keine Energie ging verloren und der übrige Verbrauch war gedeckt. "
               : ""}
             Wie robust eine Lösung ist, zeigen die Krisenfälle in der{" "}
             <Link to={{ page: "bibliothek" }}>Szenario-Bibliothek</Link>. Kosten zeigen wir erst,
@@ -648,7 +646,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
         </Section>
       ) : null}
 
-      <Details summary="Für Fachleute: Belastungsproben und Abfertigung im Detail">
+      <Details summary="Belastungsproben und Abfertigung im Detail (für Fachleute)">
         <WerkstattLinks items={["robustheit", "simulation"]} base={route} />
       </Details>
     </>

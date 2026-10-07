@@ -155,7 +155,7 @@ export default function DayLandscape({
   const valueText = `${clock(minute)} Uhr: ${demandLabel} ${p.value} ${p.unit}, ${
     over
       ? situation.kind === "bezug"
-        ? "Anschluss ausgereizt"
+        ? "Anschluss voll ausgelastet"
         : `es fehlen ${reserve}`
       : `noch ${reserve} frei`
   }, ${now.departures} Abflüge in dieser halben Stunde${inWindow ? ", knappe Phase" : ""}.`;
@@ -315,7 +315,7 @@ export default function DayLandscape({
           <span className="aec-land__reserve">
             {over
               ? situation.kind === "bezug"
-                ? "ausgereizt"
+                ? "voll ausgelastet"
                 : `fehlen ${reserve}`
               : `noch ${reserve} frei`}
           </span>

@@ -80,25 +80,24 @@ export function pointAt(s: Situation, minute: number) {
 export function situationAnswer(s: Situation): string {
   const { windows, minReserve } = situationKpis(s);
   if (!windows.length)
-    return `Der Anschluss reicht den ganzen Tag. Am knappsten bleiben noch ${powerText(minReserve)} Luft.`;
+    return `Der Anschluss reicht den ganzen Tag, im knappsten Moment bleiben ${powerText(minReserve)} frei.`;
   const w = windows.reduce((a, b) => (b.deficitKw > a.deficitKw ? b : a));
   const more =
     windows.length > 1
-      ? ` Dazu ${windows.length === 2 ? "eine kürzere Phase" : `${windows.length - 1} kürzere Phasen`}.`
+      ? ` Dazu ${windows.length === 2 ? "kommt eine kürzere enge Phase" : `kommen ${windows.length - 1} kürzere enge Phasen`}.`
       : "";
-  return `Der Anschluss reicht fast den ganzen Tag. Knapp wird es zwischen ${clock(w.start)} und ${clock(w.end)} Uhr.${more}`;
+  return `Von ${clock(w.start)} bis ${clock(w.end)} Uhr reicht der Anschluss nicht.${more}`;
 }
 
 /** Der grosse Antwortsatz der Ansicht "Engpass". */
 export function bottleneckAnswer(s: Situation): string {
   const { worst } = situationKpis(s);
-  if (!worst)
-    return "Es wird nie eng. Der Anschluss gibt den ganzen Tag mehr her, als gebraucht wird.";
+  if (!worst) return "Es wird an keinem Punkt des Tages eng.";
   // Die Ursache (Strom oder Fahrzeuge) steht im Lead und im Abschnitt darunter,
   // damit die Ueberschrift ein einziger, kurzer Satz bleibt.
   if (s.kind === "bezug" || worst.deficitKw <= 0)
-    return `Zwischen ${clock(worst.start)} und ${clock(worst.end)} Uhr ist der Anschluss voll ausgereizt.`;
-  return `Zwischen ${clock(worst.start)} und ${clock(worst.end)} Uhr fehlen bis zu ${powerText(worst.deficitKw)}.`;
+    return `Von ${clock(worst.start)} bis ${clock(worst.end)} Uhr ist der Anschluss voll ausgelastet.`;
+  return `Von ${clock(worst.start)} bis ${clock(worst.end)} Uhr fehlen bis zu ${powerText(worst.deficitKw)}.`;
 }
 
 export function bestVariant(variants: Variant[]): Variant | null {
@@ -116,7 +115,7 @@ export function bestVariant(variants: Variant[]): Variant | null {
 /** Antwortsatz: Pünktlichkeit und Netzentlastung getrennt (Schwellen wie im Backend). */
 export function variantsAnswer(variants: Variant[]): string {
   const base = variants.find((v) => v.kind === "basis") ?? variants[0];
-  if (!base) return "Keine Lösung macht die Abflüge pünktlicher.";
+  if (!base) return "Noch keine Lösung gerechnet.";
   const others = variants.filter((v) => v.id !== base.id);
   const gain = (v: Variant) => v.onTimePct - base.onTimePct;
   const relief = (v: Variant) => base.minutesAtLimit - v.minutesAtLimit;
@@ -124,23 +123,23 @@ export function variantsAnswer(variants: Variant[]): string {
   const gridBest = others
     .filter((v) => relief(v) > 1)
     .reduce<Variant | null>((a, v) => (!a || relief(v) > relief(a) ? v : a), null);
-  const gridText = gridBest
-    ? `Den Anschluss entlastet „${gridBest.name}“ am meisten: ${int(relief(gridBest))} Minuten weniger am Limit`
-    : "keine Lösung entlastet den Anschluss spürbar";
+  const gridSentence = gridBest
+    ? `„${gridBest.name}“ entlastet den Anschluss am stärksten, um ${int(relief(gridBest))} Minuten am Limit.`
+    : "Keine Lösung verkürzt die Zeit am Limit um mehr als eine Minute.";
   const noEffect = others.filter((v) => Math.abs(gain(v)) < 0.5 && Math.abs(relief(v)) <= 1);
   const tail = noEffect.length
-    ? ` ${noEffect.map((v) => `„${v.name}“`).join(", ")} ${noEffect.length === 1 ? "ändert" : "ändern"} praktisch nichts.`
+    ? ` Mit ${noEffect.map((v) => `„${v.name}“`).join(" und ")} ändert sich weniger als ein halber Prozentpunkt.`
     : "";
   if (!punctual.length)
-    return `Keine Lösung macht die Abflüge pünktlicher. ${gridText.charAt(0).toUpperCase() + gridText.slice(1)}.${tail}`;
+    return `Keine Lösung bringt mehr als einen halben Prozentpunkt mehr pünktliche Abflüge. ${gridSentence}${tail}`;
   const best = punctual.reduce((a, v) => (gain(v) > gain(a) ? v : a));
   let grid: string;
   if (-relief(best) > 1)
-    grid = `Der Haken: Der Anschluss ist damit ${int(-relief(best))} Minuten länger am Limit.${gridBest ? ` ${gridText.charAt(0).toUpperCase() + gridText.slice(1)}` : ""}`;
+    grid = `Dafür ist der Anschluss ${int(-relief(best))} Minuten länger am Limit.${gridBest ? ` ${gridSentence}` : ""}`;
   else if (gridBest === best)
-    grid = `Sie entlastet zugleich den Anschluss am meisten: ${int(relief(best))} Minuten weniger am Limit`;
-  else grid = gridText.charAt(0).toUpperCase() + gridText.slice(1);
-  return `Am meisten hilft „${best.name}“: ${dec1(gain(best))} Prozentpunkte mehr Abflüge pünktlich. ${grid}.${tail}`;
+    grid = `Den Anschluss entlastet sie ebenfalls am stärksten, um ${int(relief(best))} Minuten am Limit.`;
+  else grid = gridSentence;
+  return `„${best.name}“ hilft am meisten, mit ${dec1(gain(best))} Prozentpunkten mehr pünktlichen Abflügen. ${grid}${tail}`;
 }
 
 /* ---------------------------------------------------------------- Austausch */

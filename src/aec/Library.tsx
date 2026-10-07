@@ -33,13 +33,13 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
     try {
       const where = await adoptScenario(project, scenarioId, name);
       setNotice({
-        text: `„${name}“ liegt jetzt in ${project.name}${where === "beispiel" ? " (nur bis Sie die Seite schließen)" : ""}.`,
+        text: `„${name}“ gehört jetzt zu ${project.name}${where === "beispiel" ? ", bis Sie die Seite schließen" : ""}.`,
         project: project.id,
         slug,
       });
     } catch (e) {
       setNotice({
-        text: `Das hat nicht geklappt: ${e instanceof Error ? e.message : "unbekannter Fehler"}`,
+        text: `Übernehmen fehlgeschlagen (${e instanceof Error ? e.message : "unbekannter Fehler"}).`,
         project: "",
       });
     } finally {
@@ -55,12 +55,11 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
           <EvidenceBadge level="synthetic" />
         </div>
         <h1 className="aec-answer__text" data-answer="">
-          Was, wenn der Tag schiefgeht? Acht Krisenfälle zum Durchspielen.
+          Acht Krisenfälle, an denen sich jede Lösung messen lassen muss.
         </h1>
         <p className="aec-answer__lead">
-          Wetter, Personalmangel, ein Stromausfall: Holen Sie einen Fall in Ihr Projekt und rechnen
-          Sie Ihre Lösungen damit durch. So sehen Sie, welche auch an einem schlechten Tag trägt.
-          Bei jedem Fall steht, wie wir ihn im Strommodell abbilden.
+          Holen Sie einen Fall wie Enteisung oder Personalmangel in Ihr Projekt und rechnen Sie Ihre
+          Lösungen damit durch. Wie wir den Fall im Strommodell abbilden, steht jeweils dabei.
         </p>
         <label className="aec-target">
           In welches Projekt?

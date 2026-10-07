@@ -37,7 +37,7 @@ export default function Home() {
     const name = String(f.get("name") ?? "").trim();
     const airport = String(f.get("airport") ?? "").trim();
     if (!name || !airport) {
-      setError("Bitte geben Sie einen Projektnamen und den Flughafen an.");
+      setError("Projektname und Flughafen fehlen.");
       return;
     }
     setError("");
@@ -100,9 +100,9 @@ export default function Home() {
             Reicht der Anschluss für das <em>elektrische Vorfeld</em>?
           </h1>
           <p className="aec-hero__lead aec-enter" style={{ "--d": 2 } as React.CSSProperties}>
-            Spielen Sie einen ganzen Verkehrstag durch. Sie sehen, wann Schlepper, Busse und
-            Bodenstromgeräte gleichzeitig laden, ob der Anschluss dann reicht und was hilft, wenn
-            nicht. An jeder Zahl steht, wie sicher sie ist.
+            Schlepper, Busse und Bodenstromgeräte laden oft gleichzeitig, kurz vor der nächsten
+            Abflugwelle. Wir rechnen Ihren Verkehrstag durch und zeigen, ob der Netzanschluss das
+            trägt und was hilft, wenn nicht.
           </p>
         </div>
         <div className="aec-hero__viz aec-enter" style={{ "--d": 3 } as React.CSSProperties}>
@@ -141,8 +141,8 @@ export default function Home() {
 
       <section className="aec-band" aria-labelledby="aec-how">
         <div className="aec-band__head">
-          <span className="aec-eyebrow">So gehen Sie vor</span>
-          <h2 id="aec-how">Vier Fragen, dann wissen Sie, was Sie zusagen können.</h2>
+          <span className="aec-eyebrow">Ablauf</span>
+          <h2 id="aec-how">In vier Schritten zur Zusage an den Flughafen.</h2>
         </div>
         <ol className="aec-route">
           {QUESTIONS.map((q, i) => (
@@ -158,7 +158,7 @@ export default function Home() {
       <section className="aec-band" aria-labelledby="aec-projects">
         <div className="aec-band__head">
           <span className="aec-eyebrow">Projekte</span>
-          <h2 id="aec-projects">Jedes Projekt: ein Flughafen, ein Anschluss, eine Flotte.</h2>
+          <h2 id="aec-projects">Ein Projekt steht für einen Anschluss und die Flotte dahinter.</h2>
         </div>
         <div className="aec-projects">
           <ul className="aec-projects__list">
@@ -251,11 +251,11 @@ export default function Home() {
                 />
               </label>
               <p className="aec-fine aec-new__split" aria-live="polite">
-                Vorerst verteilen wir sie so:{" "}
+                Vorläufig aufgeteilt in{" "}
                 {distributeFleet(fleet)
                   .map((f) => `${f.vehicles} ${f.label}`)
                   .join(", ")}
-                . Das können Sie gleich im nächsten Schritt ändern.
+                ; das lässt sich im nächsten Schritt ändern.
               </p>
             </div>
             <label>
@@ -275,8 +275,8 @@ export default function Home() {
               {creating ? "Wird angelegt …" : "Projekt anlegen"}
             </button>
             <p className="aec-fine">
-              Alle Werte gelten als Annahme, bis Sie eine Quelle nennen. Im nächsten Schritt
-              ergänzen Sie, was Sie schon wissen.
+              Ohne Quellenangabe zählen die Werte als Annahme. Belege tragen Sie im nächsten Schritt
+              nach.
             </p>
           </form>
         </div>
@@ -285,7 +285,7 @@ export default function Home() {
       <section className="aec-band aec-band--library" aria-labelledby="aec-lib">
         <div className="aec-band__head">
           <span className="aec-eyebrow">Szenario-Bibliothek</span>
-          <h2 id="aec-lib">Was, wenn der Tag schiefgeht? Acht Krisenfälle zum Durchspielen.</h2>
+          <h2 id="aec-lib">Acht Krisenfälle, an denen sich jede Lösung messen lassen muss.</h2>
         </div>
         <ul className="aec-libteaser">
           {SCENARIO_CASES.slice(0, 4).map((c) => (

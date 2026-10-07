@@ -12,12 +12,12 @@ export function customerState(item: ExchangeItem): "geprüft" | "in Prüfung" | 
 }
 
 export function pruefAnswer(items: ExchangeItem[]): string {
-  if (!items.length) return "Das Testing-Lab hat noch nichts zu prüfen.";
+  if (!items.length) return "Beim Testing-Lab liegt nichts zur Prüfung.";
   const running = items.filter((i) => customerState(i) === "in Prüfung").length;
   const checked = items.filter((i) => customerState(i) === "geprüft").length;
   if (!running)
-    return `Das Testing-Lab hat ${checked === 1 ? "einen Punkt" : `${checked} Punkte`} geprüft, nichts ist offen.`;
-  return `Das Testing-Lab prüft gerade ${running === 1 ? "einen Punkt" : `${running} Punkte`}. ${checked === 1 ? "Einer ist" : `${checked} sind`} schon geprüft.`;
+    return `Das Testing-Lab hat alles geprüft, ${checked === 1 ? "einen Punkt" : `${checked} Punkte`}.`;
+  return `Das Testing-Lab prüft gerade ${running === 1 ? "einen Punkt" : `${running} Punkte`}${checked ? `, ${checked === 1 ? "einen" : checked} hat es abgeschlossen` : ""}.`;
 }
 
 /**
@@ -43,12 +43,12 @@ export default function Pruefstatus({ project }: { project: Project }) {
     const f = new FormData(form);
     const question = String(f.get("question") ?? "").trim();
     const component = String(f.get("component") ?? "").trim();
-    if (!question) return setError("Bitte schreiben Sie kurz, was geprüft werden soll.");
+    if (!question) return setError("Was soll das Lab klären?");
     setError("");
     try {
       const item = await proposeTest(project, question, component);
       setItems((prev) => [item, ...(prev ?? [])]);
-      setMsg("Angefragt. Das Testing-Lab meldet sich mit dem Ergebnis.");
+      setMsg("Anfrage gesendet. Das Ergebnis erscheint hier.");
       form.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Anfrage fehlgeschlagen");
@@ -98,10 +98,7 @@ export default function Pruefstatus({ project }: { project: Project }) {
         <button type="submit" className="aec-button">
           Anfrage senden
         </button>
-        <p className="aec-fine">
-          Das Lab plant den Versuch und meldet sich. Bald erkennt das System selbst, wann etwas
-          geprüft werden muss.
-        </p>
+        <p className="aec-fine">Das Lab plant den Versuch und meldet das Ergebnis hier.</p>
       </form>
     </Section>
   );

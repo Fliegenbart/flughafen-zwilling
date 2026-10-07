@@ -41,12 +41,12 @@ export function claimsFor(
       ? {
           level: "empirical_passed",
           title: "Was eine Messung bestätigt hat",
-          text: "Eine Prüfmessung vom Flughafen hat die vorher festgelegten Grenzen eingehalten.",
+          text: "Eine Prüfmessung am Flughafen hat die vorher festgelegten Grenzen eingehalten.",
         }
       : {
           level: "empirical_open",
           title: "Was noch gemessen werden muss",
-          text: "Ob das Modell die Wirklichkeit trifft. Dafür braucht es Messungen vom Flughafen und aus dem Testing-Lab.",
+          text: "Ob das Modell die Wirklichkeit trifft. Dafür fehlen Messungen am Flughafen und im Testing-Lab.",
         },
   ];
 }
@@ -69,7 +69,7 @@ function reportHtml(props: ViewProps, claims: Claim[], overview: Overview | null
 <table>${rows}</table>
 <h2>Anhang für Fachleute</h2><ul>${tech || "<li>Noch keine gespeicherten Berechnungen.</li>"}</ul>
 <p>Modellversion: ${CURRENT_COUPLED_ENGINE}. Prüfgrenzen vorab festgelegt: ${overview?.locked ? `ja, SHA256 ${esc(overview.sha256 ?? "")}` : "nein"}.</p>
-<p>Prototyp: Das Modell ist noch nicht an Messungen abgestimmt (unkalibriert) und steuert keine Anlagen.</p></main></body></html>`;
+<p>Prototyp von electrified labs. Das Modell ist nicht an Messungen kalibriert und steuert keine Anlagen.</p></main></body></html>`;
 }
 
 export default function NachweisView(props: ViewProps) {
@@ -104,9 +104,9 @@ export default function NachweisView(props: ViewProps) {
         answer={
           passed
             ? "Die Rechnung ist geprüft, und eine Messung vom Flughafen hat sie bestätigt."
-            : "Die Rechnung ist geprüft. Versprechen sollten Sie die Zahlen erst nach einer Messung."
+            : "Die Rechnung ist geprüft, verbindlich zusagen lassen sich die Zahlen erst nach einer Messung."
         }
-        lead="Hier steht, wie sicher jede Aussage ist. Grün wird es erst, wenn eine echte Messung die vorher vereinbarten Grenzen einhält."
+        lead="Grün wird eine Aussage erst, wenn eine Messung die vorher vereinbarten Grenzen einhält."
         evidence={top}
         source={overview?.source ?? "beispiel"}
         kpis={(["assumption", "synthetic", "model_checked", top] as EvidenceLevel[]).map((l) => ({
@@ -142,14 +142,14 @@ export default function NachweisView(props: ViewProps) {
             Zusammenfassung herunterladen
           </button>
           <span className="aec-fine">
-            Zum Weitergeben oder als PDF drucken. Technische Details stehen im Anhang.
+            Zum Weitergeben oder Drucken als PDF, mit technischem Anhang.
           </span>
         </div>
       </Section>
 
       <Pruefstatus project={project} />
 
-      <Details summary="Für Fachleute: Prüfprotokoll, Modellversion, Fingerabdrücke">
+      <Details summary="Prüfprotokoll und Modellversion (für Fachleute)">
         <ul className="aec-facts aec-facts--mono">
           <li>
             <span>Modellversion</span>
