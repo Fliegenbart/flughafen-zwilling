@@ -103,7 +103,28 @@ Zugangsdaten nur nach Challenge und lehnt Redirects ausserhalb dieses HTTPS-
 Pilotpfads ab. Vor Freigabe unauthentifiziert 401 fuer UI/API/Artefakte pruefen.
 HTTP ohne TLS darf nur umleiten, nie Zugangsdaten abfragen oder Inhalte liefern.
 
-## Aktiver Release vom 05.10.2026
+## Aktiver Release vom 07.10.2026
+
+Code-Release `31a12b225c50d4e9b1ef681f8f1eef3ac9093b9e` aus `codex/recovery-audit`
+ist aktiv, gebaut aus `/opt/airport-releases/31a12b2`. Vorher aktiv: `5a18f73`.
+Enthalten: PR #22 (Abgleich in drei Fragen), PR #24 (Testing-Lab als eigener
+Raum `?seite=lab`, Kundensicht mit vier Fragen und Pruefstatus) und PR #23
+(Krisenfaelle als Energie-Stresstest in C, ausgewiesene Annahme). Keine Netz- oder
+Compose-Aenderung.
+
+Backend vor dem Wechsel gestoppt, Datenvolume offline gesichert
+(`/opt/airport-backups/pre-31a12b2-20261007.tar.gz`, Modus 0600, 1.220 Dateien)
+und hashgleich in ein separates Verzeichnis wiederhergestellt.
+
+Verifiziert: Execution-Commit im Container, Readiness, ohne Login 401 fuer
+UI/API/Assets/Lab-Raum, HTTP leitet nur auf HTTPS um. Neue Oberflaechen im
+ausgelieferten Bundle. `smoke_munich.py`, `smoke_demo.py --planner --all-cases`
+und `smoke_flexlab.py` gegen den Frontend-Port auf der Host-Bridge erfolgreich;
+unbekannter Krisenfall im Variantenlauf ergibt 422. Authentifizierte
+HTTPS-Smokes stehen weiterhin aus. Der Lab-Raum ist in dieser geteilten Demo
+ohne Rollen- oder Zugriffstrennung fuer alle angemeldeten Nutzer sichtbar.
+
+## Release vom 05.10.2026
 
 Code-Release `5a18f732c37d800480dd071cebea0274c9af6af9` aus `codex/recovery-audit`
 (PR #21, Schritt „Daten“) ist aktiv, gebaut aus dem Release-Worktree
