@@ -103,7 +103,17 @@ Zugangsdaten nur nach Challenge und lehnt Redirects ausserhalb dieses HTTPS-
 Pilotpfads ab. Vor Freigabe unauthentifiziert 401 fuer UI/API/Artefakte pruefen.
 HTTP ohne TLS darf nur umleiten, nie Zugangsdaten abfragen oder Inhalte liefern.
 
-## Aktiver Release vom 07.10.2026
+## Aktiver Release vom 07.10.2026 (Texte)
+
+Code-Release `27b385046eb84e17b6ba3b446afc1ee868d3eacf` aus `codex/recovery-audit` (PR #26,
+neue Texte nach `docs/TEXTLEITFADEN.md`) ist aktiv, gebaut aus `/opt/airport-releases/27b3850`.
+Vorher aktiv: `31a12b2`. Keine Netz- oder Compose-Aenderung. Datenvolume vorher offline
+gesichert (`/opt/airport-backups/pre-27b3850-20261007.tar.gz`, 1.360 Dateien, hashgleich
+wiederhergestellt). Verifiziert: Execution-Commit, Readiness, 401 ohne Login fuer
+UI/API/Assets/Lab-Raum, HTTP nur Umleitung, neue Texte im Bundle, `smoke_munich.py`,
+`smoke_demo.py --planner --all-cases` und `smoke_flexlab.py` ueber die Host-Bridge erfolgreich.
+
+## Release vom 07.10.2026
 
 Code-Release `31a12b225c50d4e9b1ef681f8f1eef3ac9093b9e` aus `codex/recovery-audit`
 ist aktiv, gebaut aus `/opt/airport-releases/31a12b2`. Vorher aktiv: `5a18f73`.
