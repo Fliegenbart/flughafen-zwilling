@@ -76,8 +76,8 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
           <>
             {notice.text}{" "}
             {notice.project ? (
-              <Link to={{ page: "projekt", projekt: notice.project, frage: "abgleich" }}>
-                Zum Austausch
+              <Link to={{ page: "projekt", projekt: notice.project, frage: "nachweis" }}>
+                Zum Prüfstatus
               </Link>
             ) : null}
           </>

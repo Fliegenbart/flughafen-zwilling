@@ -1,13 +1,14 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { EvidenceBadge } from "../../ui/EvidenceBadge";
+import { useEffect, useState } from "react";
+import { EvidenceBadge } from "../ui/EvidenceBadge";
 import {
   advanceExchange,
+  getProject,
   listExchange,
-  proposeTest,
+  listProjects,
   storedRole,
   storeRole,
   type Role,
-} from "../api";
+} from "./api";
 import {
   ACTION_LABEL,
   EXCHANGE_FLOW,
@@ -16,14 +17,15 @@ import {
   PARTY_LABEL,
   STATUS_LABEL,
   whoseTurn,
-} from "../analysis";
-import Link from "../Link";
-import { loadDataInputs } from "../dataApi";
-import { EMPTY_INPUTS, type DataInputs } from "../dataStatus";
-import { AnswerHead, Details, Section } from "../parts";
-import type { ViewProps } from "../ProjectPage";
-import type { ExchangeItem, Party } from "../types";
-import { WerkstattLinks } from "../Werkstatt";
+} from "./analysis";
+import Link from "./Link";
+import { loadDataInputs } from "./dataApi";
+import { EMPTY_INPUTS, type DataInputs } from "./dataStatus";
+import { AnswerHead, Details, Section } from "./parts";
+import { useNav } from "./context";
+import type { Route } from "./routes";
+import type { ExchangeItem, Party, Project } from "./types";
+import { WerkstattFrame, WerkstattLinks } from "./Werkstatt";
 
 const KIND_LABEL: Record<ExchangeItem["kind"], string> = {
   szenario: "Szenario",
@@ -99,7 +101,16 @@ export function modelAnswer(inp: DataInputs): { answer: string; detail: string }
   };
 }
 
-export default function AbgleichView({ project, route }: ViewProps) {
+type LabRoute = Extract<Route, { page: "lab" }>;
+
+/**
+ * Testing-Lab-Backbone: interner Pruefraum. Eingang der Pruefauftraege eines Projekts,
+ * Messungen und Modellabgleich. Kunden sehen davon nur den Pruefstatus (Schritt Nachweis).
+ */
+export default function LabPage({ route, theme }: { route: LabRoute; theme?: "light" | "dark" }) {
+  const nav = useNav();
+  const [project, setProject] = useState<Project | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [items, setItems] = useState<ExchangeItem[] | null>(null);
   const [inputs, setInputs] = useState<DataInputs>(EMPTY_INPUTS);
   const [role, setRole] = useState<Role>(storedRole);
@@ -108,14 +119,31 @@ export default function AbgleichView({ project, route }: ViewProps) {
 
   useEffect(() => {
     let alive = true;
-    void listExchange(project).then((list) => alive && setItems(list));
-    void loadDataInputs(project)
-      .then((inp) => alive && setInputs(inp))
-      .catch(() => undefined);
+    void listProjects().then((list) => alive && setProjects(list));
     return () => {
       alive = false;
     };
-  }, [project]);
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const p = await getProject(route.projekt);
+      if (!alive) return;
+      setProject(p);
+      void listExchange(p).then((list) => alive && setItems(list));
+      void loadDataInputs(p)
+        .then((inp) => alive && setInputs(inp))
+        .catch(() => undefined);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [route.projekt]);
+
+  useEffect(() => {
+    if (route.werkstatt) document.getElementById("werkstatt")?.scrollIntoView?.({ block: "start" });
+  }, [route.werkstatt]);
 
   const list = items ?? [];
   const open = list.filter((i) => whoseTurn(i) !== null);
@@ -129,7 +157,7 @@ export default function AbgleichView({ project, route }: ViewProps) {
   async function advance(item: ExchangeItem) {
     const to = nextStatus(item.status);
     const turn = whoseTurn(item);
-    if (!to || !turn) return;
+    if (!to || !turn || !project) return;
     setError("");
     try {
       const next = await advanceExchange(project, item, to, turn);
@@ -137,24 +165,6 @@ export default function AbgleichView({ project, route }: ViewProps) {
       setMsg(`„${item.title}“ ist jetzt ${STATUS_LABEL[to]}.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Statuswechsel fehlgeschlagen");
-    }
-  }
-
-  async function propose(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const f = new FormData(form);
-    const question = String(f.get("question") ?? "").trim();
-    const component = String(f.get("component") ?? "").trim();
-    if (!question) return setError("Bitte die Prüffrage formulieren.");
-    setError("");
-    try {
-      const item = await proposeTest(project, question, component);
-      setItems((prev) => [item, ...(prev ?? [])]);
-      setMsg("Testanfrage gestellt. Am Zug: Testing-Lab.");
-      form.reset();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Anfrage fehlgeschlagen");
     }
   }
 
@@ -175,124 +185,133 @@ export default function AbgleichView({ project, route }: ViewProps) {
     );
 
   return (
-    <>
-      <AnswerHead
-        id="aec-view-title"
-        question="Abgleich · Stimmt das?"
-        answer={items ? exchangeAnswer(list) : "Austausch wird geladen…"}
-        lead="Drei Fragen in dieser Reihenfolge: Was prüfen wir? Was wurde gemessen? Stimmt das Modell mit der Messung überein? Jeder Punkt zeigt, wer am Zug ist."
-        evidence="empirical_open"
-        source={list.some((i) => i.source === "api") ? "api" : "beispiel"}
-        kpis={[
-          {
-            value: String(atLab),
-            label: "am Zug: Testing-Lab",
-            tone: atLab ? "signal" : undefined,
-          },
-          {
-            value: String(atAirport),
-            label: "am Zug: Flughafen",
-            tone: atAirport ? "signal" : undefined,
-          },
-          { value: String(done), label: "erledigt" },
-          { value: inputs.holdoutPass ? "ja" : "offen", label: "Modell gegen Messung" },
-        ]}
-      />
-
-      <div role="status" aria-live="polite" className="aec-notice">
-        {msg}
-      </div>
-      {error ? (
-        <p className="aec-error" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <Section title="Was prüfen wir?" kicker="1 · Prüffragen und Szenarien" id="abgleich-fragen">
-        {thread(questions, "Noch keine Prüffrage. Unten die erste Testanfrage stellen.")}
-        {role !== "lab" ? (
-          <form className="aec-ask" onSubmit={propose} aria-labelledby="ask-title">
-            <h3 id="ask-title">Testanfrage an das Lab</h3>
-            <label>
-              Prüffrage
-              <input
-                name="question"
-                placeholder="Hält der Ladepark die Abflugwelle 06–08 Uhr?"
-                autoComplete="off"
-              />
-            </label>
-            <label>
-              Komponente
-              <input name="component" placeholder="Bus-Ladepunkt 150 kW" autoComplete="off" />
-            </label>
-            <button type="submit" className="aec-button">
-              Anfrage stellen
-            </button>
-            <p className="aec-fine">Versuchsentwurf, Freigabe separat. Keine Hardwarewrites.</p>
-          </form>
-        ) : null}
-      </Section>
-
-      <Section
-        title="Was wurde gemessen?"
-        kicker="2 · Lab-Ergebnisse und Auswertungen"
-        id="abgleich-messung"
-      >
-        {thread(measured, "Noch keine Messung zurückgemeldet.")}
-        <Details summary="Werkstatt: Messdaten realer Komponenten">
-          <WerkstattLinks items={["flexlab"]} base={route} />
-        </Details>
-      </Section>
-
-      <Section title="Stimmt das Modell?" kicker="3 · Modell gegen Messung" id="abgleich-modell">
-        <div className="aec-verdict" data-pass={inputs.holdoutPass ? "" : undefined}>
-          <p className="aec-verdict__answer">{model.answer}</p>
-          <p>{model.detail}</p>
-          <EvidenceBadge level={inputs.holdoutPass ? "empirical_passed" : "empirical_open"} />
-        </div>
-        <p>
-          <Link
-            to={{ page: "projekt", projekt: route.projekt, frage: "daten" }}
-            className="aec-button aec-button--ghost"
-          >
-            Messreihe unter „Daten“ importieren
-          </Link>
-        </p>
-        <Details summary="Werkstatt: Kriterien sperren und Holdout bewerten">
-          <WerkstattLinks items={["pilot"]} base={route} />
-        </Details>
-      </Section>
-
-      <Details summary="Vorführung: Ansicht wechseln">
-        <div className="aec-role" role="radiogroup" aria-label="Ich spreche als">
-          <span>Ich spreche als</span>
-          {(
-            [
-              ["airport", "Flughafen"],
-              ["lab", "Testing-Lab"],
-              ["admin", "beide"],
-            ] as const
-          ).map(([r, l]) => (
-            <button
-              key={r}
-              type="button"
-              role="radio"
-              aria-checked={role === r}
-              onClick={() => {
-                setRole(r);
-                storeRole(r);
-              }}
+    <div className="aec-lab">
+      <div className="aec-labbar">
+        <div className="aec-labbar__id">
+          <span className="aec-labbar__space">Testing-Lab · interner Prüfraum</span>
+          <label className="aec-labbar__pick">
+            Projekt
+            <select
+              value={route.projekt}
+              onChange={(e) => nav.navigate({ page: "lab", projekt: e.target.value })}
             >
-              {l}
-            </button>
-          ))}
+              {projects.some((p) => p.id === route.projekt) ? null : (
+                <option value={route.projekt}>{project?.name ?? route.projekt}</option>
+              )}
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-        <p className="aec-fine">
-          Nur für die Vorführung: zeigt, welche Schritte Flughafen und Lab jeweils sehen. Kein
-          Zugriffsschutz.
-        </p>
-      </Details>
-    </>
+        <Link
+          to={{ page: "projekt", projekt: route.projekt, frage: "nachweis" }}
+          className="aec-button aec-button--ghost aec-button--small"
+        >
+          Kundensicht dieses Projekts
+        </Link>
+      </div>
+
+      <div className="aec-page">
+        <AnswerHead
+          id="aec-view-title"
+          question="Testing-Lab · Eingang"
+          answer={items ? exchangeAnswer(list) : "Eingang wird geladen…"}
+          lead="Hier prüft, misst und verifiziert das E.ON Testing-Lab. Flughafen und E.ON Drive sehen davon nur den Prüfstatus an ihren Zahlen."
+          evidence="empirical_open"
+          source={list.some((i) => i.source === "api") ? "api" : "beispiel"}
+          kpis={[
+            {
+              value: String(atLab),
+              label: "am Zug: Testing-Lab",
+              tone: atLab ? "signal" : undefined,
+            },
+            {
+              value: String(atAirport),
+              label: "am Zug: Flughafen",
+              tone: atAirport ? "signal" : undefined,
+            },
+            { value: String(done), label: "erledigt" },
+            { value: inputs.holdoutPass ? "ja" : "offen", label: "Modell gegen Messung" },
+          ]}
+        />
+
+        <div role="status" aria-live="polite" className="aec-notice">
+          {msg}
+        </div>
+        {error ? (
+          <p className="aec-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <Section title="Was prüfen wir?" kicker="1 · Prüfaufträge und Szenarien" id="lab-fragen">
+          {thread(questions, "Kein offener Prüfauftrag.")}
+        </Section>
+
+        <Section
+          title="Was wurde gemessen?"
+          kicker="2 · Lab-Ergebnisse und Auswertungen"
+          id="lab-messung"
+        >
+          {thread(measured, "Noch keine Messung zurückgemeldet.")}
+          <Details summary="Werkstatt: Messdaten realer Komponenten">
+            <WerkstattLinks items={["flexlab"]} base={route} />
+          </Details>
+        </Section>
+
+        <Section title="Stimmt das Modell?" kicker="3 · Modell gegen Messung" id="lab-modell">
+          <div className="aec-verdict" data-pass={inputs.holdoutPass ? "" : undefined}>
+            <p className="aec-verdict__answer">{model.answer}</p>
+            <p>{model.detail}</p>
+            <EvidenceBadge level={inputs.holdoutPass ? "empirical_passed" : "empirical_open"} />
+          </div>
+          <Details summary="Werkstatt: Kriterien sperren und Holdout bewerten">
+            <WerkstattLinks items={["pilot"]} base={route} />
+          </Details>
+        </Section>
+
+        {route.werkstatt ? (
+          <WerkstattFrame
+            werkstatt={route.werkstatt}
+            theme={theme}
+            close={{ page: "lab", projekt: route.projekt }}
+          />
+        ) : null}
+
+        <Details summary="Vorführung: Ansicht wechseln">
+          <div className="aec-role" role="radiogroup" aria-label="Ich spreche als">
+            <span>Ich spreche als</span>
+            {(
+              [
+                ["airport", "Flughafen"],
+                ["lab", "Testing-Lab"],
+                ["admin", "beide"],
+              ] as const
+            ).map(([r, l]) => (
+              <button
+                key={r}
+                type="button"
+                role="radio"
+                aria-checked={role === r}
+                onClick={() => {
+                  setRole(r);
+                  storeRole(r);
+                }}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+          <p className="aec-fine">
+            Nur für die Vorführung: zeigt, welche Schritte Flughafen und Lab jeweils sehen. Kein
+            Zugriffsschutz.
+          </p>
+        </Details>
+      </div>
+    </div>
   );
 }
 

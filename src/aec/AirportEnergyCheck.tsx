@@ -11,7 +11,9 @@ import { NavContext, type Nav } from "./context";
 import { parseRoute, STEPS, toSearch, type Route } from "./routes";
 import Link from "./Link";
 import { Mark } from "./parts";
+import { SAMPLE_PROJECT } from "./sample";
 import Home from "./Home";
+import LabPage from "./LabPage";
 import Library from "./Library";
 import ProjectPage from "./ProjectPage";
 
@@ -31,6 +33,7 @@ function storedTheme(): Theme {
 
 export function titleFor(route: Route): string {
   if (route.page === "bibliothek") return "Szenario-Bibliothek · Airport Energy Check";
+  if (route.page === "lab") return "Testing-Lab · Airport Energy Check";
   if (route.page === "projekt") {
     const q = STEPS.find((x) => x.id === route.frage)!;
     return `${q.label} · Airport Energy Check`;
@@ -50,6 +53,19 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
       /* nur fuer diese Sitzung */
     }
   }, [theme]);
+
+  // Alte Adressen (Schritt D "Abgleich", Lab-Werkstatt im Projekt) zeigen den Lab-Raum;
+  // die Adresszeile auf die neue Form bringen, damit Lesezeichen danach stimmen.
+  useEffect(() => {
+    const canonical = toSearch(parseRoute(window.location.search));
+    if (route.page === "lab" && window.location.search !== canonical) {
+      try {
+        window.history.replaceState(null, "", `${basePath}${canonical}`);
+      } catch {
+        /* ohne Verlauf: Adresse bleibt */
+      }
+    }
+  }, [route, basePath]);
 
   useEffect(() => {
     const onPop = () => setRoute(parseRoute(window.location.search));
@@ -112,6 +128,19 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
             >
               Szenario-Bibliothek
             </Link>
+            <Link
+              to={{
+                page: "lab",
+                projekt:
+                  route.page === "projekt" || route.page === "lab"
+                    ? route.projekt
+                    : SAMPLE_PROJECT.id,
+              }}
+              current={route.page === "lab" ? "page" : undefined}
+              className="aec-top__lab"
+            >
+              Testing-Lab
+            </Link>
           </nav>
           <button
             type="button"
@@ -131,6 +160,8 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
             <Home />
           ) : route.page === "bibliothek" ? (
             <Library theme={dataTheme} />
+          ) : route.page === "lab" ? (
+            <LabPage key={route.projekt} route={route} theme={dataTheme} />
           ) : (
             <ProjectPage key={route.projekt} route={route} theme={dataTheme} />
           )}
