@@ -2609,6 +2609,108 @@ li[data-from="lab"] > .aec-msg {
   }
 }
 
+/* ------------------------------------------------- Testing-Lab-Raum */
+/* Eigener Raum: invertierte Leiste, Monospace-Kennung. Man soll sehen, dass man im
+   technischen Pruefraum des Labs ist und nicht in der Kundensicht. */
+.aec-top__nav .aec-top__lab {
+  margin-left: var(--sp-2);
+  font-family: var(--font-data);
+  border-color: color-mix(in srgb, currentColor 25%, transparent);
+}
+.aec-top__nav .aec-top__lab[aria-current="page"] {
+  background: var(--aec-ink);
+  color: var(--aec-bg);
+  border-color: var(--aec-ink);
+}
+.aec-labbar {
+  position: sticky;
+  top: 65px;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 12px var(--gutter);
+  background: var(--aec-ink);
+  color: var(--aec-bg);
+  border-bottom: 3px solid var(--aec-signal);
+}
+.aec-labbar__id {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.aec-labbar__space {
+  font-family: var(--font-data);
+  font-size: var(--step--1);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.aec-labbar__pick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--step--1);
+}
+.aec-labbar__pick select {
+  min-height: 36px;
+  max-width: 60vw;
+  padding: 4px 8px;
+  border-radius: var(--r-2);
+  border: 1px solid color-mix(in srgb, var(--aec-bg) 40%, transparent);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.aec-labbar__pick option {
+  color: var(--aec-ink);
+}
+.aec-labbar .aec-button--ghost {
+  color: inherit;
+  border-color: color-mix(in srgb, var(--aec-bg) 40%, transparent);
+}
+
+/* --------------------------------------------- Pruefstatus (Kunde) */
+.aec-pruef__answer {
+  margin: 0;
+  font-weight: 600;
+}
+.aec-pruef {
+  display: grid;
+  gap: var(--sp-2);
+  padding: 0;
+  list-style: none;
+}
+.aec-pruef li {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px 14px;
+  border-radius: var(--r-2);
+  background: var(--aec-surface);
+}
+.aec-pruef__state {
+  font-family: var(--font-data);
+  font-size: var(--step--1);
+  color: var(--aec-muted);
+}
+.aec-pruef li[data-state="in Prüfung"] .aec-pruef__state {
+  color: var(--aec-signal-text);
+  font-weight: 600;
+}
+.aec-pruef__title {
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  .aec-pruef li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ------------------------------------------- Stresstest-Auswahl (C) */
 .aec-stresspick {
   display: inline-flex;
   align-items: center;

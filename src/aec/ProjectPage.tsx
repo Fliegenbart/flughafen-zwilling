@@ -18,7 +18,6 @@ import { WerkstattFrame } from "./Werkstatt";
 import LageView from "./views/LageView";
 import EngpassView from "./views/EngpassView";
 import VariantenView from "./views/VariantenView";
-import AbgleichView from "./views/AbgleichView";
 import NachweisView from "./views/NachweisView";
 
 type ProjectRoute = Extract<Route, { page: "projekt" }>;
@@ -57,7 +56,7 @@ function QuestionNav({ route }: { route: ProjectRoute }) {
         </span>
         <span className="aec-qnav__q">{DATA_STEP.question}</span>
       </Link>
-      <nav aria-label="Fünf Fragen des Projekts">
+      <nav aria-label="Vier Fragen des Projekts">
         <ol ref={list}>
           {QUESTIONS.map((q, i) => (
             <li
@@ -85,7 +84,7 @@ function QuestionNav({ route }: { route: ProjectRoute }) {
             ? ""
             : onData
               ? `Schritt Daten: ${DATA_STEP.question}`
-              : `Frage ${index + 1} von 5: ${QUESTIONS[index]!.question}`}
+              : `Frage ${index + 1} von ${QUESTIONS.length}: ${QUESTIONS[index]!.question}`}
         </p>
       </nav>
     </div>
@@ -164,8 +163,7 @@ const NEXT: Partial<Record<Step, Step>> = {
   daten: "lage",
   lage: "engpass",
   engpass: "varianten",
-  varianten: "abgleich",
-  abgleich: "nachweis",
+  varianten: "nachweis",
 };
 
 export default function ProjectPage({
@@ -316,8 +314,6 @@ export default function ProjectPage({
           <EngpassView {...props} />
         ) : route.frage === "varianten" ? (
           <VariantenView {...props} />
-        ) : route.frage === "abgleich" ? (
-          <AbgleichView {...props} />
         ) : (
           <NachweisView {...props} />
         )}

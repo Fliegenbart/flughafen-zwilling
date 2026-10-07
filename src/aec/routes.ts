@@ -10,7 +10,6 @@ export const QUESTIONS = [
   { id: "lage", label: "Lage", question: "Wie sieht der Tag aus?" },
   { id: "engpass", label: "Engpass", question: "Wo wird es eng?" },
   { id: "varianten", label: "Varianten", question: "Was hilft?" },
-  { id: "abgleich", label: "Abgleich", question: "Stimmt das?" },
   { id: "nachweis", label: "Nachweis", question: "Was können wir zusagen?" },
 ] as const;
 export type Question = (typeof QUESTIONS)[number]["id"];
@@ -38,15 +37,20 @@ export type Werkstatt =
   | "simulation";
 const MUNICH_STEPS = ["system", "betrieb", "robustheit", "pilot", "nachweise"] as const;
 const WERKSTATT: Werkstatt[] = [...MUNICH_STEPS, "flexlab", "simulation"];
+/** Werkstaetten des Testing-Lab-Backbones; sie oeffnen nie in der Kundensicht. */
+export type LabWerkstatt = "pilot" | "flexlab";
+const isLabWerkstatt = (v: string | null): v is LabWerkstatt => v === "pilot" || v === "flexlab";
 
 export type Route =
   | { page: "start" }
   | { page: "bibliothek"; werkstatt?: "simulation" }
+  /** Testing-Lab-Backbone: Pruefauftraege, Messungen, Modellabgleich eines Projekts. */
+  | { page: "lab"; projekt: string; werkstatt?: LabWerkstatt }
   | {
       page: "projekt";
       projekt: string;
       frage: Step;
-      werkstatt?: Werkstatt;
+      werkstatt?: Exclude<Werkstatt, LabWerkstatt>;
       /** Krisenfall (Slug) als vorgewaehlter Stresstest in C. */
       krise?: string;
       /** Ohne `frage` in der Adresse: Startschritt nach Datenstand (Daten oder Lage). */
@@ -54,15 +58,14 @@ export type Route =
     };
 
 const isStep = (v: string | null): v is Step => STEPS.some((q) => q.id === v);
-const isWerkstatt = (v: string | null): v is Werkstatt => WERKSTATT.includes(v as Werkstatt);
+const isWerkstatt = (v: string | null): v is Exclude<Werkstatt, LabWerkstatt> =>
+  WERKSTATT.includes(v as Werkstatt) && !isLabWerkstatt(v);
 
 /** Welche Frage beherbergt welches Bestandswerkzeug. */
-export const WERKSTATT_HOME: Record<Werkstatt, Question> = {
+export const WERKSTATT_HOME: Record<Exclude<Werkstatt, LabWerkstatt>, Question> = {
   system: "lage",
   betrieb: "engpass",
   robustheit: "varianten",
-  pilot: "abgleich",
-  flexlab: "abgleich",
   nachweise: "nachweis",
   simulation: "varianten",
 };
@@ -73,8 +76,17 @@ export function parseRoute(search: string): Route {
   if (p.get("seite") === "bibliothek")
     return werkstatt === "simulation" ? { page: "bibliothek", werkstatt } : { page: "bibliothek" };
   const projekt = p.get("projekt");
+  if (p.get("seite") === "lab")
+    return {
+      page: "lab",
+      projekt: projekt ?? SAMPLE_PROJECT.id,
+      ...(isLabWerkstatt(werkstatt) ? { werkstatt } : {}),
+    };
   if (projekt) {
     const frage = p.get("frage");
+    // Frueher Schritt D "Abgleich" bzw. Lab-Werkstatt im Projekt: jetzt Testing-Lab.
+    if (frage === "abgleich" || isLabWerkstatt(werkstatt))
+      return { page: "lab", projekt, ...(isLabWerkstatt(werkstatt) ? { werkstatt } : {}) };
     return {
       page: "projekt",
       projekt,
@@ -92,6 +104,13 @@ export function toSearch(route: Route): string {
   if (route.page === "bibliothek") {
     p.set("seite", "bibliothek");
     if (route.werkstatt) p.set("werkstatt", route.werkstatt);
+  } else if (route.page === "lab") {
+    p.set("seite", "lab");
+    p.set("projekt", route.projekt);
+    if (route.werkstatt) {
+      p.set("werkstatt", route.werkstatt);
+      if (route.werkstatt === "pilot") p.set("schritt", "pilot");
+    }
   } else if (route.page === "projekt") {
     p.set("projekt", route.projekt);
     if (!route.auto) p.set("frage", route.frage);
@@ -115,13 +134,13 @@ export function legacyRedirect(search: string): string | null {
   const projekt = p.get("projekt") ?? SAMPLE_PROJECT.id;
   if (ws === "munich") {
     const step = p.get("schritt");
-    const werkstatt: Werkstatt = (MUNICH_STEPS as readonly string[]).includes(step ?? "")
-      ? (step as Werkstatt)
+    if (step === "pilot") return toSearch({ page: "lab", projekt, werkstatt: "pilot" });
+    const werkstatt = (MUNICH_STEPS as readonly string[]).includes(step ?? "")
+      ? (step as Exclude<Werkstatt, LabWerkstatt>)
       : "system";
     return toSearch({ page: "projekt", projekt, frage: WERKSTATT_HOME[werkstatt], werkstatt });
   }
-  if (ws === "flexlab")
-    return toSearch({ page: "projekt", projekt, frage: "abgleich", werkstatt: "flexlab" });
+  if (ws === "flexlab") return toSearch({ page: "lab", projekt, werkstatt: "flexlab" });
   // airport und unbekannte Werte: frueher immer die Abfertigungssimulation.
   return toSearch({ page: "bibliothek", werkstatt: "simulation" });
 }

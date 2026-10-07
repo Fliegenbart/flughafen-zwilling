@@ -140,7 +140,7 @@ export default function Home() {
 
       <section className="aec-band" aria-labelledby="aec-how">
         <div className="aec-band__head">
-          <span className="aec-eyebrow">Fünf Fragen, ein Projekt</span>
+          <span className="aec-eyebrow">Vier Fragen, ein Projekt</span>
           <h2 id="aec-how">Vom Lagebild zur belastbaren Zusage.</h2>
         </div>
         <ol className="aec-route">

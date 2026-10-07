@@ -42,11 +42,10 @@ describe("Adressen und Weiterleitungen", () => {
   it("leitet alle alten Arbeitsbereiche auf neue Orte um", () => {
     expect(legacyRedirect("")).toBeNull();
     expect(legacyRedirect("?workspace=airport")).toBe("?seite=bibliothek&werkstatt=simulation");
-    expect(legacyRedirect("?workspace=flexlab")).toContain("frage=abgleich&werkstatt=flexlab");
+    expect(legacyRedirect("?workspace=flexlab")).toContain("seite=lab&projekt=");
+    expect(legacyRedirect("?workspace=flexlab")).toContain("werkstatt=flexlab");
     expect(legacyRedirect("?workspace=munich")).toContain("frage=lage&werkstatt=system");
-    expect(legacyRedirect("?workspace=munich&schritt=pilot")).toContain(
-      "frage=abgleich&werkstatt=pilot",
-    );
+    expect(legacyRedirect("?workspace=munich&schritt=pilot")).toContain("seite=lab");
     expect(legacyRedirect("?workspace=munich&schritt=nachweise")).toContain("frage=nachweis");
   });
 });
@@ -227,13 +226,15 @@ describe("Austausch-Status", () => {
 });
 
 describe("Oberfläche", () => {
-  it("navigiert über die fünf Fragen und beginnt jede mit dem Antwortsatz", async () => {
+  it("navigiert über die vier Fragen und beginnt jede mit dem Antwortsatz", async () => {
     openApp(`?projekt=${SAMPLE_PROJECT.id}&frage=lage`);
     expect(
       await screen.findByRole("heading", { level: 1, name: /tragfähig bis auf ein Fenster/ }),
     ).toBeVisible();
-    const nav = screen.getByRole("navigation", { name: "Fünf Fragen des Projekts" });
-    expect(within(nav).getAllByRole("link")).toHaveLength(5);
+    const nav = screen.getByRole("navigation", { name: "Vier Fragen des Projekts" });
+    expect(within(nav).getAllByRole("link")).toHaveLength(4);
+    // Kein Schritt "Abgleich" mehr in der Kundensicht.
+    expect(within(nav).queryByRole("link", { name: /Abgleich/ })).toBeNull();
     fireEvent.click(within(nav).getByRole("link", { name: /Engpass/ }));
     expect(await screen.findByRole("heading", { level: 1, name: /fehlen bis zu/ })).toBeVisible();
     expect(window.location.search).toContain("frage=engpass");
@@ -251,10 +252,34 @@ describe("Oberfläche", () => {
       await screen.findByRole("heading", { level: 1, name: /erst nach dem Datenpilot/ }),
     ).toBeVisible();
     await waitFor(() => expect(document.title).toBe("Nachweis · Airport Energy Check"));
+    // Kunde sieht nur den Pruefstatus, ohne Lab-Aktionen.
+    expect(
+      await screen.findByText("2 Punkte beim Testing-Lab in Prüfung, 1 geprüft.", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    const status = screen.getByRole("heading", { level: 2, name: "Prüfstatus beim Testing-Lab" })
+      .parentElement!.parentElement!;
+    expect(within(status).queryByRole("button", { name: /erledigt|Annehmen/ })).toBeNull();
+    expect(within(status).getByRole("button", { name: "Prüfung anfragen" })).toBeVisible();
   });
 
-  it("zeigt im Abgleich den Gesprächsverlauf und schaltet den Status weiter", async () => {
-    openApp(`?projekt=${SAMPLE_PROJECT.id}&frage=abgleich`);
+  it("leitet den alten Schritt Abgleich in den Lab-Raum um", () => {
+    expect(parseRoute(`?projekt=p1&frage=abgleich`)).toEqual({ page: "lab", projekt: "p1" });
+    expect(parseRoute(`?projekt=p1&frage=lage&werkstatt=pilot`)).toEqual({
+      page: "lab",
+      projekt: "p1",
+      werkstatt: "pilot",
+    });
+    expect(toSearch({ page: "lab", projekt: "p1", werkstatt: "flexlab" })).toBe(
+      "?seite=lab&projekt=p1&werkstatt=flexlab",
+    );
+  });
+
+  it("zeigt im Testing-Lab den Eingang und schaltet den Status weiter", async () => {
+    openApp(`?seite=lab&projekt=${SAMPLE_PROJECT.id}`);
+    expect(await screen.findByText("Testing-Lab · interner Prüfraum")).toBeVisible();
+    await waitFor(() => expect(document.title).toBe("Testing-Lab · Airport Energy Check"));
     expect(
       await screen.findByRole("heading", { level: 1, name: "2 offen: 2 Punkte beim Lab." }),
     ).toBeVisible();
