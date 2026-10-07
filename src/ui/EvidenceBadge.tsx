@@ -15,23 +15,23 @@ export type EvidenceLevel =
 export const EVIDENCE_LEVELS: Record<EvidenceLevel, { label: string; hint: string }> = {
   assumption: {
     label: "Annahme",
-    hint: "Gesetzter Eingabewert oder Modellannahme. Nicht gemessen und nicht kalibriert.",
+    hint: "Eingesetzter Wert ohne Beleg.",
   },
   synthetic: {
-    label: "synthetisch",
-    hint: "Erfundene oder aus dem Modell erzeugte Daten. Nur zur Funktionsdemonstration.",
+    label: "ausgedacht",
+    hint: "Erfundene oder vom Modell erzeugte Werte, nur zum Ausprobieren.",
   },
   model_checked: {
-    label: "modellintern geprüft",
-    hint: "Konsistenz- oder Integritätsprüfung innerhalb des Modells (Bilanzen, Hashes, gleiche Welt). Kein Abgleich mit der Realität.",
+    label: "rechnerisch geprüft",
+    hint: "Die Rechnung ist in sich stimmig, etwa ohne Energieverluste und mit gleichen Bedingungen für alle Vergleiche. Mit Messungen verglichen wurde sie nicht.",
   },
   empirical_open: {
-    label: "empirisch offen",
-    hint: "Noch nicht mit unabhängigen Messdaten nachgewiesen. Benötigt vorab gesperrte Kriterien und Holdout-Daten.",
+    label: "noch nicht gemessen",
+    hint: "Die Bestätigung durch eine Messung steht aus. Dafür braucht es vorher festgelegte Grenzen und eine eigene Prüfmessung.",
   },
   empirical_passed: {
-    label: "empirisch bestanden",
-    hint: "Holdout-Messdaten erfüllen die vorab gesperrten Kriterien. Gilt nur für diesen quantitativen Vergleich, nicht für elektrische Sicherheit oder Betrieb.",
+    label: "durch Messung bestätigt",
+    hint: "Eine Prüfmessung hat die vorher festgelegten Grenzen eingehalten. Das gilt für diesen Vergleich, nicht für elektrische Sicherheit oder den Betrieb.",
   },
 };
 
@@ -73,7 +73,7 @@ export function EvidenceBadge({ level, label, detail }: Props) {
         className="ds-evidence__chip"
         tabIndex={0}
         aria-describedby={id}
-        aria-label={label ? `${text} (Evidenz: ${meta.label})` : `Evidenz: ${meta.label}`}
+        aria-label={label ? `${text} (Wie sicher: ${meta.label})` : `Wie sicher: ${meta.label}`}
       >
         <span className="ds-evidence__dot" aria-hidden="true" />
         {text}

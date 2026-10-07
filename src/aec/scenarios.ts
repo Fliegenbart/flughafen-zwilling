@@ -29,7 +29,7 @@ export const SCENARIO_CASES: ScenarioCase[] = [
       "Alle Schlepper und Busse laden danach gleichzeitig nach – die Ladespitze wandert in die nächste Welle.",
     stress: "+3,5 Ankünfte/h, +2,5 Abflüge/h, 12 % Positionen blockiert",
     energyStress:
-      "Blockierte Positionen binden Ladepunkte: je Flotte 2 Ladepunkte offline 06–09 Uhr.",
+      "Von 06 bis 09 Uhr fallen je Flotte 2 Ladepunkte aus, weil Positionen blockiert sind.",
   },
   {
     id: 2,
@@ -41,7 +41,7 @@ export const SCENARIO_CASES: ScenarioCase[] = [
       "Fahrzeuge stehen bereit, aber Aufträge stauen sich – der Ladebedarf kommt verzögert und gebündelt.",
     stress: "−34 % Positionen, −32 % Slots, −30 % Personal, 18 min",
     energyStress:
-      "Gleichzeitiger Einbruch: Netzimport −30 % und 25 % der Ladepunkte offline 07–11 Uhr.",
+      "Von 07 bis 11 Uhr liefert der Anschluss 30 % weniger, und ein Viertel der Ladepunkte fällt aus.",
   },
   {
     id: 3,
@@ -51,7 +51,8 @@ export const SCENARIO_CASES: ScenarioCase[] = [
     claim: "Wetter drückt die Bahnkapazität und verlängert die Abfertigung.",
     energy: "Längere Standzeiten heißen längere Bodenstromversorgung und kürzere Ladefenster.",
     stress: "−18 % Slots, 20 % Wetterrestriktion, +4 min Enteisung",
-    energyStress: "Bewölkung und kürzere Ladefenster: PV ×0,4 ganztags, Netzimport −10 % ganztags.",
+    energyStress:
+      "Den ganzen Tag liefert die Photovoltaik 60 % weniger und der Anschluss 10 % weniger.",
   },
   {
     id: 4,
@@ -62,7 +63,7 @@ export const SCENARIO_CASES: ScenarioCase[] = [
     energy: "Gepäckschlepper fahren mehr Leerwege, Akkus leeren sich schneller als geplant.",
     stress: "33 % Gepäckstau, +5 min Sicherheit, +2 Ankünfte/h",
     energyStress:
-      "Gepäckschlepper stehen im Stau statt am Lader: 30 % ihrer Ladepunkte offline 08–14 Uhr.",
+      "Von 08 bis 14 Uhr fallen 30 % der Ladepunkte für Gepäckschlepper aus, weil die Schlepper im Stau stehen.",
   },
   {
     id: 5,
@@ -73,7 +74,7 @@ export const SCENARIO_CASES: ScenarioCase[] = [
     energy:
       "Nicht der Strom bremst, sondern die Fahrerinnen und Fahrer – Laden verschiebt sich in Lücken.",
     stress: "−34 % Personal, 8 % Positionen blockiert",
-    energyStress: "Niemand steckt um: 20 % aller Ladepunkte ganztags ungenutzt.",
+    energyStress: "Weil niemand umsteckt, bleiben den ganzen Tag 20 % der Ladepunkte ungenutzt.",
   },
   {
     id: 6,
@@ -83,7 +84,8 @@ export const SCENARIO_CASES: ScenarioCase[] = [
     claim: "Lange Kontrollen verzögern Boarding und Abfertigung.",
     energy: "Busse warten mit laufender Klimatisierung, Ladefenster verschieben sich nach hinten.",
     stress: "+10 min Sicherheitskontrolle, −12 % Personal",
-    energyStress: "Busse warten an der Position: 25 % der Bus-Ladepunkte offline 10–16 Uhr.",
+    energyStress:
+      "Von 10 bis 16 Uhr fällt ein Viertel der Bus-Ladepunkte aus, weil Busse an den Positionen warten.",
   },
   {
     id: 7,
@@ -95,7 +97,7 @@ export const SCENARIO_CASES: ScenarioCase[] = [
       "Kälte senkt die nutzbare Akkukapazität, gleichzeitig wächst der Ladebedarf in der ersten Welle.",
     stress: "+12 min Enteisung, 16 % Wetter, −18 % Slots",
     energyStress:
-      "Kälte: Akkukapazität aller Fahrzeuge −20 %, PV ×0,3, Netzimport −15 % 05–09 Uhr.",
+      "Kälte nimmt allen Akkus 20 % Kapazität, die Photovoltaik liefert 70 % weniger und der Anschluss von 05 bis 09 Uhr 15 % weniger.",
   },
   {
     id: 8,
@@ -107,7 +109,7 @@ export const SCENARIO_CASES: ScenarioCase[] = [
       "Wenn alles gleichzeitig wieder anläuft, entscheidet die Reihenfolge des Ladens über die Netzspitze.",
     stress: "44 % Positionen gesperrt, −40 % Personal, Wiederanlauf nach 28 s Modellzeit",
     energyStress:
-      "Gestufter Wiederanlauf: Netzimport −60 % 00–02 Uhr, −30 % 02–04 Uhr, −10 % 04–06 Uhr.",
+      "Beim Wiederanlauf liefert der Anschluss bis 02 Uhr 60 % weniger, bis 04 Uhr 30 % und bis 06 Uhr 10 % weniger.",
   },
 ];
 

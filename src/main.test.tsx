@@ -103,7 +103,7 @@ describe("Workspace entry point", () => {
     );
     expect(
       within(screen.getByRole("navigation", { name: "Vier Fragen des Projekts" })).getByRole("link", {
-        name: /Nachweis/,
+        name: /Zusage/,
       }),
     ).toHaveAttribute(
       "href",

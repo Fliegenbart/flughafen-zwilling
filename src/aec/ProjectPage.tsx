@@ -83,7 +83,7 @@ function QuestionNav({ route }: { route: ProjectRoute }) {
           {nav.route.page !== "projekt"
             ? ""
             : onData
-              ? `Schritt Daten: ${DATA_STEP.question}`
+              ? `Ihre Daten: ${DATA_STEP.question}`
               : `Frage ${index + 1} von ${QUESTIONS.length}: ${QUESTIONS[index]!.question}`}
         </p>
       </nav>
@@ -116,10 +116,10 @@ function RecomputeBanner({
   if (state === "aktuell") return null;
   const text =
     state === "laeuft"
-      ? "Lagebild wird mit den Projektwerten neu berechnet…"
+      ? "Der Tag wird mit Ihren Werten neu gerechnet …"
       : state === "fehlt"
-        ? "Mit den Projektwerten wurde noch kein Lagebild gerechnet. Lage, Engpass und Varianten zeigen bis dahin keine Projektzahlen."
-        : "Projektwerte geändert – Lagebild neu berechnen. Lage, Engpass und Varianten sind bis dahin veraltet.";
+        ? "Ihr Tag ist noch nicht gerechnet, deshalb fehlen auf den folgenden Seiten Ihre Zahlen."
+        : "Seit der letzten Rechnung haben sich Ihre Werte geändert, die Seiten zeigen noch den alten Stand.";
   return (
     <div className="aec-recompute" data-state={state} role="status">
       <p>
@@ -128,7 +128,7 @@ function RecomputeBanner({
       </p>
       {state !== "laeuft" ? (
         <button type="button" className="aec-button" disabled={busy} onClick={onRun}>
-          {busy ? "Wird gestartet…" : "Lagebild neu berechnen"}
+          {busy ? "Wird gestartet …" : "Tag neu rechnen"}
         </button>
       ) : null}
       {error ? (
@@ -143,12 +143,12 @@ function RecomputeBanner({
 /** Datenstand im Projektkopf: N von 4 echt, Mini-Leiste, fuehrt zum Schritt Daten. */
 export function DataMeter({ status, projekt }: { status: DataStatus | null; projekt: string }) {
   const label = status
-    ? `Datenstand: ${status.real} von 4 echt. ${status.answer} Zum Schritt Daten.`
-    : "Datenstand wird geladen. Zum Schritt Daten.";
+    ? `${status.real} von 4 Datenquellen belegt. ${status.answer} Zu Ihren Daten.`
+    : "Datenstand wird geladen. Zu Ihren Daten.";
   return (
     <Link to={{ page: "projekt", projekt, frage: "daten" }} className="aec-dmeter" label={label}>
       <span className="aec-dmeter__text" aria-hidden="true">
-        Datenstand <strong>{status ? `${status.real} von 4` : "…"}</strong> echt
+        Belegt: <strong>{status ? `${status.real} von 4` : "…"}</strong>
       </span>
       <span className="aec-dmeter__bar" aria-hidden="true">
         {(status?.items ?? []).map((i) => (
@@ -264,11 +264,17 @@ export default function ProjectPage({
     <div className="aec-project-page">
       <div className="aec-projectbar">
         <div className="aec-projectbar__id">
-          <Link to={{ page: "start" }} className="aec-projectbar__back" label="Alle Projekte">
+          <Link
+            to={{ page: "start" }}
+            className="aec-projectbar__back"
+            label="Zurück zu allen Projekten"
+          >
             ←
           </Link>
           <div>
-            <span className="aec-projectbar__name">{project?.name ?? "Projekt wird geladen…"}</span>
+            <span className="aec-projectbar__name">
+              {project?.name ?? "Projekt wird geladen …"}
+            </span>
             <span className="aec-projectbar__meta">
               {project
                 ? `${project.site || project.airport} · ${project.dayLabel}${
@@ -301,12 +307,12 @@ export default function ProjectPage({
             />
           ) : (
             <p className="aec-loading" role="status">
-              Datenstand wird geladen…
+              Ihre Daten werden geladen …
             </p>
           )
         ) : !props ? (
           <p className="aec-loading" role="status">
-            Lagebild wird geladen…
+            Der Tag wird geladen …
           </p>
         ) : route.frage === "lage" ? (
           <LageView {...props} />
@@ -331,7 +337,7 @@ export default function ProjectPage({
             to={{ page: "projekt", projekt: route.projekt, frage: nextQ.id }}
             className="aec-next"
           >
-            <span className="aec-eyebrow">Nächste Frage</span>
+            <span className="aec-eyebrow">Weiter mit</span>
             <span className="aec-next__q">
               {nextQ.label}: {nextQ.question}
             </span>

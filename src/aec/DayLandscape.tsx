@@ -121,7 +121,7 @@ export default function DayLandscape({
   const inWindow = windows.some((w) => minute >= w.start && minute < w.end);
   const cx = x(minute);
   const cy = y(now.demandKw);
-  const demandLabel = situation.kind === "bezug" ? "Netzbezug" : "Bedarf";
+  const demandLabel = situation.kind === "bezug" ? "aus dem Netz" : "Strombedarf";
 
   const select = (m: number) => {
     setPlaying(false);
@@ -155,10 +155,10 @@ export default function DayLandscape({
   const valueText = `${clock(minute)} Uhr: ${demandLabel} ${p.value} ${p.unit}, ${
     over
       ? situation.kind === "bezug"
-        ? "am Anschlusslimit"
+        ? "Anschluss voll ausgelastet"
         : `es fehlen ${reserve}`
-      : `Reserve ${reserve}`
-  }, ${now.departures} Abflüge in dieser halben Stunde${inWindow ? ", Engpassfenster" : ""}.`;
+      : `noch ${reserve} frei`
+  }, ${now.departures} Abflüge in dieser halben Stunde${inWindow ? ", knappe Phase" : ""}.`;
   const readoutLeft = Math.min(Math.max(cx, 90), width - 90);
 
   return (
@@ -168,7 +168,7 @@ export default function DayLandscape({
         className="aec-land__stage"
         role="slider"
         tabIndex={0}
-        aria-label={label ?? "Tageszeit im Lagebild"}
+        aria-label={label ?? "Uhrzeit im Tagesverlauf"}
         aria-valuemin={0}
         aria-valuemax={DAY - situation.stepMinutes}
         aria-valuenow={Math.round(minute)}
@@ -300,7 +300,7 @@ export default function DayLandscape({
         </svg>
 
         <div className="aec-land__limit-label" style={{ top: Math.max(4, limitY - 26) }}>
-          Anschlussgrenze <b>{powerText(situation.gridLimitKw)}</b>
+          Netzanschluss <b>{powerText(situation.gridLimitKw)}</b>
         </div>
         <div
           className="aec-land__readout"
@@ -315,20 +315,21 @@ export default function DayLandscape({
           <span className="aec-land__reserve">
             {over
               ? situation.kind === "bezug"
-                ? "am Limit"
+                ? "voll ausgelastet"
                 : `fehlen ${reserve}`
-              : `Reserve ${reserve}`}
+              : `noch ${reserve} frei`}
           </span>
         </div>
         <div className="aec-land__lights-label" aria-hidden="true">
-          Abflüge je 30 min
+          Abflüge je halbe Stunde
         </div>
       </div>
       <figcaption id={`${uid}-sum`} className="aec-land__caption">
         {windows.length
-          ? `Engpassfenster: ${windows.map((w) => `${clock(w.start)}–${clock(w.end)}`).join(", ")}. `
-          : "Kein Engpassfenster. "}
-        Mit Pfeiltasten durch den Tag gehen, Umschalt oder Bild-Tasten springen eine Stunde.
+          ? `Knapp wird es ${windows.map((w) => `${clock(w.start)}–${clock(w.end)} Uhr`).join(", ")}. `
+          : "Der Anschluss reicht den ganzen Tag. "}
+        Mit den Pfeiltasten gehen Sie durch den Tag, mit Umschalt oder Bild-Tasten in
+        Stundenschritten.
       </figcaption>
     </figure>
   );

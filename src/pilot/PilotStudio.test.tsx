@@ -100,7 +100,7 @@ describe("Pilot Decision Studio", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Synthetisches Beispiel laden" }));
     await screen.findByText("synthetisches-beispiel.csv");
-    expect(screen.getByText("synthetisch")).toBeInTheDocument();
+    expect(screen.getByText("ausgedacht")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Mit gesperrten Kriterien bewerten" }),
     ).toBeDisabled();

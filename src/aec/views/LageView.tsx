@@ -20,20 +20,20 @@ export default function LageView({ project, situation, route }: ViewProps) {
           at: `${clock(k.worst.start)}–${clock(k.worst.end)}`,
           text:
             situation.kind === "bezug"
-              ? "Anschluss am Limit"
-              : `Bedarf über der Anschlussgrenze, bis zu ${powerText(k.worst.deficitKw)} fehlen`,
+              ? "Anschluss voll ausgelastet"
+              : `bis zu ${powerText(k.worst.deficitKw)} fehlen`,
           tone: "signal",
         }
       : null,
     {
       at: `${clock(busiest.minute)}–${clock(busiest.minute + 30)}`,
-      text: `stärkste Flugwelle, ${busiest.count} Abflüge in 30 Minuten`,
+      text: `${busiest.count} Abflüge in einer halben Stunde, die dichteste Welle des Tages`,
       tone: "edge",
     },
     pvPeak && pvPeak.pvKw > 0
       ? {
           at: clock(pvPeak.minute),
-          text: `PV liefert bis zu ${powerText(pvPeak.pvKw)}`,
+          text: `Photovoltaik auf dem Höchststand, ${powerText(pvPeak.pvKw)}`,
           tone: "muted",
         }
       : null,
@@ -43,42 +43,42 @@ export default function LageView({ project, situation, route }: ViewProps) {
     <>
       <AnswerHead
         id="aec-view-title"
-        question="Lage · Wie sieht der Tag aus?"
+        question="Der Tag · Wie viel Strom braucht er?"
         answer={situationAnswer(situation)}
-        lead={`${int(k.departures)} Abflüge, ${project.fleetSize ? `${project.fleetSize} E-Fahrzeuge, ` : ""}ein Netzabgang mit ${powerText(situation.gridLimitKw)}.`}
+        lead={`Gerechnet für ${int(k.departures)} Abflüge${project.fleetSize ? ` und ${project.fleetSize} Elektrofahrzeuge` : ""} an einem Netzanschluss mit ${powerText(situation.gridLimitKw)}.`}
         evidence={situation.evidence}
         source={situation.source}
         kpis={[
-          { value: int(k.departures), label: "Abflüge am Tag" },
+          { value: int(k.departures), label: "Abflüge an diesem Tag" },
           {
             value: peak.value,
             unit: peak.unit,
-            label: situation.kind === "bezug" ? "höchster Netzbezug" : "höchster Bedarf",
+            label: situation.kind === "bezug" ? "am meisten aus dem Netz" : "höchster Strombedarf",
           },
           {
             value: limit.value,
             unit: limit.unit,
-            label: "Anschlussgrenze",
+            label: "gibt der Anschluss her",
             evidence: "assumption",
           },
           k.minReserve < 0
             ? {
                 value: power(-k.minReserve).value,
                 unit: power(-k.minReserve).unit,
-                label: "Bedarf über Anschlussgrenze (Spitze)",
+                label: "fehlen in der Spitze",
                 tone: "signal",
               }
             : {
                 value: power(k.minReserve).value,
                 unit: power(k.minReserve).unit,
-                label: "knappste Reserve",
+                label: "bleiben im knappsten Moment frei",
               },
         ]}
       />
       <div className="aec-stage">
         <DayLandscape situation={situation} size="hero" />
       </div>
-      <Section title="Der Tag in drei Momenten" kicker="Lesehilfe" id="lage-moments">
+      <Section title="Die drei Momente des Tages" kicker="Überblick" id="lage-moments">
         <ol className="aec-moments">
           {moments.map((m) => (
             <li key={m.at} data-tone={m.tone}>
@@ -88,27 +88,27 @@ export default function LageView({ project, situation, route }: ViewProps) {
           ))}
         </ol>
       </Section>
-      <Details summary="Annahmen und Datenlage">
+      <Details summary="Worauf diese Zahlen beruhen">
         <ul className="aec-facts">
           <li>
-            <span>Lastgang</span>
+            <span>Strombedarf</span>
             {situation.source === "api"
-              ? `Netzbezug je ${situation.stepMinutes} min aus dem neuesten gekoppelten Lauf`
-              : "Beispieldaten, nicht gemessen und nicht simuliert"}
+              ? `gerechnet in ${situation.stepMinutes}-Minuten-Schritten, aus der letzten Berechnung Ihres Projekts`
+              : "Beispielwerte"}
           </li>
           <li>
-            <span>Anschlussgrenze</span>
+            <span>Netzanschluss</span>
             {powerText(situation.gridLimitKw)} (Annahme)
           </li>
           <li>
             <span>Flugplan</span>
             {situation.source === "api"
-              ? "veröffentlichter Plan, keine Ist-Daten"
-              : "Beispiel-Flugwellen"}
+              ? "Planzeiten aus dem veröffentlichten Flugplan"
+              : "erfundene Abflugwellen"}
           </li>
         </ul>
       </Details>
-      <Details summary="Werkstatt: Systemlandkarte und Flugplan">
+      <Details summary="Anlagenplan und Flugplan im Detail (für Fachleute)">
         <WerkstattLinks items={["system"]} base={route} />
       </Details>
     </>

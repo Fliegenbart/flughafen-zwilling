@@ -46,7 +46,7 @@ export function sharedDemoNotice(): boolean {
 }
 
 const EXAMPLE_REFUSED =
-  "Das ist eine Beispieldatei mit erfundenen Werten. Bitte die echte Datei des Projekts wählen.";
+  "Das ist unsere Beispieldatei mit erfundenen Werten. Bitte wählen Sie die echte Datei Ihres Projekts.";
 
 function errorText(e: unknown, fallback: string): string {
   return e instanceof Error ? importError(e.message) : fallback;
@@ -67,7 +67,7 @@ function Format({ children, files }: { children: ReactNode; files: [string, stri
   return (
     <div className="aec-dformat">
       <p>
-        <strong>Format.</strong> {children}
+        <strong>So muss die Datei aussehen:</strong> {children}
       </p>
       {files.length ? (
         <p className="aec-dformat__files">
@@ -120,11 +120,11 @@ function DataCard({
       </header>
       <dl className="aec-dcard__facts">
         <div>
-          <dt>Quelle</dt>
-          <dd>{item.source ?? "keine"}</dd>
+          <dt>Woher</dt>
+          <dd>{item.source ?? "noch keine Quelle"}</dd>
         </div>
         <div>
-          <dt>Datum</dt>
+          <dt>Stand</dt>
           <dd>{item.date ?? "–"}</dd>
         </div>
       </dl>
@@ -137,7 +137,7 @@ function DataCard({
         </ul>
       ) : null}
       <Details
-        summary={item.state === "echt" ? "Daten ergänzen oder ersetzen" : "Daten eintragen"}
+        summary={item.state === "echt" ? "Ergänzen oder ersetzen" : "Jetzt eintragen"}
         open={initiallyOpen}
       >
         {children}
@@ -174,10 +174,10 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
     await linkFlightPlan(project, plan.snapshot_id);
     const groups = plan.possible_shared_flight_groups;
     setOk(
-      `${imported ? "Flugplan importiert und" : "Flugplan"} mit dem Projekt verknüpft: Verkehrstag ${deDate(plan.service_date)}, ${plan.departure_entry_count} Abflugeinträge.${
+      `Flugplan vom ${deDate(plan.service_date)} mit ${plan.departure_entry_count} Abflügen ${imported ? "eingelesen und " : ""}übernommen.${
         groups
-          ? ` Achtung: ${groups} ungeklärte Mehrfachgruppen. Bitte in der Werkstatt prüfen.`
-          : " Keine ungeklärten Mehrfachgruppen."
+          ? ` ${groups} Flüge stehen eventuell doppelt drin (Codeshares) und müssen unter „Anlagenplan und Flugplan“ auf der Seite Tag geklärt werden.`
+          : ""
       }`,
     );
     await reload();
@@ -187,10 +187,10 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
     e.preventDefault();
     setError("");
     setOk("");
-    if (!file) return setError("Bitte das PDF des Flugplans auswählen.");
+    if (!file) return setError("Kein PDF ausgewählt.");
     if (!/\.pdf$/i.test(file.name) || file.size > 6 * 1024 * 1024)
-      return setError("Bitte eine PDF-Datei mit höchstens 6 MiB wählen.");
-    if (!date) return setError("Bitte den Verkehrstag wählen.");
+      return setError("Das PDF darf höchstens 6 MB groß sein.");
+    if (!date) return setError("Kein Tag ausgewählt.");
     setBusy(true);
     try {
       const plan = await munichRequest<FlightPlanSnapshot>(
@@ -200,7 +200,7 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
       );
       await link(plan, true);
     } catch (err) {
-      setError(flightPlanError(errorText(err, "Import fehlgeschlagen.")));
+      setError(flightPlanError(errorText(err, "Das Einlesen hat nicht geklappt.")));
     } finally {
       setBusy(false);
     }
@@ -216,7 +216,7 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
     try {
       await link(plan, false);
     } catch (err) {
-      setError(errorText(err, "Verknüpfen fehlgeschlagen."));
+      setError(errorText(err, "Das Zuordnen hat nicht geklappt."));
     } finally {
       setBusy(false);
     }
@@ -225,17 +225,16 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
   return (
     <div className="aec-dform">
       <Format files={[]}>
-        PDF des offiziellen Saisonflugplans (
+        das PDF des offiziellen Saisonflugplans (
         <a href={FLIGHT_PLAN_SOURCE} target="_blank" rel="noreferrer">
           munich-airport.de/saisonflugplan
         </a>
-        ), höchstens 6 MiB, dazu der Verkehrstag im Geltungsbereich. Gelesen werden Planzeiten,
-        keine Ist-Bewegungen. Mögliche Codeshares (Mehrfachgruppen) werden markiert, nicht
-        zusammengelegt. Keine Beispieldatei: es wird nur das offizielle PDF gelesen.
+        ), höchstens 6 MB, dazu ein Tag, für den der Plan gilt. Gelesen werden die Planzeiten.
+        Codeshares, die doppelt drinstehen könnten, werden markiert und nicht zusammengelegt.
       </Format>
-      <form className="aec-dgrid" onSubmit={upload} aria-label="Flugplan-PDF importieren">
+      <form className="aec-dgrid" onSubmit={upload} aria-label="Flugplan einlesen">
         <label>
-          Verkehrstag
+          Welcher Tag?
           <input
             type="date"
             value={date}
@@ -245,7 +244,7 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
           />
         </label>
         <label className="aec-dgrid__wide">
-          Flugplan-PDF
+          Flugplan als PDF
           <input
             type="file"
             accept=".pdf,application/pdf"
@@ -254,25 +253,25 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
           />
         </label>
         <button type="submit" className="aec-button" disabled={disabled || busy}>
-          {busy ? "Wird gelesen…" : "PDF importieren"}
+          {busy ? "Wird gelesen …" : "Flugplan einlesen"}
         </button>
       </form>
       {plans.length ? (
-        <form className="aec-dgrid" onSubmit={choose} aria-label="Importierten Flugplan verknüpfen">
+        <form className="aec-dgrid" onSubmit={choose} aria-label="Vorhandenen Flugplan verwenden">
           <label className="aec-dgrid__wide">
-            Oder bereits importierten Flugplan verknüpfen
+            Oder einen schon eingelesenen Flugplan verwenden
             <select
               value={pick}
               disabled={disabled || busy}
               onChange={(e) => setPick(e.target.value)}
             >
-              <option value="">Flugplan wählen…</option>
+              <option value="">Flugplan wählen …</option>
               {plans.map((p) => (
                 <option key={p.snapshot_id} value={p.snapshot_id}>
                   {deDate(p.service_date)} · Stand {deDate(p.source_data_date)} ·{" "}
                   {p.departure_entry_count} Abflüge
                   {p.possible_shared_flight_groups
-                    ? ` · ${p.possible_shared_flight_groups} Mehrfachgruppen`
+                    ? ` · ${p.possible_shared_flight_groups} mögliche Codeshares`
                     : ""}
                 </option>
               ))}
@@ -283,7 +282,7 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
             className="aec-button aec-button--ghost"
             disabled={disabled || busy}
           >
-            Verknüpfen
+            Verwenden
           </button>
         </form>
       ) : null}
@@ -294,13 +293,13 @@ function FlightPlanForm({ project, reload, disabled }: FormProps) {
 
 /** Flugplan-Backend meldet teils englisch bzw. ohne Umlaute; hier in klare Saetze. */
 export function flightPlanError(detail: string): string {
-  if (/application\/pdf/.test(detail)) return "Bitte eine PDF-Datei hochladen.";
+  if (/application\/pdf/.test(detail)) return "Das ist kein PDF.";
   if (/laeuft bereits/.test(detail))
-    return "Es läuft bereits ein Flugplan-Import. Bitte kurz warten.";
-  if (/Zeitlimit/.test(detail)) return "Der Upload hat zu lange gedauert. Bitte erneut versuchen.";
-  if (/6 MiB/.test(detail)) return "Das PDF ist größer als 6 MiB.";
+    return "Es wird schon ein Flugplan eingelesen, danach geht es weiter.";
+  if (/Zeitlimit/.test(detail)) return "Das Hochladen hat zu lange gedauert und wurde abgebrochen.";
+  if (/6 MiB/.test(detail)) return "Das PDF ist größer als 6 MB.";
   if (/^API-Fehler 422|Layout|layout|unlesbar|Flugzeile/i.test(detail))
-    return `Das PDF ließ sich nicht als Saisonflugplan lesen. ${detail.startsWith("API-Fehler") ? "" : detail}`.trim();
+    return `Wir konnten das PDF nicht als Saisonflugplan lesen. ${detail.startsWith("API-Fehler") ? "" : detail}`.trim();
   return detail;
 }
 
@@ -344,7 +343,8 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
       const r = rows[f.key];
       if (!r || r.value.trim() === "") continue;
       const value = Number(r.value.replace(",", "."));
-      if (!Number.isFinite(value)) return setError(`„${f.label}“: „${r.value}“ ist keine Zahl.`);
+      if (!Number.isFinite(value))
+        return setError(`„${f.label}“ braucht eine Zahl, eingetragen ist „${r.value}“.`);
       entries.push({
         key: f.key,
         value,
@@ -357,11 +357,11 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
     try {
       const saved = await saveAssets(project, entries);
       setOk(
-        `${saved.entries.length} Werte gespeichert, ${saved.entries.filter((x) => x.status === "echt").length} davon mit Quelle. Sie gelten ab dem nächsten Variantenlauf.`,
+        `${saved.entries.length} Werte gespeichert, ${saved.entries.filter((x) => x.status === "echt").length} davon mit Quelle. Sie gelten ab der nächsten Rechnung.`,
       );
       await reload();
     } catch (err) {
-      setError(errorText(err, "Speichern fehlgeschlagen."));
+      setError(errorText(err, "Das Speichern hat nicht geklappt."));
     } finally {
       setBusy(false);
     }
@@ -371,46 +371,45 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
     e.preventDefault();
     setError("");
     setOk("");
-    if (!file) return setError("Bitte eine CSV- oder JSON-Datei wählen.");
+    if (!file) return setError("Keine Datei ausgewählt.");
     if (isExampleFile(file.name)) return setError(EXAMPLE_REFUSED);
     setBusy(true);
     try {
       const saved = await importAssets(project, file);
       setOk(
-        `${file.name}: ${saved.entries.length} Werte übernommen. Original mit SHA256 gespeichert.`,
+        `${saved.entries.length} Werte aus ${file.name} übernommen, die Originaldatei bleibt gespeichert.`,
       );
       await reload();
     } catch (err) {
-      setError(errorText(err, "Import fehlgeschlagen."));
+      setError(errorText(err, "Das Einlesen hat nicht geklappt."));
     } finally {
       setBusy(false);
     }
   }
 
   const groups: { id: AssetField["group"]; title: string }[] = [
-    { id: "anlagen", title: "Anlagen" },
-    { id: "flotte", title: "Flotte je Klasse" },
+    { id: "anlagen", title: "Anschluss und Anlagen" },
+    { id: "flotte", title: "Fahrzeuge und Ladepunkte" },
   ];
   return (
     <div className="aec-dform">
       <Format
         files={[
-          ["flotte-anlagen-BEISPIEL.csv", "Beispiel-CSV (erfundene Werte)"],
-          ["flotte-anlagen-BEISPIEL.json", "Beispiel-JSON (erfundene Werte)"],
+          ["flotte-anlagen-BEISPIEL.csv", "Beispieldatei CSV (erfundene Werte)"],
+          ["flotte-anlagen-BEISPIEL.json", "Beispieldatei JSON (erfundene Werte)"],
         ]}
       >
-        Je Wert eine Zahl in der genannten Einheit und die Quelle (z. B. „Fuhrparkliste FMG, Stand
-        30.09.2026“). Ohne Quelle bleibt ein Wert eine Annahme. Als Datei: CSV mit Kopfzeile{" "}
-        <code>key,value,unit,source,source_date</code> (Komma oder Semikolon, Zeilen mit # sind
-        Kommentare) oder JSON <code>{'{"entries": [...]}'}</code>. Einheiten kW/MW, kWh/MWh,
-        kWp/MWp, Stück; MW wird in kW umgerechnet, das Original bleibt erhalten.
+        je Wert eine Zahl und ihre Quelle, etwa „Fuhrparkliste FMG, Stand 30.09.2026“. Als Datei
+        geht auch CSV mit Kopfzeile <code>key,value,unit,source,source_date</code> (Komma oder
+        Semikolon, Zeilen mit # sind Kommentare) oder JSON <code>{'{"entries": [...]}'}</code>.
+        Einheiten kW/MW, kWh/MWh, kWp/MWp, Stück. MW wird in kW umgerechnet, die Originaldatei
+        bleibt gespeichert.
       </Format>
       <p className="aec-fine">
-        Wirkung: Die Werte ersetzen in der Varianten-Basis dieses Projekts die Standardannahmen
-        (gekoppelte Läufe ab dem nächsten Variantenlauf). Nicht genannte Modellparameter bleiben
-        Annahmen; bereits gerechnete Läufe bleiben unverändert.
+        Ihre Werte ersetzen ab der nächsten Rechnung unsere Standardwerte. Bisherige Ergebnisse
+        bleiben, wie sie sind.
       </p>
-      <form onSubmit={submit} aria-label="Flotte und Anlagen eintragen" className="aec-assets">
+      <form onSubmit={submit} aria-label="Fahrzeuge und Anlagen eintragen" className="aec-assets">
         {groups.map((g) => (
           <fieldset key={g.id} className="aec-assets__group">
             <legend>{g.title}</legend>
@@ -418,7 +417,8 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
               .filter((f) => f.group === g.id)
               .map((f) => {
                 const r = rows[f.key] ?? { value: "", source: "", date: "" };
-                const state = r.value.trim() === "" ? "leer" : r.source.trim() ? "echt" : "Annahme";
+                const state =
+                  r.value.trim() === "" ? "leer" : r.source.trim() ? "belegt" : "Annahme";
                 return (
                   <div key={f.key} className="aec-assets__row" data-state={state}>
                     <span className="aec-assets__label" id={`al-${f.key}`}>
@@ -437,16 +437,16 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
                       <span aria-hidden="true">{f.unit}</span>
                     </label>
                     <label>
-                      <span className="aec-visually-hidden">{f.label}: Quelle</span>
+                      <span className="aec-visually-hidden">{f.label}: woher</span>
                       <input
                         value={r.source}
                         disabled={disabled || busy}
-                        placeholder="Quelle"
+                        placeholder="Woher stammt der Wert?"
                         onChange={(e) => set(f.key, { source: e.target.value })}
                       />
                     </label>
                     <label>
-                      <span className="aec-visually-hidden">{f.label}: Datum der Quelle</span>
+                      <span className="aec-visually-hidden">{f.label}: Stand</span>
                       <input
                         type="date"
                         value={r.date}
@@ -460,12 +460,12 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
           </fieldset>
         ))}
         <button type="submit" className="aec-button" disabled={disabled || busy || !fields.length}>
-          Werte speichern
+          Speichern
         </button>
       </form>
-      <form className="aec-dgrid" onSubmit={upload} aria-label="Flotte und Anlagen als Datei">
+      <form className="aec-dgrid" onSubmit={upload} aria-label="Fahrzeuge und Anlagen als Datei">
         <label className="aec-dgrid__wide">
-          Oder Datei hochladen (CSV/JSON)
+          Oder alles als Datei hochladen (CSV oder JSON)
           <input
             type="file"
             accept=".csv,.json,text/csv,application/json"
@@ -474,7 +474,7 @@ function AssetsForm({ project, inputs, reload, disabled }: FormProps & { inputs:
           />
         </label>
         <button type="submit" className="aec-button aec-button--ghost" disabled={disabled || busy}>
-          Datei importieren
+          Datei hochladen
         </button>
       </form>
       <Result error={error} ok={ok} />
@@ -510,12 +510,10 @@ function MeasurementForm({
     e.preventDefault();
     setError("");
     setOk("");
-    if (!file) return setError("Bitte die Lastgang-CSV wählen.");
+    if (!file) return setError("Keine Datei ausgewählt.");
     if (isExampleFile(file.name)) return setError(EXAMPLE_REFUSED);
     if (!boundary.trim() || !source.trim())
-      return setError(
-        "Bitte Messgrenze und Quelle angeben. Ohne sie ist der Lastgang nicht einzuordnen.",
-      );
+      return setError("Ohne Messort und Herkunft lässt sich die Messreihe nicht einordnen.");
     setBusy(true);
     try {
       const result = await importMeasurement(project, {
@@ -527,15 +525,15 @@ function MeasurementForm({
       });
       if (result.valid)
         setOk(
-          `${file.name}: ${result.rows} Messpunkte als ${role === "holdout" ? "Holdout" : "Kalibrierung"} importiert.`,
+          `${result.rows} Messwerte aus ${file.name} eingelesen, ${role === "holdout" ? "als Prüfmessung" : "zum Abstimmen des Modells"}.`,
         );
       else
         setError(
-          `Import abgewiesen und als nicht auswertbar gespeichert: ${result.issues.map(issueLabel).join(" ")}`,
+          `Die Messreihe ist nicht verwendbar und wird nur zur Nachvollziehbarkeit gespeichert. ${result.issues.map(issueLabel).join(" ")}`,
         );
       await reload();
     } catch (err) {
-      setError(errorText(err, "Import fehlgeschlagen."));
+      setError(errorText(err, "Das Einlesen hat nicht geklappt."));
     } finally {
       setBusy(false);
     }
@@ -543,24 +541,25 @@ function MeasurementForm({
 
   return (
     <div className="aec-dform">
-      <Format files={[["lastgang-BEISPIEL-erfundene-werte.csv", "Beispiel-CSV (erfundene Werte)"]]}>
-        UTF-8-CSV mit Kopfzeile <code>timestamp,measured_kw</code>, optional <code>model_kw</code>.
-        Zeitstempel im ISO-Format mit Zeitzone (2026-10-04T08:00:00+02:00), Wirkleistung in kW,
-        gleichmäßige Abstände, höchstens 5 MiB bzw. 100.000 Zeilen. Lücken nicht auffüllen,
-        Vorzeichen dokumentieren. Doppelte, nicht aufsteigende oder fehlende Werte sperren die
-        Bewertung.
+      <Format
+        files={[["lastgang-BEISPIEL-erfundene-werte.csv", "Beispieldatei (erfundene Werte)"]]}
+      >
+        CSV (UTF-8) mit Kopfzeile <code>timestamp,measured_kw</code>, wahlweise dazu{" "}
+        <code>model_kw</code>. Zeit mit Zeitzone (2026-10-04T08:00:00+02:00), Leistung in kW, in
+        gleichen Abständen, höchstens 5 MB oder 100.000 Zeilen. Lücken nicht auffüllen. Doppelte,
+        ungeordnete oder fehlende Zeitpunkte machen die Messreihe unbrauchbar.
       </Format>
       <p className="aec-notice" data-locked={locked ? "" : undefined}>
         {locked
-          ? `Abnahmekriterien vorab gesperrt (SHA256 ${inputs.tolerances?.sha256?.slice(0, 12) ?? "–"}…). Ein Holdout wird gegen diese Grenzen bewertet.`
-          : "Abnahmekriterien sind noch nicht gesperrt. Ein Holdout kann nur PASS ergeben, wenn die Kriterien vorher feststehen; der erste Holdout-Import sperrt einen gespeicherten Entwurf automatisch. Kalibrierdaten ergeben nie PASS."}{" "}
+          ? `Die Prüfgrenzen stehen fest (Fingerabdruck ${inputs.tolerances?.sha256?.slice(0, 12) ?? "–"}…).`
+          : "Noch ist nicht festgelegt, wie weit Modell und Messung auseinanderliegen dürfen. Ohne diese Grenzen kann keine Prüfmessung das Modell bestätigen."}{" "}
         <Link to={{ page: "lab", projekt: route.projekt, werkstatt: "pilot" }}>
-          Kriterien im Messdaten-Abgleich festlegen
+          Grenzen festlegen (Testing-Lab)
         </Link>
       </p>
-      <form className="aec-dgrid" onSubmit={submit} aria-label="Lastgang importieren">
+      <form className="aec-dgrid" onSubmit={submit} aria-label="Messreihe einlesen">
         <label className="aec-dgrid__wide">
-          Lastgang-CSV
+          Messreihe als CSV
           <input
             type="file"
             accept=".csv,text/csv"
@@ -569,29 +568,29 @@ function MeasurementForm({
           />
         </label>
         <label>
-          Verwendung
+          Wofür ist die Messreihe?
           <select
             value={role}
             disabled={disabled || busy}
             onChange={(e) => setRole(e.target.value as typeof role)}
           >
-            <option value="calibration">Kalibrierung</option>
-            <option value="holdout">Holdout (unabhängige Prüfung)</option>
+            <option value="calibration">zum Abstimmen des Modells</option>
+            <option value="holdout">als Prüfmessung (Holdout)</option>
           </select>
         </label>
         <label>
-          Zeitbezug
+          Was steht in jeder Zeile?
           <select
             value={semantics}
             disabled={disabled || busy}
             onChange={(e) => setSemantics(e.target.value as typeof semantics)}
           >
-            <option value="point_samples">Punktmessung</option>
-            <option value="interval_end_mean">Minutenmittel am Intervallende</option>
+            <option value="point_samples">ein Messwert zu diesem Zeitpunkt</option>
+            <option value="interval_end_mean">der Mittelwert der Minute davor</option>
           </select>
         </label>
         <label className="aec-dgrid__wide">
-          Messgrenze
+          Wo wurde gemessen?
           <input
             value={boundary}
             disabled={disabled || busy}
@@ -600,7 +599,7 @@ function MeasurementForm({
           />
         </label>
         <label className="aec-dgrid__wide">
-          Quelle
+          Woher stammen die Daten?
           <input
             value={source}
             disabled={disabled || busy}
@@ -609,19 +608,21 @@ function MeasurementForm({
           />
         </label>
         <button type="submit" className="aec-button" disabled={disabled || busy}>
-          {busy ? "Wird geprüft…" : "Lastgang importieren"}
+          {busy ? "Wird geprüft …" : "Messreihe einlesen"}
         </button>
       </form>
       {inputs.imports.length ? (
-        <ul className="aec-dlist" aria-label="Bisherige Messdaten-Importe">
+        <ul className="aec-dlist" aria-label="Bisher eingelesene Messreihen">
           {inputs.imports.map((i) => (
             <li key={i.id} data-valid={i.valid ? "" : undefined}>
               <span>{i.filename}</span>
               <span>
-                {i.role === "holdout" ? "Holdout" : i.role === "lab" ? "Lab" : "Kalibrierung"}
+                {i.role === "holdout" ? "Prüfmessung" : i.role === "lab" ? "Lab" : "zum Abstimmen"}
               </span>
               <span>
-                {i.valid ? `${i.rows} Punkte` : `abgewiesen: ${i.issues.map(issueLabel).join(" ")}`}
+                {i.valid
+                  ? `${i.rows} Messwerte`
+                  : `nicht verwendbar: ${i.issues.map(issueLabel).join(" ")}`}
               </span>
             </li>
           ))}
@@ -653,15 +654,15 @@ function LabForm({ project, reload, disabled }: FormProps) {
     e.preventDefault();
     setError("");
     setOk("");
-    if (!file) return setError("Bitte die FlexLab-CSV wählen.");
+    if (!file) return setError("Keine Datei ausgewählt.");
     if (isExampleFile(file.name)) return setError(EXAMPLE_REFUSED);
     setBusy(true);
     try {
       await importLab(project, file, label || file.name, caseId);
-      setOk(`${file.name} importiert und mit dem Projekt verknüpft. Die Auswertung läuft.`);
+      setOk(`${file.name} eingelesen, die Auswertung läuft.`);
       await reload();
     } catch (err) {
-      setError(errorText(err, "Import fehlgeschlagen."));
+      setError(errorText(err, "Das Einlesen hat nicht geklappt."));
     } finally {
       setBusy(false);
     }
@@ -669,15 +670,15 @@ function LabForm({ project, reload, disabled }: FormProps) {
 
   return (
     <div className="aec-dform">
-      <Format files={[["flexlab-BEISPIEL-erfundene-werte.csv", "Beispiel-CSV (erfundene Werte)"]]}>
-        CSV mit Kopfzeile <code>ts_s,power_kw,setpoint_kw,limit_kw</code>: Zeit in Sekunden ab
-        Versuchsbeginn, strikt aufsteigend, Leistungen in kW; höchstens 5 MB bzw. 100.000
-        Messpunkte. Leere <code>power_kw</code> gelten als Messlücke. Nur Messdaten, keine
-        Ansteuerung von Hardware.
+      <Format files={[["flexlab-BEISPIEL-erfundene-werte.csv", "Beispieldatei (erfundene Werte)"]]}>
+        CSV mit Kopfzeile <code>ts_s,power_kw,setpoint_kw,limit_kw</code>: Sekunden seit
+        Versuchsbeginn, aufsteigend, Leistungen in kW, höchstens 5 MB oder 100.000 Messwerte. Ein
+        leeres <code>power_kw</code> zählt als Lücke. Gelesen werden nur Messdaten, kein Gerät wird
+        angesteuert.
       </Format>
-      <form className="aec-dgrid" onSubmit={submit} aria-label="Lab-Messung importieren">
+      <form className="aec-dgrid" onSubmit={submit} aria-label="Lab-Messung einlesen">
         <label className="aec-dgrid__wide">
-          FlexLab-CSV
+          Messung aus dem Lab (CSV)
           <input
             type="file"
             accept=".csv,text/csv"
@@ -686,7 +687,7 @@ function LabForm({ project, reload, disabled }: FormProps) {
           />
         </label>
         <label>
-          Prüffall
+          Welcher Versuch?
           <select
             value={caseId}
             disabled={disabled || busy}
@@ -700,7 +701,7 @@ function LabForm({ project, reload, disabled }: FormProps) {
           </select>
         </label>
         <label>
-          Bezeichnung
+          Welches Gerät?
           <input
             value={label}
             maxLength={120}
@@ -710,7 +711,7 @@ function LabForm({ project, reload, disabled }: FormProps) {
           />
         </label>
         <button type="submit" className="aec-button" disabled={disabled || busy}>
-          {busy ? "Wird importiert…" : "Lab-Messung importieren"}
+          {busy ? "Wird eingelesen …" : "Lab-Messung einlesen"}
         </button>
       </form>
       <Result error={error} ok={ok} />
@@ -759,41 +760,43 @@ export default function DatenView({ project, inputs, status, reload, route }: Da
     ),
     lab: <LabForm project={project} reload={reload} disabled={disabled} />,
   };
+  // Ueberschrift = erster Satz; der Rest (was fehlt, was Annahme ist) steht darunter.
+  const cut = status.answer.indexOf(". ");
+  const headline = cut >= 0 ? status.answer.slice(0, cut + 1) : status.answer;
+  const detail = cut >= 0 ? status.answer.slice(cut + 2) : "";
   return (
     <>
       <AnswerHead
         id="aec-view-title"
-        question="Daten · Was wissen wir schon?"
-        answer={status.answer}
-        lead="„echt“ heißt: aus einer benannten Quelle, nicht erfunden. Was die Daten beweisen, sagt getrennt die Evidenzstufe. Abgewiesene Importe zählen nie."
+        question="Ihre Daten · Was liegt schon vor?"
+        answer={headline}
+        lead={detail || undefined}
         evidence={evidence}
         source={inputs.available ? "api" : "beispiel"}
         kpis={[
-          { value: String(status.real), unit: "von 4", label: "Datenquellen echt" },
-          { value: String(count("annahme")), label: "auf Annahmen" },
+          { value: String(status.real), unit: "von 4", label: "mit Quelle belegt" },
+          { value: String(count("annahme")), label: "noch Annahme" },
           {
             value: String(count("fehlt")),
-            label: "fehlen",
+            label: "fehlen noch",
             tone: count("fehlt") ? "signal" : undefined,
           },
         ]}
       />
       {sharedDemoNotice() ? (
         <aside className="aec-dwarn" role="note" aria-label="Hinweis zur Demo-Instanz">
-          <strong>Geteilte Demo, keine Mandantentrennung.</strong> Alle Nutzer dieser Instanz sehen
-          dieselben Daten. Keine echten Kundendaten, keine privaten Flughafen- oder Lab-Messdaten
-          hochladen; nur synthetische Testdaten und öffentliche Flugpläne. Echte Daten gehören in
-          eine eigene Instanz mit persönlicher Anmeldung.
+          <strong>Keine echten Kundendaten hochladen.</strong> Alle mit Demo-Zugang sehen, was hier
+          liegt. Für echte Daten gibt es eine eigene Umgebung mit persönlicher Anmeldung.
         </aside>
       ) : null}
       {disabled ? (
         <p className="aec-notice">
           {project.source === "beispiel"
-            ? "Beispielprojekt ohne Server-Anbindung: Daten lassen sich erst in einem eigenen Projekt eintragen."
-            : "Server nicht erreichbar: Daten lassen sich gerade nicht eintragen."}
+            ? "Im Beispielprojekt lassen sich keine Daten eintragen, dafür braucht es ein eigenes Projekt."
+            : "Der Server antwortet nicht, Eintragen ist gerade nicht möglich."}
         </p>
       ) : null}
-      <ol className="aec-dlist-cards" aria-label="Vier Datenquellen">
+      <ol className="aec-dlist-cards" aria-label="Die vier Datenquellen">
         {status.items.map((item, i) => (
           <DataCard key={item.id} item={item} index={i}>
             {forms[item.id]}

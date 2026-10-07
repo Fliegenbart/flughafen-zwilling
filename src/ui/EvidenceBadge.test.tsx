@@ -7,20 +7,20 @@ import { EVIDENCE_LEVELS, EvidenceBadge, EvidenceLegend } from "./EvidenceBadge"
 it("names the five evidence levels consistently", () => {
   expect(Object.values(EVIDENCE_LEVELS).map((l) => l.label)).toEqual([
     "Annahme",
-    "synthetisch",
-    "modellintern geprüft",
-    "empirisch offen",
-    "empirisch bestanden",
+    "ausgedacht",
+    "rechnerisch geprüft",
+    "noch nicht gemessen",
+    "durch Messung bestätigt",
   ]);
 });
 
 it("is focusable and explains itself through a linked tooltip", () => {
   render(<EvidenceBadge level="model_checked" label="faire Vergleichswelt" />);
-  const chip = screen.getByLabelText("faire Vergleichswelt (Evidenz: modellintern geprüft)");
+  const chip = screen.getByLabelText("faire Vergleichswelt (Wie sicher: rechnerisch geprüft)");
   expect(chip).toHaveAttribute("tabindex", "0");
   const tip = document.getElementById(chip.getAttribute("aria-describedby")!)!;
   expect(tip).toHaveAttribute("role", "tooltip");
-  expect(tip).toHaveTextContent(/Kein Abgleich mit der Realität/);
+  expect(tip).toHaveTextContent(/Mit Messungen verglichen wurde sie nicht/);
 });
 
 it("renders a legend with every level", () => {

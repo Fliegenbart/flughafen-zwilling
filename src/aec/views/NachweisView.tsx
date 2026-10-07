@@ -24,29 +24,29 @@ export function claimsFor(
   return [
     {
       level: "assumption",
-      title: "Annahmen",
-      text: `Flottengröße, Ladeleistungen, Grundlastprofil, Anschlussgrenze ${powerText(project.gridLimitKw)}.`,
+      title: "Was wir angenommen haben",
+      text: `Wie viele Fahrzeuge es gibt, wie schnell sie laden, wie viel Strom der Rest des Flughafens braucht und dass der Anschluss ${powerText(project.gridLimitKw)} hergibt.`,
     },
     {
       level: "synthetic",
-      title: "Synthetisch",
-      text: "Krisenszenarien aus der Szenario-Bibliothek, Beispieldaten.",
+      title: "Was ausgedacht ist",
+      text: "Die Krisenfälle aus der Bibliothek und alle Beispielwerte.",
     },
     {
       level: "model_checked",
-      title: "Modellintern",
-      text: "Energiebilanzen, Fristen, faire Vergleiche, Reproduzierbarkeit.",
+      title: "Was wir rechnerisch geprüft haben",
+      text: "Keine Energie geht verloren, Abflugzeiten werden eingehalten, alle Lösungen laufen unter gleichen Bedingungen, und jede Rechnung lässt sich wiederholen.",
     },
     passed
       ? {
           level: "empirical_passed",
-          title: "Empirisch",
-          text: "Holdout-Messdaten erfüllen die vorab gesperrten Kriterien.",
+          title: "Was eine Messung bestätigt hat",
+          text: "Eine Prüfmessung am Flughafen hat die vorher festgelegten Grenzen eingehalten.",
         }
       : {
           level: "empirical_open",
-          title: "Empirisch",
-          text: "Abgleich mit Holdout-Messdaten des Flughafens und Lab-Komponenten steht aus.",
+          title: "Was noch gemessen werden muss",
+          text: "Ob das Modell die Wirklichkeit trifft. Dafür fehlen Messungen am Flughafen und im Testing-Lab.",
         },
   ];
 }
@@ -60,16 +60,16 @@ function reportHtml(props: ViewProps, claims: Claim[], overview: Overview | null
   const tech = (overview?.elements ?? [])
     .map((e) => `<li>${esc(e.title)} · ${esc(e.status)} · <code>${esc(e.refId)}</code></li>`)
     .join("");
-  return `<!doctype html><html lang="de"><meta charset="utf-8"><title>Nachweis ${esc(props.project.name)}</title>
+  return `<!doctype html><html lang="de"><meta charset="utf-8"><title>Zusage ${esc(props.project.name)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"><style>${REPORT_STYLES}</style><body><main>
-<small>Airport Energy Check · Nachweis für Angebot und Lab${props.situation.source === "beispiel" ? " · <b>Beispieldaten</b>" : ""}</small>
+<small>Airport Energy Check · Zusammenfassung${props.situation.source === "beispiel" ? " · <b>Beispielwerte</b>" : ""}</small>
 <h1>${esc(props.project.name)}</h1>
-<p><b>Engpass:</b> ${esc(bottleneckAnswer(props.situation))}</p>
-<p><b>Varianten:</b> ${esc(props.board.answer?.headline ?? variantsAnswer(props.variants))}${props.board.source === "beispiel" ? " (Beispieldaten)" : ""}</p>
+<p><b>Wann es knapp wird:</b> ${esc(bottleneckAnswer(props.situation))}</p>
+<p><b>Was hilft:</b> ${esc(props.board.answer?.headline ?? variantsAnswer(props.variants))}${props.board.source === "beispiel" ? " (Beispielwerte)" : ""}</p>
 <table>${rows}</table>
-<h2>Anhang: Technik</h2><ul>${tech || "<li>Keine verknüpften Läufe.</li>"}</ul>
-<p>Engine: ${CURRENT_COUPLED_ENGINE}. Kriterien gesperrt: ${overview?.locked ? `ja, SHA256 ${esc(overview.sha256 ?? "")}` : "nein"}.</p>
-<p>Methodenprototyp, unkalibriert. Keine Anlagensteuerung, keine Hardwarewrites.</p></main></body></html>`;
+<h2>Anhang für Fachleute</h2><ul>${tech || "<li>Noch keine gespeicherten Berechnungen.</li>"}</ul>
+<p>Modellversion: ${CURRENT_COUPLED_ENGINE}. Prüfgrenzen vorab festgelegt: ${overview?.locked ? `ja, SHA256 ${esc(overview.sha256 ?? "")}` : "nein"}.</p>
+<p>Prototyp von electrified labs. Das Modell ist nicht an Messungen kalibriert und steuert keine Anlagen.</p></main></body></html>`;
 }
 
 export default function NachweisView(props: ViewProps) {
@@ -100,13 +100,13 @@ export default function NachweisView(props: ViewProps) {
     <>
       <AnswerHead
         id="aec-view-title"
-        question="Nachweis · Was können wir zusagen?"
+        question="Zusage · Was können wir versprechen?"
         answer={
           passed
-            ? "Die Methode ist geprüft, und der Holdout-Abgleich hat die vereinbarten Kriterien erfüllt."
-            : "Die Methode ist geprüft. Die Zahlen sind es erst nach dem Datenpilot."
+            ? "Die Rechnung ist geprüft, und eine Messung vom Flughafen hat sie bestätigt."
+            : "Die Rechnung ist geprüft, verbindlich zusagen lassen sich die Zahlen erst nach einer Messung."
         }
-        lead="Jede Aussage trägt ihre Evidenzstufe. Grün gibt es erst, wenn unabhängige Messdaten die vorab gesperrten Kriterien erfüllen."
+        lead="Grün wird eine Aussage erst, wenn eine Messung die vorher vereinbarten Grenzen einhält."
         evidence={top}
         source={overview?.source ?? "beispiel"}
         kpis={(["assumption", "synthetic", "model_checked", top] as EvidenceLevel[]).map((l) => ({
@@ -116,7 +116,11 @@ export default function NachweisView(props: ViewProps) {
         }))}
       />
 
-      <Section title="Was wir heute zusagen können" kicker="Evidenzleiter" id="nachweis-ladder">
+      <Section
+        title="Was heute feststeht und was nicht"
+        kicker="Von Annahme bis Messung"
+        id="nachweis-ladder"
+      >
         <ol className="aec-ladder">
           {[...claims].reverse().map((c) => (
             <li
@@ -135,23 +139,27 @@ export default function NachweisView(props: ViewProps) {
         </ol>
         <div className="aec-actions">
           <button type="button" className="aec-button" onClick={download}>
-            Bericht herunterladen
+            Zusammenfassung herunterladen
           </button>
-          <span className="aec-fine">HTML zum Drucken als PDF. Technik steht im Anhang.</span>
+          <span className="aec-fine">
+            Zum Weitergeben oder Drucken als PDF, mit technischem Anhang.
+          </span>
         </div>
       </Section>
 
       <Pruefstatus project={project} />
 
-      <Details summary="Technik: Hashes, Engine-Version, Prüfprotokoll">
+      <Details summary="Prüfprotokoll und Modellversion (für Fachleute)">
         <ul className="aec-facts aec-facts--mono">
           <li>
-            <span>Engine</span>
+            <span>Modellversion</span>
             {CURRENT_COUPLED_ENGINE}
           </li>
           <li>
-            <span>Kriterien</span>
-            {overview?.locked ? `gesperrt · SHA256 ${overview.sha256}` : "noch nicht gesperrt"}
+            <span>Prüfgrenzen</span>
+            {overview?.locked
+              ? `vorab festgelegt · SHA256 ${overview.sha256}`
+              : "noch nicht festgelegt"}
           </li>
           {(overview?.elements ?? []).map((e) => (
             <li key={`${e.kind}-${e.refId}`}>
@@ -161,7 +169,7 @@ export default function NachweisView(props: ViewProps) {
           ))}
           {!overview?.elements.length ? (
             <li>
-              <span>Läufe</span>Keine verknüpften Läufe (
+              <span>Berechnungen</span>Noch keine gespeichert (
               {situation.source === "beispiel" ? "Beispielprojekt" : "Projekt"})
             </li>
           ) : null}

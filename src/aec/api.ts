@@ -43,15 +43,16 @@ export function storeRole(role: Role) {
 /** Fachliche Fehlercodes der Austausch-API in Kaeufersprache. */
 export function explain(detail: string): string {
   if (detail.includes("acceptance_criteria_not_locked"))
-    return "Erst die Abnahmekriterien im Messdaten-Abgleich sperren, dann kann das Lab eine Testanfrage annehmen.";
-  if (detail.startsWith("role_forbidden"))
-    return "Diese Rolle darf diesen Schritt nicht ausführen.";
-  if (detail.includes("lab_result")) return "Erledigt erst mit einem gemeldeten Lab-Ergebnis.";
+    return "Bevor das Lab eine Anfrage annehmen kann, müssen die Prüfgrenzen feststehen (Modell gegen Messung).";
+  if (detail.startsWith("role_forbidden")) return "Dieser Schritt ist Sache der anderen Seite.";
+  if (detail.includes("lab_result"))
+    return "Als erledigt zählt es erst, wenn das Lab ein Ergebnis gemeldet hat.";
   if (detail.startsWith("no_base"))
-    return "Für Varianten braucht das Projekt einen gekoppelten Lauf oder einen verknüpften Flugplan.";
+    return "Um Lösungen zu rechnen, braucht das Projekt einen Flugplan. Hinterlegen Sie ihn unter „Daten“.";
   if (detail.startsWith("invalid_variant: "))
-    return `Variante nicht zulässig: ${detail.slice("invalid_variant: ".length)}`;
-  if (detail.includes("Run-Queue voll")) return "Rechner ausgelastet. Laufende Läufe abwarten.";
+    return `Diese Lösung geht so nicht: ${detail.slice("invalid_variant: ".length)}`;
+  if (detail.includes("Run-Queue voll"))
+    return "Der Rechner ist gerade ausgelastet. Bitte warten Sie, bis die laufenden Berechnungen fertig sind.";
   return detail;
 }
 
@@ -113,7 +114,7 @@ function fromPilot(p: Record<string, unknown>): Project {
     name: str(p.name, "Projekt"),
     airport: str(p.scope, "Flughafen"),
     site: str(p.scope, ""),
-    dayLabel: "Lagebild aus dem neuesten gekoppelten Lauf",
+    dayLabel: "Ihr gerechneter Tag",
     fleetSize: 0,
     gridLimitKw: 3500,
     decision: str(p.decision),

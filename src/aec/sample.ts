@@ -76,7 +76,7 @@ export function sampleVariants(): Variant[] {
   return [
     v({
       id: "basis",
-      name: "Basis",
+      name: "Heute",
       kind: "basis",
       onTimePct: 78,
       minutesAtLimit: 52,
@@ -85,7 +85,7 @@ export function sampleVariants(): Variant[] {
     }),
     v({
       id: "speicher",
-      name: "Speicher 2 MWh",
+      name: "Batteriespeicher 2 MWh",
       kind: "speicher",
       onTimePct: 79,
       minutesAtLimit: 0,
@@ -94,7 +94,7 @@ export function sampleVariants(): Variant[] {
     }),
     v({
       id: "schlepper",
-      name: "+5 Schlepper",
+      name: "5 Schlepper mehr",
       kind: "fahrzeuge",
       onTimePct: 96,
       minutesAtLimit: 71,
@@ -103,7 +103,7 @@ export function sampleVariants(): Variant[] {
     }),
     v({
       id: "laderegel",
-      name: "Laderegel Fristpriorität",
+      name: "Wer zuerst los muss, lädt zuerst",
       kind: "laderegel",
       onTimePct: 78,
       minutesAtLimit: 49,
