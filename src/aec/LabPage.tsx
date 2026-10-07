@@ -28,8 +28,8 @@ import type { ExchangeItem, Party, Project } from "./types";
 import { WerkstattFrame, WerkstattLinks } from "./Werkstatt";
 
 const KIND_LABEL: Record<ExchangeItem["kind"], string> = {
-  szenario: "Szenario",
-  testanfrage: "Testanfrage",
+  szenario: "Krisenfall",
+  testanfrage: "Prüfanfrage",
   ergebnis: "Lab-Ergebnis",
   auswertung: "FlexLab-Auswertung",
 };
@@ -73,31 +73,31 @@ export function modelAnswer(inp: DataInputs): { answer: string; detail: string }
   const holdout = inp.imports.filter((i) => i.role === "holdout" && i.valid);
   if (inp.holdoutPass)
     return {
-      answer: "Im Holdout bestanden.",
+      answer: "Ja, die Prüfmessung bestätigt das Modell.",
       detail:
-        "Modell gegen zurückgehaltene Messdaten mit vorab gesperrten Kriterien geprüft. Gilt nur für den gemessenen Zeitraum.",
+        "Gemessen an einer zurückgehaltenen Messreihe und an Grenzen, die vorher feststanden. Das gilt für den gemessenen Zeitraum, nicht darüber hinaus.",
     };
   if (!inp.available)
     return {
       answer: "Noch nicht geprüft.",
       detail:
-        "Beispielprojekt: Es gibt keine Messreihe, gegen die das Modell laufen könnte. Bis dahin bleibt es ein unkalibrierter Methodenprototyp.",
+        "Im Beispielprojekt gibt es keine Messreihe, mit der wir das Modell vergleichen könnten. Bis dahin ist es ein unkalibrierter Prototyp.",
     };
   if (!holdout.length)
     return {
-      answer: "Noch nicht geprüft: keine Holdout-Messreihe.",
+      answer: "Noch nicht geprüft: Es fehlt eine Prüfmessung.",
       detail:
-        "Unter „Daten“ eine Messreihe als Holdout importieren. Sie wird nicht zur Kalibrierung genutzt, nur zum Prüfen.",
+        "Lesen Sie unter „Daten“ eine Messreihe als Prüfmessung (Holdout) ein. Mit ihr wird nichts abgestimmt, sie dient nur zum Vergleich.",
     };
   if (!inp.tolerances?.locked)
     return {
-      answer: "Noch nicht geprüft: Kriterien nicht gesperrt.",
-      detail: `${holdout.length === 1 ? "Eine Holdout-Messreihe liegt" : `${holdout.length} Holdout-Messreihen liegen`} vor. Erst die Toleranzen festlegen und sperren, dann bewerten.`,
+      answer: "Noch nicht geprüft: Die Grenzen stehen nicht fest.",
+      detail: `${holdout.length === 1 ? "Eine Prüfmessung liegt" : `${holdout.length} Prüfmessungen liegen`} vor. Legen Sie zuerst fest, wie weit Modell und Messung auseinanderliegen dürfen. Erst dann wird verglichen.`,
     };
   return {
-    answer: "Noch nicht bestanden.",
+    answer: "Noch nicht bestätigt.",
     detail:
-      "Messdaten und gesperrte Kriterien liegen vor, eine bestandene Holdout-Bewertung aber nicht. Im Messdaten-Abgleich bewerten.",
+      "Messung und Grenzen liegen vor, aber die Prüfmessung hat das Modell noch nicht bestätigt. Vergleichen Sie beides unter „Modell gegen Messung“.",
   };
 }
 
@@ -164,7 +164,7 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
       setItems((prev) => (prev ?? []).map((i) => (i.id === item.id ? next : i)));
       setMsg(`„${item.title}“ ist jetzt ${STATUS_LABEL[to]}.`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Statuswechsel fehlgeschlagen");
+      setError(e instanceof Error ? e.message : "Das hat nicht geklappt.");
     }
   }
 
@@ -210,16 +210,16 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
           to={{ page: "projekt", projekt: route.projekt, frage: "nachweis" }}
           className="aec-button aec-button--ghost aec-button--small"
         >
-          Kundensicht dieses Projekts
+          So sieht es der Kunde
         </Link>
       </div>
 
       <div className="aec-page">
         <AnswerHead
           id="aec-view-title"
-          question="Testing-Lab · Eingang"
-          answer={items ? exchangeAnswer(list) : "Eingang wird geladen…"}
-          lead="Hier prüft, misst und verifiziert das E.ON Testing-Lab. Flughafen und E.ON Drive sehen davon nur den Prüfstatus an ihren Zahlen."
+          question="Testing-Lab · Was liegt an?"
+          answer={items ? exchangeAnswer(list) : "Wird geladen …"}
+          lead="Hier prüft und misst das E.ON Testing-Lab. Flughafen und E.ON Drive sehen davon nur, ob etwas geprüft ist oder noch läuft."
           evidence="empirical_open"
           source={list.some((i) => i.source === "api") ? "api" : "beispiel"}
           kpis={[
@@ -234,7 +234,7 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
               tone: atAirport ? "signal" : undefined,
             },
             { value: String(done), label: "erledigt" },
-            { value: inputs.holdoutPass ? "ja" : "offen", label: "Modell gegen Messung" },
+            { value: inputs.holdoutPass ? "ja" : "offen", label: "Modell durch Messung bestätigt" },
           ]}
         />
 
@@ -247,28 +247,28 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
           </p>
         ) : null}
 
-        <Section title="Was prüfen wir?" kicker="1 · Prüfaufträge und Szenarien" id="lab-fragen">
-          {thread(questions, "Kein offener Prüfauftrag.")}
+        <Section
+          title="Was sollen wir prüfen?"
+          kicker="1 · Anfragen und Krisenfälle"
+          id="lab-fragen"
+        >
+          {thread(questions, "Keine offene Anfrage.")}
         </Section>
 
-        <Section
-          title="Was wurde gemessen?"
-          kicker="2 · Lab-Ergebnisse und Auswertungen"
-          id="lab-messung"
-        >
+        <Section title="Was wurde gemessen?" kicker="2 · Ergebnisse aus dem Lab" id="lab-messung">
           {thread(measured, "Noch keine Messung zurückgemeldet.")}
-          <Details summary="Werkstatt: Messdaten realer Komponenten">
+          <Details summary="Werkbank: Messdaten echter Komponenten">
             <WerkstattLinks items={["flexlab"]} base={route} />
           </Details>
         </Section>
 
-        <Section title="Stimmt das Modell?" kicker="3 · Modell gegen Messung" id="lab-modell">
+        <Section title="Stimmt das Modell?" kicker="3 · Rechnung gegen Messung" id="lab-modell">
           <div className="aec-verdict" data-pass={inputs.holdoutPass ? "" : undefined}>
             <p className="aec-verdict__answer">{model.answer}</p>
             <p>{model.detail}</p>
             <EvidenceBadge level={inputs.holdoutPass ? "empirical_passed" : "empirical_open"} />
           </div>
-          <Details summary="Werkstatt: Kriterien sperren und Holdout bewerten">
+          <Details summary="Werkbank: Grenzen festlegen und Prüfmessung vergleichen">
             <WerkstattLinks items={["pilot"]} base={route} />
           </Details>
         </Section>
@@ -281,7 +281,7 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
           />
         ) : null}
 
-        <Details summary="Vorführung: Ansicht wechseln">
+        <Details summary="Für Vorführungen: aus Sicht von Flughafen oder Lab">
           <div className="aec-role" role="radiogroup" aria-label="Ich spreche als">
             <span>Ich spreche als</span>
             {(
@@ -306,8 +306,8 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
             ))}
           </div>
           <p className="aec-fine">
-            Nur für die Vorführung: zeigt, welche Schritte Flughafen und Lab jeweils sehen. Kein
-            Zugriffsschutz.
+            Zeigt, welche Schritte Flughafen und Lab jeweils erledigen dürfen. Das ist nur eine
+            Ansicht, kein Zugriffsschutz.
           </p>
         </Details>
       </div>

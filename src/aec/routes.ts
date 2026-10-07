@@ -7,10 +7,10 @@ import { SAMPLE_PROJECT } from "./sample";
 import { caseBySlug } from "./scenarios";
 
 export const QUESTIONS = [
-  { id: "lage", label: "Lage", question: "Wie sieht der Tag aus?" },
-  { id: "engpass", label: "Engpass", question: "Wo wird es eng?" },
-  { id: "varianten", label: "Varianten", question: "Was hilft?" },
-  { id: "nachweis", label: "Nachweis", question: "Was können wir zusagen?" },
+  { id: "lage", label: "Tag", question: "Wie viel Strom braucht der Tag?" },
+  { id: "engpass", label: "Engpass", question: "Wann reicht der Anschluss nicht?" },
+  { id: "varianten", label: "Lösungen", question: "Was hilft am meisten?" },
+  { id: "nachweis", label: "Zusage", question: "Was können wir versprechen?" },
 ] as const;
 export type Question = (typeof QUESTIONS)[number]["id"];
 
@@ -21,7 +21,7 @@ export type Question = (typeof QUESTIONS)[number]["id"];
 export const DATA_STEP = {
   id: "daten",
   label: "Daten",
-  question: "Was wissen wir schon?",
+  question: "Was liegt schon vor?",
 } as const;
 export type Step = Question | "daten";
 export const STEPS = [DATA_STEP, ...QUESTIONS] as const;

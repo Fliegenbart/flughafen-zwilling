@@ -127,10 +127,10 @@ def test_run_uses_same_world_and_reports_deltas(client, tmp_path):
     assert run["status"] == "completed", run
     assert run["source_plan_sha256"] == plan.content_sha256 and run["seed"] == 42
     entries = {e["name"]: e for e in run["entries"]}
-    assert set(entries) == {"Basis", "+5 Schlepper", "Laderegel Fristpriorität"}
+    assert set(entries) == {"Heute", "+5 Schlepper", "Laderegel Fristpriorität"}
     # Gleiche Nachfragewelt: identische Missionssignatur, Basis-Welt-Hash reproduzierbar.
     base_world = build_world(plan, CoupledConfig(), 42)
-    assert entries["Basis"]["world_hash"] == base_world.world_hash
+    assert entries["Heute"]["world_hash"] == base_world.world_hash
     assert run["mission_signature"] == mission_signature(base_world)
     assert entries["Laderegel Fristpriorität"]["world_hash"] == base_world.world_hash
     assert entries["+5 Schlepper"]["world_hash"] != base_world.world_hash
@@ -143,9 +143,9 @@ def test_run_uses_same_world_and_reports_deltas(client, tmp_path):
         kpis = entry["kpis"]
         assert kpis["departures_total"] == 1 and kpis["missing_kw_peak"] is not None
         assert kpis["bottleneck"] in {"none", "energy", "resource", "energy_and_resource"}
-    base = entries["Basis"]["kpis"]
+    base = entries["Heute"]["kpis"]
     for entry in run["entries"]:
-        if entry["name"] == "Basis":
+        if entry["name"] == "Heute":
             assert entry["delta_to_base"] is None
             continue
         for field, value in entry["delta_to_base"].items():
@@ -177,9 +177,9 @@ def test_answer_winner_tie_and_no_measurable_difference():
     winner = build_answer([base, _entry("a", "Speicher", 90.0, 60),
                            _entry("b", "PV", 80.0 + EPS_ON_TIME_PCT / 2, 100)], True)
     assert winner["status"] == "winner" and winner["best_variant_id"] == "a"
-    assert "„Speicher“ hilft am meisten" in winner["headline"]
+    assert "Am meisten hilft „Speicher“" in winner["headline"]
     assert winner["no_effect"] == ["b"]
-    assert "kein messbarer Unterschied" in winner["details"][0]
+    assert winner["details"][0] == "„PV“ ändert praktisch nichts."
     tie = build_answer([base, _entry("a", "A", 90.0, 60), _entry("b", "B", 90.2, 60.5)], True)
     assert tie["status"] == "tie" and tie["best_variant_id"] is None
     assert set(tie["tied"]) == {"a", "b"}
@@ -187,8 +187,8 @@ def test_answer_winner_tie_and_no_measurable_difference():
     assert none["status"] == "no_measurable_difference" and none["best_variant_id"] is None
     minutes = build_answer([base, _entry("a", "A", 80.0, 40)], True)
     assert minutes["status"] == "grid_only" and minutes["grid_best_id"] == "a"
-    assert minutes["headline"] == ("Keine Variante verbessert die Pünktlichkeit; Netz entlastet "
-                                   "am stärksten: „A“ (−60 Minuten am Limit).")
+    assert minutes["headline"] == ("Keine Lösung macht die Abflüge pünktlicher. Den Anschluss "
+                                   "entlastet „A“ am meisten: 60 Minuten weniger am Limit.")
     worse = build_answer([base, _entry("a", "A", 70.0, 100)], True)
     assert worse["worse"] == ["a"] and worse["status"] == "no_measurable_difference"
     assert build_answer([base], False)["status"] == "pending"
@@ -200,9 +200,10 @@ def test_answer_separates_punctuality_and_grid_with_tradeoff():
                            _entry("b", "Speicher", 80.2, 40)], True)
     assert answer["status"] == "winner" and answer["punctuality_best_id"] == "a"
     assert answer["grid_best_id"] == "b" and answer["tradeoffs"] == ["a"]
-    assert "Pünktlichkeit: „Schlepper“ hilft am meisten" in answer["headline"]
-    assert "Zielkonflikt: belastet das Netz stärker (+30 Minuten am Limit)" in answer["headline"]
-    assert answer["details"][0] == "Netz entlastet am stärksten: „Speicher“ (−60 Minuten am Limit)."
+    assert "Am meisten hilft „Schlepper“: 5,0 Prozentpunkte" in answer["headline"]
+    assert "Der Haken: Der Anschluss ist damit 30 Minuten länger am Limit" in answer["headline"]
+    assert answer["details"][0] == ("Den Anschluss entlastet „Speicher“ am meisten: "
+                                 "60 Minuten weniger am Limit.")
     # Genau an der Schwelle 0,5 Pp. zaehlt als messbar
     edge = build_answer([base, _entry("a", "A", 80.0 + EPS_ON_TIME_PCT, 100)], True)
     assert edge["status"] == "winner"

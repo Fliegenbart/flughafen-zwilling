@@ -15,23 +15,23 @@ export type EvidenceLevel =
 export const EVIDENCE_LEVELS: Record<EvidenceLevel, { label: string; hint: string }> = {
   assumption: {
     label: "Annahme",
-    hint: "Gesetzter Eingabewert oder Modellannahme. Nicht gemessen und nicht kalibriert.",
+    hint: "Ein eingesetzter Wert, noch ohne Beleg. Weder gemessen noch am Modell abgestimmt.",
   },
   synthetic: {
-    label: "synthetisch",
-    hint: "Erfundene oder aus dem Modell erzeugte Daten. Nur zur Funktionsdemonstration.",
+    label: "ausgedacht",
+    hint: "Erfundene oder vom Modell erzeugte Werte. Sie zeigen, wie es funktioniert, nicht wie es ist.",
   },
   model_checked: {
-    label: "modellintern geprüft",
-    hint: "Konsistenz- oder Integritätsprüfung innerhalb des Modells (Bilanzen, Hashes, gleiche Welt). Kein Abgleich mit der Realität.",
+    label: "rechnerisch geprüft",
+    hint: "Das Modell rechnet in sich stimmig: Energie geht nicht verloren, Vergleiche laufen unter gleichen Bedingungen. Mit der Wirklichkeit verglichen ist es noch nicht.",
   },
   empirical_open: {
-    label: "empirisch offen",
-    hint: "Noch nicht mit unabhängigen Messdaten nachgewiesen. Benötigt vorab gesperrte Kriterien und Holdout-Daten.",
+    label: "noch nicht gemessen",
+    hint: "Eine echte Messung, die das bestätigt, steht noch aus. Dafür braucht es vorher festgelegte Grenzen und eine eigene Prüfmessung.",
   },
   empirical_passed: {
-    label: "empirisch bestanden",
-    hint: "Holdout-Messdaten erfüllen die vorab gesperrten Kriterien. Gilt nur für diesen quantitativen Vergleich, nicht für elektrische Sicherheit oder Betrieb.",
+    label: "durch Messung bestätigt",
+    hint: "Eine Prüfmessung hat die vorher festgelegten Grenzen eingehalten. Das gilt für genau diesen Vergleich, nicht für elektrische Sicherheit oder den Betrieb.",
   },
 };
 
@@ -73,7 +73,7 @@ export function EvidenceBadge({ level, label, detail }: Props) {
         className="ds-evidence__chip"
         tabIndex={0}
         aria-describedby={id}
-        aria-label={label ? `${text} (Evidenz: ${meta.label})` : `Evidenz: ${meta.label}`}
+        aria-label={label ? `${text} (Wie sicher: ${meta.label})` : `Wie sicher: ${meta.label}`}
       >
         <span className="ds-evidence__dot" aria-hidden="true" />
         {text}

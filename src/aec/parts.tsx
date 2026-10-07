@@ -28,9 +28,9 @@ export function SourceTag({ source }: { source: DataSource }) {
   return (
     <span
       className="aec-sample"
-      title="Nicht gemessen, nicht simuliert: Beispielwerte zur Vorführung."
+      title="Erfundene Werte zum Ausprobieren. Weder gemessen noch für Ihr Projekt gerechnet."
     >
-      Beispieldaten
+      Beispielwerte
     </span>
   );
 }

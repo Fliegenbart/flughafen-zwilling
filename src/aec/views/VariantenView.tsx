@@ -14,7 +14,7 @@ const FLEET_LABEL: Record<FleetKind, string> = {
   bus: "Busse",
   baggage_tractor: "Gepäckschlepper",
   pushback_tug: "Pushback-Schlepper",
-  gpu: "GPU",
+  gpu: "Bodenstromgeräte",
 };
 
 /** Vorschlaege relativ zur Projekt-Basis; nur gueltige Aenderungen werden angeboten. */
@@ -22,16 +22,16 @@ function suggestions(board: VariantBoard): { name: string; changes: VariantChang
   const base = board.base;
   if (!base) return [];
   const list: { name: string; changes: VariantChanges }[] = [
-    { name: "+5 Schlepper", changes: { extra_vehicles: { pushback_tug: 5 } } },
-    { name: "Speicher 2 MWh", changes: { storage_kwh: 2000, storage_kw: 1000 } },
+    { name: "5 Schlepper mehr", changes: { extra_vehicles: { pushback_tug: 5 } } },
+    { name: "Batteriespeicher 2 MWh", changes: { storage_kwh: 2000, storage_kw: 1000 } },
     {
-      name: "Anschluss +1 MW",
+      name: "1 MW mehr Anschluss",
       changes: { grid_import_limit_kw: base.gridLimitKw + 1000 },
     },
   ];
   if (base.policy !== "mission_priority")
     list.push({
-      name: "Laderegel Fristpriorität",
+      name: "Wer zuerst los muss, lädt zuerst",
       changes: { charging_policy: "mission_priority" },
     });
   const taken = new Set(board.definitions.map((d) => d.name.toLowerCase()));
@@ -41,22 +41,22 @@ function suggestions(board: VariantBoard): { name: string; changes: VariantChang
 function describe(changes: VariantChanges): string {
   const parts: string[] = [];
   if (changes.grid_import_limit_kw !== undefined)
-    parts.push(`Anschluss ${powerText(changes.grid_import_limit_kw)}`);
+    parts.push(`Netzanschluss ${powerText(changes.grid_import_limit_kw)}`);
   if (changes.storage_kwh)
     parts.push(
-      `Speicher ${dec1(changes.storage_kwh / 1000)} MWh / ${powerText(changes.storage_kw ?? changes.storage_kwh / 2)}`,
+      `Batteriespeicher ${dec1(changes.storage_kwh / 1000)} MWh mit ${powerText(changes.storage_kw ?? changes.storage_kwh / 2)}`,
     );
   for (const [k, n] of Object.entries(changes.extra_vehicles ?? {}))
-    parts.push(`+${n} ${FLEET_LABEL[k as FleetKind] ?? k}`);
+    parts.push(`${n} ${FLEET_LABEL[k as FleetKind] ?? k} mehr`);
   for (const [k, n] of Object.entries(changes.chargers_offline ?? {}))
-    parts.push(`${n} Ladepunkte ${FLEET_LABEL[k as FleetKind] ?? k} aus`);
+    parts.push(`${n} Ladepunkte für ${FLEET_LABEL[k as FleetKind] ?? k} ausgefallen`);
   if (changes.charging_policy)
     parts.push(
       changes.charging_policy === "mission_priority"
-        ? "Laderegel Fristpriorität"
-        : "Laden ungeregelt",
+        ? "Wer zuerst los muss, lädt zuerst"
+        : "Jedes Fahrzeug lädt, sobald es steckt",
     );
-  if (changes.pv_factor !== undefined) parts.push(`PV × ${dec1(changes.pv_factor)}`);
+  if (changes.pv_factor !== undefined) parts.push(`Photovoltaik × ${dec1(changes.pv_factor)}`);
   return parts.join(" · ");
 }
 
@@ -90,12 +90,12 @@ function FreeForm({
       : { storage_kwh: n };
   };
   const label: Record<Lever, string> = {
-    anschluss: "Netzimportgrenze (kW)",
-    speicher: "Speicher (kWh)",
-    fahrzeuge: "Zusätzliche Fahrzeuge",
+    anschluss: "Netzanschluss (kW)",
+    speicher: "Batteriespeicher (kWh)",
+    fahrzeuge: "Mehr Fahrzeuge",
     laderegel: "Laderegel",
-    ausfall: "Ladepunkte offline",
-    pv: "PV-Faktor (× Basis)",
+    ausfall: "Ladepunkte fallen aus",
+    pv: "Photovoltaik (× heute)",
   };
 
   return (
@@ -110,7 +110,7 @@ function FreeForm({
       }}
     >
       <label>
-        <span>Hebel</span>
+        <span>Was ändern Sie?</span>
         <select
           value={lever}
           onChange={(e) => {
@@ -138,7 +138,7 @@ function FreeForm({
       </label>
       {lever === "fahrzeuge" || lever === "ausfall" ? (
         <label>
-          <span>Klasse</span>
+          <span>Fahrzeugart</span>
           <select value={kind} onChange={(e) => setKind(e.target.value as FleetKind)}>
             {(Object.keys(FLEET_LABEL) as FleetKind[]).map((k) => (
               <option key={k} value={k}>
@@ -152,8 +152,8 @@ function FreeForm({
         <label>
           <span>Regel</span>
           <select value={policy} onChange={(e) => setPolicy(e.target.value as typeof policy)}>
-            <option value="mission_priority">Fristpriorität</option>
-            <option value="uncontrolled">ungeregelt</option>
+            <option value="mission_priority">Wer zuerst los muss, lädt zuerst</option>
+            <option value="uncontrolled">Jedes Fahrzeug lädt, sobald es steckt</option>
           </select>
         </label>
       ) : (
@@ -169,21 +169,21 @@ function FreeForm({
       )}
       {lever === "speicher" ? (
         <label>
-          <span>Leistung kW (optional)</span>
+          <span>Leistung in kW (freiwillig)</span>
           <input
             inputMode="decimal"
             value={value2}
-            placeholder="½ der kWh"
+            placeholder="sonst halbe Kapazität"
             onChange={(e) => setValue2(e.target.value)}
           />
         </label>
       ) : null}
       <label className="aec-varform__name">
-        <span>Name (optional)</span>
+        <span>Eigener Name (freiwillig)</span>
         <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
       </label>
       <button type="submit" className="aec-button aec-button--ghost" disabled={busy}>
-        Variante anlegen
+        Hinzufügen
       </button>
     </form>
   );
@@ -224,8 +224,8 @@ function Editor({
   if (!board.base)
     return (
       <p className="aec-muted" role="note">
-        Für echte Varianten braucht das Projekt einen gekoppelten Lauf oder einen verknüpften
-        Flugplan. Bis dahin zeigt diese Seite Beispieldaten.
+        Um Lösungen für Ihr Projekt zu rechnen, braucht es einen Flugplan. Hinterlegen Sie ihn unter
+        „Daten“. Bis dahin sehen Sie hier Beispielwerte.
       </p>
     );
 
@@ -234,19 +234,20 @@ function Editor({
   return (
     <div className="aec-vareditor">
       <p className="aec-muted">
-        Basis: {board.base.fleet.total ?? "?"} Fahrzeuge, Anschluss{" "}
+        Heute: {board.base.fleet.total ?? "?"} Fahrzeuge, Netzanschluss{" "}
         {powerText(board.base.gridLimitKw)}
         {board.base.storageKwh
-          ? `, Speicher ${dec1(board.base.storageKwh / 1000)} MWh`
-          : ", kein Speicher"}
-        , Laderegel {board.base.policy === "mission_priority" ? "Fristpriorität" : "ungeregelt"}
-        {board.base.source === "coupled_run"
-          ? " (aus dem neuesten gekoppelten Lauf)"
-          : " (Standardannahmen)"}
-        .
+          ? `, Batteriespeicher ${dec1(board.base.storageKwh / 1000)} MWh`
+          : ", kein Batteriespeicher"}
+        .{" "}
+        {board.base.policy === "mission_priority"
+          ? "Wer zuerst los muss, lädt zuerst."
+          : "Jedes Fahrzeug lädt, sobald es steckt."}
+        {board.base.source === "coupled_run" ? "" : " Das sind vorerst Standardwerte."} Jede Lösung
+        ändert genau eine Sache daran.
       </p>
       {sugg.length && !full ? (
-        <div className="aec-chips" role="group" aria-label="Vorschläge">
+        <div className="aec-chips" role="group" aria-label="Vorschläge zum Ausprobieren">
           {sugg.map((s) => (
             <button
               key={s.name}
@@ -261,7 +262,7 @@ function Editor({
         </div>
       ) : null}
       {!full ? (
-        <Details summary="Eigene Variante">
+        <Details summary="Eigene Lösung zusammenstellen">
           <FreeForm busy={busy} onAdd={(n, c) => void act(() => createVariant(project, n, c))} />
         </Details>
       ) : null}
@@ -285,7 +286,8 @@ function Editor({
         </ul>
       ) : (
         <p className="aec-muted">
-          Noch keine Variante angelegt. Vorschlag wählen oder eigene anlegen.
+          Noch nichts ausgewählt. Tippen Sie auf einen Vorschlag oder stellen Sie eine eigene Lösung
+          zusammen.
         </p>
       )}
       <div className="aec-varrun">
@@ -299,14 +301,14 @@ function Editor({
             )
           }
         >
-          {running ? "Läufe rechnen…" : board.run ? "Neu rechnen" : "Varianten rechnen"}
+          {running ? "Wird gerechnet …" : board.run ? "Neu rechnen" : "Lösungen durchrechnen"}
         </button>
         <label className="aec-stresspick">
-          Stresstest
+          Zusätzlich unter Stress rechnen
           <select value={stress} onChange={(e) => setStress(e.target.value)}>
-            <option value="none">keiner</option>
-            <option value="grid">Netzimport −20 % ganztags</option>
-            <optgroup label="Krisenfall aus der Bibliothek">
+            <option value="none">nein</option>
+            <option value="grid">Anschluss den ganzen Tag 20 % schwächer</option>
+            <optgroup label="Ein Krisenfall aus der Bibliothek">
               {SCENARIO_CASES.map((c) => (
                 <option key={c.slug} value={c.slug}>
                   {c.name}
@@ -319,14 +321,14 @@ function Editor({
           <div
             className="aec-progress"
             role="progressbar"
-            aria-label="Fortschritt der Variantenläufe"
+            aria-label="Fortschritt der Berechnung"
             aria-valuemin={0}
             aria-valuemax={board.run.total}
             aria-valuenow={board.run.done}
           >
             <em>
-              {board.run.done} / {board.run.total} Läufe
-              {board.run.status === "partial" ? " · nicht alle erfolgreich" : ""}
+              {board.run.done} von {board.run.total} fertig
+              {board.run.status === "partial" ? " · nicht alle haben geklappt" : ""}
             </em>
             <i className="aec-progress__track" aria-hidden="true">
               <span
@@ -338,17 +340,20 @@ function Editor({
       </div>
       {crisis ? (
         <p className="aec-fine" role="note">
-          <b>{crisis.name} im Energiemodell (Annahme):</b> {crisis.energyStress} Die Aufträge
-          bleiben gleich; Basis und jede Variante laufen zusätzlich unter dieser Störung.
+          <b>So rechnen wir „{crisis.name}“:</b> {crisis.energyStress} Das ist eine Annahme. Der
+          Flugplan bleibt gleich; heutiger Stand und jede Lösung werden zusätzlich unter dieser
+          Störung gerechnet.
         </p>
       ) : null}
       {board.run?.crisis && board.run.crisis.id !== crisis?.scenarioId ? (
         <p className="aec-fine">
-          Letzter Lauf mit Stresstest „{board.run.crisis.name}“: {board.run.crisis.assumption}
+          Zuletzt gerechnet unter „{board.run.crisis.name}“: {board.run.crisis.assumption}
         </p>
       ) : null}
       {board.run?.stale && !running ? (
-        <p className="aec-muted">Varianten geändert seit dem letzten Lauf. Neu rechnen.</p>
+        <p className="aec-muted">
+          Sie haben die Auswahl geändert. Rechnen Sie neu, damit die Ergebnisse passen.
+        </p>
       ) : null}
       {error ? (
         <p className="aec-error" role="alert">
@@ -393,7 +398,7 @@ function Runway({
             role="listitem"
             data-best={v.id === bestId ? "" : undefined}
             style={{ "--i": i } as React.CSSProperties}
-            aria-label={`${v.name}: ${dec1(v.onTimePct)} Prozent pünktlich, ${v.minutesAtLimit} Minuten am Limit, Spitze ${powerText(v.peakKw)}`}
+            aria-label={`${v.name}: ${dec1(v.onTimePct)} Prozent pünktlich, ${v.minutesAtLimit} Minuten Anschluss ausgereizt, höchster Bedarf ${powerText(v.peakKw)}`}
           >
             <span className="aec-runway__name">{v.name}</span>
             <span className="aec-runway__track" aria-hidden="true">
@@ -406,7 +411,7 @@ function Runway({
             <span
               className="aec-runway__limit"
               aria-hidden="true"
-              title={`${v.minutesAtLimit} min am Limit`}
+              title={`${v.minutesAtLimit} Minuten Anschluss ausgereizt`}
             >
               {Array.from(
                 { length: Math.min(12, Math.ceil(v.minutesAtLimit / perDot)) },
@@ -420,19 +425,19 @@ function Runway({
         ))}
       </div>
       <p className="aec-muted aec-runway__legend">
-        <i className="aec-legend__basis" aria-hidden="true" /> Basis ·{" "}
-        <i className="aec-legend__stopdots" aria-hidden="true" /> je Punkt {perDot} Minuten am
-        Anschlusslimit
+        <i className="aec-legend__basis" aria-hidden="true" /> heutiger Stand ·{" "}
+        <i className="aec-legend__stopdots" aria-hidden="true" /> jeder Punkt: {perDot} Minuten
+        Anschluss ausgereizt
       </p>
     </>
   );
 }
 
 const BOTTLENECK: Record<string, string> = {
-  none: "kein Engpass",
-  energy: "Energie",
+  none: "nichts",
+  energy: "Strom",
   resource: "Fahrzeuge",
-  energy_and_resource: "Energie und Fahrzeuge",
+  energy_and_resource: "Strom und Fahrzeuge",
 };
 
 export default function VariantenView({ project, board, reloadBoard, route }: ViewProps) {
@@ -460,21 +465,21 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
     answer = board.answer.headline;
     lead = board.answer.details.join(" ");
   } else if (api && running) {
-    answer = "Varianten werden gerechnet.";
-    lead = `${board.run!.done} von ${board.run!.total} Läufen fertig. Gleicher Flugplan, gleicher Seed für alle.`;
+    answer = "Die Lösungen werden gerade gerechnet.";
+    lead = `${board.run!.done} von ${board.run!.total} Berechnungen fertig.`;
   } else if (api) {
     answer = board.definitions.length
-      ? "Varianten angelegt, noch nicht gerechnet."
-      : "Welche Hebel sollen gegen die Basis antreten?";
+      ? "Ihre Auswahl steht. Jetzt durchrechnen."
+      : "Was wollen Sie gegen den heutigen Stand antreten lassen?";
     lead =
-      "Vorschlag wählen oder eigene Variante anlegen, dann rechnen. Jede Variante ändert die Basis an benannten Stellen.";
+      "Wählen Sie Vorschläge oder stellen Sie eigene Lösungen zusammen. Dann rechnen wir alle am selben Tag durch.";
   } else {
     const full = variantsAnswer(variants);
     const cut = full.indexOf(". ") >= 0 ? full.indexOf(". ") + 1 : full.length;
     answer = full.slice(0, cut);
     lead = full.slice(cut).trim();
   }
-  lead = `${lead} Gleicher Flugplan, gleiche Annahmen.`.trim();
+  lead = `${lead} Alle Lösungen laufen am selben Tag mit denselben Annahmen.`.trim();
 
   const delta = best && base ? best.onTimePct - base.onTimePct : 0;
   const kpis =
@@ -485,23 +490,22 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
             unit: "%",
             label:
               best.id === base.id
-                ? "pünktlich abgefertigt (Basis)"
-                : `pünktlich abgefertigt mit „${best.name}“`,
+                ? "der Abflüge pünktlich, heute"
+                : `der Abflüge pünktlich mit „${best.name}“`,
             tone: "signal" as const,
           },
           {
             value: `${delta >= 0 ? "+" : "−"}${dec1(Math.abs(delta))}`,
-            unit: "Pp.",
-            label: "gegenüber Basis",
+            label: "Prozentpunkte gegenüber heute",
           },
-          { value: int(best.minutesAtLimit), unit: "min", label: "am Anschlusslimit" },
+          { value: int(best.minutesAtLimit), unit: "min", label: "Anschluss ausgereizt" },
           computed && best.missingKw != null
             ? {
                 value: powerText(best.missingKw).split(" ")[0]!,
                 unit: powerText(best.missingKw).split(" ")[1],
-                label: "ungedeckter Ladebedarf in der Spitze",
+                label: "fehlen zum Laden in der Spitze",
               }
-            : { value: dec1(best.gridEnergyMwh), unit: "MWh", label: "Netzenergie am Tag" },
+            : { value: dec1(best.gridEnergyMwh), unit: "MWh", label: "Strom aus dem Netz am Tag" },
         ]
       : [];
 
@@ -509,7 +513,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
     <>
       <AnswerHead
         id="aec-view-title"
-        question="Varianten · Was hilft?"
+        question="Lösungen · Was hilft am meisten?"
         answer={answer}
         lead={lead}
         evidence={
@@ -524,7 +528,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
       />
 
       {api ? (
-        <Section title="Varianten anlegen und rechnen" kicker="Hebel" id="var-edit">
+        <Section title="Was wollen Sie ausprobieren?" kicker="Ihre Auswahl" id="var-edit">
           <Editor board={board} project={project} reload={reloadBoard} krise={route.krise} />
         </Section>
       ) : null}
@@ -533,16 +537,16 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
         <Section
           title={
             sample
-              ? "Beispiel: so sieht das Ergebnis aus"
-              : "Pünktlich abgefertigte Abflüge je Variante"
+              ? "So sieht das Ergebnis aus (Beispiel)"
+              : "Wie viele Abflüge pünktlich fertig werden"
           }
-          kicker="Vergleich"
+          kicker="Im Vergleich"
           id="var-chart"
         >
           {sample ? (
             <p className="aec-muted aec-sample-note">
-              <SourceTag source="beispiel" /> Beispielwerte zur Vorführung, nicht gerechnet
-              {api ? ". Echte Zahlen erscheinen nach dem ersten Variantenlauf." : "."}
+              <SourceTag source="beispiel" /> Ausgedachte Werte, damit Sie sehen, wie es aussieht
+              {api ? ". Ihre Zahlen erscheinen, sobald Sie Lösungen durchrechnen." : "."}
             </p>
           ) : null}
           <Runway variants={variants} base={base} bestId={bestId} />
@@ -550,80 +554,80 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
       ) : null}
 
       {showResults && base && !(api && sample) ? (
-        <Section title="Varianten im Einzelnen" kicker="Kennzahlen" id="var-cards">
+        <Section title="Jede Lösung im Detail" kicker="Die Zahlen dahinter" id="var-cards">
           <ul className="aec-variants">
             {variants.map((v) => (
               <li key={v.id} data-best={v.id === bestId ? "" : undefined}>
                 <span className="aec-variants__tag">
                   {v.id === bestId
-                    ? "bester Effekt"
+                    ? "hilft am meisten"
                     : v.kind === "basis"
-                      ? "Ist-Annahme"
-                      : "Variante"}
+                      ? "heutiger Stand"
+                      : "Lösung"}
                 </span>
                 <h3>{v.name}</h3>
                 <dl>
                   <div>
-                    <dt>pünktlich abgefertigt</dt>
+                    <dt>pünktlich fertig</dt>
                     <dd>
                       {dec1(v.onTimePct)} %
                       {v.deltaOnTimePct != null && v.kind !== "basis" ? (
                         <small>
                           {" "}
                           ({v.deltaOnTimePct >= 0 ? "+" : "−"}
-                          {dec1(Math.abs(v.deltaOnTimePct))} Pp.)
+                          {dec1(Math.abs(v.deltaOnTimePct))} Prozentpunkte)
                         </small>
                       ) : null}
                     </dd>
                   </div>
                   {v.delayedDepartures != null ? (
                     <div>
-                      <dt>verspätet</dt>
+                      <dt>nicht rechtzeitig fertig</dt>
                       <dd>
                         {int(v.delayedDepartures)} von {int(v.departuresTotal ?? 0)}
                       </dd>
                     </div>
                   ) : null}
                   <div>
-                    <dt>Minuten am Limit</dt>
+                    <dt>Anschluss ausgereizt</dt>
                     <dd>{int(v.minutesAtLimit)}</dd>
                   </div>
                   <div>
-                    <dt>Spitze</dt>
+                    <dt>höchster Strombedarf</dt>
                     <dd>{powerText(v.peakKw)}</dd>
                   </div>
                   {v.missingKw != null ? (
                     <div>
-                      <dt>ungedeckter Ladebedarf in der Spitze</dt>
+                      <dt>fehlen zum Laden in der Spitze</dt>
                       <dd>{powerText(v.missingKw)}</dd>
                     </div>
                   ) : null}
                   <div>
-                    <dt>Netzenergie / Tag</dt>
+                    <dt>Strom aus dem Netz am Tag</dt>
                     <dd>{dec1(v.gridEnergyMwh)} MWh</dd>
                   </div>
                   {v.bottleneck ? (
                     <div>
-                      <dt>Engpass</dt>
+                      <dt>Was bremst</dt>
                       <dd>{BOTTLENECK[v.bottleneck] ?? v.bottleneck}</dd>
                     </div>
                   ) : null}
                   {v.fleetTotal ? (
                     <div>
-                      <dt>Flotte</dt>
+                      <dt>Fahrzeuge</dt>
                       <dd>{int(v.fleetTotal)} Fahrzeuge</dd>
                     </div>
                   ) : null}
                   {v.backgroundUnservedKwh ? (
                     <div>
-                      <dt>Grundlast unversorgt</dt>
+                      <dt>übriger Verbrauch nicht gedeckt</dt>
                       <dd>{int(v.backgroundUnservedKwh)} kWh</dd>
                     </div>
                   ) : null}
                   {v.stressOnTimePct != null ? (
                     <div>
                       <dt>
-                        {board.run?.crisis ? `unter ${board.run.crisis.name}` : "im Stresstest"}
+                        {board.run?.crisis ? `unter „${board.run.crisis.name}“` : "unter Stress"}
                       </dt>
                       <dd>{dec1(v.stressOnTimePct)} %</dd>
                     </div>
@@ -635,15 +639,16 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
           </ul>
           <p className="aec-muted">
             {computed
-              ? "Gekoppeltes Modell, unkalibriert. Geprüft (model_checked) nur bei versiegeltem Lauf, gleicher Nachfragewelt, geschlossener Energiebilanz und versorgter Grundlast. "
+              ? "Gerechnet, noch nicht gemessen. „Rechnerisch geprüft“ heißt: Die Berechnung ist vollständig, alle Lösungen hatten denselben Tag, keine Energie ging verloren und der übrige Verbrauch war gedeckt. "
               : ""}
-            Krisenfälle aus der <Link to={{ page: "bibliothek" }}>Szenario-Bibliothek</Link> lassen
-            sich zusätzlich übernehmen. Kosten erscheinen erst mit vom Kunden freigegebenen Preisen.
+            Wie robust eine Lösung ist, zeigen die Krisenfälle in der{" "}
+            <Link to={{ page: "bibliothek" }}>Szenario-Bibliothek</Link>. Kosten zeigen wir erst,
+            wenn Sie Preise freigeben.
           </p>
         </Section>
       ) : null}
 
-      <Details summary="Werkstatt: Stresstests und Abfertigungssimulation">
+      <Details summary="Für Fachleute: Belastungsproben und Abfertigung im Detail">
         <WerkstattLinks items={["robustheit", "simulation"]} base={route} />
       </Details>
     </>

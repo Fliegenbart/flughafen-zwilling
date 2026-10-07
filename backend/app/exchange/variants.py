@@ -290,7 +290,7 @@ def build_answer(entries: list[dict], finished: bool) -> dict:
     candidates = [e for e in entries if e["key"] != "base" and e.get("kpis")]
     if not candidates:
         return {**empty, "status": "no_variants",
-                "headline": "Noch keine Variante gerechnet."}
+                "headline": "Noch keine Lösung gerechnet."}
     no_effect = [e for e in candidates
                  if not _better(e["kpis"], base["kpis"]) and not _better(base["kpis"], e["kpis"])]
     worse = [e for e in candidates if _better(base["kpis"], e["kpis"])]
@@ -298,19 +298,23 @@ def build_answer(entries: list[dict], finished: bool) -> dict:
     relieving = [e for e in candidates if _relief(e, base) > EPS_LIMIT_MIN]
     tradeoffs = [e for e in punctual if -_relief(e, base) > EPS_LIMIT_MIN]
     grid_best = max(relieving, key=lambda e: (_relief(e, base), _gain(e, base)), default=None)
-    grid_text = (f"Netz entlastet am stärksten: „{grid_best['name']}“ "
-                 f"(−{int(round(_relief(grid_best, base)))} Minuten am Limit)"
-                 if grid_best else "keine Variante entlastet das Netz messbar")
+    grid_text = (f"den Anschluss entlastet „{grid_best['name']}“ am meisten: "
+                 f"{int(round(_relief(grid_best, base)))} Minuten weniger am Limit"
+                 if grid_best else "keine Lösung entlastet den Anschluss spürbar")
+    grid_sentence = grid_text[0].upper() + grid_text[1:]
     details = []
     for e in tradeoffs:
-        details.append(f"Zielkonflikt: „{e['name']}“ verbessert die Pünktlichkeit um "
-                       f"{_num(_gain(e, base))} Pp., belastet das Netz aber stärker "
-                       f"(+{int(round(-_relief(e, base)))} Minuten am Limit).")
+        details.append(f"Der Haken bei „{e['name']}“: {_num(_gain(e, base))} Prozentpunkte "
+                       f"mehr Abflüge pünktlich, aber der Anschluss ist "
+                       f"{int(round(-_relief(e, base)))} Minuten länger am Limit.")
     if no_effect:
         details.append(", ".join(f"„{e['name']}“" for e in no_effect)
-                       + ": kein messbarer Unterschied.")
+                       + (" ändert" if len(no_effect) == 1 else " ändern")
+                       + " praktisch nichts.")
     if worse:
-        details.append(", ".join(f"„{e['name']}“" for e in worse) + ": schlechter als die Basis.")
+        details.append(", ".join(f"„{e['name']}“" for e in worse)
+                       + (" schneidet" if len(worse) == 1 else " schneiden")
+                       + " schlechter ab als heute.")
     result = {**empty, "no_effect": [e["key"] for e in no_effect],
               "worse": [e["key"] for e in worse], "details": details,
               "grid_best_id": grid_best["key"] if grid_best else None,
@@ -319,14 +323,14 @@ def build_answer(entries: list[dict], finished: bool) -> dict:
         if grid_best:
             return {**result, "status": "grid_only", "best_variant_id": grid_best["key"],
                     "best_name": grid_best["name"],
-                    "headline": f"Keine Variante verbessert die Pünktlichkeit; {grid_text}."}
+                    "headline": f"Keine Lösung macht die Abflüge pünktlicher. {grid_sentence}."}
         return {**result, "status": "no_measurable_difference",
-                "headline": "Keine Variante verbessert die Pünktlichkeit; "
-                            "keine Variante entlastet das Netz messbar."}
+                "headline": "Keine Lösung macht die Abflüge pünktlicher, "
+                            "und keine entlastet den Anschluss spürbar."}
     best = max(punctual, key=lambda e: (_gain(e, base), _relief(e, base)))
     tied = [e for e in punctual if e is not best
             and abs(_gain(best, base) - _gain(e, base)) < EPS_ON_TIME_PCT]
-    effect = (f"+{_num(_gain(best, base))} Pp. pünktlich abgefertigte Abflüge "
+    effect = (f"{_num(_gain(best, base))} Prozentpunkte mehr Abflüge pünktlich "
               f"({_num(best['kpis']['on_time_pct'])} % statt "
               f"{_num(base['kpis']['on_time_pct'])} %)")
     result = {**result, "punctuality_best_id": None if tied else best["key"]}
@@ -334,25 +338,23 @@ def build_answer(entries: list[dict], finished: bool) -> dict:
         names = " und ".join(f"„{e['name']}“" for e in [best, *tied])
         return {**result, "status": "tie", "best_variant_id": None, "best_name": None,
                 "tied": [e["key"] for e in [best, *tied]],
-                "headline": f"{names} verbessern die Pünktlichkeit gleich stark: {effect}; "
-                            f"{grid_text}."}
+                "headline": f"{names} helfen gleich viel: {effect}. {grid_sentence}."}
     if best in tradeoffs:
-        grid_part = (f"Zielkonflikt: belastet das Netz stärker "
-                     f"(+{int(round(-_relief(best, base)))} Minuten am Limit)")
-        details = [d for d in details if not d.startswith(f"Zielkonflikt: „{best['name']}“")]
+        grid_part = (f"Der Haken: Der Anschluss ist damit "
+                     f"{int(round(-_relief(best, base)))} Minuten länger am Limit")
+        details = [d for d in details if not d.startswith(f"Der Haken bei „{best['name']}“")]
         if grid_best:
-            details.insert(0, f"{grid_text}.")
+            details.insert(0, f"{grid_sentence}.")
         result = {**result, "details": details}
     elif grid_best is best:
-        grid_part = (f"entlastet zugleich das Netz am stärksten "
-                     f"(−{int(round(_relief(best, base)))} Minuten am Limit)")
+        grid_part = (f"Sie entlastet zugleich den Anschluss am meisten: "
+                     f"{int(round(_relief(best, base)))} Minuten weniger am Limit")
     else:
-        grid_part = grid_text
+        grid_part = grid_sentence
     return {**result, "status": "winner", "best_variant_id": best["key"],
             "best_name": best["name"],
-            "headline": f"Pünktlichkeit: „{best['name']}“ hilft am meisten "
-                        f"(+{_num(_gain(best, base))} Pp.). "
-                        f"{grid_part[0].upper()}{grid_part[1:]}."}
+            "headline": f"Am meisten hilft „{best['name']}“: {_num(_gain(best, base))} "
+                        f"Prozentpunkte mehr Abflüge pünktlich. {grid_part}."}
 
 
 class VariantService:
@@ -558,7 +560,7 @@ class VariantService:
             try:
                 base_world = build_world(plan, base["config"], base["seed"])
                 signature = mission_signature(base_world)
-                prepared = [{"key": "base", "name": "Basis", "changes": {}, "varied": {},
+                prepared = [{"key": "base", "name": "Heute", "changes": {}, "varied": {},
                              "policy": base["policy"], "config": base["config"],
                              "world": base_world}]
                 for variant in variants:

@@ -55,24 +55,30 @@ describe("Antwortsätze", () => {
   it("nennt das Engpassfenster und die fehlende Leistung aus den Daten", () => {
     const w = situationKpis(s).worst!;
     expect(w.deficitKw).toBeGreaterThan(0);
-    expect(bottleneckAnswer(s)).toMatch(/^Zwischen 06:\d\d und 07:\d\d fehlen bis zu \d+\skW\./);
-    expect(situationAnswer(s)).toMatch(/bis auf ein Fenster/);
+    expect(bottleneckAnswer(s)).toMatch(
+      /^Zwischen 06:\d\d und 07:\d\d Uhr fehlen bis zu \d+\skW\./,
+    );
+    expect(situationAnswer(s)).toMatch(/Knapp wird es zwischen/);
   });
   it("sagt ehrlich, wenn nichts eng wird", () => {
     const calm = { ...s, gridLimitKw: 10000 };
-    expect(bottleneckAnswer(calm)).toMatch(/nirgends eng/);
-    expect(situationAnswer(calm)).toMatch(/trägt den ganzen Tag/);
+    expect(bottleneckAnswer(calm)).toMatch(/^Es wird nie eng\./);
+    expect(situationAnswer(calm)).toMatch(/reicht den ganzen Tag/);
   });
   it("benennt die beste Variante und die wirkungslosen", () => {
     const a = variantsAnswer(sampleVariants());
-    expect(a).toMatch(/Pünktlichkeit: „\+5 Schlepper“ hilft am meisten \(\+18,0 Pp\.\)/);
-    expect(a).toMatch(/Zielkonflikt: belastet das Netz stärker \(\+19 Minuten am Limit\)/);
-    expect(a).toMatch(/Netz entlastet am stärksten: „Speicher 2 MWh“ \(−52 Minuten am Limit\)/);
+    expect(a).toMatch(
+      /^Am meisten hilft „5 Schlepper mehr“: 18,0 Prozentpunkte mehr Abflüge pünktlich\./,
+    );
+    expect(a).toMatch(/Der Haken: Der Anschluss ist damit 19 Minuten länger am Limit/);
+    expect(a).toMatch(
+      /Limit\. Den Anschluss entlastet „Batteriespeicher 2 MWh“ am meisten: 52 Minuten weniger am Limit/,
+    );
   });
   it("sagt ausdrücklich, wenn keine Variante die Pünktlichkeit verbessert", () => {
     const vs = sampleVariants().map((v) => (v.kind === "basis" ? v : { ...v, onTimePct: 78.2 }));
     expect(variantsAnswer(vs)).toMatch(
-      /^Keine Variante verbessert die Pünktlichkeit; Netz entlastet am stärksten: „Speicher 2 MWh“ \(−52 Minuten am Limit\)\./,
+      /^Keine Lösung macht die Abflüge pünktlicher\. Den Anschluss entlastet „Batteriespeicher 2 MWh“ am meisten: 52 Minuten weniger am Limit\./,
     );
   });
 });
@@ -156,7 +162,7 @@ describe("Austausch-Status", () => {
     expect(whoseTurn(vorgeschlagen!)).toBe("lab");
     expect(whoseTurn({ ...vorgeschlagen!, from: "lab" })).toBe("flughafen");
     expect(whoseTurn(erledigt!)).toBeNull();
-    expect(exchangeAnswer(items)).toBe("2 offen: 2 Punkte beim Lab.");
+    expect(exchangeAnswer(items)).toBe("2 Punkte warten auf das Lab.");
   });
   it("übersetzt API-Items aus dem Vertrag", () => {
     const item = exchangeFromApi({
@@ -220,7 +226,9 @@ describe("Austausch-Status", () => {
     })!;
     expect(s.kind).toBe("bezug");
     expect(s.windows).toEqual([{ start: 360, end: 390, peakKw: 3500, deficitKw: 0 }]);
-    expect(bottleneckAnswer(s)).toBe("Zwischen 06:00 und 06:30 liegt der Anschluss am Limit.");
+    expect(bottleneckAnswer(s)).toBe(
+      "Zwischen 06:00 und 06:30 Uhr ist der Anschluss voll ausgereizt.",
+    );
     expect(situationFromApi(SAMPLE_PROJECT, { available: false, series: [] })).toBeNull();
   });
 });
@@ -229,7 +237,7 @@ describe("Oberfläche", () => {
   it("navigiert über die vier Fragen und beginnt jede mit dem Antwortsatz", async () => {
     openApp(`?projekt=${SAMPLE_PROJECT.id}&frage=lage`);
     expect(
-      await screen.findByRole("heading", { level: 1, name: /tragfähig bis auf ein Fenster/ }),
+      await screen.findByRole("heading", { level: 1, name: /Knapp wird es zwischen/ }),
     ).toBeVisible();
     const nav = screen.getByRole("navigation", { name: "Vier Fragen des Projekts" });
     expect(within(nav).getAllByRole("link")).toHaveLength(4);
@@ -242,26 +250,28 @@ describe("Oberfläche", () => {
       "aria-current",
       "page",
     );
-    expect(screen.getAllByText("Beispieldaten").length).toBeGreaterThan(0);
-    fireEvent.click(within(nav).getByRole("link", { name: /Varianten/ }));
+    expect(screen.getAllByText("Beispielwerte").length).toBeGreaterThan(0);
+    fireEvent.click(within(nav).getByRole("link", { name: /Lösungen/ }));
     expect(
-      await screen.findByRole("heading", { level: 1, name: /hilft am meisten/ }),
+      await screen.findByRole("heading", { level: 1, name: /Am meisten hilft/ }),
     ).toBeVisible();
-    fireEvent.click(within(nav).getByRole("link", { name: /Nachweis/ }));
+    fireEvent.click(within(nav).getByRole("link", { name: /Zusage/ }));
     expect(
-      await screen.findByRole("heading", { level: 1, name: /erst nach dem Datenpilot/ }),
+      await screen.findByRole("heading", { level: 1, name: /erst nach einer Messung/ }),
     ).toBeVisible();
-    await waitFor(() => expect(document.title).toBe("Nachweis · Airport Energy Check"));
+    await waitFor(() => expect(document.title).toBe("Zusage · Airport Energy Check"));
     // Kunde sieht nur den Pruefstatus, ohne Lab-Aktionen.
     expect(
-      await screen.findByText("2 Punkte beim Testing-Lab in Prüfung, 1 geprüft.", {
+      await screen.findByText("Das Testing-Lab prüft gerade 2 Punkte. Einer ist schon geprüft.", {
         exact: false,
       }),
     ).toBeVisible();
-    const status = screen.getByRole("heading", { level: 2, name: "Prüfstatus beim Testing-Lab" })
-      .parentElement!.parentElement!;
+    const status = screen.getByRole("heading", {
+      level: 2,
+      name: "Was das Testing-Lab gerade prüft",
+    }).parentElement!.parentElement!;
     expect(within(status).queryByRole("button", { name: /erledigt|Annehmen/ })).toBeNull();
-    expect(within(status).getByRole("button", { name: "Prüfung anfragen" })).toBeVisible();
+    expect(within(status).getByRole("button", { name: "Anfrage senden" })).toBeVisible();
   });
 
   it("leitet den alten Schritt Abgleich in den Lab-Raum um", () => {
@@ -281,16 +291,18 @@ describe("Oberfläche", () => {
     expect(await screen.findByText("Testing-Lab · interner Prüfraum")).toBeVisible();
     await waitFor(() => expect(document.title).toBe("Testing-Lab · Airport Energy Check"));
     expect(
-      await screen.findByRole("heading", { level: 1, name: "2 offen: 2 Punkte beim Lab." }),
+      await screen.findByRole("heading", { level: 1, name: "2 Punkte warten auf das Lab." }),
     ).toBeVisible();
     const msg = screen.getByRole("article", { name: "Ladepunkt 150 kW unter Spitzenwelle prüfen" });
     expect(within(msg).getByText(/Am Zug:/)).toHaveTextContent("Am Zug: Testing-Lab");
-    expect(screen.getByRole("heading", { level: 2, name: "Was prüfen wir?" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Was sollen wir prüfen?" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 2, name: "Was wurde gemessen?" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 2, name: "Stimmt das Modell?" })).toBeVisible();
     expect(screen.getByText("Noch nicht geprüft.")).toBeVisible();
     // Rollenschalter nur eingeklappt unter „Vorführung“.
-    const demo = screen.getByText("Vorführung: Ansicht wechseln").closest("details")!;
+    const demo = screen
+      .getByText("Für Vorführungen: aus Sicht von Flughafen oder Lab")
+      .closest("details")!;
     expect(demo).not.toHaveAttribute("open");
     fireEvent.click(within(demo).getByRole("radio", { name: "Flughafen" }));
     expect(within(msg).queryByRole("button")).toBeNull();
@@ -298,7 +310,7 @@ describe("Oberfläche", () => {
     fireEvent.click(within(msg).getByRole("button", { name: "Als erledigt melden" }));
     expect(await within(msg).findByText("abgeschlossen")).toBeVisible();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "1 offen: ein Punkt beim Lab.",
+      "Ein Punkt wartet auf das Lab.",
     );
   });
 
@@ -309,12 +321,12 @@ describe("Oberfläche", () => {
     for (const c of SCENARIO_CASES)
       expect(screen.getByRole("heading", { name: c.name })).toBeVisible();
     expect(document.querySelectorAll(".aec-sv[data-viz]")).toHaveLength(8);
-    fireEvent.click(screen.getByRole("button", { name: "Enteisung in Projekt übernehmen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enteisung ins Projekt holen" }));
     expect(
-      await screen.findByText(/„Enteisung“ ist in MUC · Vorfeld Süd \(Beispiel\) übernommen/),
+      await screen.findByText(/„Enteisung“ liegt jetzt in MUC · Vorfeld Süd \(Beispiel\)/),
     ).toBeVisible();
     expect(screen.getByText(/Kälte: Akkukapazität aller Fahrzeuge −20 %/)).toBeVisible();
-    fireEvent.click(screen.getByRole("link", { name: "In C als Stresstest rechnen" }));
+    fireEvent.click(screen.getByRole("link", { name: "Jetzt durchrechnen" }));
     await waitFor(() => expect(window.location.search).toMatch(/frage=varianten&krise=enteisung/));
   });
 
@@ -331,10 +343,10 @@ describe("Oberfläche", () => {
     fireEvent.change(screen.getByLabelText("Projektname"), {
       target: { value: "HAM · Vorfeld Nord" },
     });
-    fireEvent.change(screen.getByLabelText("Flughafen und Netzabgang"), {
+    fireEvent.change(screen.getByLabelText("Flughafen und Anschlusspunkt"), {
       target: { value: "Hamburg" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Anlegen/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Projekt anlegen" }));
     await waitFor(() => expect(window.location.search).toMatch(/projekt=lokal-.*frage=daten/));
   });
 });
@@ -342,11 +354,13 @@ describe("Oberfläche", () => {
 describe("Lagebild", () => {
   it("lässt sich mit der Tastatur durch den Tag bewegen", () => {
     render(<DayLandscape situation={sampleSituation()} />);
-    const slider = screen.getByRole("slider", { name: "Tageszeit im Lagebild" });
+    const slider = screen.getByRole("slider", { name: "Uhrzeit im Tagesverlauf" });
     act(() => slider.focus());
     fireEvent.keyDown(slider, { key: "Home" });
     expect(slider).toHaveAttribute("aria-valuenow", "0");
-    expect(slider.getAttribute("aria-valuetext")).toMatch(/^00:00 Uhr: Bedarf .* Reserve/);
+    expect(slider.getAttribute("aria-valuetext")).toMatch(
+      /^00:00 Uhr: Strombedarf .* noch .* frei/,
+    );
     fireEvent.keyDown(slider, { key: "PageUp" });
     fireEvent.keyDown(slider, { key: "ArrowRight" });
     expect(slider).toHaveAttribute("aria-valuenow", "65");
@@ -358,6 +372,6 @@ describe("Lagebild", () => {
   it("meldet im Engpassfenster die fehlende Leistung", () => {
     render(<DayLandscape situation={sampleSituation()} />);
     const slider = screen.getByRole("slider");
-    expect(slider.getAttribute("aria-valuetext")).toMatch(/es fehlen .*Engpassfenster/);
+    expect(slider.getAttribute("aria-valuetext")).toMatch(/es fehlen .*knappe Phase/);
   });
 });

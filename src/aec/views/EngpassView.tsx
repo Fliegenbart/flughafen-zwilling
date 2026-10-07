@@ -25,16 +25,16 @@ export default function EngpassView({ situation, route }: ViewProps) {
     <>
       <AnswerHead
         id="aec-view-title"
-        question="Engpass · Wo wird es eng?"
+        question="Engpass · Wann reicht der Anschluss nicht?"
         answer={bottleneckAnswer(situation)}
         lead={
           k.windows.length
-            ? `Der Anschluss liegt ${int(k.minutesAtLimit)} Minuten am Limit. ${
+            ? `Insgesamt ${int(k.minutesAtLimit)} Minuten lang ist der Anschluss ausgereizt. ${
                 situation.delayedDepartures === 0
-                  ? "Kein Abflug wird dadurch verspätet abgefertigt; die Reserve ist aber aufgebraucht."
+                  ? "Noch wird jeder Abflug rechtzeitig fertig, aber Luft ist keine mehr."
                   : vehicle >= 50
-                    ? `Nur ${energy} % der Verspätungen sind energiebedingt; der eigentliche Engpass sind freie Fahrzeuge in der Flugwelle.`
-                    : `${energy} % der Verspätungen sind energiebedingt.`
+                    ? `Nur ${energy} % der Verspätungen liegen am Strom. Meist fehlt in der Abflugwelle schlicht ein freies Fahrzeug.`
+                    : `${energy} % der Verspätungen liegen am Strom.`
               }`
             : undefined
         }
@@ -44,7 +44,7 @@ export default function EngpassView({ situation, route }: ViewProps) {
           {
             value: int(k.minutesAtLimit),
             unit: "min",
-            label: `am Anschlusslimit (${powerText(situation.gridLimitKw)})`,
+            label: `Minuten ist der Anschluss (${powerText(situation.gridLimitKw)}) ausgereizt`,
             tone: k.minutesAtLimit ? "signal" : undefined,
           },
           {
@@ -52,33 +52,37 @@ export default function EngpassView({ situation, route }: ViewProps) {
             unit: deficit.unit,
             label:
               situation.kind === "bedarf" && k.worst
-                ? "Bedarf über Anschlussgrenze (Spitze)"
-                : "Spitzenlast Laden + Grundlast",
+                ? "fehlen in der Spitze"
+                : "höchster Strombedarf",
           },
-          { value: int(situation.delayedDepartures), label: "Abflüge mit verspäteter Abfertigung" },
+          { value: int(situation.delayedDepartures), label: "Abflüge nicht rechtzeitig fertig" },
           situation.delayedDepartures
-            ? { value: `${vehicle}`, unit: "%", label: "davon Ursache Fahrzeugverfügbarkeit" }
-            : { value: int(affected), label: "Abflüge im Engpassfenster" },
+            ? { value: `${vehicle}`, unit: "%", label: "davon, weil kein Fahrzeug frei war" }
+            : { value: int(affected), label: "Abflüge in knappen Phasen" },
         ]}
       />
       <div className="aec-stage">
         <DayLandscape
           situation={situation}
           size="panel"
-          label="Engpass im Tagesverlauf, Tageszeit wählen"
+          label="Knappe Phasen im Tagesverlauf, Uhrzeit wählen"
         />
       </div>
 
-      <Section title="Strom oder Fahrzeuge?" kicker="Ursache der Verspätungen" id="engpass-cause">
+      <Section
+        title="Fehlt Strom oder fehlen Fahrzeuge?"
+        kicker="Warum Abflüge warten"
+        id="engpass-cause"
+      >
         {situation.delayedDepartures === 0 ? (
           <p className="aec-muted">
-            Keine verspätete Abfertigung im gerechneten Tag – weder Strom noch Fahrzeuge bremsen.
+            An diesem Tag wartet kein Abflug. Weder Strom noch Fahrzeuge werden knapp.
           </p>
         ) : (
           <div
             className="aec-split"
             role="img"
-            aria-label={`Ursachen: ${energy} Prozent Energie, ${vehicle} Prozent Fahrzeugverfügbarkeit`}
+            aria-label={`Warum Abflüge warten: ${energy} Prozent wegen Strom, ${vehicle} Prozent wegen fehlender Fahrzeuge`}
           >
             <span className="aec-split__energy" style={{ flexGrow: Math.max(energy, 2) }}>
               <b>{energy} %</b> Strom
@@ -90,7 +94,11 @@ export default function EngpassView({ situation, route }: ViewProps) {
         )}
       </Section>
 
-      <Section title="Engpassfenster" kicker={`${k.windows.length} am Tag`} id="engpass-windows">
+      <Section
+        title={k.windows.length === 1 ? "Die knappe Phase" : "Die knappen Phasen"}
+        kicker={`${k.windows.length} an diesem Tag`}
+        id="engpass-windows"
+      >
         {k.windows.length ? (
           <ol className="aec-windows">
             {k.windows.map((w) => (
@@ -101,26 +109,26 @@ export default function EngpassView({ situation, route }: ViewProps) {
                 <span>{int(w.end - w.start)} min</span>
                 <span>
                   {situation.kind === "bedarf"
-                    ? `bis ${powerText(w.deficitKw)} fehlen`
+                    ? `bis zu ${powerText(w.deficitKw)} fehlen`
                     : `Spitze ${powerText(w.peakKw)}`}
                 </span>
-                <span>{departuresInWindows(situation, [w])} Abflüge betroffen</span>
+                <span>{departuresInWindows(situation, [w])} Abflüge in dieser Zeit</span>
               </li>
             ))}
           </ol>
         ) : (
-          <p className="aec-muted">Kein Fenster: der Bedarf bleibt unter der Anschlussgrenze.</p>
+          <p className="aec-muted">Keine. Der Anschluss reicht den ganzen Tag.</p>
         )}
-        <p className="aec-muted">Im Engpass liegen {int(affected)} Abflüge.</p>
+        <p className="aec-muted">In knappen Phasen starten {int(affected)} Abflüge.</p>
         <Link
           to={{ page: "projekt", projekt: route.projekt, frage: "varianten" }}
           className="aec-button"
         >
-          Varianten dagegen rechnen
+          Lösungen durchrechnen
         </Link>
       </Section>
 
-      <Details summary="Werkstatt: gekoppeltes Modell und Regelvergleich">
+      <Details summary="Für Fachleute: Flugplan, Fahrzeuge und Laden im Zusammenspiel">
         <WerkstattLinks items={["betrieb"]} base={route} />
       </Details>
     </>

@@ -12,12 +12,12 @@ export function customerState(item: ExchangeItem): "geprüft" | "in Prüfung" | 
 }
 
 export function pruefAnswer(items: ExchangeItem[]): string {
-  if (!items.length) return "Noch nichts beim Testing-Lab in Prüfung.";
+  if (!items.length) return "Das Testing-Lab hat noch nichts zu prüfen.";
   const running = items.filter((i) => customerState(i) === "in Prüfung").length;
   const checked = items.filter((i) => customerState(i) === "geprüft").length;
   if (!running)
-    return `${checked === 1 ? "Ein Punkt" : `${checked} Punkte`} vom Testing-Lab geprüft.`;
-  return `${running === 1 ? "Ein Punkt" : `${running} Punkte`} beim Testing-Lab in Prüfung, ${checked} geprüft.`;
+    return `Das Testing-Lab hat ${checked === 1 ? "einen Punkt" : `${checked} Punkte`} geprüft, nichts ist offen.`;
+  return `Das Testing-Lab prüft gerade ${running === 1 ? "einen Punkt" : `${running} Punkte`}. ${checked === 1 ? "Einer ist" : `${checked} sind`} schon geprüft.`;
 }
 
 /**
@@ -43,12 +43,12 @@ export default function Pruefstatus({ project }: { project: Project }) {
     const f = new FormData(form);
     const question = String(f.get("question") ?? "").trim();
     const component = String(f.get("component") ?? "").trim();
-    if (!question) return setError("Bitte beschreiben, was geprüft werden soll.");
+    if (!question) return setError("Bitte schreiben Sie kurz, was geprüft werden soll.");
     setError("");
     try {
       const item = await proposeTest(project, question, component);
       setItems((prev) => [item, ...(prev ?? [])]);
-      setMsg("Prüfung angefragt. Das Testing-Lab meldet sich mit dem Ergebnis.");
+      setMsg("Angefragt. Das Testing-Lab meldet sich mit dem Ergebnis.");
       form.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Anfrage fehlgeschlagen");
@@ -57,8 +57,8 @@ export default function Pruefstatus({ project }: { project: Project }) {
 
   const list = items ?? [];
   return (
-    <Section title="Prüfstatus beim Testing-Lab" kicker="Was ist geprüft?" id="pruefstatus">
-      <p className="aec-pruef__answer">{items ? pruefAnswer(list) : "Prüfstatus wird geladen…"}</p>
+    <Section title="Was das Testing-Lab gerade prüft" kicker="Prüfstand" id="pruefstatus">
+      <p className="aec-pruef__answer">{items ? pruefAnswer(list) : "Wird geladen …"}</p>
       {list.length ? (
         <ul className="aec-pruef">
           {list.map((item) => {
@@ -82,9 +82,9 @@ export default function Pruefstatus({ project }: { project: Project }) {
         </p>
       ) : null}
       <form className="aec-ask" onSubmit={ask} aria-labelledby="ask-title">
-        <h3 id="ask-title">Prüfung beim Testing-Lab anfragen</h3>
+        <h3 id="ask-title">Etwas prüfen lassen</h3>
         <label>
-          Was soll geprüft werden?
+          Was soll das Lab klären?
           <input
             name="question"
             placeholder="Hält der Ladepark die Abflugwelle 06–08 Uhr?"
@@ -92,15 +92,15 @@ export default function Pruefstatus({ project }: { project: Project }) {
           />
         </label>
         <label>
-          Komponente
+          Um welches Gerät geht es?
           <input name="component" placeholder="Bus-Ladepunkt 150 kW" autoComplete="off" />
         </label>
         <button type="submit" className="aec-button">
-          Prüfung anfragen
+          Anfrage senden
         </button>
         <p className="aec-fine">
-          Übergangslösung, bis das System Prüfaufträge selbst anlegt. Versuchsentwurf, Freigabe
-          durch das Lab.
+          Das Lab plant den Versuch und meldet sich. Bald erkennt das System selbst, wann etwas
+          geprüft werden muss.
         </p>
       </form>
     </Section>

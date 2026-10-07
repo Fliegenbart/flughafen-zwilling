@@ -114,7 +114,7 @@ export const EMPTY_INPUTS: DataInputs = {
 };
 
 export const STATE_LABEL: Record<DataState, string> = {
-  echt: "echt",
+  echt: "belegt",
   annahme: "Annahme",
   fehlt: "fehlt",
 };
@@ -134,7 +134,7 @@ function flugplan(inp: DataInputs): DataItem {
   const base = {
     id: "flugplan" as const,
     title: "Flugplan",
-    evidenceDetail: "Veröffentlichter Plan, keine Ist-Bewegungen.",
+    evidenceDetail: "Der veröffentlichte Plan, nicht was tatsächlich geflogen wurde.",
   };
   if (!plan)
     return {
@@ -143,22 +143,22 @@ function flugplan(inp: DataInputs): DataItem {
       source: null,
       date: null,
       evidence: "assumption",
-      detail: "Ohne Flugplan rechnet das Modell nicht mit echten Flugwellen.",
+      detail: "Ohne Flugplan rechnen wir mit ausgedachten Abflugwellen.",
       warnings: [],
     };
   const warnings =
     plan.sharedGroups > 0
       ? [
-          `${plan.sharedGroups} ungeklärte Mehrfachgruppen (mögliche Codeshares). Der gekoppelte Lauf blockiert, bis sie als unabhängige Einträge bestätigt sind.`,
+          `${plan.sharedGroups} Flüge stehen womöglich mehrfach drin (Codeshares). Bevor wir rechnen können, muss jemand bestätigen, dass es eigene Flüge sind.`,
         ]
       : [];
   return {
     ...base,
     state: "echt",
-    source: "Offizieller Saisonflugplan (PDF), manueller Import",
-    date: `Verkehrstag ${deDate(plan.serviceDate)}, Stand ${deDate(plan.sourceDataDate)}`,
+    source: "Offizieller Saisonflugplan (PDF), von Hand eingelesen",
+    date: `gerechneter Tag ${deDate(plan.serviceDate)}, Plan vom ${deDate(plan.sourceDataDate)}`,
     evidence: "assumption",
-    detail: `${plan.departures} Abflug- und ${plan.arrivals} Ankunftseinträge.`,
+    detail: `${plan.departures} Abflüge und ${plan.arrivals} Ankünfte.`,
     warnings,
   };
 }
@@ -167,9 +167,9 @@ function flotte(inp: DataInputs): DataItem {
   const a = inp.assets;
   const base = {
     id: "flotte" as const,
-    title: "Flotte und Anlagen",
+    title: "Fahrzeuge und Anlagen",
     evidence: "assumption" as EvidenceLevel,
-    evidenceDetail: "Stammdaten, nicht gemessen.",
+    evidenceDetail: "Bestandsangaben, nicht gemessen.",
   };
   if (!a || a.entries.length === 0)
     return {
@@ -177,7 +177,7 @@ function flotte(inp: DataInputs): DataItem {
       state: "fehlt",
       source: null,
       date: null,
-      detail: "Das Modell nutzt Standardannahmen für Fahrzeuge, Ladepunkte und Anschluss.",
+      detail: "Wir rechnen mit Standardwerten für Fahrzeuge, Ladepunkte und Anschluss.",
       warnings: [],
     };
   const sources = [...new Set(a.entries.map((e) => e.source).filter(Boolean))];
@@ -192,18 +192,18 @@ function flotte(inp: DataInputs): DataItem {
   const warnings: string[] = [];
   if (open.length)
     warnings.push(
-      `${open.length} ${open.length === 1 ? "Wert ohne Quelle bleibt Annahme" : "Werte ohne Quelle bleiben Annahmen"}: ${open
+      `${open.length} ${open.length === 1 ? "Wert hat noch keine Quelle und bleibt eine Annahme" : "Werte haben noch keine Quelle und bleiben Annahmen"}: ${open
         .map((e) => e.label)
         .join(", ")}.`,
     );
-  if (!hasGrid) warnings.push("Netzanschluss fehlt.");
-  if (!hasFleet) warnings.push("Keine Fahrzeugzahl angegeben.");
+  if (!hasGrid) warnings.push("Es fehlt die Leistung des Netzanschlusses.");
+  if (!hasFleet) warnings.push("Es fehlt, wie viele Fahrzeuge es gibt.");
   return {
     ...base,
     state,
     source: sources.length ? sources.join(" · ") : null,
     date: dates.length ? `Quelle vom ${deDate(dates[dates.length - 1])}` : null,
-    detail: `${a.entries.length} Projektwerte, wirken auf die Varianten-Basis.`,
+    detail: `${a.entries.length} Werte hinterlegt. Sie fließen in jede neue Berechnung ein.`,
     warnings,
   };
 }
@@ -213,10 +213,10 @@ function messdaten(inp: DataInputs): DataItem {
   const valid = own.filter((i) => i.valid);
   const rejected = own.filter((i) => !i.valid);
   const last = latest(valid, (i) => i.createdAt);
-  const base = { id: "messdaten" as const, title: "Messdaten Flughafen" };
+  const base = { id: "messdaten" as const, title: "Messungen am Flughafen" };
   const warnings = rejected.length
     ? [
-        `${rejected.length} ${rejected.length === 1 ? "Import abgewiesen" : "Importe abgewiesen"} (zählt nicht): ${[
+        `${rejected.length} ${rejected.length === 1 ? "Datei war nicht verwendbar" : "Dateien waren nicht verwendbar"} und ${rejected.length === 1 ? "zählt" : "zählen"} nicht: ${[
           ...new Set(rejected.flatMap((i) => i.issues)),
         ]
           .slice(0, 3)
@@ -231,13 +231,16 @@ function messdaten(inp: DataInputs): DataItem {
       source: null,
       date: null,
       evidence: "assumption",
-      evidenceDetail: "Ohne Messdaten bleibt das Modell unkalibriert.",
-      detail: "Ohne Lastgang ist kein Abgleich mit der Wirklichkeit möglich.",
+      evidenceDetail: "Ohne Messung ist das Modell nicht abgestimmt (unkalibriert).",
+      detail:
+        "Ohne gemessenen Strombedarf können wir das Modell nicht mit der Wirklichkeit vergleichen.",
       warnings,
     };
   const roles = new Set(valid.map((i) => i.role));
   if (!inp.tolerances?.locked && roles.has("holdout"))
-    warnings.push("Holdout vorhanden, aber Abnahmekriterien nicht gesperrt: kein PASS möglich.");
+    warnings.push(
+      "Es gibt eine Prüfmessung, aber noch keine festgelegten Grenzen. So kann sie das Modell nicht bestätigen.",
+    );
   return {
     ...base,
     state: "echt",
@@ -245,24 +248,30 @@ function messdaten(inp: DataInputs): DataItem {
     date:
       last.first && last.last
         ? `${deDate(last.first)} bis ${deDate(last.last)}`
-        : `Import ${deDate(last.createdAt)}`,
+        : `eingelesen am ${deDate(last.createdAt)}`,
     evidence: inp.holdoutPass ? "empirical_passed" : "empirical_open",
     evidenceDetail: inp.holdoutPass
-      ? "Holdout erfüllt die vorab gesperrten Kriterien."
-      : "Messdaten liegen vor; ein Nachweis braucht Holdout und gesperrte Kriterien.",
+      ? "Die Prüfmessung hält die vorher festgelegten Grenzen ein."
+      : "Messungen liegen vor. Bestätigen kann das Modell erst eine Prüfmessung mit vorher festgelegten Grenzen.",
     detail: [
-      roles.has("calibration") ? "Kalibrierung" : null,
-      roles.has("holdout") ? "Holdout" : null,
+      roles.has("calibration") ? "Zum Abstimmen" : null,
+      roles.has("holdout")
+        ? roles.has("calibration")
+          ? "als Prüfmessung"
+          : "Als Prüfmessung"
+        : null,
     ]
       .filter(Boolean)
       .join(" und ")
-      .concat(`, ${valid.length} ${valid.length === 1 ? "gültiger Import" : "gültige Importe"}.`),
+      .concat(
+        `, ${valid.length} ${valid.length === 1 ? "verwendbare Messreihe" : "verwendbare Messreihen"}.`,
+      ),
     warnings,
   };
 }
 
 function lab(inp: DataInputs): DataItem {
-  const base = { id: "lab" as const, title: "Lab-Messungen" };
+  const base = { id: "lab" as const, title: "Messungen im Testing-Lab" };
   const measured = inp.labRuns.filter((r) => r.source === "csv_import");
   const done = latest(
     measured.filter((r) => r.state === "completed"),
@@ -271,27 +280,31 @@ function lab(inp: DataInputs): DataItem {
   const pending = measured.filter((r) => r.state === "queued" || r.state === "running");
   const failed = measured.filter((r) => r.state === "failed");
   const warnings: string[] = [];
-  if (pending.length) warnings.push(`${pending.length} Import wird noch ausgewertet.`);
+  if (pending.length)
+    warnings.push(
+      `${pending.length === 1 ? "Eine Messung wird" : `${pending.length} Messungen werden`} noch ausgewertet.`,
+    );
   if (failed.length)
     warnings.push(
-      `${failed.length} Import fehlgeschlagen (zählt nicht)${failed[0]?.error ? `: ${failed[0].error}` : "."}`,
+      `${failed.length === 1 ? "Eine Messung ließ" : `${failed.length} Messungen ließen`} sich nicht auswerten und ${failed.length === 1 ? "zählt" : "zählen"} nicht${failed[0]?.error ? `: ${failed[0].error}` : "."}`,
     );
   if (done) {
     if (done.qualityReasons.length)
-      warnings.push(`Datenqualität eingeschränkt: ${done.qualityReasons.join(" ")}`);
+      warnings.push(`Die Messung hat Schwächen: ${done.qualityReasons.join(" ")}`);
     return {
       ...base,
       state: "echt",
       source: done.filename ?? "FlexLab-CSV",
-      date: `Import ${deDate(done.createdTs)}`,
+      date: `eingelesen am ${deDate(done.createdTs)}`,
       evidence: "empirical_open",
-      evidenceDetail: "Lab-Messung einer Komponente; kein Nachweis für den Flughafen.",
+      evidenceDetail:
+        "Gemessen an einem Gerät im Lab. Das sagt noch nichts über den ganzen Flughafen.",
       detail:
         done.verdict === "pass"
-          ? "Prüfkriterien des Lab-Falls erfüllt."
+          ? "Das Gerät hat den Versuch bestanden."
           : done.verdict === "fail"
-            ? "Prüfkriterien des Lab-Falls nicht erfüllt."
-            : "Nicht eindeutig auswertbar.",
+            ? "Das Gerät hat den Versuch nicht bestanden."
+            : "Das Ergebnis ist nicht eindeutig.",
       warnings,
     };
   }
@@ -302,19 +315,19 @@ function lab(inp: DataInputs): DataItem {
     source: simulated ? "FlexLab-Simulation" : null,
     date: null,
     evidence: simulated ? "synthetic" : "assumption",
-    evidenceDetail: simulated ? "Simulation, keine Messung." : "Noch keine Lab-Messung.",
+    evidenceDetail: simulated ? "Simuliert, nicht gemessen." : "Noch nicht im Lab gemessen.",
     detail: simulated
-      ? "Nur simulierte Lab-Läufe verknüpft."
-      : "Ohne Lab-Messung bleibt offen, wie sich echte Komponenten verhalten.",
+      ? "Bisher gibt es nur simulierte Versuche."
+      : "Ohne Messung im Lab bleibt offen, wie sich die echten Geräte verhalten.",
     warnings,
   };
 }
 
 const MISSING_TEXT: Record<DataItemId, string> = {
   flugplan: "der offizielle Flugplan",
-  flotte: "Angaben zu Flotte und Anlagen",
-  messdaten: "Messdaten vom Flughafen",
-  lab: "Messdaten aus dem Lab",
+  flotte: "Angaben zu Fahrzeugen und Anlagen",
+  messdaten: "Messungen vom Flughafen",
+  lab: "Messungen aus dem Testing-Lab",
 };
 
 /** Aufzaehlung; enthaelt ein Teil schon "und", verbindet das letzte Glied mit "sowie". */
@@ -327,10 +340,10 @@ export function dataAnswer(items: DataItem[]): string {
   const real = items.filter((i) => i.state === "echt").length;
   const head =
     real === items.length
-      ? `Alle ${items.length} Datenquellen sind echt.`
+      ? `Alle ${items.length} Datenquellen sind mit Quelle belegt.`
       : real === 0
-        ? `Noch keine der ${items.length} Datenquellen ist echt.`
-        : `${real} von ${items.length} ${real === 1 ? "Datenquellen ist" : "Datenquellen sind"} echt.`;
+        ? `Noch ist keine der ${items.length} Datenquellen belegt. Wir rechnen mit Annahmen.`
+        : `${real} von ${items.length} Datenquellen ${real === 1 ? "ist" : "sind"} belegt.`;
   const missing = items.filter((i) => i.state === "fehlt").map((i) => i.id);
   const assumed = items.filter((i) => i.state === "annahme").map((i) => i.id);
   const parts: string[] = [head];
@@ -340,16 +353,14 @@ export function dataAnswer(items: DataItem[]): string {
     if (ids.has("messdaten") && ids.has("lab")) {
       for (const id of missing)
         if (id !== "messdaten" && id !== "lab") texts.push(MISSING_TEXT[id]);
-      texts.push("Messdaten vom Flughafen und aus dem Lab");
+      texts.push("Messungen vom Flughafen und aus dem Testing-Lab");
     } else texts.push(...missing.map((id) => MISSING_TEXT[id]));
     const plural = texts.length > 1 || !texts[0]!.startsWith("der ");
     parts.push(`Es ${plural ? "fehlen" : "fehlt"} ${join(texts)}.`);
   }
   if (assumed.length)
     parts.push(
-      `${join(assumed.map((id) => items.find((i) => i.id === id)!.title))} ${
-        assumed.length > 1 ? "stehen" : "steht"
-      } noch auf Annahmen.`,
+      `Noch mit Annahmen gerechnet: ${join(assumed.map((id) => items.find((i) => i.id === id)!.title))}.`,
     );
   return parts.join(" ");
 }
@@ -378,18 +389,19 @@ export function importError(detail: string): string {
   const d = detail.trim();
   if (d.startsWith("invalid_assets: ")) return d.slice("invalid_assets: ".length);
   if (d.startsWith("role_forbidden"))
-    return "Ihre Rolle darf hier keine Daten eintragen. Flughafen- oder Admin-Rolle wählen.";
-  if (/csv_text exceeds|5 MiB/.test(d)) return "Die Datei ist größer als 5 MiB.";
-  if (/filename must not contain a path/.test(d)) return "Dateiname darf keinen Pfad enthalten.";
+    return "Aus dieser Ansicht lassen sich keine Daten eintragen. Wechseln Sie zur Flughafen-Ansicht.";
+  if (/csv_text exceeds|5 MiB/.test(d)) return "Die Datei ist größer als 5 MB.";
+  if (/filename must not contain a path/.test(d))
+    return "Der Dateiname darf keinen Ordnerpfad enthalten.";
   if (/measurement_boundary|source_note/.test(d) && /blank|empty|at least/.test(d))
-    return "Bitte Messgrenze und Quelle angeben.";
-  if (/project not found/i.test(d)) return "Projekt nicht gefunden.";
-  if (/already exists/.test(d)) return "Diese Datei ist bereits mit dem Projekt verknüpft.";
-  if (/^API-Fehler 413|too large|groesser|größer/i.test(d))
-    return "Die Datei ist zu groß für diesen Import.";
-  if (/^API-Fehler 5\d\d/.test(d)) return "Der Server konnte die Datei nicht verarbeiten.";
+    return "Bitte sagen Sie, wo gemessen wurde und woher die Daten stammen.";
+  if (/project not found/i.test(d)) return "Dieses Projekt gibt es nicht mehr.";
+  if (/already exists/.test(d)) return "Diese Datei gehört schon zum Projekt.";
+  if (/^API-Fehler 413|too large|groesser|größer/i.test(d)) return "Die Datei ist zu groß.";
+  if (/^API-Fehler 5\d\d/.test(d))
+    return "Der Server konnte die Datei nicht verarbeiten. Bitte versuchen Sie es später noch einmal.";
   if (/Failed to fetch|NetworkError|aborted/i.test(d))
-    return "Keine Verbindung zum Server. Bitte später erneut versuchen.";
+    return "Keine Verbindung zum Server. Bitte versuchen Sie es gleich noch einmal.";
   if (/^[a-z_]+$/.test(d)) return issueLabel(d);
   return d;
 }
@@ -407,7 +419,7 @@ export const DEFAULT_FLEET = [
   { kind: "bus", label: "Busse", vehicles: 20, chargers: 8 },
   { kind: "baggage_tractor", label: "Gepäckschlepper", vehicles: 35, chargers: 12 },
   { kind: "pushback_tug", label: "Pushback-Schlepper", vehicles: 10, chargers: 4 },
-  { kind: "gpu", label: "GPU", vehicles: 35, chargers: 10 },
+  { kind: "gpu", label: "Bodenstromgeräte", vehicles: 35, chargers: 10 },
 ] as const;
 export const MAX_FLEET = 300;
 

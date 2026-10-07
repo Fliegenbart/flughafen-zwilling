@@ -9,23 +9,29 @@ const MunichApp = lazy(() => import("../munich/MunichPilot"));
 
 export const WERKSTATT_LABEL: Record<W, { title: string; hint: string }> = {
   system: {
-    title: "Systemlandkarte und Flugplan",
-    hint: "Netz, PV, BHKW, Speicher, Ladeabgänge, Flugplan-Import",
+    title: "Anlagenplan und Flugplan",
+    hint: "Netz, Photovoltaik, Blockheizkraftwerk, Speicher und Ladepunkte; Flugplan einlesen",
   },
   betrieb: {
-    title: "Gekoppeltes Modell",
-    hint: "Flugplan → Aufträge → Fahrzeuge → Laden → Netz, Regelvergleich",
+    title: "Zusammenspiel im Betrieb",
+    hint: "Vom Flugplan über Aufträge und Fahrzeuge bis zum Laden; Laderegeln vergleichen",
   },
-  robustheit: { title: "Stresstests", hint: "Vier Varianten, zwei Laderegeln, gleicher Flugplan" },
+  robustheit: {
+    title: "Belastungsproben",
+    hint: "Vier Störungen, zwei Laderegeln, derselbe Flugplan",
+  },
   pilot: {
-    title: "Messdaten-Abgleich",
-    hint: "Frage, vorab gesperrte Kriterien, Holdout-Messdaten, Testpaket",
+    title: "Modell gegen Messung",
+    hint: "Grenzen vorab festlegen, Prüfmessung einlesen, Ergebnis als Paket",
   },
-  nachweise: { title: "Prüfprotokoll", hint: "Läufe, Welt-Hashes, Engine-Version, Exporte" },
-  flexlab: { title: "Lab-Werkbank (FlexLab)", hint: "Messdaten realer Komponenten, read-only" },
+  nachweise: {
+    title: "Prüfprotokoll",
+    hint: "Jede Berechnung mit Fingerabdruck, Modellversion und Export",
+  },
+  flexlab: { title: "Lab-Werkbank (FlexLab)", hint: "Messdaten echter Komponenten, nur lesend" },
   simulation: {
-    title: "Abfertigungssimulation",
-    hint: "Die acht Krisenfälle im Detail, Stellhebel-Suche",
+    title: "Abfertigung im Detail",
+    hint: "Die acht Krisenfälle Schritt für Schritt, Stellschrauben suchen",
   },
 };
 
@@ -55,12 +61,12 @@ export function WerkstattFrame({
     <section className="aec-werkstatt" aria-labelledby="aec-werkstatt-title" id="werkstatt">
       <div className="aec-werkstatt__bar">
         <div>
-          <span className="aec-eyebrow">Werkstatt</span>
+          <span className="aec-eyebrow">Detailwerkzeug</span>
           <h2 id="aec-werkstatt-title">{meta.title}</h2>
-          <p>{meta.hint}. Volle Funktion des bisherigen Werkzeugs.</p>
+          <p>{meta.hint}.</p>
         </div>
         <Link to={close} className="aec-button aec-button--ghost">
-          Werkstatt schließen
+          Schließen
         </Link>
       </div>
       <div

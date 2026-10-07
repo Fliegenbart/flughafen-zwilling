@@ -168,9 +168,9 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
         </main>
         <footer className="aec-foot">
           <p>
-            Airport Energy Check · Methodenprototyp von electrified labs. Unkalibriertes Modell;
-            keine Anlagensteuerung, keine Hardwarewrites. Aussagen gelten nur mit ihrer
-            Evidenzstufe.
+            Airport Energy Check von electrified labs ist ein Prototyp. Das Rechenmodell ist noch
+            nicht an echten Messungen abgestimmt (unkalibriert) und steuert keine Anlagen. Darum
+            steht an jeder Zahl, wie sicher sie ist.
           </p>
         </footer>
       </div>

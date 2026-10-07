@@ -33,13 +33,13 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
     try {
       const where = await adoptScenario(project, scenarioId, name);
       setNotice({
-        text: `„${name}“ ist in ${project.name} übernommen${where === "beispiel" ? " (nur in dieser Sitzung)" : ""}.`,
+        text: `„${name}“ liegt jetzt in ${project.name}${where === "beispiel" ? " (nur bis Sie die Seite schließen)" : ""}.`,
         project: project.id,
         slug,
       });
     } catch (e) {
       setNotice({
-        text: `Übernahme fehlgeschlagen: ${e instanceof Error ? e.message : "unbekannt"}`,
+        text: `Das hat nicht geklappt: ${e instanceof Error ? e.message : "unbekannter Fehler"}`,
         project: "",
       });
     } finally {
@@ -55,16 +55,15 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
           <EvidenceBadge level="synthetic" />
         </div>
         <h1 className="aec-answer__text" data-answer="">
-          Acht Krisenfälle, um jede Variante unter Stress zu setzen.
+          Was, wenn der Tag schiefgeht? Acht Krisenfälle zum Durchspielen.
         </h1>
         <p className="aec-answer__lead">
-          Jeder Fall stammt aus der Abfertigungssimulation. Übernehmen Sie einen Fall in Ihr
-          Projekt; er erscheint dort im Austausch und lässt sich in C als Stresstest der Varianten
-          rechnen. Das Energiemodell bildet jeden Fall nur über Netz, Ladepunkte, PV und Akkus ab;
-          die Aufträge bleiben gleich.
+          Wetter, Personalmangel, ein Stromausfall: Holen Sie einen Fall in Ihr Projekt und rechnen
+          Sie Ihre Lösungen damit durch. So sehen Sie, welche auch an einem schlechten Tag trägt.
+          Bei jedem Fall steht, wie wir ihn im Strommodell abbilden.
         </p>
         <label className="aec-target">
-          Übernehmen in
+          In welches Projekt?
           <select value={target} onChange={(e) => setTarget(e.target.value)}>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
@@ -89,11 +88,11 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
                     ...(notice.slug ? { krise: notice.slug } : {}),
                   }}
                 >
-                  In C als Stresstest rechnen
+                  Jetzt durchrechnen
                 </Link>{" "}
                 ·{" "}
                 <Link to={{ page: "projekt", projekt: notice.project, frage: "nachweis" }}>
-                  Zum Prüfstatus
+                  Was das Lab prüft
                 </Link>
               </>
             ) : null}
@@ -117,7 +116,7 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
                 <p className="aec-case__energy">{c.energy}</p>
                 <p className="aec-case__stress">{c.stress}</p>
                 <p className="aec-case__energy-stress">
-                  <span>Im Energiemodell (Annahme):</span> {c.energyStress}
+                  <span>So rechnen wir den Fall:</span> {c.energyStress}
                 </p>
               </div>
               <div className="aec-case__foot">
@@ -127,9 +126,9 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
                   className="aec-button aec-button--small"
                   onClick={() => void adopt(c.scenarioId, c.name, c.slug)}
                   disabled={busy === c.scenarioId}
-                  aria-label={`${c.name} in Projekt übernehmen`}
+                  aria-label={`${c.name} ins Projekt holen`}
                 >
-                  In Projekt übernehmen
+                  Ins Projekt holen
                 </button>
               </div>
             </article>
@@ -139,12 +138,12 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
 
       <section className="aec-section" aria-labelledby="lib-werkstatt">
         <div className="aec-section__head">
-          <span className="aec-eyebrow">Details</span>
-          <h2 id="lib-werkstatt">Fälle im Detail rechnen</h2>
+          <span className="aec-eyebrow">Für Fachleute</span>
+          <h2 id="lib-werkstatt">Jeden Fall Minute für Minute ansehen</h2>
         </div>
         <p className="aec-muted">
-          Die Abfertigungssimulation bleibt vollständig nutzbar: Parameter, Läufe, Stellhebel-Suche,
-          Berichte.
+          Die Abfertigungssimulation zeigt, wie sich ein Fall auf Positionen, Personal und
+          Pünktlichkeit auswirkt. Sie können Parameter ändern und nach Stellschrauben suchen.
         </p>
         {werkstatt ? (
           <WerkstattFrame werkstatt="simulation" theme={theme} close={{ page: "bibliothek" }} />

@@ -37,7 +37,7 @@ export default function Home() {
     const name = String(f.get("name") ?? "").trim();
     const airport = String(f.get("airport") ?? "").trim();
     if (!name || !airport) {
-      setError("Bitte Projektname und Flughafen angeben.");
+      setError("Bitte geben Sie einen Projektnamen und den Flughafen an.");
       return;
     }
     setError("");
@@ -100,8 +100,9 @@ export default function Home() {
             Reicht der Anschluss für das <em>elektrische Vorfeld</em>?
           </h1>
           <p className="aec-hero__lead aec-enter" style={{ "--d": 2 } as React.CSSProperties}>
-            Ein Verkehrstag als Lastgang gegen die Anschlussgrenze. Sie sehen, wann es eng wird, ob
-            Strom oder Fahrzeuge bremsen, welche Variante hilft – und wie belastbar jede Zahl ist.
+            Spielen Sie einen ganzen Verkehrstag durch. Sie sehen, wann Schlepper, Busse und
+            Bodenstromgeräte gleichzeitig laden, ob der Anschluss dann reicht und was hilft, wenn
+            nicht. An jeder Zahl steht, wie sicher sie ist.
           </p>
         </div>
         <div className="aec-hero__viz aec-enter" style={{ "--d": 3 } as React.CSSProperties}>
@@ -115,16 +116,16 @@ export default function Home() {
             situation={situation}
             autoplay
             size="hero"
-            label="Lagebild des Beispieltags, Tageszeit wählen"
+            label="Strombedarf am Beispieltag, Uhrzeit wählen"
           />
-          <ul className="aec-legend" aria-label="Legende Lagebild">
+          <ul className="aec-legend" aria-label="Was die Grafik zeigt">
             <li>
               <i className="aec-legend__land" aria-hidden="true" />
-              Lastgang (Laden + Grundlast)
+              Strombedarf (Laden und übriger Verbrauch)
             </li>
             <li>
               <i className="aec-legend__stop" aria-hidden="true" />
-              Anschlussgrenze {powerText(situation.gridLimitKw)}
+              Netzanschluss {powerText(situation.gridLimitKw)}
             </li>
             <li>
               <i className="aec-legend__dep" aria-hidden="true" />
@@ -132,7 +133,7 @@ export default function Home() {
             </li>
             <li>
               <i className="aec-legend__signal" aria-hidden="true" />
-              Engpass {window0 ? `${clock(window0.start)}–${clock(window0.end)}` : ""}
+              Zu knapp {window0 ? `${clock(window0.start)}–${clock(window0.end)} Uhr` : ""}
             </li>
           </ul>
         </div>
@@ -140,8 +141,8 @@ export default function Home() {
 
       <section className="aec-band" aria-labelledby="aec-how">
         <div className="aec-band__head">
-          <span className="aec-eyebrow">Vier Fragen, ein Projekt</span>
-          <h2 id="aec-how">Vom Lagebild zur belastbaren Zusage.</h2>
+          <span className="aec-eyebrow">So gehen Sie vor</span>
+          <h2 id="aec-how">Vier Fragen, dann wissen Sie, was Sie zusagen können.</h2>
         </div>
         <ol className="aec-route">
           {QUESTIONS.map((q, i) => (
@@ -157,7 +158,7 @@ export default function Home() {
       <section className="aec-band" aria-labelledby="aec-projects">
         <div className="aec-band__head">
           <span className="aec-eyebrow">Projekte</span>
-          <h2 id="aec-projects">Ein Flughafen, ein Netzabgang, eine Flotte.</h2>
+          <h2 id="aec-projects">Jedes Projekt: ein Flughafen, ein Anschluss, eine Flotte.</h2>
         </div>
         <div className="aec-projects">
           <ul className="aec-projects__list">
@@ -176,14 +177,14 @@ export default function Home() {
                   {p.decision ? <span className="aec-project__q">„{p.decision}“</span> : null}
                   <span className="aec-project__foot">
                     <SourceTag source={p.source} />
-                    <span className="aec-project__go">Lagebild öffnen →</span>
+                    <span className="aec-project__go">Öffnen →</span>
                   </span>
                 </Link>
               </li>
             ))}
           </ul>
           <form className="aec-new" onSubmit={submit} aria-labelledby="aec-new-title" noValidate>
-            <h3 id="aec-new-title">Projekt anlegen</h3>
+            <h3 id="aec-new-title">Neues Projekt</h3>
             <label>
               Projektname
               <input
@@ -194,17 +195,17 @@ export default function Home() {
               />
             </label>
             <label>
-              Flughafen und Netzabgang
+              Flughafen und Anschlusspunkt
               <input
                 name="airport"
                 required
-                placeholder="z. B. Hamburg, Abgang Vorfeld Nord"
+                placeholder="z. B. Hamburg, Trafo Vorfeld Nord"
                 autoComplete="off"
               />
             </label>
             <div className="aec-new__row">
               <label>
-                Anschlussgrenze (MW)
+                Netzanschluss (MW)
                 <input
                   name="limit"
                   type="number"
@@ -215,7 +216,7 @@ export default function Home() {
                 />
               </label>
               <label>
-                PV-Leistung (kWp)
+                Photovoltaik (kWp)
                 <input
                   name="pv"
                   type="number"
@@ -226,7 +227,7 @@ export default function Home() {
                 />
               </label>
               <label>
-                Speicher (kWh)
+                Batteriespeicher (kWh)
                 <input
                   name="storage"
                   type="number"
@@ -237,7 +238,7 @@ export default function Home() {
                 />
               </label>
               <label>
-                Flotte (Fahrzeuge)
+                Elektrofahrzeuge (Anzahl)
                 <input
                   name="fleet"
                   type="number"
@@ -250,15 +251,15 @@ export default function Home() {
                 />
               </label>
               <p className="aec-fine aec-new__split" aria-live="polite">
-                Aufteilung (Annahme, im Schritt Daten änderbar):{" "}
+                Vorerst verteilen wir sie so:{" "}
                 {distributeFleet(fleet)
                   .map((f) => `${f.vehicles} ${f.label}`)
                   .join(", ")}
-                .
+                . Das können Sie gleich im nächsten Schritt ändern.
               </p>
             </div>
             <label>
-              Entscheidungsfrage
+              Was wollen Sie entscheiden?
               <textarea
                 name="decision"
                 rows={2}
@@ -271,11 +272,11 @@ export default function Home() {
               </p>
             ) : null}
             <button type="submit" className="aec-button" disabled={creating}>
-              {creating ? "Wird angelegt…" : "Anlegen und Daten eintragen"}
+              {creating ? "Wird angelegt …" : "Projekt anlegen"}
             </button>
             <p className="aec-fine">
-              Werte sind Annahmen, bis eine Quelle sie belegt. Danach geht es direkt zu „Flotte und
-              Anlagen“ im Schritt Daten.
+              Alle Werte gelten als Annahme, bis Sie eine Quelle nennen. Im nächsten Schritt
+              ergänzen Sie, was Sie schon wissen.
             </p>
           </form>
         </div>
@@ -284,7 +285,7 @@ export default function Home() {
       <section className="aec-band aec-band--library" aria-labelledby="aec-lib">
         <div className="aec-band__head">
           <span className="aec-eyebrow">Szenario-Bibliothek</span>
-          <h2 id="aec-lib">Acht Krisenfälle als Stresstest für jede Variante.</h2>
+          <h2 id="aec-lib">Was, wenn der Tag schiefgeht? Acht Krisenfälle zum Durchspielen.</h2>
         </div>
         <ul className="aec-libteaser">
           {SCENARIO_CASES.slice(0, 4).map((c) => (

@@ -63,7 +63,7 @@ describe("Datenstand", () => {
     expect(s.real).toBe(0);
     expect(s.items.map((i) => i.state)).toEqual(["fehlt", "fehlt", "fehlt", "fehlt"]);
     expect(s.answer).toBe(
-      "Noch keine der 4 Datenquellen ist echt. Es fehlen der offizielle Flugplan, Angaben zu Flotte und Anlagen sowie Messdaten vom Flughafen und aus dem Lab.",
+      "Noch ist keine der 4 Datenquellen belegt. Wir rechnen mit Annahmen. Es fehlen der offizielle Flugplan, Angaben zu Fahrzeugen und Anlagen sowie Messungen vom Flughafen und aus dem Testing-Lab.",
     );
     expect(needsDataStep(s)).toBe(true);
   });
@@ -77,7 +77,7 @@ describe("Datenstand", () => {
     );
     expect(s.real).toBe(2);
     expect(s.answer).toBe(
-      "2 von 4 Datenquellen sind echt. Es fehlen Messdaten vom Flughafen und aus dem Lab.",
+      "2 von 4 Datenquellen sind belegt. Es fehlen Messungen vom Flughafen und aus dem Testing-Lab.",
     );
     expect(needsDataStep(s)).toBe(false);
   });
@@ -91,9 +91,9 @@ describe("Datenstand", () => {
     );
     const [fp, fl] = s.items;
     expect(fp!.state).toBe("echt");
-    expect(fp!.warnings[0]).toMatch(/3 ungeklärte Mehrfachgruppen/);
+    expect(fp!.warnings[0]).toMatch(/3 Flüge stehen womöglich mehrfach drin/);
     expect(fl!.state).toBe("annahme");
-    expect(s.answer).toMatch(/Flotte und Anlagen steht noch auf Annahmen\./);
+    expect(s.answer).toMatch(/Noch mit Annahmen gerechnet: Fahrzeuge und Anlagen\./);
     expect(needsDataStep(s)).toBe(true);
   });
 
@@ -112,7 +112,7 @@ describe("Datenstand", () => {
     };
     let s = computeDataStatus(input({ imports: [bad] }));
     expect(s.items[2]!.state).toBe("fehlt");
-    expect(s.items[2]!.warnings[0]).toMatch(/abgewiesen.*Doppelter Zeitstempel/);
+    expect(s.items[2]!.warnings[0]).toMatch(/nicht verwendbar.*Doppelter Zeitstempel/);
     const good = {
       ...bad,
       id: "2",
@@ -123,7 +123,7 @@ describe("Datenstand", () => {
     s = computeDataStatus(input({ imports: [bad, good] }));
     expect(s.items[2]!.state).toBe("echt");
     expect(s.items[2]!.evidence).toBe("empirical_open");
-    expect(s.items[2]!.warnings.join(" ")).toMatch(/nicht gesperrt/);
+    expect(s.items[2]!.warnings.join(" ")).toMatch(/noch keine festgelegten Grenzen/);
     s = computeDataStatus(
       input({ imports: [good], holdoutPass: true, tolerances: { locked: true, sha256: "x" } }),
     );
@@ -155,7 +155,7 @@ describe("Datenstand", () => {
       imports: [imp],
       labRuns: [lab],
     });
-    expect(computeDataStatus(full).answer).toBe("Alle 4 Datenquellen sind echt.");
+    expect(computeDataStatus(full).answer).toBe("Alle 4 Datenquellen sind mit Quelle belegt.");
     const sim = computeDataStatus({ ...full, labRuns: [{ ...lab, source: "simulation" }] });
     expect(sim.items[3]!.state).toBe("annahme");
     expect(sim.items[3]!.evidence).toBe("synthetic");
@@ -166,12 +166,12 @@ describe("Datenstand", () => {
       "„PV-Leistung“: nur ganze Zahlen.",
     );
     expect(importError("role_forbidden: set project assets requires admin|airport")).toMatch(
-      /Ihre Rolle darf/,
+      /Flughafen-Ansicht/,
     );
     expect(importError("timestamp_timezone_required")).toBe("Zeitstempel benötigen eine Zeitzone.");
     expect(importError("Failed to fetch")).toMatch(/Keine Verbindung/);
     expect(flightPlanError("PDF als application/pdf hochladen")).toBe(
-      "Bitte eine PDF-Datei hochladen.",
+      "Bitte laden Sie ein PDF hoch.",
     );
     expect(isExampleFile("lastgang-BEISPIEL-erfundene-werte.csv")).toBe(true);
     expect(
@@ -200,17 +200,17 @@ describe("Navigation zum Daten-Schritt", () => {
   it("zeigt Datenstand im Kopf, Schild 0 und Warnhinweis im Daten-Schritt", async () => {
     window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}&frage=lage`);
     render(<AirportEnergyCheck basePath="/" />);
-    const meter = await screen.findByRole("link", { name: /^Datenstand: 0 von 4 echt/ });
+    const meter = await screen.findByRole("link", { name: /^0 von 4 Datenquellen belegt/ });
     fireEvent.click(meter);
     expect(
-      await screen.findByRole("heading", { level: 1, name: /Noch keine der 4 Datenquellen/ }),
+      await screen.findByRole("heading", { level: 1, name: /Noch ist keine der 4 Datenquellen/ }),
     ).toBeVisible();
     expect(window.location.search).toContain("frage=daten");
     expect(screen.getByRole("note", { name: "Hinweis zur Demo-Instanz" })).toHaveTextContent(
-      /keine Mandantentrennung/,
+      /keine echten Kundendaten/,
     );
     expect(
-      within(screen.getByRole("list", { name: "Vier Datenquellen" })).getAllByRole("heading"),
+      within(screen.getByRole("list", { name: "Die vier Datenquellen" })).getAllByRole("heading"),
     ).toHaveLength(4);
     expect(screen.getByRole("link", { name: /Daten/, current: "page" })).toBeVisible();
     await waitFor(() => expect(document.title).toBe("Daten · Airport Energy Check"));
@@ -245,7 +245,7 @@ describe("Navigation zum Daten-Schritt", () => {
     window.history.replaceState(null, "", `/?projekt=${id}`);
     render(<AirportEnergyCheck basePath="/" />);
     await waitFor(() => expect(window.location.search).toContain("frage=daten"));
-    expect(await screen.findByRole("heading", { level: 1, name: /Noch keine/ })).toBeVisible();
+    expect(await screen.findByRole("heading", { level: 1, name: /Noch ist keine/ })).toBeVisible();
   });
 });
 
