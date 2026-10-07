@@ -313,6 +313,16 @@ describe("Oberfläche", () => {
     expect(
       await screen.findByText(/„Enteisung“ ist in MUC · Vorfeld Süd \(Beispiel\) übernommen/),
     ).toBeVisible();
+    expect(screen.getByText(/Kälte: Akkukapazität aller Fahrzeuge −20 %/)).toBeVisible();
+    fireEvent.click(screen.getByRole("link", { name: "In C als Stresstest rechnen" }));
+    await waitFor(() => expect(window.location.search).toMatch(/frage=varianten&krise=enteisung/));
+  });
+
+  it("liest den Krisenfall aus der Adresse und verwirft unbekannte", () => {
+    const route = parseRoute("?projekt=p1&frage=varianten&krise=schwarzstart");
+    expect(route).toMatchObject({ page: "projekt", frage: "varianten", krise: "schwarzstart" });
+    expect(toSearch(route)).toBe("?projekt=p1&frage=varianten&krise=schwarzstart");
+    expect(parseRoute("?projekt=p1&frage=varianten&krise=gibtsnicht")).not.toHaveProperty("krise");
   });
 
   it("lässt sich auf der Startseite ein Projekt anlegen", async () => {

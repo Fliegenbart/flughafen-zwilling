@@ -13,7 +13,9 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
   const nav = useNav();
   const [projects, setProjects] = useState<Project[]>([SAMPLE_PROJECT]);
   const [target, setTarget] = useState(SAMPLE_PROJECT.id);
-  const [notice, setNotice] = useState<{ text: string; project: string } | null>(null);
+  const [notice, setNotice] = useState<{ text: string; project: string; slug?: string } | null>(
+    null,
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const werkstatt = nav.route.page === "bibliothek" ? nav.route.werkstatt : undefined;
 
@@ -25,7 +27,7 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
     };
   }, []);
 
-  async function adopt(scenarioId: string, name: string) {
+  async function adopt(scenarioId: string, name: string, slug: string) {
     const project = projects.find((p) => p.id === target) ?? SAMPLE_PROJECT;
     setBusy(scenarioId);
     try {
@@ -33,6 +35,7 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
       setNotice({
         text: `„${name}“ ist in ${project.name} übernommen${where === "beispiel" ? " (nur in dieser Sitzung)" : ""}.`,
         project: project.id,
+        slug,
       });
     } catch (e) {
       setNotice({
@@ -55,9 +58,10 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
           Acht Krisenfälle, um jede Variante unter Stress zu setzen.
         </h1>
         <p className="aec-answer__lead">
-          Jeder Fall stammt aus der Abfertigungssimulation und verschiebt Aufträge, Fahrzeuge und
-          Ladefenster. Übernehmen Sie einen Fall in Ihr Projekt; er erscheint dort im Austausch und
-          als Stresstest der Varianten.
+          Jeder Fall stammt aus der Abfertigungssimulation. Übernehmen Sie einen Fall in Ihr
+          Projekt; er erscheint dort im Austausch und lässt sich in C als Stresstest der Varianten
+          rechnen. Das Energiemodell bildet jeden Fall nur über Netz, Ladepunkte, PV und Akkus ab;
+          die Aufträge bleiben gleich.
         </p>
         <label className="aec-target">
           Übernehmen in
@@ -76,9 +80,22 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
           <>
             {notice.text}{" "}
             {notice.project ? (
-              <Link to={{ page: "projekt", projekt: notice.project, frage: "nachweis" }}>
-                Zum Prüfstatus
-              </Link>
+              <>
+                <Link
+                  to={{
+                    page: "projekt",
+                    projekt: notice.project,
+                    frage: "varianten",
+                    ...(notice.slug ? { krise: notice.slug } : {}),
+                  }}
+                >
+                  In C als Stresstest rechnen
+                </Link>{" "}
+                ·{" "}
+                <Link to={{ page: "projekt", projekt: notice.project, frage: "nachweis" }}>
+                  Zum Prüfstatus
+                </Link>
+              </>
             ) : null}
           </>
         ) : null}
@@ -99,13 +116,16 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
                 <p className="aec-case__claim">{c.claim}</p>
                 <p className="aec-case__energy">{c.energy}</p>
                 <p className="aec-case__stress">{c.stress}</p>
+                <p className="aec-case__energy-stress">
+                  <span>Im Energiemodell (Annahme):</span> {c.energyStress}
+                </p>
               </div>
               <div className="aec-case__foot">
                 <EvidenceBadge level="synthetic" />
                 <button
                   type="button"
                   className="aec-button aec-button--small"
-                  onClick={() => void adopt(c.scenarioId, c.name)}
+                  onClick={() => void adopt(c.scenarioId, c.name, c.slug)}
                   disabled={busy === c.scenarioId}
                   aria-label={`${c.name} in Projekt übernehmen`}
                 >

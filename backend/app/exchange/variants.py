@@ -30,6 +30,7 @@ from ..munich.coupled_models import (
 from ..munich.coupled_world import CoupledWorld, build_world
 from ..pilot.router import _verified_coupled_series
 from .assets import base_assets
+from .crisis import crisis_config, crisis_stress
 from .situation import LIMIT_TOLERANCE_KW
 
 MAX_VARIANTS = 8
@@ -101,6 +102,9 @@ class VariantRunRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     stress: bool = False
+    # Krisenfall der Szenario-Bibliothek als Stresstest (Energie-Abbild, siehe crisis.py).
+    # Ersetzt den Standard-Stresstest (Netzimport -20 %) und schaltet `stress` ein.
+    crisis: str | None = Field(default=None, pattern=r"^airport_case_0[1-8]_[a-z_]+_v1$")
     # Nur den Projekt-Basislauf rechnen (z. B. nach geaenderten Projektwerten), auch ohne Varianten.
     base_only: bool = False
 
@@ -535,6 +539,12 @@ class VariantService:
         if self.service is None or self.enqueue is None:
             raise HTTPException(status_code=503, detail="run service unavailable")
         with self.lock:
+            if request.crisis is not None:
+                try:
+                    crisis = crisis_stress(request.crisis)
+                except ValueError as exc:
+                    raise HTTPException(status_code=422, detail=f"unknown_crisis: {exc}") from exc
+                request = request.model_copy(update={"stress": True})
             variants = [] if request.base_only else self._rows(project_id)
             if not variants and not request.base_only:
                 raise HTTPException(status_code=409, detail="no_variants: erst Varianten anlegen")
@@ -564,9 +574,12 @@ class VariantService:
                     if (mission_signature(entry["world"]) != signature
                             or entry["world"].source_plan_sha256 != plan.content_sha256):
                         raise RuntimeError("Variante veraendert die eingefrorene Nachfrage")
-                    entry["stress_world"] = (build_world(plan, stress_config(
-                        entry["config"], base_world.day_minutes), base["seed"])
-                        if request.stress else None)
+                    stressed = (
+                        crisis_config(entry["config"], request.crisis, base_world.day_minutes)
+                        if request.crisis else stress_config(entry["config"],
+                                                             base_world.day_minutes))
+                    entry["stress_world"] = (build_world(plan, stressed, base["seed"])
+                                             if request.stress else None)
             except ValueError as exc:
                 raise HTTPException(status_code=422, detail=f"invalid_variant: {exc}") from exc
             except RuntimeError as exc:
@@ -601,6 +614,10 @@ class VariantService:
                 "source_plan_sha256": plan.content_sha256, "seed": base["seed"],
                 "mission_signature": signature, "base_source": base["source"],
                 "base_run_id": base["run_id"], "stress": request.stress, "entries": entries,
+                "stress_kind": "crisis" if request.crisis else (
+                    "grid_minus_20" if request.stress else None),
+                "crisis": ({"id": request.crisis, "name": crisis.name,
+                            "assumption": crisis.assumption} if request.crisis else None),
                 "base_only": request.base_only,
                 "project_assets": base["project_assets"],
             }
@@ -613,7 +630,7 @@ class VariantService:
                      now))
                 self.store._audit(connection, project_id, "variants_run", batch_id, actor,
                                   {"runs": queued, "mission_signature": signature,
-                                   "stress": request.stress})
+                                   "stress": request.stress, "crisis": request.crisis})
             for run_id in queued:
                 self.enqueue(run_id)
         return self.list(project_id)
@@ -715,6 +732,9 @@ class VariantService:
                 "source_plan_sha256": batch["source_plan_sha256"], "seed": batch["seed"],
                 "mission_signature": signature, "base_source": batch["base_source"],
                 "stress": batch["stress"],
+                "stress_kind": batch.get("stress_kind", "grid_minus_20" if batch["stress"]
+                                         else None),
+                "crisis": batch.get("crisis"),
                 "project_assets": batch.get("project_assets"),
                 "stale": {e["key"] for e in entries if e["key"] != "base"} != current_ids,
                 # Projektwerte oder Flugplan seit dem Lauf geaendert (Hash-Vergleich).

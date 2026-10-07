@@ -4,6 +4,7 @@
  * passenden neuen Orte umgeleitet; die alten Werkzeuge leben als "Werkstatt" weiter.
  */
 import { SAMPLE_PROJECT } from "./sample";
+import { caseBySlug } from "./scenarios";
 
 export const QUESTIONS = [
   { id: "lage", label: "Lage", question: "Wie sieht der Tag aus?" },
@@ -50,6 +51,8 @@ export type Route =
       projekt: string;
       frage: Step;
       werkstatt?: Exclude<Werkstatt, LabWerkstatt>;
+      /** Krisenfall (Slug) als vorgewaehlter Stresstest in C. */
+      krise?: string;
       /** Ohne `frage` in der Adresse: Startschritt nach Datenstand (Daten oder Lage). */
       auto?: true;
     };
@@ -89,6 +92,7 @@ export function parseRoute(search: string): Route {
       projekt,
       frage: isStep(frage) ? frage : "lage",
       ...(isWerkstatt(werkstatt) ? { werkstatt } : {}),
+      ...(caseBySlug(p.get("krise")) ? { krise: p.get("krise")! } : {}),
       ...(frage === null && !isWerkstatt(werkstatt) ? { auto: true as const } : {}),
     };
   }
@@ -110,6 +114,7 @@ export function toSearch(route: Route): string {
   } else if (route.page === "projekt") {
     p.set("projekt", route.projekt);
     if (!route.auto) p.set("frage", route.frage);
+    if (route.krise) p.set("krise", route.krise);
     if (route.werkstatt) {
       p.set("werkstatt", route.werkstatt);
       // Der Schritt-Navigator des Bestandswerkzeugs liest `schritt`.

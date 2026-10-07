@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { bestVariant, dec1, int, powerText, variantsAnswer } from "../analysis";
 import { createVariant, deleteVariant, runVariants } from "../api";
 import { sampleVariants } from "../sample";
+import { caseBySlug, SCENARIO_CASES } from "../scenarios";
 import { AnswerHead, Details, Section, SourceTag } from "../parts";
 import type { ViewProps } from "../ProjectPage";
 import type { FleetKind, Variant, VariantBoard, VariantChanges } from "../types";
@@ -188,14 +189,23 @@ function FreeForm({
   );
 }
 
+/** Stresstest-Auswahl: keiner, Netzimport −20 % oder ein Krisenfall der Bibliothek (Slug). */
+type StressChoice = "none" | "grid" | string;
+
 function Editor({
   board,
   project,
   reload,
-}: Pick<ViewProps, "project"> & { board: VariantBoard; reload: () => Promise<VariantBoard> }) {
+  krise,
+}: Pick<ViewProps, "project"> & {
+  board: VariantBoard;
+  reload: () => Promise<VariantBoard>;
+  krise?: string;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [stress, setStress] = useState(false);
+  const [stress, setStress] = useState<StressChoice>(caseBySlug(krise) ? krise! : "none");
+  const crisis = caseBySlug(stress);
   const running = board.run?.status === "queued" || board.run?.status === "running";
 
   const act = async (fn: () => Promise<unknown>) => {
@@ -283,13 +293,27 @@ function Editor({
           type="button"
           className="aec-button"
           disabled={busy || running || !board.definitions.length}
-          onClick={() => void act(() => runVariants(project, stress))}
+          onClick={() =>
+            void act(() =>
+              runVariants(project, stress !== "none", false, crisis?.scenarioId ?? null),
+            )
+          }
         >
           {running ? "Läufe rechnen…" : board.run ? "Neu rechnen" : "Varianten rechnen"}
         </button>
-        <label className="aec-check">
-          <input type="checkbox" checked={stress} onChange={(e) => setStress(e.target.checked)} />
-          zusätzlich Stresstest (Netzimport −20 %)
+        <label className="aec-stresspick">
+          Stresstest
+          <select value={stress} onChange={(e) => setStress(e.target.value)}>
+            <option value="none">keiner</option>
+            <option value="grid">Netzimport −20 % ganztags</option>
+            <optgroup label="Krisenfall aus der Bibliothek">
+              {SCENARIO_CASES.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.name}
+                </option>
+              ))}
+            </optgroup>
+          </select>
         </label>
         {board.run ? (
           <div
@@ -312,6 +336,17 @@ function Editor({
           </div>
         ) : null}
       </div>
+      {crisis ? (
+        <p className="aec-fine" role="note">
+          <b>{crisis.name} im Energiemodell (Annahme):</b> {crisis.energyStress} Die Aufträge
+          bleiben gleich; Basis und jede Variante laufen zusätzlich unter dieser Störung.
+        </p>
+      ) : null}
+      {board.run?.crisis && board.run.crisis.id !== crisis?.scenarioId ? (
+        <p className="aec-fine">
+          Letzter Lauf mit Stresstest „{board.run.crisis.name}“: {board.run.crisis.assumption}
+        </p>
+      ) : null}
       {board.run?.stale && !running ? (
         <p className="aec-muted">Varianten geändert seit dem letzten Lauf. Neu rechnen.</p>
       ) : null}
@@ -490,7 +525,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
 
       {api ? (
         <Section title="Varianten anlegen und rechnen" kicker="Hebel" id="var-edit">
-          <Editor board={board} project={project} reload={reloadBoard} />
+          <Editor board={board} project={project} reload={reloadBoard} krise={route.krise} />
         </Section>
       ) : null}
 
@@ -587,7 +622,9 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
                   ) : null}
                   {v.stressOnTimePct != null ? (
                     <div>
-                      <dt>im Stresstest</dt>
+                      <dt>
+                        {board.run?.crisis ? `unter ${board.run.crisis.name}` : "im Stresstest"}
+                      </dt>
                       <dd>{dec1(v.stressOnTimePct)} %</dd>
                     </div>
                   ) : null}

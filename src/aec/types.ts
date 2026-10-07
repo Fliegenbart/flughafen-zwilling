@@ -102,6 +102,8 @@ export type VariantBoard = {
     done: number;
     total: number;
     stress: boolean;
+    /** Krisenfall als Stresstest (Energie-Abbild), sonst Netzimport −20 %. */
+    crisis: { id: string; name: string; assumption: string } | null;
     stale: boolean;
     /** Projektwerte oder Flugplan seit dem Lauf geaendert (Hash-Vergleich im Backend). */
     inputsStale: boolean;
