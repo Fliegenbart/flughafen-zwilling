@@ -51,9 +51,13 @@ export function HandoutFoot({
     sample
       ? "Beispieltag mit erfundenen Werten, nicht für ein echtes Projekt gerechnet."
       : (status?.answer ?? ""),
-    accuracy === "naeherung" && !sample
-      ? "Die Kurve ist eine Näherung, die Rechnung lief noch."
-      : "",
+    sample
+      ? ""
+      : accuracy === "naeherung"
+        ? "Die Kurve ist eine Näherung, die Rechnung lief noch."
+        : accuracy === "fehler"
+          ? "Die Kurve ist eine Näherung, die Rechnung ist ausgefallen."
+          : "",
     "Gerechnet mit dem Modell von electrified labs. Es ist nicht an Messungen kalibriert, die Zahlen sind keine Zusage.",
   ].filter(Boolean);
   return <p className="ap-handout ap-handout--foot">{parts.join(" ")}</p>;

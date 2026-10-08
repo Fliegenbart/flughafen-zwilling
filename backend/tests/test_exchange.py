@@ -8,15 +8,19 @@ import json
 import time
 import zipfile
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.exchange.router import content_hash
+from app.exchange.situation import build_situation
+from app.exchange.variants import run_kpis
 from app.instance_access import create_user
 from app.main import create_app
 from app.munich.flightplan_store import FlightPlanStore
 from app.pilot import router as pilot_router
+from app.storage import FileStorage
 from test_coupled_world import schedule
 from test_pilot_evidence import import_csv, persisted_coupled_run, project
 
@@ -57,8 +61,6 @@ def _series(minutes=range(1, 62)):
 def _persist_rich_run(tmp_path, run_id=RUN_ID, series=None):
     sha = persisted_coupled_run(tmp_path, run_id, series or _series())
     # Abfluege ergaenzen (Artefakt + Hash neu schreiben).
-    from app.storage import FileStorage
-
     storage = FileStorage(tmp_path)
     path = storage.run_dir(run_id) / "coupled-evidence.json"
     data = json.loads(path.read_bytes())
@@ -348,6 +350,35 @@ def test_situation_windows_cover_only_the_traffic_day(client, tmp_path, safe_run
     assert sum(w["minutes"] for w in situation["bottleneck_windows"]) == answer[
         "minutes_at_limit"] == 15
     assert answer["peak_kw"] == 100.0
+
+
+def test_variant_kpis_count_the_same_traffic_day_as_the_situation(tmp_path, safe_run):
+    """Spitze und fehlende Leistung zaehlen nur den Tag: Lagebild und Loesungstabelle stimmen."""
+    def row(minute, grid, requested, delivered):
+        return {"minute": minute, "grid_import_kw": grid, "effective_grid_cap_kw": 200.0,
+                "pv_kw": 0.0, "ground_charging_kw": delivered, "parking_kw": 0.0,
+                "charging_requested_kw": requested}
+
+    # Vorlauf und Nachlauf: hoehere Last und unerfuellter Ladebedarf; im Tag 100 kW ohne Luecke.
+    series = (
+        [row(m, 190.0, 300.0, 190.0) for m in range(-119, 1)]
+        + [row(m, 100.0, 100.0, 100.0) for m in range(1, 61)]
+        + [row(m, 190.0, 300.0, 190.0) for m in range(1441, 1500)]
+    )
+    run_id = _persist_rich_run(tmp_path, series=series)
+    record = FileStorage(tmp_path).get_run_record(run_id)
+    situation = build_situation(tmp_path, record)
+    waits = SimpleNamespace(
+        energy_wait_total_min=0, resource_wait_total_min=0, background_unserved_kwh=0.0,
+        bottleneck="none", fleet_energy_balance_error_kwh=0.0,
+        storage_energy_balance_error_kwh=0.0)
+    kpis = run_kpis(tmp_path, SimpleNamespace(
+        status=record.status, build_meta=record.build_meta,
+        summary=SimpleNamespace(coupled_kpis=waits)))
+    assert situation["answer"]["peak_kw"] == kpis["peak_kw"] == 100.0
+    assert kpis["missing_kw_peak"] == 0.0
+    assert kpis["grid_energy_mwh_day"] == pytest.approx(0.1)
+    assert kpis["minutes_at_limit"] == situation["answer"]["minutes_at_limit"] == 0
 
 
 def test_library_lists_eight_cases_and_adopts(client):

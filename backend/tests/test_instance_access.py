@@ -139,6 +139,37 @@ def test_preview_post_is_a_read_for_viewers_without_mutation_audit(tmp_path, mon
     ]
 
 
+def test_preview_exemption_follows_the_path_the_router_dispatches(tmp_path, monkeypatch) -> None:
+    app = _app(tmp_path, monkeypatch)
+    create_user(tmp_path, "viewer", "correct horse battery staple", "viewer")
+    viewer = TestClient(app)
+    _login(viewer, "viewer", "correct horse battery staple")
+    same_origin = {"Origin": "http://testserver"}
+    base = "/api/v1/projects/p1/situation/"
+
+    # Dekodiertes ? und #, Tab und Zeilenumbruch kuerzt request.url.path, scope["path"] nicht.
+    for tail in ("preview%3F", "preview%3Fx=1", "preview%23frag", "pre%09view", "preview%0A",
+                 "preview%0D%0A"):
+        response = viewer.post(base + tail, headers=same_origin)
+        assert response.status_code == 403, tail
+        assert response.json() == {"detail": "operator_role_required"}, tail
+
+    connection = sqlite3.connect(tmp_path / "access.sqlite3")
+    rows = connection.execute(
+        "SELECT event, detail FROM audit_log "
+        "WHERE event IN ('mutation_completed', 'write_rejected') ORDER BY rowid"
+    ).fetchall()
+    connection.close()
+    # Das Protokoll nennt den ausgefuehrten Pfad samt Suffix, Steuerzeichen maskiert.
+    assert rows[0] == ("write_rejected", "/api/v1/projects/p1/situation/preview?")
+    assert rows[-3:] == [
+        ("write_rejected", "/api/v1/projects/p1/situation/pre\\tview"),
+        ("write_rejected", "/api/v1/projects/p1/situation/preview\\n"),
+        ("write_rejected", "/api/v1/projects/p1/situation/preview\\r\\n"),
+    ]
+    assert all(event == "write_rejected" for event, _ in rows)
+
+
 def test_failed_login_is_rate_limited_and_audit_does_not_store_password(tmp_path, monkeypatch) -> None:
     app = _app(tmp_path, monkeypatch)
     create_user(tmp_path, "operator", "another correct horse battery staple", "operator")

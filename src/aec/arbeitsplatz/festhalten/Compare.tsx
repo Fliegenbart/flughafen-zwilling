@@ -18,16 +18,34 @@ export default function Compare({ board, bestId }: { board: VariantBoard; bestId
   const rows = board.variants;
   const crisis = board.run?.crisis;
   const hasCrisis = rows.some((v) => v.stressOnTimePct != null);
-  // Die Sicherheit steht je Zeile fest (etwa bleibt bei zu kleinem Anschluss Grundlast unversorgt);
-  // fuer die Tabelle gilt die niedrigste.
-  const weakest = rows.reduce<Variant | null>(
-    (low, v) => (!low || rank(v.evidence) < rank(low.evidence) ? v : low),
+  const stressName = crisis ? `unter „${crisis.name}“` : `bei ${unit(20, "%")} weniger Anschluss`;
+  // Die Sicherheit steht je Rechnung fest (etwa bleibt bei zu kleinem Anschluss Grundlast
+  // unversorgt, im Hauptlauf wie im Stresslauf); fuer die Tabelle gilt die niedrigste. Die Zeilen
+  // des Hauptlaufs stehen vorn, bei Gleichstand nennt der Hinweis also eine Zeile.
+  const checked = [
+    ...rows.map((v) => ({ level: v.evidence, source: `der schwächsten Zeile „${rowName(v)}“` })),
+    ...(hasCrisis
+      ? rows
+          .filter((v) => v.stressOnTimePct != null && v.stressEvidence)
+          .map((v) => ({
+            level: v.stressEvidence!,
+            source: `der Rechnung ${stressName} in der Zeile „${rowName(v)}“`,
+          }))
+      : []),
+  ];
+  const weakest = checked.reduce<(typeof checked)[number] | null>(
+    (low, c) => (!low || rank(c.level) < rank(low.level) ? c : low),
     null,
   );
-  const evidence = weakest?.evidence ?? "assumption";
-  const differs = rows.some((v) => v.evidence !== evidence);
+  const evidence = weakest?.level ?? "assumption";
+  const differs = checked.some((c) => c.level !== evidence);
   return (
-    <div className="ap-compare">
+    <div
+      className="ap-compare"
+      role="region"
+      aria-label="Vergleich der festgehaltenen Lösungen"
+      tabIndex={0}
+    >
       <table>
         <caption className="ap-compare__caption">
           Heutiger Stand und festgehaltene Lösungen, alle am selben Tag gerechnet
@@ -84,7 +102,7 @@ export default function Compare({ board, bestId }: { board: VariantBoard; bestId
           level={evidence}
           detail={
             differs && weakest
-              ? `Die Stufe gilt für die ganze Tabelle und stammt von der schwächsten Zeile „${rowName(weakest)}“.`
+              ? `Die Stufe gilt für die ganze Tabelle und stammt von ${weakest.source}.`
               : undefined
           }
         />

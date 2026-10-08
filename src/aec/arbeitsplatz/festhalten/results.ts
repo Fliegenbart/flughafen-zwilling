@@ -17,8 +17,10 @@ export const withoutResult = (board: VariantBoard): VariantDefinition[] =>
 export function outdatedReason(board: VariantBoard): Outdated | null {
   if (board.source !== "api" || !board.definitions.length) return null;
   if (!board.run) return "never";
-  if (board.run.stale) return "definitions";
+  // Geaenderte Daten zuerst: Dann stimmt die Basis der Tabelle nicht mehr, auch wenn zugleich
+  // die Auswahl anders ist. Ein neuer Lauf behebt beides.
   if (board.run.inputsStale) return "inputs";
+  if (board.run.stale) return "definitions";
   return withoutResult(board).length ? "failed" : null;
 }
 
@@ -28,9 +30,9 @@ export function outdatedNote(board: VariantBoard): string {
     case "never":
       return "Die festgehaltenen Lösungen sind noch nicht gerechnet.";
     case "definitions":
-      return "Die Auswahl hat sich geändert.";
+      return "Sie haben Lösungen hinzugefügt oder entfernt.";
     case "inputs":
-      return "Ihre Daten haben sich seit der Berechnung geändert.";
+      return "Ihre Werte haben sich seit der letzten Rechnung geändert.";
     case "failed": {
       const missing = withoutResult(board);
       return missing.length === 1

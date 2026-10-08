@@ -18,17 +18,28 @@ import Pruefstatus from "./Pruefstatus";
 import { WerkstattLinks } from "../Werkstatt";
 
 type Claim = { level: EvidenceLevel; title: string; text: string };
+type Known = Pick<ViewProps, "project" | "situation" | "board">;
 
-function claimsFor({ project }: Pick<ViewProps, "project">, overview: Overview | null): Claim[] {
+/** Der Anschluss, den die Seite wirklich kennt: erst der der Rechnung, dann der des Lagebilds. */
+function knownGridLimitKw({ project, situation, board }: Known): number | null {
+  // Beispielwerte (etwa 3500 kW im Lagebild) gehoeren nicht zu einem eigenen Projekt.
+  if (board.source === "api" && board.base && board.base.gridLimitKw > 0)
+    return board.base.gridLimitKw;
+  if (situation.source === "api" && situation.gridLimitKw > 0) return situation.gridLimitKw;
+  return project.gridLimitKw;
+}
+
+function claimsFor(props: Known, overview: Overview | null): Claim[] {
   const passed = (overview?.summary.empirical_passed ?? 0) > 0;
+  const gridLimitKw = knownGridLimitKw(props);
   return [
     {
       level: "assumption",
       title: "Was wir angenommen haben",
       text: `Wie viele Fahrzeuge es gibt, wie schnell sie laden, wie viel Strom der Rest des Flughafens braucht und ${
-        project.gridLimitKw == null
+        gridLimitKw == null
           ? "wie viel der Anschluss hergibt"
-          : `dass der Anschluss ${powerText(project.gridLimitKw)} hergibt`
+          : `dass der Anschluss ${powerText(gridLimitKw)} hergibt`
       }.`,
     },
     {
@@ -39,7 +50,7 @@ function claimsFor({ project }: Pick<ViewProps, "project">, overview: Overview |
     {
       level: "model_checked",
       title: "Was wir rechnerisch geprüft haben",
-      text: "Keine Energie geht verloren, der übrige Strombedarf des Flughafens ist gedeckt, alle Lösungen rechnen mit demselben Flugplan, und jede Rechnung lässt sich wiederholen.",
+      text: "Wir prüfen bei jeder Rechnung, ob keine Energie verloren geht, ob der übrige Strombedarf des Flughafens gedeckt ist, ob alle Lösungen denselben Flugplan nutzen und ob sich die Rechnung wiederholen lässt. Eine Lösung, die das nicht besteht, gilt als ausgedacht.",
     },
     passed
       ? {
@@ -158,7 +169,7 @@ export default function NachweisView(props: ViewProps) {
         kicker="Festgehaltene Lösungen"
         id="nachweis-loesungen"
       >
-        <KeptSolutions board={props.board} projekt={project.id} />
+        <KeptSolutions board={props.board} projekt={project.id} source={project.source} />
       </Section>
 
       <Pruefstatus project={project} />

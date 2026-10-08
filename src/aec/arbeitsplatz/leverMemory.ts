@@ -2,11 +2,10 @@
  * Merkt sich die Regler-Stellung je Projekt fuer diese Sitzung, damit ein Wechsel zu Daten oder
  * Zusage und zurueck die Einstellung nicht verwirft. Nichts davon verlaesst den Browser.
  */
-import { FLEET_LABEL } from "../model/fleet";
+import { isFleetKind } from "../api/preview";
 import type { Levers } from "../model/livePower";
 import { isPolicy } from "../model/policy";
 import { caseByScenarioId } from "../scenarios";
-import type { FleetKind } from "../types";
 
 const key = (projekt: string) => `aec.regler.${projekt}`;
 
@@ -24,8 +23,7 @@ export function loadLevers(projekt: string): Partial<Levers> | undefined {
       const n = stored[k];
       if (typeof n === "number" && Number.isFinite(n)) out[k] = n;
     }
-    if (typeof stored.extraKind === "string" && stored.extraKind in FLEET_LABEL)
-      out.extraKind = stored.extraKind as FleetKind;
+    if (isFleetKind(stored.extraKind)) out.extraKind = stored.extraKind;
     if (isPolicy(stored.policy)) out.policy = stored.policy;
     if (typeof stored.crisis === "string" && caseByScenarioId(stored.crisis))
       out.crisis = stored.crisis;

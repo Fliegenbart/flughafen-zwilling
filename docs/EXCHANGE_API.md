@@ -234,7 +234,11 @@ Modul `backend/app/exchange/variants.py`, Tests `backend/tests/test_variants.py`
 
 **Basis** = Konfiguration, Seed, Laderegel und Flugplan des neuesten abgeschlossenen gekoppelten
 Projektlaufs; ohne Lauf der zuletzt verknuepfte Flugplan mit Standardannahmen (Seed 42,
-Laderegel `uncontrolled`). Ohne beides → `409 no_base: …`.
+Laderegel `uncontrolled`). Ohne beides → `409 no_base: …`. Passen die Projektwerte (Schritt
+„Daten“) nicht zu dieser Basis, antwortet jede Rechnung (Vorschau, Variante, Lauf) mit `409
+invalid_assets: Projektwerte passen nicht zur Basis: <ein deutscher Satz>`, zum Beispiel „Das
+Modell rechnet höchstens 300 Fahrzeuge, die Flotte käme auf 305.“. Auch hier steht kein
+Pydantic-Text im `detail`.
 
 `POST /api/v1/projects/{id}/variants` (airport|admin; lab/viewer → 403), max. 8 je Projekt,
 Name eindeutig (409):
@@ -269,10 +273,15 @@ Basis/Variante mit `world_hash`, `run_id`, `status`, `fleet`, `kpis`, `delta_to_
 
 `kpis`: `on_time_pct` (Anteil Abfluege, deren modellierte Auftraege fristgerecht fertig sind),
 `delayed_departures`, `departures_total`, `minutes_at_limit` (wie Lagebild, nur Verkehrstag),
-`peak_kw`, `missing_kw_peak` (UI: „ungedeckter Ladebedarf in der Spitze“; Maximum je Minute von angefragter
-minus gelieferter Ladeleistung, kW, keine Summe; Feldname bleibt aus Kompatibilitaetsgruenden; `null` bei
-Laeufen ohne Spalte `charging_requested_kw`), `grid_energy_mwh_day` (Netzbezug nur
-Verkehrstag), `background_unserved_kwh`, `bottleneck`, `cause_shares_pct`, Wartezeiten.
+`peak_kw` (hoechster Netzbezug, nur Verkehrstag, derselbe Wert wie `answer.peak_kw` im Lagebild),
+`missing_kw_peak` (UI: „ungedeckter Ladebedarf in der Spitze“; Maximum je Minute von angefragter
+minus gelieferter Ladeleistung, kW, keine Summe, nur Verkehrstag; Feldname bleibt aus
+Kompatibilitaetsgruenden; `null` bei Laeufen ohne Spalte `charging_requested_kw`),
+`grid_energy_mwh_day` (Netzbezug nur Verkehrstag), `background_unserved_kwh`, `bottleneck`,
+`cause_shares_pct`, Wartezeiten. Vorlauf vor Mitternacht und Nachlauf der Simulation zaehlen in
+keiner dieser Kennzahlen; die Regel steht einmal in `situation.day_rows`. Prozentzahlen in
+`answer.headline` und `answer.details` rundet das Backend halb auf (85,85 → 85,9) wie der Browser
+in der Tabelle, damit Satz und Tabelle dieselbe Zahl zeigen.
 
 `evidence_level`: `model_checked` nur wenn Artefakt versiegelt/geprueft, gleiche
 Nachfragewelt, Flotten- und Speicherbilanz ≤ 1e-6 kWh und Grundlast voll versorgt; sonst
@@ -311,7 +320,11 @@ Modul `backend/app/exchange/assets.py`, Tests `backend/tests/test_project_assets
 "source": "Netzvertrag", "source_date": "2025-11-01"}]}` ersetzt den Satz (neue Version, Audit
 `exchange_assets_set`). `POST …/assets/import?filename=…` mit CSV (`key,value,unit,source,source_date`,
 `#`-Kommentare) oder JSON (`{"entries": […]}`), max. 256 KiB; das Original wird mit SHA256 gespeichert.
-Rollen airport|admin (lab → 403). Fehler → `422 invalid_assets: <deutscher Satz>`.
+Rollen airport|admin (lab → 403). Fehler → `422 invalid_assets: <deutscher Satz>`, auch bei
+Verstoss gegen die Flottengrenzen des Modells (200 Fahrzeuge je Art, 300 gesamt; der Satz nennt die
+Zahlen). Das Speichern prueft die Werte gegen die Standardflotte (100 Fahrzeuge); die Basis des
+Projekts kann eine andere Flotte haben, dann meldet erst die Rechnung den Widerspruch (`409`, siehe
+Varianten).
 Einheiten kW/MW, kWh/MWh, kWp/MWp, Stück; Umrechnung in die kanonische Einheit, Original bleibt.
 Ohne Quelle bleibt ein Wert `annahme`; `echt` = Netzanschluss + Fahrzeugzahl, alle mit Quelle.
 

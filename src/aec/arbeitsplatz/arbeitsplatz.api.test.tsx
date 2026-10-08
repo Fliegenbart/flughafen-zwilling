@@ -227,7 +227,7 @@ describe("Durchrechnen mit Projekt vom Server", () => {
     ]);
     expect(cells(/übrig/i)[1]).toMatch(/^120 kWh$/);
     expect(row(LATE)).toHaveAttribute("data-better");
-    // Besser oder schlechter steht auch als Wort da, nicht nur als Farbe.
+    // Screenreader hoeren besser oder schlechter als Wort, die Farbe allein sagt es nicht.
     expect(row(LATE)).toHaveTextContent("besser als heute");
     expect(row(/übrig/i)).toHaveTextContent("schlechter als heute");
   });
@@ -274,7 +274,7 @@ describe("Durchrechnen mit Projekt vom Server", () => {
     it("führt ohne Flugplan zu den Daten und rechnet nichts", async () => {
       mocks.loadDataInputs.mockResolvedValue(NO_PLAN);
       const { navigate } = renderAt({ ...OPEN, auto: true });
-      expect(screen.getByRole("status")).toHaveTextContent("Projekt wird geöffnet …");
+      expect(screen.getByRole("status")).toHaveTextContent("Wir öffnen das Projekt …");
       await waitFor(() =>
         expect(navigate).toHaveBeenCalledWith(
           { page: "projekt", projekt: "p1", frage: "daten" },
@@ -384,6 +384,117 @@ describe("Durchrechnen mit Projekt vom Server", () => {
       fireEvent.click(screen.getByRole("button", { name: "Auf heute zurücksetzen" }));
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
       expect(accuracy()).toBe("genau");
+    });
+
+    it("bietet nach dem Fehler einen zweiten Versuch an, der dieselbe Anfrage schickt", async () => {
+      let broken = true;
+      mocks.getPreview.mockImplementation(async (_p: Project, body: PreviewBody) => {
+        if (!Object.keys(body).length) return today;
+        if (broken) throw new Error("Der Rechner ist gerade belegt.");
+        return exact();
+      });
+      renderAt(OPEN);
+      await screen.findByRole("table");
+      fireEvent.click(screen.getByRole("button", { name: "Wer zuerst los muss, lädt zuerst" }));
+      const alert = await screen.findByRole("alert");
+      expect(accuracy()).toBe("fehler");
+      // Tabelle, Knopf und Blatt zum Hinterlassen sagen dasselbe wie die Meldung.
+      expect(cells(LATE)[1]).not.toMatch(/wird gerechnet/);
+      expect(screen.getByRole("button", { name: "Als PDF sichern" })).toBeEnabled();
+      expect(document.querySelector(".ap-handout--foot")).toHaveTextContent(
+        /Rechnung ist ausgefallen/,
+      );
+
+      broken = false;
+      fireEvent.click(within(alert).getByRole("button", { name: "Noch einmal rechnen" }));
+      await settled();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(bodies().slice(1)).toEqual([
+        { charging_policy: "mission_priority" },
+        { charging_policy: "mission_priority" },
+      ]);
+      expect(cells(LATE)).toEqual(["33 von 205", "20 von 205"]);
+    });
+
+    it("bietet bei einer Meldung, die ein zweiter Versuch nicht ändert, keinen an", async () => {
+      mocks.getPreview.mockImplementation(async (_p: Project, body: PreviewBody) => {
+        if (!Object.keys(body).length) return today;
+        throw Object.assign(new Error("Das Modell rechnet höchstens 200 Fahrzeuge je Art."), {
+          body: { detail: "invalid_variant: Das Modell rechnet höchstens 200 Fahrzeuge je Art." },
+        });
+      });
+      renderAt(OPEN);
+      await screen.findByRole("table");
+      fireEvent.click(screen.getByRole("button", { name: "Wer zuerst los muss, lädt zuerst" }));
+      const alert = await screen.findByRole("alert");
+      expect(alert).toHaveTextContent("Das Modell rechnet höchstens 200 Fahrzeuge je Art.");
+      expect(within(alert).queryByRole("button")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Grenzen des Modells", () => {
+    /** Heute-Tag mit einer Flotte aus 280 Fahrzeugen (Slider endet bei 20). */
+    const kinds = ["bus", "baggage_tractor", "pushback_tug", "gpu"] as const;
+    const withFleet = (counts: number[], pvKwp?: number): Preview => ({
+      ...today,
+      vehiclesByKind: Object.fromEntries(kinds.map((k, i) => [k, counts[i]])),
+      basis: {
+        ...today.basis,
+        fleet: {
+          ...today.basis.fleet,
+          classes: today.basis.fleet.classes.map((c, i) => ({ ...c, vehicles: counts[i]! })),
+        },
+        power: {
+          ...today.basis.power,
+          ...(pvKwp === undefined ? {} : { pvCapacityKwp: pvKwp }),
+        },
+      },
+    });
+    const serveToday = (day: Preview) =>
+      mocks.getPreview.mockImplementation(async (_p: Project, body: PreviewBody) =>
+        Object.keys(body).length ? exact() : day,
+      );
+    const total = (b?: PreviewBody) =>
+      Object.values((b?.extra_vehicles ?? {}) as Record<string, number>).reduce((a, n) => a + n, 0);
+
+    it("zeigt gemerkte Zusatzfahrzeuge nicht über der Obergrenze der Flotte", async () => {
+      sessionStorage.setItem("aec.regler.p1", JSON.stringify({ extraVehicles: 60 }));
+      serveToday(withFleet([100, 80, 20, 80]));
+      renderAt(OPEN);
+      await screen.findByRole("table");
+      expect(screen.getByRole("form", { name: "Stellschrauben" })).toHaveTextContent("20 mehr");
+      await waitFor(() => expect(mocks.getPreview).toHaveBeenCalledTimes(2));
+      expect(total(bodies()[1])).toBe(20);
+    });
+
+    it("vergisst gemerkte Photovoltaik, wenn das Projekt keine hat", async () => {
+      sessionStorage.setItem("aec.regler.p1", JSON.stringify({ pvFactor: 2 }));
+      serveToday(withFleet([20, 35, 20, 26], 0));
+      renderAt(OPEN);
+      await screen.findByRole("table");
+      expect(screen.getByRole("button", { name: "Auf heute zurücksetzen" })).toBeDisabled();
+      expect(mocks.getPreview).toHaveBeenCalledTimes(1);
+    });
+
+    it("kappt die Zusatzfahrzeuge bei der Wahl einer Art auf deren Obergrenze", async () => {
+      sessionStorage.setItem("aec.regler.p1", JSON.stringify({ extraVehicles: 50 }));
+      // 170 Busse: Im Gemisch passen 50, nur als Busse höchstens 30.
+      serveToday(withFleet([170, 35, 10, 35]));
+      renderAt(OPEN);
+      await screen.findByRole("table");
+      fireEvent.change(screen.getByRole("combobox", { name: /Art der zusätzlichen Fahrzeuge/ }), {
+        target: { value: "bus" },
+      });
+      expect(screen.getByRole("form", { name: "Stellschrauben" })).toHaveTextContent("30 mehr");
+      await waitFor(() => expect(bodies().slice(-1)).toEqual([{ extra_vehicles: { bus: 30 } }]));
+    });
+
+    it("bietet 5 Schlepper nicht an, wenn die Flotte keinen Platz mehr lässt", async () => {
+      serveToday(withFleet([100, 80, 20, 100]));
+      renderAt(OPEN);
+      await screen.findByRole("table");
+      expect(screen.queryByRole("button", { name: "5 Schlepper mehr" })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "1 MW mehr Anschluss" })).toBeInTheDocument();
     });
   });
 });
@@ -499,6 +610,60 @@ describe("useLiveScenario mit Server", () => {
     act(() => result.current.reset());
     expect(result.current.error).toBe("");
     expect(result.current.accuracy).toBe("genau");
+  });
+
+  it("schickt nach einem Fehler dieselbe Anfrage noch einmal, ohne dass jemand zieht", async () => {
+    const calls = track();
+    const { result } = renderHook(() => useLiveScenario(API_PROJECT));
+    await tick(0);
+    act(() => result.current.setLevers({ ...result.current.todayLevers!, gridLimitKw: 4000 }));
+    await tick(280);
+    await act(async () => calls[0]!.answer.reject(new Error("Keine Verbindung zum Server.")));
+    expect(result.current.canRetry).toBe(true);
+
+    act(() => result.current.retry());
+    expect(result.current.error).toBe("");
+    await tick(280);
+    expect(calls.map((c) => c.body)).toEqual([
+      { grid_import_limit_kw: 4000 },
+      { grid_import_limit_kw: 4000 },
+    ]);
+    const answer = exact({ delayedDepartures: 9 });
+    await act(async () => calls[1]!.answer.resolve(answer));
+    expect(result.current.exact).toBe(answer);
+    expect(result.current.accuracy).toBe("genau");
+    // Danach gibt es nichts mehr zu wiederholen.
+    expect(result.current.canRetry).toBe(false);
+    act(() => result.current.retry());
+    await tick(5000);
+    expect(calls).toHaveLength(2);
+  });
+
+  it("wiederholt nichts, wenn schon die Stellung nicht zu rechnen ist oder sich geändert hat", async () => {
+    const calls = track();
+    const { result } = renderHook(() => useLiveScenario(API_PROJECT));
+    await tick(0);
+    const base = result.current.todayLevers!;
+    act(() => result.current.setLevers({ ...base, gridLimitKw: 4000 }));
+    await tick(280);
+    const refused = Object.assign(new Error("Diese Einstellung lässt sich nicht rechnen."), {
+      body: { detail: "invalid_variant: Fahrzeugklasse x" },
+    });
+    await act(async () => calls[0]!.answer.reject(refused));
+    expect(result.current.error).not.toBe("");
+    expect(result.current.canRetry).toBe(false);
+    act(() => result.current.retry());
+    await tick(5000);
+    expect(calls).toHaveLength(1);
+
+    // Zieht jemand weiter, gilt die gescheiterte Anfrage nicht mehr.
+    act(() => result.current.setLevers({ ...base, gridLimitKw: 4500 }));
+    await tick(280);
+    await act(async () => calls[1]!.answer.reject(new Error("Keine Verbindung zum Server.")));
+    act(() => result.current.reset());
+    act(() => result.current.retry());
+    await tick(5000);
+    expect(calls).toHaveLength(2);
   });
 
   it("meldet beim ersten Laden, ob der Fehler an den Daten liegt", async () => {

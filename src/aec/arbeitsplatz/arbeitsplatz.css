@@ -2,8 +2,11 @@
  * Arbeitsbildschirm. Heller Grund fuer den Beamer, eine Schrift, Farbe nur mit Bedeutung:
  * Rot wie der Haltebalken auf dem Rollfeld (Grenze, Fehlendes, schlechter als heute), Gruen wie
  * die Rollweg-Mittellinie (Batterie deckt, besser als heute), Blau fuer "von Ihnen veraendert",
- * Bernstein fuer "Naeherung laeuft". Die Farbe allein traegt nie die Bedeutung: Fehlendes ist
- * zusaetzlich schraffiert, jede Linie und Flaeche steht in der Legende unter der Kurve.
+ * Bernstein fuer "Naeherung laeuft". Im Diagramm traegt die Farbe nie allein: Fehlendes ist
+ * zusaetzlich schraffiert, jede Kurve und Flaeche steht in der Legende unter der Kurve, die
+ * Grenze traegt ihr Schild. In der Vergleichstabelle zeigt nur die Zahlenfarbe, ob ein Wert besser
+ * oder schlechter ist als heute (Screenreader hoeren es als Wort); im Schwarzweissdruck faellt
+ * die Wertung weg.
  */
 .ap {
   --ap-bg: #ffffff;
@@ -222,7 +225,6 @@
   cursor: default;
 }
 .ap-chips__note {
-  flex-basis: 100%;
   margin: 0;
   font-size: 13px;
   color: var(--ap-muted);
@@ -335,7 +337,7 @@
   font-size: 15px;
   color: var(--ap-muted);
 }
-/* Legende: nur, was gerade gezeichnet ist; die Zeile behaelt ihre Hoehe, damit nichts springt. */
+/* Legende: was gerade gezeichnet ist; die Zeile behaelt ihre Hoehe, auch wenn Eintraege wechseln. */
 .ap-chart__keybox {
   min-height: 1.6em;
   margin: 8px 0 0 52px;
@@ -531,11 +533,13 @@
 }
 
 /* ---------------------------------------------------------------- Vergleichstabelle */
-/* Die Tabelle steht auch auf der Zusage-Seite, ausserhalb von .ap: Tokens hier, nicht nur dort. */
+/* Die Tabelle steht auch auf der Zusage-Seite, ausserhalb von .ap und mit hellem oder dunklem Grund.
+   Linie, Grau und Gruen kommen deshalb aus einem Satz eigener Werte: unter .ap die festen hellen
+   --ap-Werte, sonst die Werte der Seite (--aec-*, folgen dem Farbschema). */
 .ap-compare {
-  --ap-surface: #f2f4f6;
-  --ap-muted: #5f6b78;
-  --ap-go: #1f7a4a;
+  --cmp-line: var(--ap-surface, var(--aec-line));
+  --cmp-muted: var(--ap-muted, var(--aec-muted));
+  --cmp-go: var(--ap-go, var(--aec-ok));
   overflow-x: auto;
 }
 .ap-compare table {
@@ -547,19 +551,19 @@
   text-align: left;
   padding-bottom: 6px;
   font-size: 14px;
-  color: var(--ap-muted);
+  color: var(--cmp-muted);
 }
 .ap-compare th,
 .ap-compare td {
   text-align: right;
   padding: 8px 0 8px 14px;
-  border-bottom: 1px solid var(--ap-surface);
+  border-bottom: 1px solid var(--cmp-line);
   vertical-align: top;
 }
 .ap-compare thead th {
   font-size: 13px;
   font-weight: 500;
-  color: var(--ap-muted);
+  color: var(--cmp-muted);
 }
 .ap-compare tbody th {
   text-align: left;
@@ -570,16 +574,16 @@
   display: block;
   font-size: 12px;
   font-weight: 400;
-  color: var(--ap-muted);
+  color: var(--cmp-muted);
 }
 .ap-compare tr[data-best] th small {
-  color: var(--ap-go);
+  color: var(--cmp-go);
   font-weight: 600;
 }
 .ap-compare__foot {
   margin: 8px 0 0;
   font-size: 14px;
-  color: var(--ap-muted);
+  color: var(--cmp-muted);
 }
 
 /* ------------------------------------------------------------------- Schmal */
@@ -601,11 +605,23 @@
     align-self: start;
     max-height: calc(100vh - 36px);
     overflow-y: auto;
-    overscroll-behavior: contain;
     scrollbar-width: thin;
     /* Rand, damit der Scrollbereich den Fokusring nicht abschneidet */
     margin: -6px;
     padding: 6px;
+  }
+}
+
+/* Beamer mit 1024 px: schmalere Reglerspalte und dichtere Vergleichstabelle, damit die Spalte des
+   Krisenfalls nicht am Rand abgeschnitten wird (die Tabelle braucht gut 630 px). */
+@media (min-width: 901px) and (max-width: 1100px) {
+  .ap-body {
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 32px;
+  }
+  .ap-compare th,
+  .ap-compare td {
+    padding-left: 8px;
   }
 }
 
@@ -671,6 +687,10 @@
   }
   .ap[data-presenting] .ap-reset {
     font-size: 18px;
+  }
+  /* Der Grund fuer die ausgegrauten Vorschlaege steht nur hier; auf dem Beamer muss er lesbar sein. */
+  .ap[data-presenting] .ap-chips__note {
+    font-size: 16px;
   }
   .ap[data-presenting] .ap-shortfalls {
     max-width: none;
@@ -742,8 +762,10 @@
 }
 
 /* -------------------------------------------------------------------- Druck */
-/* Eine A4-Seite, unabhaengig von der Fenstergroesse: Die Grafik zeichnet sich im Druck in fester
-   Groesse (LoadChart), Auswahlfelder erscheinen als Text, Hinweise nur fuer den Bildschirm fehlen. */
+/* Meist eine A4-Seite, unabhaengig von der Fenstergroesse: Die Grafik zeichnet sich im Druck in
+   fester, niedriger Groesse (LoadChart) und laesst Platz fuer einen zweizeiligen Namen, eine
+   Krisenannahme und sechs Phasen. Auswahlfelder erscheinen als Text, Hinweise nur fuer den
+   Bildschirm fehlen. Ein Name ueber drei Zeilen schiebt den Fuss auf eine zweite Seite. */
 @page {
   size: A4 portrait;
   margin: 12mm;
@@ -769,6 +791,10 @@
   .ap-loading {
     display: none !important;
   }
+  /* Die Zugangsleiste (Benutzername, Rolle) steht ausserhalb von .ap, nicht ins Kundendokument. */
+  .pilot-access-bar {
+    display: none !important;
+  }
   /* Der Hinweis zu gesperrten Reglern (ein Regler ohne Namen) gilt nur am Bildschirm. Eigene
      Regel mit :has(), damit ein Browser ohne :has() nicht die Liste oben verliert. */
   .ap-lever:not(:has(.ap-lever__name)) {
@@ -778,7 +804,6 @@
     display: block;
     padding: 0;
     max-width: none;
-    break-inside: avoid;
   }
   .ap-handout {
     display: block;

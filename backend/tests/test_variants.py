@@ -222,6 +222,16 @@ def test_answer_winner_tie_and_no_measurable_difference():
     assert build_answer([base], False)["status"] == "pending"
 
 
+def test_answer_rounds_percentages_like_the_table():
+    """176 von 205 sind 85,85 %: Satz und Tabelle zeigen 85,9 (Browser: Math.round, halb auf)."""
+    base = _entry("base", "Basis", round(176 / 205 * 100, 2), 100)
+    tie = build_answer([base, _entry("a", "A", 97.1, 60), _entry("b", "B", 97.07, 60)], True)
+    assert tie["status"] == "tie"
+    assert tie["headline"].startswith(
+        "„A“ und „B“ bringen gleich viel, jeweils 11,3 Prozentpunkte mehr pünktliche Abflüge "
+        "(97,1 % statt 85,9 %).")
+
+
 def test_answer_separates_punctuality_and_grid_with_tradeoff():
     base = _entry("base", "Basis", 80.0, 100)
     answer = build_answer([base, _entry("a", "Schlepper", 85.0, 130),
@@ -311,3 +321,17 @@ def test_additional_vehicles_change_resource_bottleneck():
     assert few.resource_wait_total_min > 0
     assert many.resource_wait_total_min < few.resource_wait_total_min
     assert many.departure_readiness_pct > few.departure_readiness_pct
+
+
+def test_run_names_the_held_solution_that_no_longer_fits_the_project_values(client, tmp_path):
+    pid, _ = _project_with_plan(client, tmp_path)
+    assert _variant(client, pid, "Viele Busse", extra_vehicles={"bus": 100}).status_code == 201
+    saved = client.put(f"/api/v1/projects/{pid}/assets", headers=AIRPORT, json={"entries": [
+        {"key": "fleet.bus.vehicles", "value": 150, "unit": "Stück"},
+        {"key": "fleet.bus.chargers", "value": 8, "unit": "Stück"}]})
+    assert saved.status_code == 200, saved.text
+    run = client.post(f"/api/v1/projects/{pid}/variants/run", headers=AIRPORT, json={})
+    assert run.status_code == 422, run.text
+    detail = run.json()["detail"]
+    assert detail.startswith("invalid_variant: „Viele Busse“ passt nicht mehr zu Ihren Projektwerten.")
+    assert "Value error" not in detail and "pydantic" not in detail

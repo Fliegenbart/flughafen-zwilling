@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -53,17 +53,20 @@ describe("LoadChart im Druck", () => {
 });
 
 describe("LoadChart Legende", () => {
-  it("nennt nur, was gezeichnet ist", () => {
+  it("nennt die Hauptkurve immer und sonst nur, was gezeichnet ist", () => {
+    const items = () =>
+      within(screen.getByRole("list", { name: "Legende" }))
+        .getAllByRole("listitem")
+        .map((li) => li.textContent ?? "");
     const { rerender } = chart(roomy);
     expect(points(roomy).some((p) => p.miss > 0.5 || p.cover > 0.5)).toBe(false);
-    expect(screen.queryByRole("list", { name: "Legende" })).not.toBeInTheDocument();
+    expect(items()).toEqual(["Strombedarf"]);
 
     rerender(
       <LoadChart result={tight} today={today} departures={preview.departures} changed={false} />,
     );
     expect(points(tight).some((p) => p.miss > 0.5)).toBe(true);
-    const items = () => screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
-    expect(items()).toEqual(["Es fehlt"]);
+    expect(items()).toEqual(["Strombedarf", "Es fehlt"]);
 
     rerender(
       <LoadChart result={tight} today={today} departures={preview.departures} changed={true} />,
@@ -137,6 +140,50 @@ describe("Stilregeln des Arbeitsbildschirms", () => {
     }
     return out;
   }
+
+  /** Inhalt des ersten `@media <query> { ... }`-Blocks. */
+  function insideMedia(source: string, query: string) {
+    const start = source.indexOf(`@media ${query}`);
+    expect(start).toBeGreaterThan(-1);
+    let depth = 0;
+    const open = source.indexOf("{", start);
+    for (let j = open; j < source.length; j++) {
+      if (source[j] === "{") depth++;
+      if (source[j] === "}" && --depth === 0) return source.slice(open + 1, j);
+    }
+    throw new Error(`@media ${query} nicht geschlossen`);
+  }
+
+  it("laesst die Seite ueber der sticky Reglerspalte scrollen", () => {
+    expect(css).toMatch(/\.ap-levers\s*\{[^}]*position:\s*sticky/);
+    expect(css).not.toMatch(/overscroll-behavior:\s*contain/);
+  });
+
+  it("nimmt die Zugangsleiste aus der Handreichung", () => {
+    expect(insideMedia(css, "print")).toMatch(/\.pilot-access-bar\s*\{[^}]*display:\s*none/);
+  });
+
+  it("vergroessert den Hinweis zu ausgegrauten Vorschlaegen auf dem Beamer", () => {
+    expect(insideMedia(css, "screen")).toMatch(
+      /\.ap\[data-presenting\] \.ap-chips__note\s*\{[^}]*font-size:\s*16px/,
+    );
+  });
+
+  it("legt die Vergleichstabelle auf Werte der Seite statt auf feste Hellwerte", () => {
+    // Die Tabelle steht auf dem hellen Arbeitsbildschirm und auf der Zusage (hell oder dunkel).
+    const rules = [...css.matchAll(/\n\.ap-compare[^{]*\{([^}]*)\}/g)].map((m) => m[1]!);
+    expect(rules.length).toBeGreaterThan(5);
+    for (const body of rules) expect(body).not.toMatch(/#[0-9a-f]{3,6}\b/i);
+    expect(css).toMatch(/--cmp-line:\s*var\(--ap-surface,\s*var\(--aec-line\)\)/);
+    expect(css).toMatch(/--cmp-muted:\s*var\(--ap-muted,\s*var\(--aec-muted\)\)/);
+    expect(css).toMatch(/--cmp-go:\s*var\(--ap-go,\s*var\(--aec-ok\)\)/);
+  });
+
+  it("haelt die Krisenspalte der Vergleichstabelle bei 1024 px im Bild", () => {
+    expect(insideMedia(css, "(min-width: 901px) and (max-width: 1100px)")).toMatch(
+      /\.ap-compare td\s*\{[^}]*padding-left:\s*8px/,
+    );
+  });
 
   it("haelt die Beamer-Groessen aus dem Druck heraus", () => {
     expect(css).toContain("[data-presenting]");

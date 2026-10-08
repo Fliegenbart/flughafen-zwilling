@@ -28,7 +28,7 @@ import { useBoard } from "./festhalten/useBoard";
 import { isChanged } from "./levers";
 import { loadLevers, saveLevers } from "./leverMemory";
 import { useDataStatus } from "./useDataStatus";
-import { useLiveScenario } from "./useLiveScenario";
+import { useLiveScenario, type Accuracy } from "./useLiveScenario";
 import { usePresentation } from "./usePresentation";
 
 type ArbeitsplatzRoute = Extract<Route, { page: "arbeitsplatz" }>;
@@ -90,6 +90,8 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
   }, [printName]);
 
   const ready = !!(s.today && s.levers && s.todayLevers && s.result && s.todayResult);
+  // Ein Fehler der genauen Rechnung gilt überall, wo der Stand der Rechnung zählt.
+  const accuracy: Accuracy = s.error ? "fehler" : s.accuracy;
 
   // Verspaetete Abfluege kennt nur die genaue Rechnung. Kommt keine mehr (Beispielprojekt,
   // Fehler), stuenden unter der geaenderten Kurve die roten Balken von heute. Solange sie noch
@@ -106,7 +108,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
         <Link to={{ page: "start" }} className="ap-head__back" label="Zurück zu allen Projekten">
           Projekte
         </Link>
-        <h1 className="ap-head__title">{project?.name ?? "Projekt wird geladen …"}</h1>
+        <h1 className="ap-head__title">{project?.name ?? "Wir laden das Projekt …"}</h1>
         <StepBar projekt={route.projekt} />
         <span className="ap-head__data">
           Daten: {status ? `${status.real} von ${status.total} belegt` : "…"}
@@ -129,9 +131,9 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
           type="button"
           className="ap-tool"
           onClick={() => window.print()}
-          disabled={!ready || (!s.sample && s.accuracy === "naeherung")}
+          disabled={!ready || (!s.sample && accuracy === "naeherung")}
           title={
-            !s.sample && s.accuracy === "naeherung"
+            !s.sample && accuracy === "naeherung"
               ? "Erst wenn die Rechnung fertig ist"
               : "Als PDF sichern: im Druckdialog „Als PDF speichern“ wählen"
           }
@@ -155,7 +157,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
           </p>
         ) : !s.today || !s.levers || !s.todayLevers || !s.result || !s.todayResult ? (
           <p className="ap-loading" role="status">
-            {!project || checking ? "Projekt wird geöffnet …" : "Der Tag wird gerechnet …"}
+            {!project || checking ? "Wir öffnen das Projekt …" : "Wir rechnen den Tag …"}
           </p>
         ) : (
           <div className="ap-body">
@@ -167,6 +169,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
               onReset={s.reset}
               pvKwp={s.today.basis.power.pvCapacityKwp}
               fleetVehicles={s.today.basis.fleet.classes.reduce((n, c) => n + c.vehicles, 0)}
+              fleet={s.today.vehiclesByKind}
               exactEnabled={!s.sample}
             />
             <div className="ap-main">
@@ -176,6 +179,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
                 onChange={s.setLevers}
                 onReset={s.reset}
                 exactEnabled={!s.sample}
+                fleet={s.today.vehiclesByKind}
               />
               <LoadChart
                 result={s.result}
@@ -188,7 +192,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
                 todayPreview={s.today}
                 result={s.result}
                 exact={s.exact}
-                accuracy={s.error ? "fehler" : s.accuracy}
+                accuracy={accuracy}
                 changed={changed}
                 sample={s.sample}
               />
@@ -196,6 +200,14 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
               {s.error && s.today ? (
                 <p className="ap-error" role="alert">
                   {s.error}
+                  {s.canRetry ? (
+                    <>
+                      {" "}
+                      <button type="button" className="ap-tool" onClick={s.retry}>
+                        Noch einmal rechnen
+                      </button>
+                    </>
+                  ) : null}
                 </p>
               ) : null}
               <BasisNote
@@ -218,7 +230,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
                 />
               ) : null}
             </div>
-            <HandoutFoot status={status} sample={s.sample} accuracy={s.accuracy} />
+            <HandoutFoot status={status} sample={s.sample} accuracy={accuracy} />
           </div>
         )}
       </main>

@@ -44,7 +44,11 @@ export default function Outcome({
     p?.energyWaitSharePct != null && p.delayedDepartures
       ? `${unit(int(p.energyWaitSharePct), "%")} Strom, ${unit(int(100 - p.energyWaitSharePct), "%")} Fahrzeuge`
       : null;
-  const pending = sample ? "nur mit eigenem Projekt" : "wird gerechnet …";
+  const pending = sample
+    ? "nur mit eigenem Projekt"
+    : accuracy === "fehler"
+      ? "nicht gerechnet"
+      : "wird gerechnet …";
   const rows: Row[] = [
     {
       label: "Fehlende Ladeleistung in der Spitze",
@@ -139,22 +143,22 @@ export default function Outcome({
         </tbody>
       </table>
       <p className="ap-accuracy" data-accuracy={accuracy}>
-        {sample || accuracy === "genau" ? (
+        {sample || (accuracy === "genau" && changed) ? (
           <EvidenceBadge level="synthetic" label="Vorschau" />
         ) : null}{" "}
         {sample
           ? "Die Kurve des Beispieltags folgt den Reglern als Näherung, eine Rechnung gibt es nur in einem eigenen Projekt."
           : accuracy === "naeherung"
             ? "Die Kurve ist vorerst eine Näherung, die Rechnung läuft."
-            : accuracy === "genau"
-              ? "Diese Rechnung gilt nur beim Verstellen, erst „Einstellung festhalten“ macht daraus eine Lösung im Projekt."
+            : accuracy === "genau" && changed
+              ? "Diese Rechnung ist nicht gespeichert, erst „Einstellung festhalten“ macht daraus eine Lösung im Projekt."
               : accuracy === "fehler"
                 ? "Die Kurve bleibt eine Näherung, die Rechnung ist ausgefallen."
                 : ""}
       </p>
       {/* Eine Ansage pro Rechnung: nur wenn sie fertig ist, ohne die Zeit und ohne den Hinweis oben. */}
       <span className="aec-visually-hidden" role="status">
-        {!sample && accuracy === "genau" ? "Die Rechnung ist fertig." : ""}
+        {!sample && accuracy === "genau" && changed ? "Die Rechnung ist fertig." : ""}
       </span>
     </section>
   );

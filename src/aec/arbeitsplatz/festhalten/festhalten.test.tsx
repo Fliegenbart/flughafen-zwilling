@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NavContext } from "../../context";
@@ -115,7 +115,7 @@ describe("Einstellung festhalten", () => {
   it("legt die Lösung an, rechnet sie nach und lädt die Tafel neu", async () => {
     const { reload, keep } = view();
     fireEvent.click(keep());
-    await vi.waitFor(() => expect(reload).toHaveBeenCalled());
+    await waitFor(() => expect(reload).toHaveBeenCalled());
     expect(api.createVariant).toHaveBeenCalledWith(
       project,
       expect.stringMatching(/^Netzanschluss 4,50\sMW · Batteriespeicher 2,0\sMWh mit 1,00\sMW$/),
@@ -131,7 +131,7 @@ describe("Einstellung festhalten", () => {
     });
     expect(screen.getByText(/Wir rechnen die Lösung auch unter „Gepäckstau“/)).toBeVisible();
     fireEvent.click(keep());
-    await vi.waitFor(() => expect(reload).toHaveBeenCalled());
+    await waitFor(() => expect(reload).toHaveBeenCalled());
     expect(api.runVariants).toHaveBeenCalledWith(project, true, false, crisis);
   });
 
@@ -217,7 +217,7 @@ describe("Einstellung festhalten", () => {
       }),
     });
     fireEvent.click(keep());
-    await vi.waitFor(() => expect(reload).toHaveBeenCalled());
+    await waitFor(() => expect(reload).toHaveBeenCalled());
     expect(api.createVariant.mock.calls[0]![1]).toMatch(/ \(2\)$/);
   });
 
@@ -236,7 +236,7 @@ describe("Einstellung festhalten", () => {
       }),
     });
     fireEvent.click(screen.getByRole("button", { name: "Batterie entfernen" }));
-    await vi.waitFor(() => expect(reload).toHaveBeenCalled());
+    await waitFor(() => expect(reload).toHaveBeenCalled());
     expect(api.deleteVariant).toHaveBeenCalledWith(project, "v1");
   });
 
@@ -266,7 +266,7 @@ describe("Einstellung festhalten", () => {
         },
       }),
     });
-    expect(screen.getByRole("status")).toHaveTextContent("1 von 3 Berechnungen fertig.");
+    expect(screen.getByRole("status")).toHaveTextContent("1 von 3 Rechnungen fertig.");
     expect(screen.getByRole("button", { name: "Wird gerechnet …" })).toBeDisabled();
   });
 });
@@ -323,7 +323,7 @@ describe("Wenn beim Festhalten etwas schiefgeht", () => {
     ).toBeVisible();
     api.runVariants.mockResolvedValueOnce(undefined);
     fireEvent.click(screen.getByRole("button", { name: "Neu rechnen" }));
-    await vi.waitFor(() => expect(api.runVariants).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(api.runVariants).toHaveBeenCalledTimes(2));
     expect(api.runVariants).toHaveBeenLastCalledWith(project, false, false, null);
   });
 
@@ -332,6 +332,102 @@ describe("Wenn beim Festhalten etwas schiefgeht", () => {
     view({ levers: today, board: done() });
     fireEvent.click(screen.getByRole("button", { name: "Batterie entfernen" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Keine Verbindung zum Server.");
+  });
+
+  /** Der 422 des Servers, wenn eine ältere Lösung zu den jetzigen Projektwerten nicht mehr passt. */
+  const tooMany = "Das Modell rechnet höchstens 200 Fahrzeuge je Art, Busse kämen auf 250.";
+  const invalid = () =>
+    Object.assign(new Error(tooMany), { body: { detail: `invalid_variant: ${tooMany}` } });
+
+  it("rät bei einer Lösung, die nicht mehr passt, zum Entfernen statt zum erneuten Rechnen", async () => {
+    const server = { board: board() };
+    api.createVariant.mockImplementationOnce(async (_, name, changes) => {
+      server.board = board({ definitions: [{ id: "v1", name, changes: changes as never }] });
+    });
+    api.runVariants.mockRejectedValueOnce(invalid());
+    stateful(server);
+    fireEvent.click(screen.getByRole("button", { name: "Einstellung festhalten" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "Wir haben die Lösung festgehalten, konnten sie aber nicht rechnen, weil eine ältere Lösung nicht mehr zu Ihren Projektwerten passt.",
+    );
+    expect(alert).toHaveTextContent(tooMany);
+    expect(alert).toHaveTextContent("Entfernen Sie diese Lösung in der Liste.");
+    expect(alert.textContent).not.toMatch(/Neu rechnen|geht so nicht/);
+  });
+
+  it("sagt beim erneuten Rechnen dasselbe", async () => {
+    api.runVariants.mockRejectedValueOnce(invalid());
+    view({ levers: today, board: done({ run: run({ stale: true }) }) });
+    fireEvent.click(screen.getByRole("button", { name: "Neu rechnen" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "Wir konnten nicht neu rechnen, weil eine festgehaltene Lösung nicht mehr zu Ihren Projektwerten passt.",
+    );
+    expect(alert).toHaveTextContent("Entfernen Sie diese Lösung in der Liste.");
+    expect(alert.textContent).not.toMatch(/geht so nicht/);
+  });
+
+  it("zeigt beim erneuten Rechnen andere Fehler unverändert", async () => {
+    api.runVariants.mockRejectedValueOnce(new Error("Der Rechner ist gerade ausgelastet."));
+    view({ levers: today, board: done({ run: run({ stale: true }) }) });
+    fireEvent.click(screen.getByRole("button", { name: "Neu rechnen" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Der Rechner ist gerade ausgelastet.",
+    );
+  });
+});
+
+describe("Wenn die Verbindung zum Rechner abbricht", () => {
+  const second = { id: "v2", name: "Mehr Anschluss", changes: { grid_import_limit_kw: 5000 } };
+  /** Zwei Lösungen, eine fertig, die andere noch in Arbeit: so sieht der Server mitten im Lauf aus. */
+  const midRun = () =>
+    board({
+      definitions: [battery, second],
+      run: run({ status: "running", done: 1, total: 3 }),
+      variants: [variant({}), done().variants[1]!],
+    });
+  const notice = /Die Verbindung zum Rechner ist unterbrochen/;
+  const retry = () => screen.queryByRole("button", { name: "Stand neu laden" });
+
+  it("behandelt eine laufende Rechnung nicht als gescheitert, auch wenn das Nachfragen aufgab", () => {
+    // Der Hook meldet "läuft nicht mehr", die Tafel sagt weiter "läuft".
+    view({ levers: today, running: false, lost: true, board: midRun() });
+    expect(screen.queryByText(/ließ(en)? sich nicht rechnen/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Neu rechnen" })).toBeNull();
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.getByText("1 von 3 Rechnungen fertig.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Wird gerechnet …" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Mehr Anschluss entfernen" })).toBeDisabled();
+    expect(screen.getByText(notice)).toBeVisible();
+  });
+
+  it("meldet den Verlust auch bei einer fertigen Tafel und fragt auf Wunsch neu ab", () => {
+    const onRetry = vi.fn();
+    const { reload } = view({ levers: today, lost: true, onRetry, board: done() });
+    expect(screen.getByText(notice)).toHaveTextContent("der angezeigte Stand kann veraltet sein");
+    fireEvent.click(retry()!);
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("lädt ohne eigenen Weg über die Tafel neu", () => {
+    const { reload } = view({ levers: today, lost: true, board: done() });
+    fireEvent.click(retry()!);
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it("bietet ohne Tafel das Laden an und sagt nur, dass sie fehlt", () => {
+    view({ lost: true, board: null });
+    expect(screen.getByText("Die festgehaltenen Lösungen ließen sich nicht laden.")).toBeVisible();
+    expect(screen.queryByText(notice)).toBeNull();
+    expect(retry()).toBeEnabled();
+  });
+
+  it("zeigt nichts davon, solange die Verbindung steht", () => {
+    view({ levers: today, board: done() });
+    expect(screen.queryByText(notice)).toBeNull();
+    expect(retry()).toBeNull();
   });
 });
 
@@ -358,7 +454,7 @@ describe("Ergebnisse, die nicht mehr zur Auswahl passen", () => {
     expect(within(table).getByRole("row", { name: /Batterie/ })).toBeVisible();
     expect(within(table).queryByRole("row", { name: /Entfernt/ })).toBeNull();
     expect(screen.queryByText(/hilft am meisten/)).toBeNull();
-    expect(screen.getByText("Die Auswahl hat sich geändert.")).toBeVisible();
+    expect(screen.getByText("Sie haben Lösungen hinzugefügt oder entfernt.")).toBeVisible();
     expect(rerunButton()).toBeEnabled();
   });
 
@@ -369,7 +465,7 @@ describe("Ergebnisse, die nicht mehr zur Auswahl passen", () => {
       board: done({ run: run({ stale: true, stress: true, crisis }) }),
     });
     fireEvent.click(rerunButton()!);
-    await vi.waitFor(() => expect(api.runVariants).toHaveBeenCalled());
+    await waitFor(() => expect(api.runVariants).toHaveBeenCalled());
     expect(api.runVariants).toHaveBeenCalledWith(project, true, false, crisis.id);
   });
 
@@ -377,7 +473,20 @@ describe("Ergebnisse, die nicht mehr zur Auswahl passen", () => {
     view({ levers: today, board: done({ run: run({ inputsStale: true }) }) });
     expect(screen.queryByRole("table")).toBeNull();
     expect(screen.queryByText(/hilft am meisten/)).toBeNull();
-    expect(screen.getByText("Ihre Daten haben sich seit der Berechnung geändert.")).toBeVisible();
+    expect(
+      screen.getByText("Ihre Werte haben sich seit der letzten Rechnung geändert."),
+    ).toBeVisible();
+    expect(rerunButton()).toBeEnabled();
+  });
+
+  it("blendet die Tabelle auch aus, wenn zugleich die Auswahl anders ist", () => {
+    const both = done({ run: run({ stale: true, inputsStale: true }) });
+    view({ levers: today, board: both });
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.queryByText(/hilft am meisten/)).toBeNull();
+    expect(
+      screen.getByText("Ihre Werte haben sich seit der letzten Rechnung geändert."),
+    ).toBeVisible();
     expect(rerunButton()).toBeEnabled();
   });
 
@@ -413,6 +522,11 @@ describe("Ergebnisse, die nicht mehr zur Auswahl passen", () => {
     expect(outdatedReason({ ...b, run: null })).toBe("never");
     expect(outdatedReason({ ...b, run: run({ stale: true }) })).toBe("definitions");
     expect(outdatedReason({ ...b, run: run({ inputsStale: true }) })).toBe("inputs");
+    // Geänderte Daten gehen vor: Die Basis der Tabelle stimmt nicht mehr, ob die Auswahl passt oder nicht.
+    const both = { ...b, run: run({ stale: true, inputsStale: true }) };
+    expect(outdatedReason(both)).toBe("inputs");
+    expect(currentBoard(both).variants).toEqual([]);
+    expect(currentBoard(both).answer).toBeNull();
     expect(outdatedReason({ ...b, variants: [variant({})] })).toBe("failed");
     expect(outdatedReason({ ...b, source: "beispiel" })).toBeNull();
     expect(outdatedNote(b)).toBe("");
@@ -475,6 +589,64 @@ describe("Sicherheitsstufe der Vergleichstabelle", () => {
     unmount();
     render(<Compare board={board()} bestId={null} />);
     expect(level()).toHaveAttribute("data-evidence", "assumption");
+  });
+
+  describe("Krisenspalte", () => {
+    const stressed = (stress: Variant["evidence"], solution: Variant["evidence"]) =>
+      done({
+        run: run({ crisis: null }),
+        variants: [
+          variant({ stressOnTimePct: 70, stressEvidence: "model_checked" }),
+          variant({
+            id: "v1",
+            name: "Batterie",
+            kind: "speicher",
+            stressOnTimePct: 80,
+            stressEvidence: stress,
+            evidence: solution,
+          }),
+        ],
+      });
+    const tip = () => document.querySelector(".ap-compare__foot [role=tooltip]")!;
+
+    it("zieht die Tabelle herunter, wenn die Rechnung unter Stress schwächer ist", () => {
+      render(<Compare board={stressed("synthetic", "model_checked")} bestId={null} />);
+      expect(level()).toHaveAttribute("data-evidence", "synthetic");
+      expect(tip().textContent).toMatch(
+        /stammt von der Rechnung bei 20\s%\sweniger Anschluss in der Zeile „Batterie“/,
+      );
+    });
+
+    it("lässt die schwächere Stufe des Hauptlaufs vorgehen, wenn beide gleich schwach sind", () => {
+      render(<Compare board={stressed("synthetic", "synthetic")} bestId={null} />);
+      expect(level()).toHaveAttribute("data-evidence", "synthetic");
+      expect(tip().textContent).toMatch(/stammt von der schwächsten Zeile „/);
+    });
+
+    it("benennt den Krisenfall, wenn einer gewählt ist", () => {
+      const crisis = { id: "c", name: "Gepäckstau", assumption: "Weniger Personal." };
+      const b = stressed("synthetic", "model_checked");
+      render(<Compare board={{ ...b, run: run({ crisis }) }} bestId={null} />);
+      expect(tip().textContent).toMatch(/Rechnung unter „Gepäckstau“ in der Zeile „Batterie“/);
+    });
+
+    it("bleibt bei gleicher Stufe ohne Hinweis", () => {
+      render(<Compare board={stressed("model_checked", "model_checked")} bestId={null} />);
+      expect(level()).toHaveAttribute("data-evidence", "model_checked");
+      expect(tip().textContent).not.toMatch(/stammt von/);
+    });
+
+    it("zählt die Stufe nur, solange die Spalte eine Zahl zeigt", () => {
+      const b = done({
+        variants: [
+          variant({}),
+          variant({ id: "v1", name: "Batterie", kind: "speicher", stressEvidence: "synthetic" }),
+        ],
+      });
+      render(<Compare board={b} bestId={null} />);
+      expect(screen.queryByRole("columnheader", { name: /weniger Anschluss/ })).toBeNull();
+      expect(level()).toHaveAttribute("data-evidence", "model_checked");
+    });
   });
 
   it("benennt die Krisenspalte nach dem, was sie misst", () => {

@@ -3,6 +3,7 @@
  * Festgehaltene Loesungen fuehrt auch die Zusage auf; die Vorschau darueber bleibt eine Vorschau.
  */
 import { useState } from "react";
+import { isObj } from "../../api/parse";
 import { createVariant, deleteVariant, runVariants } from "../../api/variants";
 import { variantChangesFor } from "../../api/preview";
 import Link from "../../Link";
@@ -11,7 +12,7 @@ import { caseByScenarioId } from "../../scenarios";
 import type { Project, VariantBoard, VariantChanges } from "../../types";
 import { describeChanges } from "./describe";
 import Compare from "./Compare";
-import { currentBoard, outdatedNote, outdatedReason } from "./results";
+import { currentBoard, isRunning, outdatedNote, outdatedReason } from "./results";
 
 const MAX_KEPT = 8;
 const NAME_MAX = 80;
@@ -34,6 +35,44 @@ function nameFor(changes: VariantChanges, taken: Set<string>): string {
   return name;
 }
 
+/**
+ * Der Satz zur Loesung, die nicht mehr zu den Projektwerten passt (der Client hat ihn schon in
+ * Kundensprache gebracht); null bei jedem anderen Fehler.
+ */
+function invalidReason(e: unknown): string | null {
+  const body = (e as { body?: unknown } | null)?.body;
+  const detail = isObj(body) ? body.detail : undefined;
+  if (!(e instanceof Error) || typeof detail !== "string" || !detail.startsWith("invalid_variant"))
+    return null;
+  return /[.!?]$/.test(e.message) ? e.message : `${e.message}.`;
+}
+
+/**
+ * Meldung zu einem gescheiterten Lauf. Passt eine Loesung nicht mehr zu den Projektwerten, hilft
+ * ein neuer Versuch nie: Der Kunde soll sie entfernen. Sonst darf er es erneut versuchen.
+ */
+function runFailure(e: unknown, held: boolean): unknown {
+  const reason = invalidReason(e);
+  if (reason)
+    return new Error(
+      `${
+        held
+          ? "Wir haben die Lösung festgehalten, konnten sie aber nicht rechnen, weil eine ältere"
+          : "Wir konnten nicht neu rechnen, weil eine festgehaltene"
+      } Lösung nicht mehr zu Ihren Projektwerten passt. ${reason} Entfernen Sie diese Lösung in der Liste.`,
+    );
+  if (!held) return e;
+  return new Error(
+    [
+      "Wir haben die Lösung festgehalten, die Rechnung hat aber nicht geklappt.",
+      e instanceof Error ? e.message : "",
+      "Mit „Neu rechnen“ starten Sie sie erneut.",
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+}
+
 export default function Festhalten({
   project,
   board,
@@ -43,6 +82,7 @@ export default function Festhalten({
   today,
   sample,
   lost = false,
+  onRetry,
 }: {
   project: Project;
   board: VariantBoard | null;
@@ -53,6 +93,8 @@ export default function Festhalten({
   sample: boolean;
   /** Das Nachfragen der festgehaltenen Lösungen schlug fehl. */
   lost?: boolean;
+  /** Fragt wieder nach, auch wenn das automatische Nachfragen aufgegeben hat; sonst `reload`. */
+  onRetry?: () => unknown;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -73,7 +115,9 @@ export default function Festhalten({
   else if (same) hint = `Diese Einstellung ist schon festgehalten als „${same.name}“.`;
   else if (defs.length >= MAX_KEPT)
     hint = `Es sind schon ${MAX_KEPT} Lösungen festgehalten. Entfernen Sie eine.`;
-  const canKeep = !hint && !busy && !running && !!changes && !!board;
+  // Ob noch gerechnet wird, sagt die Tafel; ein verlorenes Nachfragen heisst nicht "fertig".
+  const live = running || (!!board && isRunning(board));
+  const canKeep = !hint && !busy && !live && !!changes && !!board;
   // Ein neuer Lauf gilt fuer alle Loesungen und nimmt nur den jetzt gewaehlten Krisenfall mit.
   const earlierCrisis = board?.run?.crisis;
 
@@ -98,27 +142,25 @@ export default function Festhalten({
       try {
         await runVariants(project, !!crisis, false, crisis?.scenarioId ?? null);
       } catch (e) {
-        throw new Error(
-          [
-            "Wir haben die Lösung festgehalten, die Berechnung hat aber nicht geklappt.",
-            e instanceof Error ? e.message : "",
-            "Mit „Neu rechnen“ starten Sie sie erneut.",
-          ]
-            .filter(Boolean)
-            .join(" "),
-        );
+        throw runFailure(e, true);
       }
     });
 
   const rerun = () => {
     const id = board?.run?.crisis?.id ?? crisis?.scenarioId ?? null;
-    return act(() => runVariants(project, !!id || !!board?.run?.stress, false, id));
+    return act(async () => {
+      try {
+        await runVariants(project, !!id || !!board?.run?.stress, false, id);
+      } catch (e) {
+        throw runFailure(e, false);
+      }
+    });
   };
 
   const api = board?.source === "api";
   const shown = api ? currentBoard(board) : null;
-  const results = !!shown && shown.variants.length > 0 && !running;
-  const outdated = api && !!board.base && !running && outdatedReason(board) !== null;
+  const results = !!shown && shown.variants.length > 0 && !live;
+  const outdated = api && !!board.base && !live && outdatedReason(board) !== null;
 
   return (
     <section className="ap-keep" aria-labelledby="ap-keep-title">
@@ -131,7 +173,7 @@ export default function Festhalten({
       </p>
       <div className="ap-keep__act">
         <button type="button" className="ap-tool" disabled={!canKeep} onClick={() => void keep()}>
-          {busy ? "Wird festgehalten …" : running ? "Wird gerechnet …" : "Einstellung festhalten"}
+          {busy ? "Wird festgehalten …" : live ? "Wird gerechnet …" : "Einstellung festhalten"}
         </button>
         {hint ? <span className="ap-keep__hint">{hint}</span> : null}
         {crisis && canKeep ? (
@@ -149,9 +191,22 @@ export default function Festhalten({
         </p>
       ) : null}
 
-      {running && board?.run ? (
+      {lost ? (
+        <div className="ap-keep__act">
+          {board ? (
+            <span className="ap-keep__hint" role="status">
+              Die Verbindung zum Rechner ist unterbrochen, der angezeigte Stand kann veraltet sein.
+            </span>
+          ) : null}
+          <button type="button" className="ap-tool" onClick={() => void (onRetry ?? reload)()}>
+            Stand neu laden
+          </button>
+        </div>
+      ) : null}
+
+      {live && board?.run ? (
         <p className="ap-keep__progress" role="status">
-          {board.run.done} von {board.run.total} Berechnungen fertig.
+          {board.run.done} von {board.run.total} Rechnungen fertig.
         </p>
       ) : null}
 
@@ -166,7 +221,7 @@ export default function Festhalten({
                 <button
                   type="button"
                   className="ap-keep__remove"
-                  disabled={busy || running}
+                  disabled={busy || live}
                   aria-label={`${d.name} entfernen`}
                   onClick={() => void act(() => deleteVariant(project, d.id))}
                 >

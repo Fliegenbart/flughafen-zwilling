@@ -37,6 +37,10 @@ const tick = (ms: number) =>
   act(async () => {
     await vi.advanceTimersByTimeAsync(ms);
   });
+/** Lange Zeit in Schritten, damit React zwischen zwei Abfragen neu zeichnet wie im Browser. */
+const wait = async (ms: number) => {
+  for (let t = 0; t < ms; t += 500) await tick(500);
+};
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -79,18 +83,86 @@ describe("useBoard", () => {
     expect(result.current.board?.run?.status).toBe("completed");
   });
 
-  it("gibt nach fünf Fehlschlägen in Folge auf", async () => {
+  it("fragt weiter, solange der Server zuletzt Rechnen meldete, nur seltener", async () => {
     mocks.fetchVariantBoard
       .mockResolvedValueOnce(board("running"))
       .mockRejectedValue(new Error("Failed to fetch"));
     const { result } = renderHook(() => useBoard(PROJECT));
     await tick(0);
     await tick(1500 * 5);
-    expect(mocks.fetchVariantBoard).toHaveBeenCalledTimes(6);
-    expect(result.current.running).toBe(false);
+    // Der Stand ist veraltet, aber nicht „fertig“: running folgt der Tafel, lost zeigt den Abbruch.
+    expect(result.current.running).toBe(true);
     expect(result.current.lost).toBe(true);
-    await tick(10000);
-    expect(mocks.fetchVariantBoard).toHaveBeenCalledTimes(6);
+    await wait(60000);
+    const calls = mocks.fetchVariantBoard.mock.calls.length;
+    expect(calls).toBeGreaterThan(6);
+    // Auch nach vielen Fehlschlägen vergehen höchstens zehn Sekunden bis zur nächsten Abfrage.
+    await wait(10500);
+    expect(mocks.fetchVariantBoard.mock.calls.length).toBeGreaterThan(calls);
+    expect(result.current.running).toBe(true);
+  });
+
+  it("holt die Tafel wieder, wenn der Server zurückkehrt, während es rechnet", async () => {
+    mocks.fetchVariantBoard
+      .mockResolvedValueOnce(board("running"))
+      .mockRejectedValueOnce(new Error("Failed to fetch"))
+      .mockRejectedValueOnce(new Error("Failed to fetch"))
+      .mockRejectedValueOnce(new Error("Failed to fetch"))
+      .mockRejectedValueOnce(new Error("Failed to fetch"))
+      .mockRejectedValueOnce(new Error("Failed to fetch"))
+      .mockResolvedValue(board("completed", 3));
+    const { result } = renderHook(() => useBoard(PROJECT));
+    await tick(0);
+    await wait(60000);
+    expect(result.current.lost).toBe(false);
+    expect(result.current.running).toBe(false);
+    expect(result.current.board?.run?.status).toBe("completed");
+  });
+
+  describe("ohne laufende Berechnung", () => {
+    it("wiederholt einen einzelnen gescheiterten Abruf, auch wenn schon eine Tafel da ist", async () => {
+      mocks.fetchVariantBoard
+        .mockResolvedValueOnce({ ...board("completed", 3), definitions: [] })
+        .mockRejectedValueOnce(new Error("Failed to fetch"))
+        .mockResolvedValue(board("completed", 3));
+      const { result } = renderHook(() => useBoard(PROJECT));
+      await tick(0);
+      expect(result.current.board?.definitions).toHaveLength(0);
+      await act(async () => {
+        await result.current.reload();
+      });
+      expect(result.current.lost).toBe(true);
+      expect(result.current.board?.definitions).toHaveLength(0);
+      await tick(1500);
+      expect(result.current.lost).toBe(false);
+      expect(result.current.board?.definitions).toHaveLength(1);
+    });
+
+    it("hört nach fünf Fehlschlägen in Folge auf, und ein Nachladen beginnt neu", async () => {
+      mocks.fetchVariantBoard
+        .mockResolvedValueOnce(board("completed", 3))
+        .mockRejectedValue(new Error("Failed to fetch"));
+      const { result } = renderHook(() => useBoard(PROJECT));
+      await tick(0);
+      await act(async () => {
+        await result.current.reload();
+      });
+      await wait(60000);
+      expect(mocks.fetchVariantBoard).toHaveBeenCalledTimes(6);
+      expect(result.current.lost).toBe(true);
+      await wait(60000);
+      expect(mocks.fetchVariantBoard).toHaveBeenCalledTimes(6);
+
+      // Schlägt auch das Nachladen fehl, bekommt es wieder alle Versuche.
+      await act(async () => {
+        await result.current.reload();
+      });
+      await tick(1500);
+      expect(mocks.fetchVariantBoard.mock.calls.length).toBeGreaterThan(7);
+      mocks.fetchVariantBoard.mockResolvedValue(board("completed", 3));
+      await wait(60000);
+      expect(result.current.lost).toBe(false);
+    });
   });
 
   it("versucht eine gescheiterte erste Ladung noch einmal", async () => {

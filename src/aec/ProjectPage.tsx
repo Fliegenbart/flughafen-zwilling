@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getProject } from "./api/projects";
 import { getSituation } from "./api/situation";
-import { getVariantBoard, runVariants } from "./api/variants";
+import { runVariants, sampleBoard } from "./api/variants";
+import { useBoard } from "./arbeitsplatz/festhalten/useBoard";
 import Link from "./Link";
 import DataMeter from "./DataMeter";
 import { SourceTag } from "./parts";
@@ -33,8 +34,11 @@ export default function ProjectPage({
 }) {
   const [project, setProject] = useState<Project | null>(null);
   const [situation, setSituation] = useState<Situation | null>(null);
-  const [board, setBoard] = useState<VariantBoard | null>(null);
   const [inputs, setInputs] = useState<DataInputs | null>(null);
+  // Die Tafel bleibt bei einem Fehler stehen und wird weiter abgefragt. Kommt noch keine, zeigt die
+  // Seite die Beispiel-Tafel; die Zusage sagt bei einem eigenen Projekt selbst, dass sie fehlt.
+  const { board: loaded, reload: reloadBoard, lost } = useBoard(project);
+  const board = loaded ?? (lost ? sampleBoard() : null);
 
   useEffect(() => {
     let alive = true;
@@ -45,13 +49,8 @@ export default function ProjectPage({
       void loadDataInputs(p)
         .catch(() => EMPTY_INPUTS)
         .then((d) => alive && setInputs(d));
-      const [s, b] = await Promise.all([getSituation(p), getVariantBoard(p)]);
-      if (!alive) return;
-      // Flottengroesse aus dem Modelllauf (bzw. der Varianten-Basis) statt "unbekannt".
-      const fleet = s.fleet?.total ?? b.base?.fleet.total ?? null;
-      if (fleet) setProject({ ...p, fleetSize: fleet });
-      setSituation(s);
-      setBoard(b);
+      const s = await getSituation(p);
+      if (alive) setSituation(s);
     })();
     return () => {
       alive = false;
@@ -62,43 +61,51 @@ export default function ProjectPage({
     if (route.werkstatt) document.getElementById("werkstatt")?.scrollIntoView?.({ block: "start" });
   }, [route.werkstatt]);
 
+  // Flottengroesse aus dem Modelllauf (bzw. der Varianten-Basis) statt "unbekannt".
+  const fleetSize = situation?.fleet?.total ?? board?.base?.fleet.total ?? null;
+  const shown = useMemo(
+    () => (project && fleetSize ? { ...project, fleetSize } : project),
+    [project, fleetSize],
+  );
   const status = useMemo(() => (inputs ? computeDataStatus(inputs) : null), [inputs]);
   const reloadData = async () => {
     if (!project) return;
     setInputs(await loadDataInputs(project));
     // Neue Projektwerte veraendern die Varianten-Basis.
-    const b = await getVariantBoard(project);
-    setBoard(b);
+    await reloadBoard();
   };
 
   const [recomputing, setRecomputing] = useState(false);
   const [recomputeError, setRecomputeError] = useState("");
   const rstate = recomputeState(board);
-  // Waehrend ein Basislauf rechnet: Tafel nachladen, danach Lagebild aktualisieren.
+  const solutions = board?.definitions.length ?? 0;
+  // Endet ein Lauf, steht das Lagebild noch auf dem alten Stand.
+  const before = useRef(rstate);
   useEffect(() => {
-    if (rstate !== "laeuft" || !project) return;
-    const timer = setInterval(() => {
-      void getVariantBoard(project).then(async (b) => {
-        setBoard(b);
-        if (recomputeState(b) !== "laeuft") setSituation(await getSituation(project));
-      });
-    }, 2500);
-    return () => clearInterval(timer);
+    const was = before.current;
+    before.current = rstate;
+    if (project && was !== "aktuell" && rstate === "aktuell")
+      void getSituation(project).then(setSituation);
   }, [rstate, project]);
   const recompute = async () => {
     if (!project) return;
     setRecomputing(true);
     setRecomputeError("");
     try {
-      setBoard(await runVariants(project, false, true));
+      // Festgehaltene Loesungen rechnen mit, sonst stuende die Zusage ohne ihre Ergebnisse da.
+      // Ein Krisenfall des letzten Laufs bleibt dabei, wie bei "Neu rechnen" im Durchrechnen.
+      const crisis = board?.run?.crisis?.id ?? null;
+      if (solutions) await runVariants(project, !!crisis || !!board?.run?.stress, false, crisis);
+      else await runVariants(project, false, true);
+      await reloadBoard();
     } catch (e) {
-      setRecomputeError(e instanceof Error ? e.message : "Start fehlgeschlagen");
+      setRecomputeError(e instanceof Error ? e.message : "Die Rechnung ließ sich nicht starten.");
     } finally {
       setRecomputing(false);
     }
   };
 
-  const props = project && situation && board ? { project, situation, board, route } : null;
+  const props = shown && situation && board ? { project: shown, situation, board, route } : null;
   // Von den Daten geht es weiter zum Durchrechnen; die Zusage ist das Ende.
   const next = route.frage === "daten" ? STEPS[1] : null;
 
@@ -114,18 +121,16 @@ export default function ProjectPage({
             ←
           </Link>
           <div>
-            <span className="aec-projectbar__name">
-              {project?.name ?? "Projekt wird geladen …"}
-            </span>
+            <span className="aec-projectbar__name">{shown?.name ?? "Wir laden das Projekt …"}</span>
             <span className="aec-projectbar__meta">
-              {project
-                ? `${project.site || project.airport} · ${project.dayLabel}${
-                    project.fleetSize ? ` · ${project.fleetSize} Fahrzeuge` : ""
+              {shown
+                ? `${shown.site || shown.airport} · ${shown.dayLabel}${
+                    shown.fleetSize ? ` · ${shown.fleetSize} Fahrzeuge` : ""
                   }`
                 : ""}
             </span>
           </div>
-          {project ? <SourceTag source={situation?.source ?? project.source} /> : null}
+          {shown ? <SourceTag source={situation?.source ?? shown.source} /> : null}
           <DataMeter status={status} projekt={route.projekt} />
         </div>
         <StepNav projekt={route.projekt} current={route.frage} />
@@ -136,12 +141,14 @@ export default function ProjectPage({
           state={rstate}
           busy={recomputing}
           error={recomputeError}
+          solutions={solutions}
+          lost={lost && !!loaded}
           onRun={() => void recompute()}
         />
         {route.frage === "daten" ? (
-          project && inputs && status ? (
+          shown && inputs && status ? (
             <DatenView
-              project={project}
+              project={shown}
               inputs={inputs}
               status={status}
               reload={reloadData}
@@ -149,12 +156,12 @@ export default function ProjectPage({
             />
           ) : (
             <p className="aec-loading" role="status">
-              Ihre Daten werden geladen …
+              Wir laden Ihre Daten …
             </p>
           )
         ) : !props ? (
           <p className="aec-loading" role="status">
-            Der Tag wird geladen …
+            Wir laden den Tag …
           </p>
         ) : (
           <NachweisView {...props} />

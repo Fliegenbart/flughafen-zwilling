@@ -64,6 +64,17 @@ describe("Reglergedächtnis", () => {
     expect(loadLevers("p1")).toBeUndefined();
   });
 
+  it.each(["constructor", "toString", "hasOwnProperty", "__proto__"])(
+    "nimmt %s nicht als Fahrzeugart",
+    (name) => {
+      sessionStorage.setItem(
+        "aec.regler.p1",
+        JSON.stringify({ extraVehicles: 4, extraKind: name }),
+      );
+      expect(loadLevers("p1")).toEqual({ extraVehicles: 4 });
+    },
+  );
+
   it("liest auch eine vollständige Stellung aus dem alten Format", () => {
     sessionStorage.setItem("aec.regler.p1", JSON.stringify({ ...today, gridLimitKw: 4500 }));
     expect(loadLevers("p1")).toMatchObject({ gridLimitKw: 4500, policy: "uncontrolled" });

@@ -35,6 +35,28 @@ def test_seeded_project_starts_from_the_calibrated_day(client, tmp_path):  # noq
     assert board["base"]["source"] == "coupled_run"
 
 
+def test_project_values_over_the_fleet_limit_name_the_cause(client, tmp_path):  # noqa: F811
+    """Das Speichern prüft gegen die Standardflotte (100), die Basis des Beispieltags hat 101."""
+    def call(method, path, body):
+        response = client.request(method, path, json=body, headers=AIRPORT)
+        assert response.status_code < 300, (method, path, response.text)
+        return response.json()
+
+    pid = seed(call, FlightPlanStore(tmp_path), wait_s=60)["project_id"]
+    saved = client.put(f"/api/v1/projects/{pid}/assets", headers=AIRPORT, json={"entries": [
+        {"key": "fleet.bus.vehicles", "value": 150, "unit": "Stück"},
+        {"key": "fleet.gpu.vehicles", "value": 100, "unit": "Stück"},
+        {"key": "fleet.bus.chargers", "value": 8, "unit": "Stück"}]})
+    assert saved.status_code == 200, saved.text
+    expected = ("invalid_assets: Projektwerte passen nicht zur Basis: "
+                "Das Modell rechnet höchstens 300 Fahrzeuge, die Flotte käme auf 305.")
+    preview = client.post(f"/api/v1/projects/{pid}/situation/preview", json={})
+    assert preview.status_code == 409 and preview.json()["detail"] == expected
+    held = client.post(f"/api/v1/projects/{pid}/variants", headers=AIRPORT, json={
+        "name": "Mehr Anschluss", "changes": {"grid_import_limit_kw": 4000}})
+    assert held.status_code == 409 and held.json()["detail"] == expected
+
+
 def _fake_api(bodies: dict, run_status: dict):
     def call(method, path, body):
         bodies[(method, path)] = body
@@ -61,8 +83,10 @@ def test_seed_project_texts_are_ready_for_the_customer_view(tmp_path):
     seed(_fake_api(bodies, {"state": "completed"}), FlightPlanStore(tmp_path), wait_s=5)
     project = bodies[("POST", "/api/v1/pilot/projects")]
     assert project["decision"] == "Reicht der Netzanschluss für die elektrische Vorfeldflotte?"
-    # Der Anschluss kommt als Projektwert auf die Karte, nicht noch einmal im Text.
-    assert project["scope"] == "Beispieltag (erfunden) mit 205 Abflügen in drei Wellen"
+    # Die Karte eines Serverprojekts zeigt nur diesen Text; der Anschluss steht darin, ohne
+    # Doppelpunkt und mit geschuetztem Leerzeichen vor der Einheit.
+    assert project["scope"] == (
+        "Beispieltag (erfunden) mit 205 Abflügen in drei Wellen, Anschluss 3,5\u00a0MW")
     assert project["acceptance_note"] == "Nur zur Vorführung, keine echten Daten."
 
 

@@ -11,19 +11,18 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from decimal import ROUND_HALF_UP, Decimal
 from threading import Lock
 from typing import Any, Callable
 from uuid import uuid4
 
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..models import ModelPack, RunRequest, ScenarioDefinition
 from ..munich.coupled_models import (
     COUPLED_DOMAIN,
     ENGINE_VERSION,
-    MAX_FLEET_VEHICLES,
-    MAX_VEHICLES_PER_KIND,
     CoupledConfig,
     CoupledPolicy,
     FleetKind,
@@ -31,9 +30,9 @@ from ..munich.coupled_models import (
 )
 from ..munich.coupled_world import CoupledWorld, build_world
 from ..pilot.router import _verified_coupled_series
-from .assets import base_assets
+from .assets import base_assets, check_fleet_limits, plain_message
 from .crisis import crisis_config, crisis_stress
-from .situation import minutes_at_limit
+from .situation import day_rows, minutes_at_limit
 
 MAX_VARIANTS = 8
 # Varianten-Batches duerfen die Queue ueber das Vergleichslimit (10) hinaus fuellen;
@@ -134,17 +133,8 @@ def fleet_summary(config: CoupledConfig | None, source: str | None) -> dict:
 
 
 def invalid_variant_detail(exc: ValueError) -> str:
-    """422-Text fuer eine unzulaessige Aenderung; der Kunde liest ihn (api/http.ts explain).
-
-    Pydantic liefert mehrzeilige Texte mit Eingabewerten und Link. Davon bleibt nur die Meldung
-    der eigenen Pruefungen (ValueError in einem Validator), sonst ein allgemeiner Satz.
-    """
-    if not isinstance(exc, ValidationError):
-        return f"invalid_variant: {exc}"
-    first = exc.errors(include_url=False, include_input=False)[0]
-    if first["type"] == "value_error":
-        return f"invalid_variant: {first['ctx']['error']}"
-    return "invalid_variant: Die Werte liegen außerhalb dessen, was das Modell rechnet."
+    """422-Text fuer eine unzulaessige Aenderung; der Kunde liest ihn (api/http.ts explain)."""
+    return f"invalid_variant: {plain_message(exc)}"
 
 
 def apply_changes(
@@ -177,15 +167,8 @@ def apply_changes(
         if kind not in fleets:
             raise ValueError(f"Fahrzeugklasse {kind} ist in der Basis nicht modelliert")
         fleets[kind]["vehicles"] += count
-        if fleets[kind]["vehicles"] > MAX_VEHICLES_PER_KIND:
-            raise ValueError(
-                f"Das Modell rechnet höchstens {MAX_VEHICLES_PER_KIND} Fahrzeuge je Art, "
-                f"{FLEET_LABELS[kind]} kämen auf {fleets[kind]['vehicles']}.")
         varied[f"fleets.{kind}.vehicles"] = fleets[kind]["vehicles"]
-    total = sum(fleet["vehicles"] for fleet in fleets.values())
-    if total > MAX_FLEET_VEHICLES:
-        raise ValueError(f"Das Modell rechnet höchstens {MAX_FLEET_VEHICLES} Fahrzeuge, "
-                         f"die Flotte käme auf {total}.")
+    check_fleet_limits(values["fleets"])
     for kind, count in sorted(changes.chargers_offline.items()):
         if kind not in fleets:
             raise ValueError(f"Fahrzeugklasse {kind} ist in der Basis nicht modelliert")
@@ -221,13 +204,12 @@ def run_kpis(base_dir, record) -> dict:
     _, _, frozen = _verified_coupled_series(base_dir, record.status.run_id, "grid_import_kw")
     evidence = json.loads(frozen["coupled-evidence.json"])
     day_minutes = int(evidence.get("day_minutes") or 1440)
-    peak, missing = 0.0, None
-    grid_day: list[float] = []
-    for row in evidence["series"]:
-        grid = float(row["grid_import_kw"])
-        peak = max(peak, grid)
-        if 0 <= int(row["minute"]) - 1 < day_minutes:
-            grid_day.append(grid)
+    # Spitze, fehlende Leistung und Energie beschreiben nur den Verkehrstag (wie das Lagebild);
+    # Vorlauf und Nachlauf der Simulation zaehlen nicht.
+    day = day_rows(evidence["series"], day_minutes)
+    grid_day = [float(row["grid_import_kw"]) for row in day]
+    peak, missing = max(grid_day, default=0.0), None
+    for row in day:
         if "charging_requested_kw" in row:
             short = float(row["charging_requested_kw"]) - float(row["ground_charging_kw"]) - float(
                 row["parking_kw"])
@@ -282,8 +264,13 @@ def _better(a: dict, b: dict) -> bool:
 
 
 def _num(value: float, digits: int = 1) -> str:
-    text = f"{value:,.{digits}f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return text
+    """Deutsche Zahl; ab ,5 wird aufgerundet wie im Browser (Intl, Math.round).
+
+    f"{85.85:.1f}" ergibt "85.8" (der Binaerwert liegt knapp unter 85,85), die Tabelle zeigt
+    85,9. Deshalb rundet der Dezimaltext, nach den 3 Stellen der Kennzahlen im Payload.
+    """
+    exact = Decimal(str(round(value, 3))).quantize(Decimal(1).scaleb(-digits), ROUND_HALF_UP)
+    return f"{exact:,.{digits}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def _gain(e: dict, base: dict) -> float:
@@ -586,10 +573,15 @@ class VariantService:
                              "policy": base["policy"], "config": base["config"],
                              "world": base_world}]
                 for variant in variants:
-                    config, policy, varied = apply_changes(
-                        base["config"], base["policy"],
-                        VariantChanges.model_validate(variant["changes"]),
-                        base_world.day_minutes)
+                    try:
+                        config, policy, varied = apply_changes(
+                            base["config"], base["policy"],
+                            VariantChanges.model_validate(variant["changes"]),
+                            base_world.day_minutes)
+                    except ValueError as exc:
+                        # Nach geaenderten Projektwerten kann eine alte Loesung nicht mehr passen.
+                        raise ValueError(f"„{variant['name']}“ passt nicht mehr zu Ihren "
+                                         f"Projektwerten. {plain_message(exc)}") from exc
                     prepared.append({"key": variant["id"], "name": variant["name"],
                                      "changes": variant["changes"], "varied": varied,
                                      "policy": policy, "config": config,

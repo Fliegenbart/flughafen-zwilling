@@ -86,6 +86,16 @@ describe("Vorschläge", () => {
     }
   });
 
+  it("bieten Schlepper nur an, wenn das Modell sie noch rechnet", () => {
+    const schlepper = PRESETS.find((p) => p.id === "schlepper")!;
+    expect(schlepper.applies?.(today)).toBe(true);
+    expect(schlepper.applies?.(today, 295)).toBe(true);
+    expect(schlepper.applies?.(today, 296)).toBe(false);
+    expect(schlepper.applies?.(today, 300)).toBe(false);
+    expect(schlepper.applies?.(today, { pushback_tug: 196, bus: 20 })).toBe(false);
+    expect(schlepper.applies?.(today, { pushback_tug: 195, bus: 20 })).toBe(true);
+  });
+
   it("bieten nur an, was sich gegenüber heute ändert", () => {
     const mission = { ...today, policy: "mission_priority" as const, batteryKwh: 2000 };
     const ids = PRESETS.filter((p) => p.applies?.(mission) ?? true).map((p) => p.id);
@@ -125,10 +135,64 @@ describe("Anfrage an die Vorschau", () => {
 });
 
 describe("Fahrzeugregler", () => {
+  const fleet = { bus: 170, baggage_tractor: 35, pushback_tug: 10, gpu: 35 };
+
   it("endet dort, wo das Modell nicht mehr rechnet (300 Fahrzeuge insgesamt)", () => {
     expect(leverRanges(today, 101).extraVehicles.max).toBe(60);
     expect(leverRanges(today, 270).extraVehicles.max).toBe(30);
     expect(leverRanges(today, 300).extraVehicles.max).toBe(0);
     expect(leverRanges(today, 340).extraVehicles.max).toBe(0);
+  });
+
+  it("bleibt auf dem Raster des Reglers, auch bei ungerader Flotte", () => {
+    expect(leverRanges(today, 281).extraVehicles.max).toBe(18);
+    expect(leverRanges(today, 299).extraVehicles.max).toBe(0);
+  });
+
+  it("zählt bei gewählter Art deren Bestand: höchstens 200 je Art", () => {
+    // 250 Fahrzeuge insgesamt, davon 170 Busse: 50 passen insgesamt, 30 bei den Bussen.
+    expect(leverRanges(today, fleet).extraVehicles.max).toBe(50);
+    expect(leverRanges(today, fleet, "bus").extraVehicles.max).toBe(30);
+    expect(leverRanges(today, fleet, "gpu").extraVehicles.max).toBe(50);
+  });
+
+  it("rechnet ohne Auswahl mit der Mischung der Standardflotte", () => {
+    // Mit 195 Bussen ist Platz für 5 weitere; ein Fünftel der Zusatzfahrzeuge sind Busse.
+    const tight = { bus: 195, baggage_tractor: 10, pushback_tug: 5, gpu: 10 };
+    const max = leverRanges(today, tight).extraVehicles.max;
+    expect(max).toBeLessThan(60);
+    expect(max).toBeGreaterThan(0);
+    expect(max % 2).toBe(0);
+    const body = variantChangesFor({ ...today, extraVehicles: max }, today)!.extra_vehicles!;
+    expect(195 + (body.bus ?? 0)).toBeLessThanOrEqual(200);
+    const over = variantChangesFor({ ...today, extraVehicles: max + 2 }, today)!.extra_vehicles!;
+    expect(195 + (over.bus ?? 0)).toBeGreaterThan(200);
+  });
+});
+
+describe("Gemerkte Werte mit der Flotte des Projekts", () => {
+  it("kappen Zusatzfahrzeuge an der Obergrenze, die der Regler zeigt", () => {
+    expect(clampToRanges({ extraVehicles: 60 }, today, { fleet: 280 }).extraVehicles).toBe(20);
+    const fleet = { bus: 170, baggage_tractor: 35, pushback_tug: 10, gpu: 35 };
+    const wanted = { extraVehicles: 60, extraKind: "bus" as const };
+    expect(clampToRanges(wanted, today, { fleet })).toEqual({
+      extraVehicles: leverRanges(today, fleet, "bus").extraVehicles.max,
+      extraKind: "bus",
+    });
+  });
+
+  it("lassen die Art weg, wenn keine Zusatzfahrzeuge übrig bleiben", () => {
+    expect(clampToRanges({ extraVehicles: 6, extraKind: "gpu" }, today, { fleet: 300 })).toEqual({
+      extraVehicles: 0,
+    });
+  });
+
+  it("verwerfen die Photovoltaik, wenn das Projekt keine hat", () => {
+    expect(clampToRanges({ pvFactor: 2, gridLimitKw: 4000 }, today, { pvKwp: 0 })).toEqual({
+      gridLimitKw: 4000,
+    });
+    expect(clampToRanges({ pvFactor: 2 }, today, { pvKwp: 800 })).toEqual({ pvFactor: 2 });
+    // Ohne Angabe bleibt der Faktor, wie bisher.
+    expect(clampToRanges({ pvFactor: 2 }, today)).toEqual({ pvFactor: 2 });
   });
 });

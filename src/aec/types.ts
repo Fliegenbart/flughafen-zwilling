@@ -60,6 +60,8 @@ export type Variant = {
   bottleneck?: string | null;
   deltaOnTimePct?: number | null;
   stressOnTimePct?: number | null;
+  /** Wie sicher die Zahl unter Stress ist; der Stresslauf wird eigens eingestuft. */
+  stressEvidence?: EvidenceLevel | null;
   status?: string;
 };
 

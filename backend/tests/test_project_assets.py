@@ -4,7 +4,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from app.exchange.assets import AssetEntry, apply_assets, data_status, normalize
+from app.exchange.assets import AssetEntry, apply_assets, base_assets, data_status, normalize
+from app.exchange.demo_day import heute_config
 from app.main import create_app
 from app.munich.coupled_models import CoupledConfig
 from app.munich.flightplan_store import FlightPlanStore
@@ -68,6 +69,33 @@ def test_contradicting_fleet_rejected(client):
     pid = project(client)["id"]
     response = _put(client, pid, [{"key": "fleet.gpu.vehicles", "value": 2, "unit": "Stück"}])
     assert response.status_code == 422 and "mehr Ladepunkte" in response.json()["detail"]
+
+
+def test_fleet_over_the_model_limit_is_named_with_numbers(client):
+    pid = project(client)["id"]
+    response = _put(client, pid, [{"key": "fleet.bus.vehicles", "value": 200, "unit": "Stück"},
+                                  {"key": "fleet.gpu.vehicles", "value": 100, "unit": "Stück"}])
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "invalid_assets: Das Modell rechnet höchstens 300 Fahrzeuge, die Flotte käme auf 345.")
+
+
+def test_base_values_beyond_the_limit_give_one_plain_sentence_not_pydantic_text():
+    """Gespeichert wird gegen die Standardflotte; die Basis des Projekts kann größer sein."""
+    class Store:
+        def __init__(self, entries):
+            self.entries = entries
+
+        def latest(self, project_id):
+            return {"entries": self.entries, "sha256": "x" * 64}
+
+    entries = normalize([AssetEntry(key="fleet.bus.vehicles", value=150, unit="Stück"),
+                         AssetEntry(key="fleet.gpu.vehicles", value=100, unit="Stück"),
+                         AssetEntry(key="fleet.bus.chargers", value=8, unit="Stück")])
+    apply_assets(CoupledConfig(), entries)  # gegen die Standardflotte (100) noch zulässig
+    config, info = base_assets(Store(entries), "p1", heute_config())  # Basis hat 101 Fahrzeuge
+    assert info["applied"] is False and config == heute_config()
+    assert info["error"] == "Das Modell rechnet höchstens 300 Fahrzeuge, die Flotte käme auf 305."
 
 
 def test_status_assumption_until_every_value_has_a_source(client):

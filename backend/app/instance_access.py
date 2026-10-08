@@ -415,6 +415,12 @@ def _response(status_code: int, detail: str, **headers: str) -> JSONResponse:
     )
 
 
+def _audit_path(path: str) -> str:
+    """Pfad fuers Pruefprotokoll: Steuerzeichen und Nicht-ASCII maskiert, damit ein Suffix
+    sichtbar bleibt und keine Zeile im Protokoll vortaeuschen kann."""
+    return path.encode("unicode_escape").decode("ascii")
+
+
 def _same_origin(request: Request, config: AccessConfig) -> bool:
     origin = request.headers.get("origin")
     if not origin:
@@ -511,28 +517,32 @@ def install_instance_access(app: FastAPI, base_dir: Path) -> None:
 
     @app.middleware("http")
     async def instance_access(request: Request, call_next):
-        if not config.enabled or request.method == "OPTIONS" or request.url.path in _OPEN_PATHS:
+        # Der Router waehlt die Route nach scope["path"]. request.url.path wird neu geparst und
+        # verliert dabei alles hinter einem dekodierten ? oder # sowie \t, \r und \n; die
+        # Rollenpruefung saehe dann einen anderen Pfad, als der Router ausfuehrt.
+        path = request.scope["path"]
+        if not config.enabled or request.method == "OPTIONS" or path in _OPEN_PATHS:
             return await call_next(request)
 
         principal = store.principal_for_token(request.cookies.get("twin_session"))
         request.state.instance_principal = principal
         if not principal:
             return _response(401, "authentication_required")
-        read_only = request.method == "POST" and bool(_READ_ONLY_POSTS.fullmatch(request.url.path))
+        read_only = request.method == "POST" and bool(_READ_ONLY_POSTS.fullmatch(path))
         if request.method not in _SAFE_METHODS:
             if not _same_origin(request, config):
-                store._audit(principal.username, "csrf_rejected", request.url.path)
+                store._audit(principal.username, "csrf_rejected", _audit_path(path))
                 return _response(403, "csrf_origin_rejected")
             exchange_write = principal.exchange_role in EXCHANGE_ROLES and (
-                request.url.path.startswith(_EXCHANGE_WRITE_PREFIXES)
+                path.startswith(_EXCHANGE_WRITE_PREFIXES)
             )
             if (
                 not read_only
-                and request.url.path != "/api/v1/auth/logout"
+                and path != "/api/v1/auth/logout"
                 and principal.role != "operator"
                 and not exchange_write
             ):
-                store._audit(principal.username, "write_rejected", request.url.path)
+                store._audit(principal.username, "write_rejected", _audit_path(path))
                 return _response(403, "operator_role_required")
         response = await call_next(request)
         response.headers.setdefault("Cache-Control", "no-store")
@@ -540,6 +550,6 @@ def install_instance_access(app: FastAPI, base_dir: Path) -> None:
             store._audit(
                 principal.username,
                 "mutation_completed",
-                f"path={request.url.path} status={response.status_code}",
+                f"path={_audit_path(path)} status={response.status_code}",
             )
         return response

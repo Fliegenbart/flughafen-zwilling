@@ -226,10 +226,46 @@ describe("Vergleich heute und mit Ihrer Einstellung", () => {
   it("nennt weder genau noch Millisekunden und sagt, was festhalten bedeutet", () => {
     const { container } = view();
     const line = container.querySelector(".ap-accuracy")!;
-    expect(line).toHaveTextContent(/Diese Rechnung gilt nur beim Verstellen/);
+    expect(line).toHaveTextContent(/Diese Rechnung ist nicht gespeichert/);
     expect(line).toHaveTextContent("„Einstellung festhalten“ macht daraus eine Lösung im Projekt");
     expect(line.textContent).not.toMatch(/genau|\bms\b|412/i);
     expect(line).not.toHaveAttribute("role");
+  });
+
+  it("spricht erst von einer Rechnung, wenn etwas verstellt ist", () => {
+    const { container } = view({ changed: false });
+    const line = container.querySelector(".ap-accuracy")!;
+    // Das Element bleibt, es trägt die Genauigkeit für Tests und Stil.
+    expect(line).toHaveAttribute("data-accuracy", "genau");
+    expect(line.textContent?.trim()).toBe("");
+    expect(line.querySelector("[data-evidence]")).toBeNull();
+    expect(container.querySelector('[role="status"]')).toBeEmptyDOMElement();
+  });
+
+  it("schreibt in die Tabelle nicht „wird gerechnet“, wenn die Rechnung ausgefallen ist", () => {
+    const cells = (label: string) =>
+      within(screen.getByRole("row", { name: new RegExp(label) }))
+        .getAllByRole("cell")
+        .map((c) => c.textContent);
+    const { container, rerender } = view({ exact: null, accuracy: "naeherung" });
+    expect(cells("Abflüge nicht rechtzeitig fertig")[1]).toBe("wird gerechnet …");
+    rerender(
+      <Outcome
+        today={baseResult}
+        todayPreview={preview}
+        result={baseResult}
+        exact={null}
+        accuracy="fehler"
+        changed
+        sample={false}
+      />,
+    );
+    expect(cells("Abflüge nicht rechtzeitig fertig")[1]).toBe("nicht gerechnet");
+    expect(cells("Was die Abflüge bremst")[1]).toBe("nicht gerechnet");
+    expect(container.textContent).not.toMatch(/wird gerechnet/);
+    expect(container.querySelector(".ap-accuracy")).toHaveTextContent(
+      "Die Kurve bleibt eine Näherung, die Rechnung ist ausgefallen.",
+    );
   });
 
   it("kündigt nur das Ende einer Rechnung an, nicht jede Zwischenstufe", () => {
@@ -355,6 +391,19 @@ describe("Seite zum Hinterlassen", () => {
   it("sagt, dass die Kurve noch eine Näherung ist", () => {
     const { container } = render(<HandoutFoot status={null} sample={false} accuracy="naeherung" />);
     expect(container.textContent).toContain("Die Kurve ist eine Näherung, die Rechnung lief noch.");
+  });
+
+  it("sagt, dass die Rechnung ausgefallen ist, und nicht, dass sie noch lief", () => {
+    const { container } = render(<HandoutFoot status={null} sample={false} accuracy="fehler" />);
+    expect(container.textContent).toContain(
+      "Die Kurve ist eine Näherung, die Rechnung ist ausgefallen.",
+    );
+    expect(container.textContent).not.toMatch(/lief noch/);
+  });
+
+  it("schweigt im Beispielprojekt über eine Rechnung, die es dort nicht gibt", () => {
+    const { container } = render(<HandoutFoot status={null} sample accuracy="fehler" />);
+    expect(container.textContent).not.toMatch(/Rechnung/);
   });
 });
 

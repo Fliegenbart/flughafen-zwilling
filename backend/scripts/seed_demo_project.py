@@ -44,8 +44,9 @@ def seed(call: Call, plans: FlightPlanStore, *, wait_s: float = WAIT_S) -> dict:
     project = call("POST", "/api/v1/pilot/projects", {
         "name": PROJECT_NAME,
         "decision": "Reicht der Netzanschluss für die elektrische Vorfeldflotte?",
-        # Die Startseite haengt den Anschluss selbst an; hier steht er nicht noch einmal.
-        "scope": f"{TITLE} mit 205 Abflügen in drei Wellen",
+        # Die Karte eines Serverprojekts zeigt nur diesen Text, keinen Anschlusswert: der Anschluss
+        # gehoert hinein (geschuetztes Leerzeichen vor der Einheit).
+        "scope": f"{TITLE} mit 205 Abflügen in drei Wellen, Anschluss 3,5\u00a0MW",
         "acceptance_note": "Nur zur Vorführung, keine echten Daten.",
     })
     link = f"/api/v1/projects/{project['id']}/links"

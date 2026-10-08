@@ -49,6 +49,7 @@ export default function LeverPanel({
   today,
   pvKwp,
   fleetVehicles,
+  fleet,
   onChange,
   onReset,
   exactEnabled,
@@ -59,12 +60,14 @@ export default function LeverPanel({
   pvKwp: number;
   /** Fahrzeuge der Flotte heute; die Obergrenze des Fahrzeugreglers haengt daran. */
   fleetVehicles: number;
+  /** Fahrzeuge je Art heute; ist eine Art gewaehlt, zaehlt deren Bestand fuer die Obergrenze. */
+  fleet?: Partial<Record<FleetKind, number>>;
   onChange: (next: Levers) => void;
   onReset: () => void;
   /** Ohne Server (Beispielprojekt) rechnet nur die Naeherung: kein Krisenfall, keine Laderegel. */
   exactEnabled: boolean;
 }) {
-  const ranges = leverRanges(today, fleetVehicles);
+  const ranges = leverRanges(today, fleet ?? fleetVehicles, levers.extraKind);
   const val = (lv: Levers, key: RangeKey) => lv[key] ?? 0;
   const changed = isChanged(levers, today);
   const crisis = caseByScenarioId(levers.crisis);
@@ -74,7 +77,7 @@ export default function LeverPanel({
       {SLIDERS.filter((l) => l.key !== "pvFactor" || pvKwp > 0).map((l) => {
         const value = val(levers, l.key);
         const r = ranges[l.key];
-        const pct = ((val(today, l.key) - r.min) / (r.max - r.min)) * 100;
+        const pct = r.max > r.min ? ((val(today, l.key) - r.min) / (r.max - r.min)) * 100 : 0;
         const text = l.show(value);
         return (
           <div

@@ -5,13 +5,15 @@ import { isPolicy, type ChargingPolicy } from "../model/policy";
 import type { LiveBasis, Levers } from "../model/livePower";
 import type { FleetKind, Project, VariantChanges } from "../types";
 import { fleetFromApi } from "./fleet";
-import { explain, request, type ApiError } from "./http";
+import { explain, modelLimit, request, type ApiError } from "./http";
 import { enc, isObj, num, str } from "./parse";
 
 export type DepartureBin = { startMin: number; count: number; delayed: number };
 
 export type Preview = {
   basis: LiveBasis;
+  /** Fahrzeuge der Flotte je Art (die Klassen der Basis kennen ihre Art nicht). */
+  vehiclesByKind: Partial<Record<FleetKind, number>>;
   departures: DepartureBin[];
   delayedDepartures: number | null;
   departuresTotal: number | null;
@@ -28,6 +30,19 @@ export type Preview = {
 
 const nums = (v: unknown) => (Array.isArray(v) ? v.map((x) => num(x)) : []);
 
+/** Ist das eine der vier Fahrzeugarten? (`in` liesse auch Namen wie "constructor" durch.) */
+export const isFleetKind = (v: unknown): v is FleetKind =>
+  typeof v === "string" && Object.prototype.hasOwnProperty.call(FLEET_LABEL, v);
+
+/** Fahrzeuge je Art aus dem Flottenblock; die Obergrenze der Fahrzeugregler haengt daran. */
+function vehiclesByKind(raw: unknown): Partial<Record<FleetKind, number>> {
+  const out: Partial<Record<FleetKind, number>> = {};
+  if (isObj(raw) && Array.isArray(raw.classes))
+    for (const c of raw.classes.filter(isObj))
+      if (isFleetKind(c.kind)) out[c.kind] = num(c.vehicles);
+  return out;
+}
+
 /** Antwort der Vorschau (oder der Beispiel-Referenz) in die Browser-Form bringen. */
 export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview | null {
   if (!isObj(raw) || !Array.isArray(raw.requested_kw) || !isObj(raw.power)) return null;
@@ -41,6 +56,7 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
       ? departuresRaw
       : [];
   return {
+    vehiclesByKind: vehiclesByKind(raw.fleet),
     basis: {
       dayMinutes: num(raw.day_minutes, 1440),
       startMin: num(raw.start_min),
@@ -141,28 +157,35 @@ export function previewError(detail: string): string {
     const reason = d
       .replace(/^invalid_assets: (Projektwerte passen nicht zur Basis: )?/, "")
       .replace(/\.$/, "");
-    return `Ihre Projektwerte passen nicht zusammen${reason ? ` (${reason})` : ""}. Korrigieren Sie sie unter „Daten“.`;
+    // Die Grenzen des Modells kommen als ganzer Satz, andere Gruende als Bruchstueck.
+    const joined = /^Das Modell /.test(reason) ? `. ${reason}` : ` (${reason})`;
+    return `Ihre Projektwerte passen nicht zusammen${reason ? joined : ""}. Korrigieren Sie sie unter „Daten“.`;
   }
-  if (d.includes("Run-Queue voll")) return "Der Rechner ist gerade belegt.";
-  if (d.includes("operator_role_required")) return "Dafür fehlt Ihrem Konto die Berechtigung.";
   if (d.startsWith("invalid_variant")) {
+    const limit = modelLimit(d);
+    if (limit) return limit;
     const kind = /Fahrzeugklasse (\w+)/.exec(d)?.[1];
-    const label = kind && kind in FLEET_LABEL ? FLEET_LABEL[kind as FleetKind] : null;
-    return label
-      ? `${label} lassen sich in diesem Projekt nicht ergänzen.`
+    return isFleetKind(kind)
+      ? `${FLEET_LABEL[kind]} lassen sich in diesem Projekt nicht ergänzen.`
       : "Diese Einstellung lässt sich nicht rechnen.";
   }
-  if (/Failed to fetch|Load failed|NetworkError|abort/i.test(d))
-    return "Keine Verbindung zum Server.";
   if (/^API-Fehler 5\d\d/.test(d)) return "Der Server konnte nicht rechnen.";
   return explain(d);
 }
 
+const detailOf = (e: unknown) => {
+  const body = (e as ApiError | null)?.body;
+  return isObj(body) && typeof body.detail === "string" ? body.detail : "";
+};
+
 /** Liegt es an den Daten des Projekts (Flugplan fehlt, Werte widersprechen sich)? */
 export function isDataProblem(e: unknown): boolean {
-  const body = (e as ApiError | null)?.body;
-  const detail = isObj(body) ? body.detail : undefined;
-  return typeof detail === "string" && /^(no_base|invalid_assets)/.test(detail);
+  return /^(no_base|invalid_assets)/.test(detailOf(e));
+}
+
+/** Hilft ein zweiter Versuch? Nicht, wenn schon die Anfrage nicht zu rechnen ist (Daten, Grenzen des Modells). */
+export function isRetryable(e: unknown): boolean {
+  return !/^(no_base|invalid_)/.test(detailOf(e));
 }
 
 export async function getPreview(

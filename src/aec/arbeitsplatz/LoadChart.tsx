@@ -14,8 +14,9 @@ import type { LiveResult } from "../model/livePower";
 
 const SCREEN = { h: 360, depH: 96 };
 // Im Druck steht die Grafik in fester Groesse (A4 hat 703 px Satzbreite). So haengen Schrift und
-// Seitenhoehe der Handreichung nicht von der Fensterbreite ab.
-const PRINT = { width: 700, h: 230, depH: 64 };
+// Seitenhoehe der Handreichung nicht von der Fensterbreite ab. Die Hoehe ist knapp gewaehlt: Sie
+// laesst dem Fuss der Handreichung auch bei Krisenannahme und vielen Phasen Platz auf Seite 1.
+const PRINT = { width: 700, h: 206, depH: 54 };
 const PAD = { left: 52, right: 16, top: 44, bottom: 28 };
 
 function useWidth<T extends HTMLElement>() {
@@ -124,14 +125,11 @@ export default function LoadChart({
   const ticks = Array.from({ length: Math.floor(top / 1000) + 1 }, (_, i) => i * 1000);
   const hours = [0, 3, 6, 9, 12, 15, 18, 21, 24];
   const maxDep = Math.max(1, ...departures.map((d) => d.count));
-  // Die Legende nennt nur, was gerade gezeichnet ist (gleiche Schwellen wie die Flaechen oben).
+  // Die Legende nennt, was gerade gezeichnet ist (gleiche Schwellen wie die Flaechen oben): die
+  // Hauptkurve immer, die heutige erst mit veraenderter Einstellung. Die Grenze traegt ihr Schild.
   const legend = [
-    ...(changed
-      ? [
-          { id: "need", text: "Strombedarf mit Ihrer Einstellung" },
-          { id: "today", text: "Strombedarf heute" },
-        ]
-      : []),
+    { id: "need", text: changed ? "Strombedarf mit Ihrer Einstellung" : "Strombedarf" },
+    ...(changed ? [{ id: "today", text: "Strombedarf heute" }] : []),
     ...(pts.some((p) => p.cover > 0.5) ? [{ id: "cover", text: "Batterie deckt" }] : []),
     ...(pts.some((p) => p.miss > 0.5) ? [{ id: "miss", text: "Es fehlt" }] : []),
   ];
@@ -247,16 +245,14 @@ export default function LoadChart({
         ) : null}
       </svg>
       <div className="ap-chart__keybox">
-        {legend.length ? (
-          <ul className="ap-chart__key" aria-label="Legende">
-            {legend.map((k) => (
-              <li key={k.id}>
-                <span className={`ap-chart__swatch ap-chart__swatch--${k.id}`} aria-hidden="true" />
-                {k.text}
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <ul className="ap-chart__key" aria-label="Legende">
+          {legend.map((k) => (
+            <li key={k.id}>
+              <span className={`ap-chart__swatch ap-chart__swatch--${k.id}`} aria-hidden="true" />
+              {k.text}
+            </li>
+          ))}
+        </ul>
       </div>
       <input
         type="range"

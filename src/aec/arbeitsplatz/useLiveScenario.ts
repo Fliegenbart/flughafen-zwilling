@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getPreview,
   isDataProblem,
+  isRetryable,
   previewBodyFor,
   type Preview,
   type PreviewBody,
@@ -46,6 +47,10 @@ export type Scenario = {
   sample: boolean;
   setLevers: (next: Levers) => void;
   reset: () => void;
+  /** Die gescheiterte genaue Anfrage lohnt einen zweiten Versuch (Verbindung, Rechner belegt). */
+  canRetry: boolean;
+  /** Schickt die gescheiterte genaue Anfrage noch einmal. */
+  retry: () => void;
 };
 
 const SETTLE_MS = 280;
@@ -64,9 +69,16 @@ const approximable = ({ gridLimitKw, batteryKwh, batteryKw, pvFactor }: Partial<
     ),
   ) as Partial<Levers>;
 
+/** Woran sich die Regler halten muessen: Fahrzeuge der Flotte je Art und die Photovoltaik heute. */
+const limitsOf = (p: Preview) => ({
+  fleet: p.vehiclesByKind,
+  pvKwp: p.basis.power.pvCapacityKwp,
+});
+
 const problemOf = (e: unknown, fallback: string) => ({
   message: e instanceof Error ? e.message : fallback,
   inData: isDataProblem(e),
+  retryable: isRetryable(e),
 });
 
 async function loadToday(project: Project): Promise<{ preview: Preview; sample: boolean }> {
@@ -85,17 +97,20 @@ export function useLiveScenario(project: Project | null, initial?: Partial<Lever
   const [result, setResult] = useState<LiveResult | null>(null);
   const [exact, setExact] = useState<Preview | null>(null);
   const [accuracy, setAccuracy] = useState<Accuracy>("laedt");
-  const [problem, setProblem] = useState<{ message: string; inData: boolean } | null>(null);
+  const [problem, setProblem] = useState<ReturnType<typeof problemOf> | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   /** Neueste gewuenschte Anfrage; sie wartet, solange eine andere laeuft. */
   const queued = useRef<{ at: number; project: Project; body: PreviewBody } | null>(null);
   const busy = useRef(false);
+  /** Die Anfrage, die zur aktuellen Stellung gescheitert ist; `retry` schickt sie noch einmal. */
+  const failed = useRef<{ at: number; project: Project; body: PreviewBody } | null>(null);
   /** Zaehlt jede neue Absicht (Regler, Zuruecksetzen, Wechsel); Antworten auf aeltere gelten nicht. */
   const epoch = useRef(0);
 
   const invalidate = useCallback(() => {
     epoch.current++;
     queued.current = null;
+    failed.current = null;
     clearTimeout(timer.current);
   }, []);
 
@@ -118,8 +133,10 @@ export function useLiveScenario(project: Project | null, initial?: Partial<Lever
             setProblem(null);
           })
           .catch((e: unknown) => {
-            if (mine === epoch.current)
-              setProblem(problemOf(e, "Die genaue Rechnung ist fehlgeschlagen."));
+            if (mine !== epoch.current) return;
+            const problem = problemOf(e, "Die Rechnung ist fehlgeschlagen.");
+            if (problem.retryable) failed.current = w;
+            setProblem(problem);
           })
           .finally(() => {
             busy.current = false;
@@ -140,11 +157,22 @@ export function useLiveScenario(project: Project | null, initial?: Partial<Lever
         project: proj,
         body: previewBodyFor(next, startLevers(base)),
       };
+      failed.current = null;
       setProblem(null);
       pump();
     },
     [pump],
   );
+
+  const retry = useCallback(() => {
+    const w = failed.current;
+    if (!w) return;
+    epoch.current++;
+    queued.current = { ...w, at: Date.now() };
+    failed.current = null;
+    setProblem(null);
+    pump();
+  }, [pump]);
 
   useEffect(() => {
     if (!project) return;
@@ -159,6 +187,7 @@ export function useLiveScenario(project: Project | null, initial?: Partial<Lever
         const wanted = clampToRanges(
           isSample ? approximable(initial ?? {}) : (initial ?? {}),
           todayLevers,
+          limitsOf(preview),
         );
         const start: Levers = { ...todayLevers, ...wanted };
         if (JSON.stringify(start) === JSON.stringify(todayLevers)) {
@@ -177,7 +206,8 @@ export function useLiveScenario(project: Project | null, initial?: Partial<Lever
       })
       .catch((e: unknown) => {
         if (!alive) return;
-        setProblem(problemOf(e, "Der Tag ließ sich nicht rechnen."));
+        // Ein Neuversuch gilt nur der genauen Rechnung zu einer Stellung, nicht dem ersten Tag.
+        setProblem({ ...problemOf(e, "Der Tag ließ sich nicht rechnen."), retryable: false });
         setAccuracy("fehler");
       });
     return () => {
@@ -190,15 +220,20 @@ export function useLiveScenario(project: Project | null, initial?: Partial<Lever
   const todayResult = useMemo(() => (today ? resultFromExact(today.basis) : null), [today]);
 
   const setLevers = useCallback(
-    (next: Levers) => {
-      if (!today || !project) return;
+    (wanted: Levers) => {
+      if (!today || !todayLevers || !project) return;
+      // Was das Modell nicht mehr rechnet (etwa mehr Busse, als je Art erlaubt), wird gekappt.
+      const next = {
+        ...wanted,
+        ...clampToRanges(wanted, todayLevers, { fleet: today.vehiclesByKind }),
+      };
       setLeversState(next);
       setResult(simulateLive(today.basis, next));
       setExact(null);
       setAccuracy("naeherung");
       if (!sample) requestExact(project, today, next);
     },
-    [today, project, sample, requestExact],
+    [today, todayLevers, project, sample, requestExact],
   );
 
   const reset = useCallback(() => {
@@ -221,8 +256,10 @@ export function useLiveScenario(project: Project | null, initial?: Partial<Lever
     accuracy,
     error: problem?.message ?? "",
     errorInData: problem?.inData ?? false,
+    canRetry: !!problem?.retryable,
     sample,
     setLevers,
     reset,
+    retry,
   };
 }

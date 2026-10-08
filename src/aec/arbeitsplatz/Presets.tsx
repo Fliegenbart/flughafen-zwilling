@@ -1,6 +1,6 @@
 /** Einzelne benannte Aenderungen gegenueber heute zum Antippen; ein zweiter Tipp nimmt sie zurueck. */
 import type { Levers } from "../model/livePower";
-import { isPreset, PRESETS, presetLevers } from "./levers";
+import { isPreset, PRESETS, presetLevers, type FleetCounts } from "./levers";
 
 const NOTE_ID = "ap-chips-note";
 
@@ -10,14 +10,17 @@ export default function Presets({
   onChange,
   onReset,
   exactEnabled,
+  fleet = 0,
 }: {
   levers: Levers;
   today: Levers;
   onChange: (next: Levers) => void;
   onReset: () => void;
   exactEnabled: boolean;
+  /** Fahrzeuge der Flotte heute; „5 Schlepper mehr“ entfällt, wenn das Modell sie nicht mehr rechnet. */
+  fleet?: FleetCounts;
 }) {
-  const shown = PRESETS.filter((p) => p.applies?.(today) ?? true);
+  const shown = PRESETS.filter((p) => p.applies?.(today, fleet) ?? true);
   const anyBlocked = shown.some((p) => p.exactOnly) && !exactEnabled;
   // Ein Krisenfall bleibt beim Antippen und beim Zuruecknehmen eines Vorschlags erhalten.
   const keepCrisis = levers.crisis ? { crisis: levers.crisis } : {};

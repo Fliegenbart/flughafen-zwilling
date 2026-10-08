@@ -45,7 +45,8 @@ export function boardFromApi(data: unknown): VariantBoard | null {
     .map((e) => {
       const k = e.kpis as Record<string, unknown>;
       const d = isObj(e.delta_to_base) ? e.delta_to_base : {};
-      const stress = isObj(e.stress) && isObj(e.stress.kpis) ? e.stress.kpis : null;
+      const stressRun = isObj(e.stress) && isObj(e.stress.kpis) ? e.stress : null;
+      const stress = stressRun ? (stressRun.kpis as Record<string, unknown>) : null;
       return {
         id: str(e.key),
         name: str(e.name),
@@ -63,6 +64,8 @@ export function boardFromApi(data: unknown): VariantBoard | null {
         deltaOnTimePct: typeof d.on_time_pct === "number" ? d.on_time_pct : null,
         stressOnTimePct:
           stress && typeof stress.on_time_pct === "number" ? stress.on_time_pct : null,
+        // Der Stresslauf hat eine eigene Stufe: Bei knappem Anschluss bleibt oft Grundlast unversorgt.
+        stressEvidence: stressRun ? evidence(stressRun.evidence_level, "synthetic") : null,
         status: str(e.status),
       };
     });
@@ -117,21 +120,15 @@ export function boardFromApi(data: unknown): VariantBoard | null {
   };
 }
 
-/** Die Tafel vom Server; wirft, wenn er nicht antwortet (fuer Aufrufer, die die letzte gute behalten). */
+/**
+ * Die Tafel vom Server. Wirft, wenn er nicht antwortet: Wer sie anzeigt, behält die letzte gute
+ * (useBoard), statt auf die Beispiel-Tafel zu fallen.
+ */
 export async function fetchVariantBoard(project: Project): Promise<VariantBoard> {
   if (project.source !== "api") return sampleBoard();
   const board = boardFromApi(await call<unknown>(`/projects/${enc(project.id)}/variants`));
   if (!board) throw new Error("Die festgehaltenen Lösungen ließen sich nicht lesen.");
   return board;
-}
-
-/** Wie `fetchVariantBoard`, aber mit der Beispiel-Tafel statt Fehler (Projektseite). */
-export async function getVariantBoard(project: Project): Promise<VariantBoard> {
-  try {
-    return await fetchVariantBoard(project);
-  } catch {
-    return sampleBoard();
-  }
 }
 
 export async function createVariant(
