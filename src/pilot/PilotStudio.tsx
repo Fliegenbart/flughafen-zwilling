@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { request, url } from "../munich/api";
 import type { PilotAssessment, PilotImport, PilotProject, PilotTolerances } from "./types";
 import { pilotReport } from "./report";
-import { issueLabel, statusLabel } from "./issues";
+import { issueLabel, statusLabel } from "../shared/issues";
 import { EvidenceBadge } from "../ui/EvidenceBadge";
 import "./PilotStudio.css";
 

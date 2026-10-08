@@ -6,7 +6,7 @@
  * nie als echt; "empirisch bestanden" gibt es nur ueber eine Holdout-Bewertung mit PASS.
  */
 import type { EvidenceLevel } from "../../ui/EvidenceBadge";
-import { issueLabel } from "../../pilot/issues";
+import { issueLabel } from "../../shared/issues";
 import { FLEET_LABEL } from "./fleet";
 
 export type DataState = "echt" | "annahme" | "fehlt";

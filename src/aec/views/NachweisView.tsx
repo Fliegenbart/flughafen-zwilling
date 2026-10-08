@@ -5,7 +5,7 @@ import {
   EvidenceBadge,
   type EvidenceLevel,
 } from "../../ui/EvidenceBadge";
-import { CURRENT_COUPLED_ENGINE } from "../../munich/coupledTypes";
+import { CURRENT_COUPLED_ENGINE } from "../../shared/engine";
 import { getOverview, type Overview } from "../api/overview";
 import { REPORT_STYLES } from "../../ui/reportStyles";
 import { powerText } from "../model/format";
@@ -13,7 +13,7 @@ import { bottleneckAnswer } from "../model/situation";
 import { variantsAnswer } from "../model/variants";
 import { AnswerHead, Details, Section } from "../parts";
 import type { ViewProps } from "../ProjectPage";
-import Pruefstatus from "../Pruefstatus";
+import Pruefstatus from "./Pruefstatus";
 import { WerkstattLinks } from "../Werkstatt";
 
 type Claim = { level: EvidenceLevel; title: string; text: string };

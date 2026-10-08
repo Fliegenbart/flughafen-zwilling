@@ -13,7 +13,7 @@ import Link from "./Link";
 import { Mark } from "./parts";
 import { SAMPLE_PROJECT } from "./sample";
 import Home from "./Home";
-import LabPage from "./LabPage";
+import LabPage from "./labraum/LabPage";
 import Library from "./Library";
 import ProjectPage from "./ProjectPage";
 

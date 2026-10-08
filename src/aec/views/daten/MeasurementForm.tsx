@@ -1,6 +1,6 @@
 /** c) Messreihe vom Flughafen einlesen, zum Abstimmen oder als Pruefmessung. */
 import { useState, type FormEvent } from "react";
-import { issueLabel } from "../../../pilot/issues";
+import { issueLabel } from "../../../shared/issues";
 import { importMeasurement } from "../../api/data";
 import { isExampleFile, type DataInputs } from "../../model/dataStatus";
 import Link from "../../Link";
