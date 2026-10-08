@@ -140,7 +140,7 @@ export function importFromApi(raw: unknown): MeasurementImport | null {
   };
 }
 
-export function labRunFromApi(raw: unknown): LabRun | null {
+function labRunFromApi(raw: unknown): LabRun | null {
   if (!isObj(raw) || typeof raw.run_id !== "string") return null;
   const analysis = isObj(raw.analysis) ? raw.analysis : null;
   const quality = analysis && isObj(analysis.quality) ? analysis.quality : {};

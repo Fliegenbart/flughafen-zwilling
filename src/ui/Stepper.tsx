@@ -65,7 +65,7 @@ export function StepProvider({ steps, children }: { steps: StepDef[]; children: 
   return <StepContext.Provider value={value}>{children}</StepContext.Provider>;
 }
 
-export function useStep(): StepState | null {
+function useStep(): StepState | null {
   return useContext(StepContext);
 }
 

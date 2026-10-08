@@ -41,7 +41,7 @@ export function storeRole(role: Role) {
 }
 
 /** Fachliche Fehlercodes der Austausch-API in Kaeufersprache. */
-export function explain(detail: string): string {
+function explain(detail: string): string {
   if (detail.includes("acceptance_criteria_not_locked"))
     return "Bevor das Lab eine Anfrage annehmen kann, müssen die Prüfgrenzen feststehen (Modell gegen Messung).";
   if (detail.startsWith("role_forbidden")) return "Dieser Schritt ist Sache der anderen Seite.";
@@ -85,7 +85,7 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object
 const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
 const str = (v: unknown, d = "") => (typeof v === "string" ? v : d);
 
-export const EVIDENCE_FROM_API: Record<string, EvidenceLevel> = {
+const EVIDENCE_FROM_API: Record<string, EvidenceLevel> = {
   assumption: "assumption",
   synthetic: "synthetic",
   model_checked: "model_checked",
@@ -261,7 +261,7 @@ export function situationFromApi(project: Project, data: unknown): Situation | n
   };
 }
 
-export function fleetFromApi(raw: unknown): Fleet | undefined {
+function fleetFromApi(raw: unknown): Fleet | undefined {
   if (!isObj(raw)) return undefined;
   return {
     total: typeof raw.total_vehicles === "number" ? raw.total_vehicles : null,
@@ -528,7 +528,7 @@ const STATUS_FROM_API: Record<string, ExchangeStatus> = {
   rejected: "abgelehnt",
   frozen: "uebergeben",
 };
-export const STATUS_TO_API: Partial<Record<ExchangeStatus, string>> = {
+const STATUS_TO_API: Partial<Record<ExchangeStatus, string>> = {
   angenommen: "accepted",
   geplant: "scheduled",
   erledigt: "done",

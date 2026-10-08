@@ -1,6 +1,6 @@
 import { REPORT_STYLES } from "../ui/reportStyles";
 import type { PilotAssessment, PilotImport, PilotProject } from "./types";
-export const escapeHtml = (value: unknown) =>
+const escapeHtml = (value: unknown) =>
   String(value ?? "").replace(
     /[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,

@@ -7,7 +7,7 @@ const AirportSimulation = lazy(() => import("../App"));
 const FlexLabApp = lazy(() => import("../lab/Workbench"));
 const MunichApp = lazy(() => import("../munich/MunichPilot"));
 
-export const WERKSTATT_LABEL: Record<W, { title: string; hint: string }> = {
+const WERKSTATT_LABEL: Record<W, { title: string; hint: string }> = {
   system: {
     title: "Anlagenplan und Flugplan",
     hint: "Netz, Photovoltaik, Blockheizkraftwerk, Speicher und Ladepunkte; Flugplan einlesen",

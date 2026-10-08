@@ -64,7 +64,6 @@ const labels: Record<string, string> = {
   too_few_rows: "Mindestens zwei Messpunkte erforderlich.",
 };
 export const issueLabel = (issue: string) => labels[issue] ?? issue;
-export const hasIssueLabel = (issue: string) => issue in labels;
 
 /** Kurzfassung des Bewertungsstatus in Klartext. */
 export function statusLabel(status: string): string {

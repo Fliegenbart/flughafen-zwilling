@@ -3,7 +3,7 @@
  * Abhaengigkeiten: Berichte werden offline geoeffnet, daher stehen Instrument Serif, Inter Tight
  * und JetBrains Mono nur vorne in Fallback-Stacks, die mit Systemschriften gut aussehen.
  */
-export const REPORT_FONTS = {
+const REPORT_FONTS = {
   serif: '"Instrument Serif","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif',
   sans: '"Inter Tight",Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif',
   mono: '"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace',

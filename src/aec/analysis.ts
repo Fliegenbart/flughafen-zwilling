@@ -151,7 +151,7 @@ export const EXCHANGE_FLOW: ExchangeStatus[] = [
   "erledigt",
 ];
 export const PARTY_LABEL: Record<Party, string> = { flughafen: "Flughafen", lab: "Testing-Lab" };
-export const other = (p: Party): Party => (p === "lab" ? "flughafen" : "lab");
+const other = (p: Party): Party => (p === "lab" ? "flughafen" : "lab");
 
 /** Wer ist am Zug? Vorschlag: Empfaenger nimmt an. Danach plant und liefert das Lab. */
 export function whoseTurn(item: ExchangeItem): Party | null {

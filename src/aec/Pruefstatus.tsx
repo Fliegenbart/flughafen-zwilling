@@ -6,12 +6,12 @@ import { Section } from "./parts";
 import type { ExchangeItem, Project } from "./types";
 
 /** Was der Kunde von einem Pruefpunkt sieht: Zustand in einem Wort, kein Lab-Inneres. */
-export function customerState(item: ExchangeItem): "geprüft" | "in Prüfung" | "abgelehnt" {
+function customerState(item: ExchangeItem): "geprüft" | "in Prüfung" | "abgelehnt" {
   if (item.status === "abgelehnt") return "abgelehnt";
   return whoseTurn(item) === null ? "geprüft" : "in Prüfung";
 }
 
-export function pruefAnswer(items: ExchangeItem[]): string {
+function pruefAnswer(items: ExchangeItem[]): string {
   if (!items.length) return "Beim Testing-Lab liegt nichts zur Prüfung.";
   const running = items.filter((i) => customerState(i) === "in Prüfung").length;
   const checked = items.filter((i) => customerState(i) === "geprüft").length;
