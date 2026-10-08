@@ -1,13 +1,15 @@
 /*
  * Werkstatt-Tokens: Bruecke vom alten "ds"-Vokabular auf das Designsystem "Vorfeld"
  * (src/ui/aecTokens.css). Hell/Dunkel folgt allein den aec-Tokens; die Rueckfallwerte
- * gelten nur ausserhalb von `.aec` (z. B. Zugangsschranke).
+ * gelten nur ausserhalb von `.aec` (z. B. Zugangsschranke, Arbeitsbildschirm `.ap`).
+ * `.ap` ist ein fester heller Beamer-Grund: Es steht in den hellen Listen, nicht in den dunklen.
  */
 .studio-workspace,
 .aec,
 .aec-werkstatt__tool,
 .pilot-access,
-.pilot-access-bar {
+.pilot-access-bar,
+.ap {
   --ds-bg: var(--aec-bg, #f3f1ec);
   --ds-surface: var(--aec-surface, #fffefb);
   --ds-surface-2: var(--aec-surface-2, #f7f5f0);
@@ -61,7 +63,8 @@
 .studio-workspace,
 .aec,
 .pilot-access,
-.pilot-access-bar {
+.pilot-access-bar,
+.ap {
   /* Evidenzstatus: nie gruen */
   --ev-assumption-bg: #eceff4;
   --ev-assumption-ink: #374559;

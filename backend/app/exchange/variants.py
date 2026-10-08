@@ -16,12 +16,14 @@ from typing import Any, Callable
 from uuid import uuid4
 
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from ..models import ModelPack, RunRequest, ScenarioDefinition
 from ..munich.coupled_models import (
     COUPLED_DOMAIN,
     ENGINE_VERSION,
+    MAX_FLEET_VEHICLES,
+    MAX_VEHICLES_PER_KIND,
     CoupledConfig,
     CoupledPolicy,
     FleetKind,
@@ -131,6 +133,20 @@ def fleet_summary(config: CoupledConfig | None, source: str | None) -> dict:
     }
 
 
+def invalid_variant_detail(exc: ValueError) -> str:
+    """422-Text fuer eine unzulaessige Aenderung; der Kunde liest ihn (api/http.ts explain).
+
+    Pydantic liefert mehrzeilige Texte mit Eingabewerten und Link. Davon bleibt nur die Meldung
+    der eigenen Pruefungen (ValueError in einem Validator), sonst ein allgemeiner Satz.
+    """
+    if not isinstance(exc, ValidationError):
+        return f"invalid_variant: {exc}"
+    first = exc.errors(include_url=False, include_input=False)[0]
+    if first["type"] == "value_error":
+        return f"invalid_variant: {first['ctx']['error']}"
+    return "invalid_variant: Die Werte liegen außerhalb dessen, was das Modell rechnet."
+
+
 def apply_changes(
     base: CoupledConfig, base_policy: CoupledPolicy, changes: VariantChanges, day_minutes: int,
 ) -> tuple[CoupledConfig, CoupledPolicy, dict[str, Any]]:
@@ -161,7 +177,15 @@ def apply_changes(
         if kind not in fleets:
             raise ValueError(f"Fahrzeugklasse {kind} ist in der Basis nicht modelliert")
         fleets[kind]["vehicles"] += count
+        if fleets[kind]["vehicles"] > MAX_VEHICLES_PER_KIND:
+            raise ValueError(
+                f"Das Modell rechnet höchstens {MAX_VEHICLES_PER_KIND} Fahrzeuge je Art, "
+                f"{FLEET_LABELS[kind]} kämen auf {fleets[kind]['vehicles']}.")
         varied[f"fleets.{kind}.vehicles"] = fleets[kind]["vehicles"]
+    total = sum(fleet["vehicles"] for fleet in fleets.values())
+    if total > MAX_FLEET_VEHICLES:
+        raise ValueError(f"Das Modell rechnet höchstens {MAX_FLEET_VEHICLES} Fahrzeuge, "
+                         f"die Flotte käme auf {total}.")
     for kind, count in sorted(changes.chargers_offline.items()):
         if kind not in fleets:
             raise ValueError(f"Fahrzeugklasse {kind} ist in der Basis nicht modelliert")
@@ -464,7 +488,7 @@ class VariantService:
                 base["config"], base["policy"], request.changes, world.day_minutes)
             build_world(plan, config, base["seed"])
         except ValueError as exc:
-            raise HTTPException(status_code=422, detail=f"invalid_variant: {exc}") from exc
+            raise HTTPException(status_code=422, detail=invalid_variant_detail(exc)) from exc
         if not varied:
             raise HTTPException(status_code=422,
                                 detail="invalid_variant: aendert nichts gegenueber der Basis")
@@ -581,7 +605,7 @@ class VariantService:
                     entry["stress_world"] = (build_world(plan, stressed, base["seed"])
                                              if request.stress else None)
             except ValueError as exc:
-                raise HTTPException(status_code=422, detail=f"invalid_variant: {exc}") from exc
+                raise HTTPException(status_code=422, detail=invalid_variant_detail(exc)) from exc
             except RuntimeError as exc:
                 raise HTTPException(status_code=500, detail=str(exc)) from exc
             batch_id = uuid4().hex

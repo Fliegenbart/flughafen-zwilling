@@ -1,7 +1,6 @@
 /**
- * Eine Reglerstellung als Loesung im Projekt festhalten: anlegen, gruendlich nachrechnen,
- * vergleichen. Erst festgehaltene Loesungen tauchen in der Zusage auf; die Vorschau darueber
- * bleibt eine Vorschau.
+ * Eine Reglerstellung als Loesung im Projekt festhalten: anlegen, nachrechnen, vergleichen.
+ * Festgehaltene Loesungen fuehrt auch die Zusage auf; die Vorschau darueber bleibt eine Vorschau.
  */
 import { useState } from "react";
 import { createVariant, deleteVariant, runVariants } from "../../api/variants";
@@ -12,6 +11,7 @@ import { caseByScenarioId } from "../../scenarios";
 import type { Project, VariantBoard, VariantChanges } from "../../types";
 import { describeChanges } from "./describe";
 import Compare from "./Compare";
+import { currentBoard, outdatedNote, outdatedReason } from "./results";
 
 const MAX_KEPT = 8;
 const NAME_MAX = 80;
@@ -42,6 +42,7 @@ export default function Festhalten({
   levers,
   today,
   sample,
+  lost = false,
 }: {
   project: Project;
   board: VariantBoard | null;
@@ -50,6 +51,8 @@ export default function Festhalten({
   levers: Levers;
   today: Levers;
   sample: boolean;
+  /** Das Nachfragen der festgehaltenen Lösungen schlug fehl. */
+  lost?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -61,25 +64,29 @@ export default function Festhalten({
 
   let hint = "";
   if (sample) hint = "Festhalten geht nur in einem eigenen Projekt.";
+  else if (lost && !board) hint = "Die festgehaltenen Lösungen ließen sich nicht laden.";
   else if (board && !board.base)
     hint = "Dafür braucht das Projekt zuerst einen Flugplan unter Daten.";
   else if (!changes) hint = "Verändern Sie erst einen Regler.";
   else if (removesBattery)
-    hint = "Einen vorhandenen Speicher zu entfernen lässt sich nicht festhalten.";
+    hint = "Ein vorhandener Batteriespeicher bleibt in jeder festgehaltenen Lösung bestehen.";
   else if (same) hint = `Diese Einstellung ist schon festgehalten als „${same.name}“.`;
   else if (defs.length >= MAX_KEPT)
     hint = `Es sind schon ${MAX_KEPT} Lösungen festgehalten. Entfernen Sie eine.`;
   const canKeep = !hint && !busy && !running && !!changes && !!board;
+  // Ein neuer Lauf gilt fuer alle Loesungen und nimmt nur den jetzt gewaehlten Krisenfall mit.
+  const earlierCrisis = board?.run?.crisis;
 
   async function act(fn: () => Promise<unknown>) {
     setBusy(true);
     setError("");
     try {
       await fn();
-      await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Das Festhalten hat nicht geklappt.");
     } finally {
+      // Der Server kann trotz Fehler schon etwas angelegt haben: die Tafel immer neu holen.
+      await reload().catch(() => null);
       setBusy(false);
     }
   }
@@ -88,10 +95,30 @@ export default function Festhalten({
     act(async () => {
       const taken = new Set(defs.map((d) => d.name.toLowerCase()));
       await createVariant(project, nameFor(changes!, taken), changes!);
-      await runVariants(project, !!crisis, false, crisis?.scenarioId ?? null);
+      try {
+        await runVariants(project, !!crisis, false, crisis?.scenarioId ?? null);
+      } catch (e) {
+        throw new Error(
+          [
+            "Wir haben die Lösung festgehalten, die Berechnung hat aber nicht geklappt.",
+            e instanceof Error ? e.message : "",
+            "Mit „Neu rechnen“ starten Sie sie erneut.",
+          ]
+            .filter(Boolean)
+            .join(" "),
+        );
+      }
     });
 
-  const results = board?.source === "api" && board.variants.length > 0 && !running;
+  const rerun = () => {
+    const id = board?.run?.crisis?.id ?? crisis?.scenarioId ?? null;
+    return act(() => runVariants(project, !!id || !!board?.run?.stress, false, id));
+  };
+
+  const api = board?.source === "api";
+  const shown = api ? currentBoard(board) : null;
+  const results = !!shown && shown.variants.length > 0 && !running;
+  const outdated = api && !!board.base && !running && outdatedReason(board) !== null;
 
   return (
     <section className="ap-keep" aria-labelledby="ap-keep-title">
@@ -99,7 +126,7 @@ export default function Festhalten({
         Diese Einstellung festhalten
       </h2>
       <p className="ap-keep__lead">
-        Festgehaltene Lösungen rechnen wir gründlich nach und führen sie in der{" "}
+        Festgehaltene Lösungen rechnen wir für den ganzen Tag nach und führen sie in der{" "}
         <Link to={{ page: "projekt", projekt: project.id, frage: "nachweis" }}>Zusage</Link> auf.
       </p>
       <div className="ap-keep__act">
@@ -108,7 +135,12 @@ export default function Festhalten({
         </button>
         {hint ? <span className="ap-keep__hint">{hint}</span> : null}
         {crisis && canKeep ? (
-          <span className="ap-keep__hint">Gerechnet wird auch unter „{crisis.name}“.</span>
+          <span className="ap-keep__hint">Wir rechnen die Lösung auch unter „{crisis.name}“.</span>
+        ) : null}
+        {!crisis && earlierCrisis && canKeep ? (
+          <span className="ap-keep__hint">
+            Ohne Krisenfall rechnen wir alle Lösungen neu und lassen „{earlierCrisis.name}“ weg.
+          </span>
         ) : null}
       </div>
       {error ? (
@@ -125,48 +157,42 @@ export default function Festhalten({
 
       {defs.length ? (
         <ul className="ap-keep__list" aria-label="Festgehaltene Lösungen">
-          {defs.map((d) => (
-            <li key={d.id}>
-              <b>{d.name}</b>
-              <span>{describeChanges(d.changes)}</span>
-              <button
-                type="button"
-                className="ap-keep__remove"
-                disabled={busy || running}
-                aria-label={`${d.name} entfernen`}
-                onClick={() => void act(() => deleteVariant(project, d.id))}
-              >
-                entfernen
-              </button>
-            </li>
-          ))}
+          {defs.map((d) => {
+            const detail = describeChanges(d.changes);
+            return (
+              <li key={d.id}>
+                <b>{d.name}</b>
+                {detail !== d.name ? <span>{detail}</span> : null}
+                <button
+                  type="button"
+                  className="ap-keep__remove"
+                  disabled={busy || running}
+                  aria-label={`${d.name} entfernen`}
+                  onClick={() => void act(() => deleteVariant(project, d.id))}
+                >
+                  entfernen
+                </button>
+              </li>
+            );
+          })}
         </ul>
-      ) : board?.source === "api" ? (
+      ) : api ? (
         <p className="ap-keep__hint">Noch nichts festgehalten.</p>
       ) : null}
 
-      {board?.run?.stale && !running && defs.length ? (
+      {outdated ? (
         <div className="ap-keep__act">
-          <button
-            type="button"
-            className="ap-tool"
-            disabled={busy}
-            onClick={() =>
-              void act(() =>
-                runVariants(project, !!board.run?.crisis, false, board.run?.crisis?.id ?? null),
-              )
-            }
-          >
+          <button type="button" className="ap-tool" disabled={busy} onClick={() => void rerun()}>
             Neu rechnen
           </button>
-          <span className="ap-keep__hint">Die Auswahl hat sich geändert.</span>
+          <span className="ap-keep__hint">{outdatedNote(board)}</span>
         </div>
       ) : null}
 
       {results ? (
         <>
-          {board.answer ? <p className="ap-keep__answer">{board.answer.headline}</p> : null}
-          <Compare board={board} bestId={board.answer?.bestId ?? null} />
+          {shown.answer ? <p className="ap-keep__answer">{shown.answer.headline}</p> : null}
+          <Compare board={shown} bestId={shown.answer?.bestId ?? null} />
         </>
       ) : null}
     </section>

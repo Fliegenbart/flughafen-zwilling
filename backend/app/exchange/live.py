@@ -131,7 +131,9 @@ class PreviewRequest(BaseModel):
     def changes(self) -> dict:
         out = self.model_dump(exclude_none=True, exclude_defaults=True)
         out.pop("crisis", None)
-        if out.get("storage_kwh") == 0:  # 0 kWh = keine Batterie
+        # 0 kWh heisst nicht "Batterie entfernen" (VariantChanges kann das nicht ausdruecken):
+        # Eine Batterie des Projekts bleibt in der Rechnung, 0 und fehlend sind dasselbe.
+        if out.get("storage_kwh") == 0:
             out.pop("storage_kwh")
             out.pop("storage_kw", None)
         return out
@@ -151,7 +153,7 @@ def departures_by_half_hour(result) -> tuple[list[dict], int]:
 
 def preview(variants, project_id: str, request: PreviewRequest) -> dict:
     """Genaue Rechnung eines Tages fuer eine Regler-Stellung; nichts wird gespeichert."""
-    from .variants import VariantChanges, apply_changes
+    from .variants import VariantChanges, apply_changes, invalid_variant_detail
 
     base, plan = variants._require_base(project_id)
     changes = request.changes()
@@ -167,7 +169,7 @@ def preview(variants, project_id: str, request: PreviewRequest) -> dict:
             config = crisis_config(config, request.crisis, world0.day_minutes)
         world = build_world(plan, config, base["seed"]) if changes or stress else world0
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=f"invalid_variant: {exc}") from exc
+        raise HTTPException(status_code=422, detail=invalid_variant_detail(exc)) from exc
     if not _PREVIEW_LOCK.acquire(timeout=PREVIEW_WAIT_S):
         raise HTTPException(status_code=429, detail="Run-Queue voll. Vorschau gleich erneut.")
     try:

@@ -34,6 +34,9 @@ UUID). Die neuen Endpunkte haengen unter `/api/v1/projects/{project_id}`.
 - Bei aktivem Login duerfen `airport`/`lab` ohne Basisrolle `operator` nur unter
   `/api/v1/projects/*` und `/api/v1/library/*` schreiben (Middleware, CSRF wie bisher).
   `/api/v1/auth/session` bleibt unveraendert; die Fachrolle liefert `whoami`.
+- Ausnahme: `POST /api/v1/projects/{id}/situation/preview` rechnet nur und speichert nichts. Es
+  gilt wie ein Lesezugriff: Anmeldung und Origin-Pruefung ja, Schreibrolle nein (auch `viewer`
+  darf), und die Middleware schreibt dafuer keine Zeile `mutation_completed` ins Pruefprotokoll.
 
 `GET /api/v1/exchange/whoami` →
 ```json
@@ -190,7 +193,10 @@ Pilot-Hashkette (`actor`, `role`, `created_at`, `action`, `entity_id`, `entry_ha
 Run = neuester abgeschlossener gekoppelter Run unter den Projekt-Verknuepfungen
 (`coupled_run`, sonst Runs aus Szenario-Paketen). Mittelwerte je 15 min (Leistung,
 kW); „am Limit“ = `grid_import_kw >= effective_grid_cap_kw - 0.5 kW`, gezaehlt nur im
-Verkehrstag (nicht im Vorlauf vor Mitternacht). Ohne Run:
+Verkehrstag (nicht im Vorlauf vor Mitternacht und nicht im Nachlauf). Dieselbe Tagesgrenze gilt
+fuer `bottleneck_windows` (die Summe ihrer `minutes` ist `answer.minutes_at_limit`; ein Fenster
+beginnt fruehestens zu Tagesbeginn) und fuer `answer.peak_kw`. Die Reihe `series` zeigt den
+Vorlauf und den Nachlauf weiter, der Browser schneidet sie auf den Tag. Ohne Run:
 ```json
 {"available": false, "run_id": null, "series": [], "departures": [],
  "bottleneck_windows": [], "answer": {"bottleneck": null, "minutes_at_limit": null,
@@ -204,10 +210,13 @@ Verkehrstag (nicht im Vorlauf vor Mitternacht). Ohne Run:
 (dieselbe Basis und dieselben Aenderungen wie bei Loesungen), ohne Warteschlange, ohne Speichern,
 ohne Versiegelung. Der Browser naehert dieselbe Stellung beim Ziehen selbst und ersetzt die
 Naeherung nach rund 280 ms durch diese Antwort. Koerper, alles optional (leer = heutiger Stand):
-`grid_import_limit_kw`, `storage_kwh` (0 = keine Batterie) mit `storage_kw`, `pv_factor` (0 bis 3),
+`grid_import_limit_kw`, `storage_kwh` mit `storage_kw` (setzt die Batterie; `0` oder fehlend laesst
+die Batterie des Projekts unveraendert, die Vorschau entfernt keine Batterie), `pv_factor` (0 bis 3),
 `extra_vehicles {klasse: anzahl}`, `charging_policy` (`uncontrolled|mission_priority`) und `crisis`
 (Krisenfall der Bibliothek, Energie-Abbild wie beim Stresstest). Unbekannte Felder → 422, ebenso
-Werte, die die Variantenpruefung ablehnt. Antwort: Minutenreihen als Spalten (`requested_kw`,
+Werte, die die Variantenpruefung ablehnt (`detail`: `invalid_variant: <ein Satz>`, zum Beispiel
+„Das Modell rechnet höchstens 300 Fahrzeuge, die Flotte käme auf 340.“, ohne Pydantic-Text; dasselbe
+gilt fuer `POST …/variants` und `POST …/variants/run`). Antwort: Minutenreihen als Spalten (`requested_kw`,
 `delivered_kw`, `background_kw`, `pv_kw`, `chp_kw`, `grid_cap_kw`, `grid_import_kw`, `battery_kw`,
 Batterie + gibt ab), `power` (inkl. `apron_limit_kw` und `parking_limit_kw`, die Trafogrenzen je
 Sektor), `fleet` (Weltdaten fuer die Naeherung im Browser: je Fahrzeugklasse Fahrzeuge, Ladepunkte,

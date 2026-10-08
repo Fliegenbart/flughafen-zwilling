@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
@@ -30,6 +33,37 @@ def test_seeded_project_starts_from_the_calibrated_day(client, tmp_path):  # noq
     assert today["kpis"]["minutes_at_limit"] == 184
     board = client.get(f"/api/v1/projects/{seeded['project_id']}/variants").json()
     assert board["base"]["source"] == "coupled_run"
+
+
+def _fake_api(bodies: dict, run_status: dict):
+    def call(method, path, body):
+        bodies[(method, path)] = body
+        if path == "/api/v1/pilot/projects":
+            return {"id": "p1"}
+        if path == "/api/v1/munich/coupled-comparisons":
+            return {"runs": [{"run_id": "r1"}, {"run_id": "r2"}]}
+        if path.startswith("/api/v1/runs/"):
+            return run_status
+        return {}
+    return call
+
+
+def test_seed_names_the_failure_of_the_base_run_at_once(tmp_path):
+    started = time.monotonic()
+    with pytest.raises(RuntimeError, match="r1 ist fehlgeschlagen: kein Platz"):
+        seed(_fake_api({}, {"state": "failed", "error": "kein Platz"}),
+             FlightPlanStore(tmp_path), wait_s=30)
+    assert time.monotonic() - started < 5
+
+
+def test_seed_project_texts_are_ready_for_the_customer_view(tmp_path):
+    bodies: dict = {}
+    seed(_fake_api(bodies, {"state": "completed"}), FlightPlanStore(tmp_path), wait_s=5)
+    project = bodies[("POST", "/api/v1/pilot/projects")]
+    assert project["decision"] == "Reicht der Netzanschluss für die elektrische Vorfeldflotte?"
+    # Der Anschluss kommt als Projektwert auf die Karte, nicht noch einmal im Text.
+    assert project["scope"] == "Beispieltag (erfunden) mit 205 Abflügen in drei Wellen"
+    assert project["acceptance_note"] == "Nur zur Vorführung, keine echten Daten."
 
 
 def test_committed_browser_files_match_the_model():

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { issueLabel } from "../../../shared/issues";
 import { importMeasurement } from "../../api/data";
 import { isExampleFile, type DataInputs } from "../../model/dataStatus";
+import { unit } from "../../model/format";
 import Link from "../../Link";
 import type { Route } from "../../routes";
 import { EXAMPLE_REFUSED, errorText, Format, Result, type FormProps } from "./shared";
@@ -71,8 +72,8 @@ export default function MeasurementForm({
       >
         CSV (UTF-8) mit Kopfzeile <code>timestamp,measured_kw</code>, wahlweise dazu{" "}
         <code>model_kw</code>. Zeit mit Zeitzone (2026-10-04T08:00:00+02:00), Leistung in kW, in
-        gleichen Abständen, höchstens 5 MB oder 100.000 Zeilen. Lücken nicht auffüllen. Doppelte,
-        ungeordnete oder fehlende Zeitpunkte machen die Messreihe unbrauchbar.
+        gleichen Abständen, höchstens {unit(5, "MB")} oder 100.000 Zeilen. Lücken nicht auffüllen.
+        Doppelte, ungeordnete oder fehlende Zeitpunkte machen die Messreihe unbrauchbar.
       </Format>
       <p className="aec-notice" data-locked={locked ? "" : undefined}>
         {locked

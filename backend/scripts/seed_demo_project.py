@@ -9,6 +9,9 @@ Speicher des Backends abgelegt, alles andere laeuft ueber die API):
         < backend/scripts/seed_demo_project.py
 
 Mehrfaches Ausfuehren legt ein weiteres Projekt an; der Plan wird nur einmal gespeichert.
+Das Skript sendet nur den Header `X-Exchange-Role: admin`. Es laeuft deshalb nur bei
+ausgeschaltetem Instanz-Login (TWIN_REQUIRE_AUTH=false, so laeuft der Container), sonst antwortet
+die API schon auf den ersten Aufruf mit 401.
 """
 
 from __future__ import annotations
@@ -40,9 +43,10 @@ def seed(call: Call, plans: FlightPlanStore, *, wait_s: float = WAIT_S) -> dict:
     plan = plans.save(busy_day())
     project = call("POST", "/api/v1/pilot/projects", {
         "name": PROJECT_NAME,
-        "decision": "Reicht der Netzanschluss fuer die elektrische Vorfeldflotte?",
-        "scope": f"{TITLE}: 205 Abfluege in drei Wellen, Anschluss 3,5 MW, keine Batterie",
-        "acceptance_note": "Nur zur Vorfuehrung, keine echten Daten.",
+        "decision": "Reicht der Netzanschluss für die elektrische Vorfeldflotte?",
+        # Die Startseite haengt den Anschluss selbst an; hier steht er nicht noch einmal.
+        "scope": f"{TITLE} mit 205 Abflügen in drei Wellen",
+        "acceptance_note": "Nur zur Vorführung, keine echten Daten.",
     })
     link = f"/api/v1/projects/{project['id']}/links"
     call("POST", link, {"kind": "flight_plan_snapshot", "ref_id": plan.snapshot_id})
@@ -53,7 +57,12 @@ def seed(call: Call, plans: FlightPlanStore, *, wait_s: float = WAIT_S) -> dict:
     # Die Vergleichslaeufe kommen in der Reihenfolge der Laderegeln: zuerst "uncontrolled".
     base_run = pair["runs"][0]["run_id"]
     deadline = time.monotonic() + wait_s
-    while call("GET", f"/api/v1/runs/{base_run}", None).get("state") != "completed":
+    while True:
+        status = call("GET", f"/api/v1/runs/{base_run}", None)
+        if status.get("state") == "completed":
+            break
+        if status.get("state") == "failed":
+            raise RuntimeError(f"Basislauf {base_run} ist fehlgeschlagen: {status.get('error')}")
         if time.monotonic() > deadline:
             raise TimeoutError(f"Basislauf {base_run} wurde nicht rechtzeitig fertig.")
         time.sleep(0.5)

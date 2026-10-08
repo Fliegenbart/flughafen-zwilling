@@ -21,7 +21,6 @@ export type ViewProps = {
   project: Project;
   situation: Situation;
   board: VariantBoard;
-  reloadBoard: () => Promise<VariantBoard>;
   route: ProjectRoute;
 };
 
@@ -99,13 +98,7 @@ export default function ProjectPage({
     }
   };
 
-  const reloadBoard = async () => {
-    const b = project ? await getVariantBoard(project) : null;
-    if (b) setBoard(b);
-    return b!;
-  };
-  const props =
-    project && situation && board ? { project, situation, board, reloadBoard, route } : null;
+  const props = project && situation && board ? { project, situation, board, route } : null;
   // Von den Daten geht es weiter zum Durchrechnen; die Zusage ist das Ende.
   const next = route.frage === "daten" ? STEPS[1] : null;
 

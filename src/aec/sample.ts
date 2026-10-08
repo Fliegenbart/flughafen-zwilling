@@ -5,6 +5,7 @@
 import { previewFromApi, type Preview } from "./api/preview";
 import day from "./beispieltag.json";
 import { points, STEP } from "./model/dayCurve";
+import { shortfallPhases } from "./model/headline";
 import { resultFromExact } from "./model/livePower";
 import type { ExchangeItem, Project, Situation } from "./types";
 
@@ -27,11 +28,12 @@ export function samplePreview(): Preview {
   return preview;
 }
 
-/** Die Tageskurve des Beispieltags in der Form der Lage-Grafik (Startseite). */
+/** Die Tageskurve des Beispieltags in der Form des Lagebilds (Startseite). */
 export function sampleSituation(project: Project = SAMPLE_PROJECT): Situation {
   const preview = samplePreview();
   const b = preview.basis;
-  const curve = points(resultFromExact(b));
+  const result = resultFromExact(b);
+  const curve = points(result);
   // Grundlast und Photovoltaik je Fuenf-Minuten-Fenster; Reihen beginnen bei startMin.
   const at = (series: number[], m: number) => series[m - b.startMin] ?? 0;
   const load = curve.map((p) => ({
@@ -49,6 +51,12 @@ export function sampleSituation(project: Project = SAMPLE_PROJECT): Situation {
     stepMinutes: STEP,
     load,
     departures: preview.departures.map((d) => ({ minute: d.startMin, count: d.count })),
+    // Dieselben Phasen wie in Durchrechnen, damit beide Seiten dieselben Uhrzeiten nennen.
+    windows: shortfallPhases(result).map((p) => ({
+      start: p.start,
+      end: p.end,
+      deficitKw: p.maxMissingKw,
+    })),
   };
 }
 

@@ -6,7 +6,7 @@ import "@fontsource/ibm-plex-sans/400.css";
 import "@fontsource/ibm-plex-sans/500.css";
 import "@fontsource/ibm-plex-sans/600.css";
 import "./arbeitsplatz.css";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getProject } from "../api/projects";
 import { useNav } from "../context";
 import Link from "../Link";
@@ -25,6 +25,7 @@ import StepBar from "./StepBar";
 import BasisNote from "./BasisNote";
 import Festhalten from "./festhalten/Festhalten";
 import { useBoard } from "./festhalten/useBoard";
+import { isChanged } from "./levers";
 import { loadLevers, saveLevers } from "./leverMemory";
 import { useDataStatus } from "./useDataStatus";
 import { useLiveScenario } from "./useLiveScenario";
@@ -57,22 +58,47 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
     return { ...loadLevers(route.projekt), ...(crisis ? { crisis } : {}) };
   });
   const s = useLiveScenario(checking ? null : project, initial);
-  const { board, reload: reloadBoard, running } = useBoard(checking ? null : project);
-  const { presenting, setPresenting } = usePresentation();
-  const changed =
-    !!s.levers &&
-    !!s.todayLevers &&
-    (s.levers.gridLimitKw !== s.todayLevers.gridLimitKw ||
-      s.levers.batteryKwh !== s.todayLevers.batteryKwh ||
-      s.levers.pvFactor !== s.todayLevers.pvFactor ||
-      (s.levers.extraVehicles ?? 0) > 0 ||
-      !!s.levers.crisis);
+  const { board, reload: reloadBoard, running, lost } = useBoard(checking ? null : project);
+  const { presenting, setPresenting, toggleRef } = usePresentation();
+  const changed = !!s.levers && !!s.todayLevers && isChanged(s.levers, s.todayLevers);
 
   useEffect(() => {
-    if (s.levers) saveLevers(route.projekt, changed ? s.levers : null);
-  }, [route.projekt, s.levers, changed]);
+    if (s.levers && s.todayLevers)
+      saveLevers(route.projekt, changed ? s.levers : null, s.todayLevers);
+  }, [route.projekt, s.levers, s.todayLevers, changed]);
+
+  // Den Dateinamen des PDFs bestimmt der Seitentitel: Beim Drucken nennt er das Projekt.
+  const printName = project ? `${project.name} · Airport Energy Check` : null;
+  useEffect(() => {
+    if (!printName) return;
+    let before: string | null = null;
+    const start = () => {
+      before ??= document.title;
+      document.title = printName;
+    };
+    const end = () => {
+      if (before !== null) document.title = before;
+      before = null;
+    };
+    window.addEventListener("beforeprint", start);
+    window.addEventListener("afterprint", end);
+    return () => {
+      window.removeEventListener("beforeprint", start);
+      window.removeEventListener("afterprint", end);
+      end();
+    };
+  }, [printName]);
 
   const ready = !!(s.today && s.levers && s.todayLevers && s.result && s.todayResult);
+
+  // Verspaetete Abfluege kennt nur die genaue Rechnung. Kommt keine mehr (Beispielprojekt,
+  // Fehler), stuenden unter der geaenderten Kurve die roten Balken von heute. Solange sie noch
+  // laeuft, bleiben diese stehen, damit sie nicht bei jeder Pause aufblitzen.
+  const noDelays = !!s.today && changed && !s.exact && (s.sample || !!s.error);
+  const departures = useMemo(() => {
+    const bins = (s.exact ?? s.today)?.departures ?? [];
+    return noDelays ? bins.map((d) => ({ ...d, delayed: 0 })) : bins;
+  }, [s.exact, s.today, noDelays]);
 
   return (
     <div className="ap" data-presenting={presenting || undefined}>
@@ -87,12 +113,17 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
         </span>
         <button
           type="button"
+          ref={toggleRef}
           className="ap-tool"
           onClick={() => setPresenting(!presenting)}
           aria-pressed={presenting}
-          title="Taste P"
+          aria-keyshortcuts="P"
+          title="Taste P schaltet um, Esc beendet"
         >
-          {presenting ? "Präsentation beenden" : "Präsentieren"}
+          Präsentieren{" "}
+          <kbd className="ap-tool__key" aria-hidden="true">
+            P
+          </kbd>
         </button>
         <button
           type="button"
@@ -101,7 +132,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
           disabled={!ready || (!s.sample && s.accuracy === "naeherung")}
           title={
             !s.sample && s.accuracy === "naeherung"
-              ? "Erst wenn die genaue Rechnung fertig ist"
+              ? "Erst wenn die Rechnung fertig ist"
               : "Als PDF sichern: im Druckdialog „Als PDF speichern“ wählen"
           }
         >
@@ -112,14 +143,19 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
       <main id="aec-main" tabIndex={-1} className="ap-page">
         {s.accuracy === "fehler" && !s.today ? (
           <p className="ap-error" role="alert">
-            {s.error} Für eine Kurve braucht das Projekt einen Flugplan.{" "}
-            <Link to={{ page: "projekt", projekt: route.projekt, frage: "daten" }}>
-              Daten ergänzen
-            </Link>
+            {s.error}
+            {s.errorInData ? (
+              <>
+                {" "}
+                <Link to={{ page: "projekt", projekt: route.projekt, frage: "daten" }}>
+                  Zu den Daten
+                </Link>
+              </>
+            ) : null}
           </p>
         ) : !s.today || !s.levers || !s.todayLevers || !s.result || !s.todayResult ? (
           <p className="ap-loading" role="status">
-            Der Tag wird gerechnet …
+            {!project || checking ? "Projekt wird geöffnet …" : "Der Tag wird gerechnet …"}
           </p>
         ) : (
           <div className="ap-body">
@@ -130,6 +166,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
               onChange={s.setLevers}
               onReset={s.reset}
               pvKwp={s.today.basis.power.pvCapacityKwp}
+              fleetVehicles={s.today.basis.fleet.classes.reduce((n, c) => n + c.vehicles, 0)}
               exactEnabled={!s.sample}
             />
             <div className="ap-main">
@@ -143,19 +180,19 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
               <LoadChart
                 result={s.result}
                 today={s.todayResult}
-                departures={(s.exact ?? s.today).departures}
+                departures={departures}
                 changed={changed}
               />
-              <Shortfalls result={s.result} />
               <Outcome
                 today={s.todayResult}
                 todayPreview={s.today}
                 result={s.result}
                 exact={s.exact}
-                accuracy={s.accuracy}
+                accuracy={s.error ? "fehler" : s.accuracy}
                 changed={changed}
                 sample={s.sample}
               />
+              <Shortfalls result={s.result} />
               {s.error && s.today ? (
                 <p className="ap-error" role="alert">
                   {s.error}
@@ -177,6 +214,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
                   levers={s.levers}
                   today={s.todayLevers}
                   sample={s.sample}
+                  lost={lost}
                 />
               ) : null}
             </div>

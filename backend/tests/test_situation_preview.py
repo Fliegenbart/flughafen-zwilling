@@ -112,3 +112,34 @@ def test_preview_basis_carries_the_fleet_for_the_browser(client, tmp_path):  # n
     gpu = next(c for c in more["fleet"]["classes"] if c["kind"] == "gpu")
     gpu_before = next(c for c in fleet["classes"] if c["kind"] == "gpu")
     assert gpu["vehicles"] == gpu_before["vehicles"] + 3
+
+
+def test_preview_error_is_one_plain_sentence(client, tmp_path):  # noqa: F811
+    """Der Kunde liest den 422-Text im Arbeitsbildschirm: kein Pydantic-Dump, kein Link."""
+    pid = _busy_project(client, tmp_path)
+    url = f"/api/v1/projects/{pid}/situation/preview"
+    base = client.post(url, json={}).json()
+    fleet = sum(c["vehicles"] for c in base["fleet"]["classes"])
+    assert fleet == 100
+    too_many = client.post(url, json={"extra_vehicles": {
+        "bus": 100, "gpu": 100, "pushback_tug": 100}})
+    assert too_many.status_code == 422
+    assert too_many.json()["detail"] == (
+        f"invalid_variant: Das Modell rechnet höchstens 300 Fahrzeuge, die Flotte käme auf "
+        f"{fleet + 300}.")
+    # Bis zur Grenze (300) rechnet die Vorschau.
+    assert client.post(url, json={"extra_vehicles": {"gpu": 100, "bus": 100}}).status_code == 200
+
+
+def test_preview_zero_battery_keeps_the_battery_of_the_project(client, tmp_path):  # noqa: F811
+    """0 kWh entfernt keine Batterie: Vorschau und Heute-Stand zeigen dieselbe Batterie."""
+    pid = _busy_project(client, tmp_path)
+    assert client.put(f"/api/v1/projects/{pid}/assets", headers=AIRPORT, json={"entries": [
+        {"key": "battery_capacity_kwh", "value": 1000, "unit": "kWh"},
+        {"key": "battery_power_kw", "value": 500, "unit": "kW"}]}).status_code == 200
+    url = f"/api/v1/projects/{pid}/situation/preview"
+    today = client.post(url, json={}).json()
+    zero = client.post(url, json={"storage_kwh": 0, "storage_kw": 500}).json()
+    assert today["power"]["battery_capacity_kwh"] == 1000
+    assert zero["power"]["battery_capacity_kwh"] == 1000 and zero["changes"] == {}
+    assert zero["kpis"] == today["kpis"]

@@ -1,14 +1,14 @@
-/** Vergleich heute gegen die aktuelle Stellung, mit dem Hinweis, wie genau die Zahl ist. */
+/** Vergleich heute gegen die aktuelle Stellung, mit dem Hinweis, woher die Zahl kommt. */
 import { EvidenceBadge } from "../../ui/EvidenceBadge";
 import type { Preview } from "../api/preview";
-import { int, powerText } from "../model/format";
+import { int, powerText, unit } from "../model/format";
 import type { LiveResult } from "../model/livePower";
 import type { Accuracy } from "./useLiveScenario";
 
 /** better: true = besser als heute, false = schlechter, null = keine Wertung. */
 type Row = { label: string; today: string; now: string; better: boolean | null };
 
-const kwh = (v: number) => `${int(v)} kWh`;
+const kwh = (v: number) => unit(int(v), "kWh");
 
 /** Weniger ist besser; innerhalb der Toleranz keine Wertung. */
 function compare(today: number, now: number, tolerance: number): boolean | null {
@@ -36,13 +36,13 @@ export default function Outcome({
 }) {
   const late = (p: Preview | null) =>
     p?.delayedDepartures != null && p.departuresTotal
-      ? `${int(p.delayedDepartures)} von ${int(p.departuresTotal)}`
+      ? `${int(p.delayedDepartures)}\u00a0von\u00a0${int(p.departuresTotal)}`
       : null;
   // Rest der Wartezeit: kein freies Fahrzeug. Bleiben Abfluege trotz genug Strom spaet,
   // liegt es an der Flotte, nicht am Anschluss.
   const cause = (p: Preview | null) =>
     p?.energyWaitSharePct != null && p.delayedDepartures
-      ? `${int(p.energyWaitSharePct)} % Strom, ${int(100 - p.energyWaitSharePct)} % Fahrzeuge`
+      ? `${unit(int(p.energyWaitSharePct), "%")} Strom, ${unit(int(100 - p.energyWaitSharePct), "%")} Fahrzeuge`
       : null;
   const pending = sample ? "nur mit eigenem Projekt" : "wird gerechnet …";
   const rows: Row[] = [
@@ -60,8 +60,8 @@ export default function Outcome({
     },
     {
       label: "Minuten mit voll ausgelastetem Anschluss",
-      today: `${int(today.minutesAtLimit)} min`,
-      now: `${int(result.minutesAtLimit)} min`,
+      today: unit(int(today.minutesAtLimit), "min"),
+      now: unit(int(result.minutesAtLimit), "min"),
       better: compare(today.minutesAtLimit, result.minutesAtLimit, 1),
     },
     {
@@ -74,7 +74,7 @@ export default function Outcome({
           : null,
     },
     {
-      label: "Woran die Wartezeit liegt",
+      label: "Was die Abflüge bremst",
       today: cause(todayPreview) ?? "–",
       now: cause(exact) ?? (exact ? "–" : pending),
       better: null,
@@ -82,7 +82,7 @@ export default function Outcome({
     ...(todayPreview.backgroundUnservedKwh || exact?.backgroundUnservedKwh
       ? [
           {
-            label: "Übriger Flughafenbetrieb ohne Strom",
+            label: "Strom, der dem übrigen Flughafen fehlt",
             today: kwh(todayPreview.backgroundUnservedKwh ?? 0),
             now: exact ? kwh(exact.backgroundUnservedKwh ?? 0) : pending,
             better: exact
@@ -110,7 +110,9 @@ export default function Outcome({
       <table>
         <thead>
           <tr>
-            <th scope="col" />
+            <th scope="col">
+              <span className="aec-visually-hidden">Kennzahl</span>
+            </th>
             <th scope="col">Heute</th>
             <th scope="col">Mit Ihrer Einstellung</th>
           </tr>
@@ -124,23 +126,36 @@ export default function Outcome({
             >
               <th scope="row">{r.label}</th>
               <td>{r.today}</td>
-              <td>{changed ? r.now : "–"}</td>
+              <td>
+                {changed ? r.now : "–"}
+                {changed && r.better !== null ? (
+                  <span className="aec-visually-hidden">
+                    {r.better ? ", besser als heute" : ", schlechter als heute"}
+                  </span>
+                ) : null}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="ap-accuracy" data-accuracy={accuracy} role="status">
+      <p className="ap-accuracy" data-accuracy={accuracy}>
         {sample || accuracy === "genau" ? (
           <EvidenceBadge level="synthetic" label="Vorschau" />
         ) : null}{" "}
         {sample
-          ? "Beispieltag: Die Kurve folgt den Reglern als Näherung. Genau gerechnet wird in einem eigenen Projekt."
+          ? "Die Kurve des Beispieltags folgt den Reglern als Näherung, eine Rechnung gibt es nur in einem eigenen Projekt."
           : accuracy === "naeherung"
-            ? "Näherung, die genaue Rechnung läuft."
+            ? "Die Kurve ist vorerst eine Näherung, die Rechnung läuft."
             : accuracy === "genau"
-              ? `Genau gerechnet${exact?.computeMs != null ? ` in ${int(exact.computeMs)} ms` : ""}. Vorschau, nicht als Berechnung gespeichert.`
-              : ""}
+              ? "Diese Rechnung gilt nur beim Verstellen, erst „Einstellung festhalten“ macht daraus eine Lösung im Projekt."
+              : accuracy === "fehler"
+                ? "Die Kurve bleibt eine Näherung, die Rechnung ist ausgefallen."
+                : ""}
       </p>
+      {/* Eine Ansage pro Rechnung: nur wenn sie fertig ist, ohne die Zeit und ohne den Hinweis oben. */}
+      <span className="aec-visually-hidden" role="status">
+        {!sample && accuracy === "genau" ? "Die Rechnung ist fertig." : ""}
+      </span>
     </section>
   );
 }

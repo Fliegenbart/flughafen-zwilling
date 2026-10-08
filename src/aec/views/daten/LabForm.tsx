@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { importLab } from "../../api/data";
 import { isExampleFile } from "../../model/dataStatus";
+import { unit } from "../../model/format";
 import { EXAMPLE_REFUSED, errorText, Format, Result, type FormProps } from "./shared";
 
 const LAB_CASES = [
@@ -41,9 +42,9 @@ export default function LabForm({ project, reload, disabled }: FormProps) {
     <div className="aec-dform">
       <Format files={[["flexlab-BEISPIEL-erfundene-werte.csv", "Beispieldatei (erfundene Werte)"]]}>
         CSV mit Kopfzeile <code>ts_s,power_kw,setpoint_kw,limit_kw</code>: Sekunden seit
-        Versuchsbeginn, aufsteigend, Leistungen in kW, höchstens 5 MB oder 100.000 Messwerte. Ein
-        leeres <code>power_kw</code> zählt als Lücke. Gelesen werden nur Messdaten, kein Gerät wird
-        angesteuert.
+        Versuchsbeginn, aufsteigend, Leistungen in kW, höchstens {unit(5, "MB")} oder 100.000
+        Messwerte. Ein leeres <code>power_kw</code> zählt als Lücke. Gelesen werden nur Messdaten,
+        kein Gerät wird angesteuert.
       </Format>
       <form className="aec-dgrid" onSubmit={submit} aria-label="Lab-Messung einlesen">
         <label className="aec-dgrid__wide">

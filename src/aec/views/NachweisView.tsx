@@ -8,6 +8,8 @@ import {
 import { CURRENT_COUPLED_ENGINE } from "../../shared/engine";
 import { getOverview, type Overview } from "../api/overview";
 import { REPORT_STYLES } from "../../ui/reportStyles";
+import KeptSolutions from "../arbeitsplatz/festhalten/KeptSolutions";
+import { currentBoard } from "../arbeitsplatz/festhalten/results";
 import { powerText } from "../model/format";
 import { bottleneckAnswer } from "../model/situation";
 import { AnswerHead, Details, Section } from "../parts";
@@ -23,7 +25,11 @@ function claimsFor({ project }: Pick<ViewProps, "project">, overview: Overview |
     {
       level: "assumption",
       title: "Was wir angenommen haben",
-      text: `Wie viele Fahrzeuge es gibt, wie schnell sie laden, wie viel Strom der Rest des Flughafens braucht und dass der Anschluss ${powerText(project.gridLimitKw)} hergibt.`,
+      text: `Wie viele Fahrzeuge es gibt, wie schnell sie laden, wie viel Strom der Rest des Flughafens braucht und ${
+        project.gridLimitKw == null
+          ? "wie viel der Anschluss hergibt"
+          : `dass der Anschluss ${powerText(project.gridLimitKw)} hergibt`
+      }.`,
     },
     {
       level: "synthetic",
@@ -33,7 +39,7 @@ function claimsFor({ project }: Pick<ViewProps, "project">, overview: Overview |
     {
       level: "model_checked",
       title: "Was wir rechnerisch geprüft haben",
-      text: "Keine Energie geht verloren, Abflugzeiten werden eingehalten, alle Lösungen laufen unter gleichen Bedingungen, und jede Rechnung lässt sich wiederholen.",
+      text: "Keine Energie geht verloren, der übrige Strombedarf des Flughafens ist gedeckt, alle Lösungen rechnen mit demselben Flugplan, und jede Rechnung lässt sich wiederholen.",
     },
     passed
       ? {
@@ -50,6 +56,8 @@ function claimsFor({ project }: Pick<ViewProps, "project">, overview: Overview |
 }
 
 function reportHtml(props: ViewProps, claims: Claim[], overview: Overview | null) {
+  // Nur ein Satz, der noch zu den festgehaltenen Lösungen passt.
+  const answer = currentBoard(props.board).answer;
   const esc = (s: string) =>
     s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
   const rows = claims
@@ -63,7 +71,7 @@ function reportHtml(props: ViewProps, claims: Claim[], overview: Overview | null
 <small>Airport Energy Check · Zusammenfassung${props.situation.source === "beispiel" ? " · <b>Beispielwerte</b>" : ""}</small>
 <h1>${esc(props.project.name)}</h1>
 <p><b>Wann es knapp wird:</b> ${esc(bottleneckAnswer(props.situation))}</p>
-${props.board.answer ? `<p><b>Was hilft:</b> ${esc(props.board.answer.headline)}${props.board.source === "beispiel" ? " (Beispielwerte)" : ""}</p>` : ""}
+${answer ? `<p><b>Was hilft:</b> ${esc(answer.headline)}${props.board.source === "beispiel" ? " (Beispielwerte)" : ""}</p>` : ""}
 <table>${rows}</table>
 <h2>Anhang für Fachleute</h2><ul>${tech || "<li>Noch keine gespeicherten Berechnungen.</li>"}</ul>
 <p>Modellversion: ${CURRENT_COUPLED_ENGINE}. Prüfgrenzen vorab festgelegt: ${overview?.locked ? `ja, SHA256 ${esc(overview.sha256 ?? "")}` : "nein"}.</p>
@@ -145,9 +153,17 @@ export default function NachweisView(props: ViewProps) {
         </div>
       </Section>
 
+      <Section
+        title="Was Sie im Durchrechnen festgehalten haben"
+        kicker="Festgehaltene Lösungen"
+        id="nachweis-loesungen"
+      >
+        <KeptSolutions board={props.board} projekt={project.id} />
+      </Section>
+
       <Pruefstatus project={project} />
 
-      <Details summary="Prüfprotokoll und Modellversion (für Fachleute)">
+      <Details summary="Prüfprotokoll und Detailwerkzeuge (für Fachleute)">
         <ul className="aec-facts aec-facts--mono">
           <li>
             <span>Modellversion</span>

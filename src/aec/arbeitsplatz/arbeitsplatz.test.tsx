@@ -1,9 +1,14 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import AirportEnergyCheck from "../AirportEnergyCheck";
 import { changesFor, extraVehiclesFor } from "../api/preview";
 import { parseRoute, toSearch } from "../routes";
 import { SAMPLE_PROJECT } from "../sample";
+
+afterEach(() => {
+  sessionStorage.clear();
+  window.history.replaceState(null, "", "/");
+});
 
 describe("Arbeitsplatz", () => {
   it("hat eine eigene Adresse", () => {
@@ -35,7 +40,8 @@ describe("Arbeitsplatz", () => {
     expect(
       await screen.findByRole("img", { name: "Der Anschluss reicht den ganzen Tag." }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Beispieltag: Die Kurve folgt den Reglern/)).toBeInTheDocument();
+    // Ohne Server bleibt es bei der Näherung, und das Vergleichsfeld sagt es.
+    expect(document.querySelector(".ap-accuracy")).toHaveTextContent(/Beispieltag/);
     fireEvent.click(screen.getByRole("button", { name: "Auf heute zurücksetzen" }));
     expect(await screen.findByRole("img", { name: /fehlen bis zu/ })).toBeInTheDocument();
   });
@@ -45,10 +51,15 @@ describe("Arbeitsplatz", () => {
     const { container } = render(<AirportEnergyCheck basePath="/" />);
     await screen.findByRole("table");
     const root = () => container.querySelector(".ap")!;
+    const toggle = screen.getByRole("button", { name: "Präsentieren" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).toHaveAttribute("aria-keyshortcuts", "P");
+    expect(toggle).toHaveTextContent("P");
     expect(root()).not.toHaveAttribute("data-presenting");
-    fireEvent.click(screen.getByRole("button", { name: "Präsentieren" }));
+    fireEvent.click(toggle);
     expect(root()).toHaveAttribute("data-presenting");
-    expect(screen.getByRole("button", { name: "Präsentation beenden" })).toHaveAttribute(
+    // Der Name bleibt, der Zustand steht in aria-pressed.
+    expect(screen.getByRole("button", { name: "Präsentieren" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -61,6 +72,28 @@ describe("Arbeitsplatz", () => {
     expect(root()).toHaveAttribute("data-presenting");
   });
 
+  it("holt den Fokus auf den Schalter, wenn der Praesentationsmodus ihn ausblendet", async () => {
+    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}`);
+    render(<AirportEnergyCheck basePath="/" />);
+    const scrub = await screen.findByRole("slider", { name: "Uhrzeit im Tagesverlauf" });
+    // jsdom hat kein Layout: ohne Angabe gilt jedes Element als nicht sichtbar.
+    scrub.focus();
+    expect(scrub).toHaveFocus();
+    fireEvent.keyDown(scrub, { key: "p" });
+    expect(screen.getByRole("button", { name: "Präsentieren" })).toHaveFocus();
+  });
+
+  it("lässt den Fokus, wo er ist, solange das Element im Präsentationsmodus sichtbar bleibt", async () => {
+    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}`);
+    render(<AirportEnergyCheck basePath="/" />);
+    await screen.findByRole("table");
+    const grid = screen.getAllByRole("slider")[0]!;
+    vi.spyOn(grid, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+    grid.focus();
+    fireEvent.keyDown(grid, { key: "p" });
+    expect(grid).toHaveFocus();
+  });
+
   it("druckt die Seite zum Hinterlassen mit Hinweis zur Sicherheit der Zahlen", async () => {
     window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}`);
     const print = vi.spyOn(window, "print").mockImplementation(() => undefined);
@@ -71,6 +104,18 @@ describe("Arbeitsplatz", () => {
     fireEvent.click(screen.getByRole("button", { name: "Als PDF sichern" }));
     expect(print).toHaveBeenCalledTimes(1);
     print.mockRestore();
+  });
+
+  it("nennt beim Drucken das Projekt im Titel und stellt ihn danach wieder her", async () => {
+    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}`);
+    render(<AirportEnergyCheck basePath="/" />);
+    await screen.findByRole("table");
+    const before = document.title;
+    expect(before).toBe("Durchrechnen · Airport Energy Check");
+    window.dispatchEvent(new Event("beforeprint"));
+    expect(document.title).toBe(`${SAMPLE_PROJECT.name} · Airport Energy Check`);
+    window.dispatchEvent(new Event("afterprint"));
+    expect(document.title).toBe(before);
   });
 
   it("bietet Krisenfaelle nur mit eigenem Projekt an", async () => {
@@ -90,11 +135,7 @@ describe("Arbeitsplatz", () => {
     expect(phases.length).toBeGreaterThan(0);
     expect(phases[0]).toHaveTextContent(/Uhr bis zu .* fehlen, zusammen \d+ kWh/);
     const outcome = screen.getByRole("table");
-    for (const row of [
-      "Minuten mit voll ausgelastetem Anschluss",
-      "Woran die Wartezeit liegt",
-      "Höchster Bezug aus dem Netz",
-    ])
+    for (const row of [/voll ausgelastet/, /Wartezeit|bremst/, /Höchster Bezug/])
       expect(within(outcome).getByRole("rowheader", { name: row })).toBeVisible();
   });
 
@@ -158,5 +199,31 @@ describe("Arbeitsplatz", () => {
       await screen.findByRole("heading", { level: 1, name: /erst nach einer Messung/ }),
     ).toBeVisible();
     expect(window.location.search).toBe(`?projekt=${SAMPLE_PROJECT.id}&frage=nachweis`);
+  });
+
+  it("zeigt unter einer geänderten Kurve keine roten Abflugbalken von heute", async () => {
+    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}`);
+    const { container } = render(<AirportEnergyCheck basePath="/" />);
+    await screen.findByRole("table");
+    const late = () => container.querySelectorAll(".ap-chart__late").length;
+    expect(late()).toBeGreaterThan(0);
+    expect(screen.getByText(/rot: nicht rechtzeitig fertig/)).toBeInTheDocument();
+    fireEvent.change(screen.getAllByRole("slider")[0]!, { target: { value: "9000" } });
+    await screen.findByRole("img", { name: "Der Anschluss reicht den ganzen Tag." });
+    expect(late()).toBe(0);
+    expect(screen.queryByText(/rot: nicht rechtzeitig fertig/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Auf heute zurücksetzen" }));
+    expect(late()).toBeGreaterThan(0);
+  });
+
+  it("merkt nur, was von heute abweicht", async () => {
+    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}`);
+    render(<AirportEnergyCheck basePath="/" />);
+    await screen.findByRole("table");
+    fireEvent.change(screen.getAllByRole("slider")[0]!, { target: { value: "6000" } });
+    await screen.findByRole("img", { name: "Der Anschluss reicht den ganzen Tag." });
+    expect(JSON.parse(sessionStorage.getItem(`aec.regler.${SAMPLE_PROJECT.id}`)!)).toEqual({
+      gridLimitKw: 6000,
+    });
   });
 });

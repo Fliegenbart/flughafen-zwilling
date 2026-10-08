@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { shortfallHeadline, shortfallPhases, worstShortfall } from "./headline";
 import type { LiveResult } from "./livePower";
+import { mergeWindows } from "./situation";
 
 const empty: LiveResult = {
   importKw: [],
@@ -48,5 +49,14 @@ describe("shortfallPhases", () => {
     ]);
     expect(r.shortfalls[0]!.end).toBe(316); // die Eingabe bleibt unveraendert
     expect(shortfallHeadline(r)).toBe("Von 06:40 bis 07:00 Uhr fehlen bis zu 714\u00a0kW.");
+  });
+});
+
+describe("mergeWindows", () => {
+  it("fasst Fenster mit derselben Regel zusammen wie shortfallPhases", () => {
+    const w = (start: number, end: number, deficitKw = 0) => ({ start, end, deficitKw });
+    const input = [w(400, 420), w(310, 316), w(317, 318, 5), w(330, 348)];
+    expect(mergeWindows(input)).toEqual([w(310, 348, 5), w(400, 420)]);
+    expect(input[1]).toEqual(w(310, 316)); // die Eingabe bleibt unveraendert
   });
 });

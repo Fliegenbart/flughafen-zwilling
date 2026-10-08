@@ -3,12 +3,22 @@
  * unten, wie sicher das ist. Auf dem Bildschirm sind beide Teile unsichtbar.
  */
 import type { DataStatus } from "../model/dataStatus";
-import { shortfallHeadline } from "../model/headline";
+import { clock, powerText } from "../model/format";
+import { worstShortfall } from "../model/headline";
 import type { LiveResult } from "../model/livePower";
 import type { Accuracy } from "./useLiveScenario";
 
 const date = () =>
-  new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+  new Date().toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
+
+/** Ein ganzer Satz: was heute oder mit der Einstellung des Kunden am schlimmsten fehlt. */
+function lead(result: LiveResult, changed: boolean): string {
+  const who = changed ? "Mit Ihrer Einstellung" : "Heute";
+  const worst = worstShortfall(result);
+  return worst
+    ? `${who} fehlen bis zu ${powerText(worst.maxMissingKw)} von ${clock(worst.start)} bis ${clock(worst.end)} Uhr.`
+    : `${who} reicht der Anschluss den ganzen Tag.`;
+}
 
 export function HandoutHead({
   project,
@@ -23,10 +33,7 @@ export function HandoutHead({
     <div className="ap-handout ap-handout--head">
       <p className="ap-handout__meta">Airport Energy Check · {date()}</p>
       <h2 className="ap-handout__title">{project}</h2>
-      <p className="ap-handout__lead">
-        {shortfallHeadline(result)}
-        {changed ? " Mit der unten gezeigten Einstellung." : " Stand heute, ohne Änderung."}
-      </p>
+      <p className="ap-handout__lead">{lead(result, changed)}</p>
     </div>
   );
 }
@@ -43,11 +50,9 @@ export function HandoutFoot({
   const parts = [
     sample
       ? "Beispieltag mit erfundenen Werten, nicht für ein echtes Projekt gerechnet."
-      : status
-        ? `${status.real} von ${status.total} Datenquellen sind mit Quelle belegt, für den Rest gelten Annahmen.`
-        : "",
+      : (status?.answer ?? ""),
     accuracy === "naeherung" && !sample
-      ? "Die Kurve ist eine Näherung, die genaue Rechnung lief noch."
+      ? "Die Kurve ist eine Näherung, die Rechnung lief noch."
       : "",
     "Gerechnet mit dem Modell von electrified labs. Es ist nicht an Messungen kalibriert, die Zahlen sind keine Zusage.",
   ].filter(Boolean);

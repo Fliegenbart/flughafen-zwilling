@@ -45,9 +45,7 @@ export function boardFromApi(data: unknown): VariantBoard | null {
     .map((e) => {
       const k = e.kpis as Record<string, unknown>;
       const d = isObj(e.delta_to_base) ? e.delta_to_base : {};
-      const shares = isObj(k.cause_shares_pct) ? k.cause_shares_pct : {};
       const stress = isObj(e.stress) && isObj(e.stress.kpis) ? e.stress.kpis : null;
-      const fleet = fleetFromApi(e.fleet);
       return {
         id: str(e.key),
         name: str(e.name),
@@ -61,12 +59,8 @@ export function boardFromApi(data: unknown): VariantBoard | null {
         delayedDepartures: num(k.delayed_departures),
         departuresTotal: num(k.departures_total),
         missingKw: typeof k.missing_kw_peak === "number" ? k.missing_kw_peak : null,
-        backgroundUnservedKwh: num(k.background_unserved_kwh),
         bottleneck: typeof k.bottleneck === "string" ? k.bottleneck : null,
-        energyShare: num(shares.energy) / 100,
-        fleetTotal: fleet?.total ?? null,
         deltaOnTimePct: typeof d.on_time_pct === "number" ? d.on_time_pct : null,
-        deltaMinutes: typeof d.minutes_at_limit === "number" ? d.minutes_at_limit : null,
         stressOnTimePct:
           stress && typeof stress.on_time_pct === "number" ? stress.on_time_pct : null,
         status: str(e.status),
@@ -123,16 +117,21 @@ export function boardFromApi(data: unknown): VariantBoard | null {
   };
 }
 
+/** Die Tafel vom Server; wirft, wenn er nicht antwortet (fuer Aufrufer, die die letzte gute behalten). */
+export async function fetchVariantBoard(project: Project): Promise<VariantBoard> {
+  if (project.source !== "api") return sampleBoard();
+  const board = boardFromApi(await call<unknown>(`/projects/${enc(project.id)}/variants`));
+  if (!board) throw new Error("Die festgehaltenen Lösungen ließen sich nicht lesen.");
+  return board;
+}
+
+/** Wie `fetchVariantBoard`, aber mit der Beispiel-Tafel statt Fehler (Projektseite). */
 export async function getVariantBoard(project: Project): Promise<VariantBoard> {
-  if (project.source === "api") {
-    try {
-      const board = boardFromApi(await call<unknown>(`/projects/${enc(project.id)}/variants`));
-      if (board) return board;
-    } catch {
-      /* Beispiel */
-    }
+  try {
+    return await fetchVariantBoard(project);
+  } catch {
+    return sampleBoard();
   }
-  return sampleBoard();
 }
 
 export async function createVariant(

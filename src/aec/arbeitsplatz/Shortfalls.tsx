@@ -1,5 +1,5 @@
 /** Die knappen Phasen des Tages als Liste: wann, wie viel, zusammen wie viel Energie. */
-import { clock, int, powerText } from "../model/format";
+import { clock, int, powerText, unit } from "../model/format";
 import { shortfallPhases } from "../model/headline";
 import type { LiveResult } from "../model/livePower";
 
@@ -8,6 +8,7 @@ const SHOWN = 6;
 export default function Shortfalls({ result }: { result: LiveResult }) {
   const list = shortfallPhases(result);
   if (!list.length) return null;
+  const rest = list.length - SHOWN;
   return (
     <section className="ap-shortfalls" aria-labelledby="ap-shortfalls-title">
       <h2 id="ap-shortfalls-title" className="ap-outcome__title">
@@ -19,10 +20,12 @@ export default function Shortfalls({ result }: { result: LiveResult }) {
             <b>
               {clock(s.start)}–{clock(s.end)} Uhr
             </b>{" "}
-            bis zu {powerText(s.maxMissingKw)} fehlen, zusammen {int(s.missingKwh)} kWh
+            bis zu {powerText(s.maxMissingKw)} fehlen, zusammen {unit(int(s.missingKwh), "kWh")}
           </li>
         ))}
-        {list.length > SHOWN ? <li>und {list.length - SHOWN} weitere kurze Phasen</li> : null}
+        {rest > 0 ? (
+          <li>{rest === 1 ? "und eine weitere Phase" : `und ${rest} weitere Phasen`}</li>
+        ) : null}
       </ul>
     </section>
   );

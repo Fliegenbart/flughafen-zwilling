@@ -29,6 +29,9 @@ EXCHANGE_ROLES = {"airport", "lab", "admin"}
 # Pfade, auf die airport/lab ohne operator-Basisrolle schreiben duerfen.
 _EXCHANGE_WRITE_PREFIXES = ("/api/v1/projects/", "/api/v1/library/")
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+# POSTs, die nur rechnen und nichts speichern (Regler-Vorschau): Anmeldung und Origin-Pruefung
+# gelten, eine Schreibrolle braucht es nicht, und im Pruefprotokoll steht keine Aenderung.
+_READ_ONLY_POSTS = re.compile(r"^/api/v1/projects/[^/]+/situation/preview$")
 _NO_STORE = {"Cache-Control": "no-store"}
 # Fehlversuchs-Grenzen. Zaehler liegen im Prozessspeicher und gelten nur mit
 # genau einem uvicorn-Worker (--workers 1), siehe docs/PILOT_OPERATIONS.md.
@@ -515,6 +518,7 @@ def install_instance_access(app: FastAPI, base_dir: Path) -> None:
         request.state.instance_principal = principal
         if not principal:
             return _response(401, "authentication_required")
+        read_only = request.method == "POST" and bool(_READ_ONLY_POSTS.fullmatch(request.url.path))
         if request.method not in _SAFE_METHODS:
             if not _same_origin(request, config):
                 store._audit(principal.username, "csrf_rejected", request.url.path)
@@ -523,7 +527,8 @@ def install_instance_access(app: FastAPI, base_dir: Path) -> None:
                 request.url.path.startswith(_EXCHANGE_WRITE_PREFIXES)
             )
             if (
-                request.url.path != "/api/v1/auth/logout"
+                not read_only
+                and request.url.path != "/api/v1/auth/logout"
                 and principal.role != "operator"
                 and not exchange_write
             ):
@@ -531,7 +536,7 @@ def install_instance_access(app: FastAPI, base_dir: Path) -> None:
                 return _response(403, "operator_role_required")
         response = await call_next(request)
         response.headers.setdefault("Cache-Control", "no-store")
-        if request.method not in _SAFE_METHODS and response.status_code < 400:
+        if request.method not in _SAFE_METHODS and not read_only and response.status_code < 400:
             store._audit(
                 principal.username,
                 "mutation_completed",

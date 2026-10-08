@@ -1,14 +1,20 @@
 /** Wie weit sich die Regler bewegen lassen: aus den Werten des Projekts abgeleitet, nicht fest. */
+import { MAX_FLEET } from "../model/dataStatus";
 import type { Levers } from "../model/livePower";
 
 export type Range = { min: number; max: number; step: number };
 export type RangeKey = "gridLimitKw" | "batteryKwh" | "pvFactor" | "extraVehicles";
+const RANGE_KEYS: RangeKey[] = ["gridLimitKw", "batteryKwh", "pvFactor", "extraVehicles"];
+
+const BATTERY_STEP = 250;
 
 /**
  * Der heutige Wert liegt immer auf der Schiene: Anschluss von 40 % bis 250 % von heute,
  * Batterie bis mindestens 6 MWh und dem Dreifachen von heute, Photovoltaik bis dreifach.
+ * Einen vorhandenen Speicher kann die Rechnung nicht entfernen, nur verkleinern: Dann endet
+ * die Schiene bei der kleinsten Stufe statt bei „keiner“.
  */
-export function leverRanges(today: Levers): Record<RangeKey, Range> {
+export function leverRanges(today: Levers, fleetVehicles = 0): Record<RangeKey, Range> {
   const grid = Math.max(100, today.gridLimitKw);
   return {
     gridLimitKw: {
@@ -17,23 +23,40 @@ export function leverRanges(today: Levers): Record<RangeKey, Range> {
       step: grid > 20000 ? 500 : 100,
     },
     batteryKwh: {
-      min: 0,
+      min: today.batteryKwh > 0 ? Math.min(BATTERY_STEP, today.batteryKwh) : 0,
       max: Math.max(6000, Math.ceil((today.batteryKwh * 3) / 500) * 500),
-      step: 250,
+      step: BATTERY_STEP,
     },
     pvFactor: { min: 0, max: 3, step: 0.1 },
-    extraVehicles: { min: 0, max: 60, step: 2 },
+    // Das Modell rechnet hoechstens MAX_FLEET Fahrzeuge insgesamt.
+    extraVehicles: { min: 0, max: Math.max(0, Math.min(60, MAX_FLEET - fleetVehicles)), step: 2 },
   };
 }
 
 /** Ist die Reglerstellung anders als heute? Eine Definition fuer Vergleich, Linie, Handout und Gedaechtnis. */
 export function isChanged(levers: Levers, today: Levers): boolean {
-  const keys: RangeKey[] = ["gridLimitKw", "batteryKwh", "pvFactor", "extraVehicles"];
   return (
-    keys.some((k) => (levers[k] ?? 0) !== (today[k] ?? 0)) ||
+    RANGE_KEYS.some((k) => (levers[k] ?? 0) !== (today[k] ?? 0)) ||
     !!levers.crisis ||
     (levers.policy ?? today.policy) !== today.policy
   );
+}
+
+/**
+ * Gemerkte Werte auf die Schienen von heute bringen: Sie stammen aus einem frueheren Stand des
+ * Projekts und koennen daneben liegen.
+ */
+export function clampToRanges(wanted: Partial<Levers>, today: Levers): Partial<Levers> {
+  const ranges = leverRanges(today);
+  const out = { ...wanted };
+  for (const k of RANGE_KEYS) {
+    const v = out[k];
+    if (v !== undefined) out[k] = Math.min(ranges[k].max, Math.max(ranges[k].min, v));
+  }
+  // Leistung der Batterie folgt der Kapazitaet wie am Regler.
+  if (out.batteryKwh !== undefined && out.batteryKwh !== wanted.batteryKwh)
+    out.batteryKw = out.batteryKwh ? out.batteryKwh / 2 : undefined;
+  return out;
 }
 
 /** Einzelne benannte Aenderungen gegenueber heute, als Chips zum Ausprobieren. */

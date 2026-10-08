@@ -1,10 +1,11 @@
 /** Genaue Vorschau eines Tages fuer eine Regler-Stellung (POST /situation/preview). */
 import { distributeFleet } from "../model/dataStatus";
+import { FLEET_LABEL } from "../model/fleet";
 import { isPolicy, type ChargingPolicy } from "../model/policy";
 import type { LiveBasis, Levers } from "../model/livePower";
-import type { Project, VariantChanges } from "../types";
+import type { FleetKind, Project, VariantChanges } from "../types";
 import { fleetFromApi } from "./fleet";
-import { request } from "./http";
+import { explain, request, type ApiError } from "./http";
 import { enc, isObj, num, str } from "./parse";
 
 export type DepartureBin = { startMin: number; count: number; delayed: number };
@@ -18,8 +19,6 @@ export type Preview = {
   energyWaitSharePct: number | null;
   /** Laderegel, mit der gerechnet wurde. */
   policy: ChargingPolicy | null;
-  /** Minuten, in denen der Anschluss voll ausgelastet war (wie bei festgehaltenen Loesungen). */
-  minutesAtLimit: number | null;
   /** Verbrauch des uebrigen Flughafens, den der Anschluss nicht mehr deckte. */
   backgroundUnservedKwh: number | null;
   computeMs: number | null;
@@ -81,7 +80,6 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
     energyWaitSharePct:
       typeof kpis.energy_wait_share_pct === "number" ? kpis.energy_wait_share_pct : null,
     policy: isPolicy(raw.policy) ? raw.policy : null,
-    minutesAtLimit: typeof kpis.minutes_at_limit === "number" ? kpis.minutes_at_limit : null,
     backgroundUnservedKwh:
       typeof kpis.background_unserved_kwh === "number" ? kpis.background_unserved_kwh : null,
     computeMs: typeof raw.compute_ms === "number" ? raw.compute_ms : null,
@@ -91,6 +89,9 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
         : null,
   };
 }
+
+/** Was die Vorschau schickt: Aenderungen gegenueber heute plus Krisenfall. */
+export type PreviewBody = Record<string, number | string | Record<string, number>>;
 
 /** Regler-Stellung als Aenderung gegenueber heute (nur was sich unterscheidet). */
 export function changesFor(levers: Levers, today: Levers): Record<string, number> {
@@ -129,18 +130,50 @@ export function previewBodyFor(levers: Levers, today: Levers) {
   return {
     ...(variantChangesFor(levers, today) ?? {}),
     ...(levers.crisis ? { crisis: levers.crisis } : {}),
-  } as Record<string, number | string | Record<string, number>>;
+  } as PreviewBody;
+}
+
+/** Meldungen der Vorschau in Kaeufersprache; was hier fehlt, geht durch die allgemeinen Saetze. */
+export function previewError(detail: string): string {
+  const d = detail.trim();
+  if (d.startsWith("no_base")) return "Der Tag lässt sich ohne Flugplan nicht rechnen.";
+  if (d.startsWith("invalid_assets")) {
+    const reason = d
+      .replace(/^invalid_assets: (Projektwerte passen nicht zur Basis: )?/, "")
+      .replace(/\.$/, "");
+    return `Ihre Projektwerte passen nicht zusammen${reason ? ` (${reason})` : ""}. Korrigieren Sie sie unter „Daten“.`;
+  }
+  if (d.includes("Run-Queue voll")) return "Der Rechner ist gerade belegt.";
+  if (d.includes("operator_role_required")) return "Dafür fehlt Ihrem Konto die Berechtigung.";
+  if (d.startsWith("invalid_variant")) {
+    const kind = /Fahrzeugklasse (\w+)/.exec(d)?.[1];
+    const label = kind && kind in FLEET_LABEL ? FLEET_LABEL[kind as FleetKind] : null;
+    return label
+      ? `${label} lassen sich in diesem Projekt nicht ergänzen.`
+      : "Diese Einstellung lässt sich nicht rechnen.";
+  }
+  if (/Failed to fetch|Load failed|NetworkError|abort/i.test(d))
+    return "Keine Verbindung zum Server.";
+  if (/^API-Fehler 5\d\d/.test(d)) return "Der Server konnte nicht rechnen.";
+  return explain(d);
+}
+
+/** Liegt es an den Daten des Projekts (Flugplan fehlt, Werte widersprechen sich)? */
+export function isDataProblem(e: unknown): boolean {
+  const body = (e as ApiError | null)?.body;
+  const detail = isObj(body) ? body.detail : undefined;
+  return typeof detail === "string" && /^(no_base|invalid_assets)/.test(detail);
 }
 
 export async function getPreview(
   project: Project,
-  changes: Record<string, number | string | Record<string, number>>,
+  changes: PreviewBody,
   signal?: AbortSignal,
 ): Promise<Preview> {
   const raw = await request<unknown>(
     `/projects/${enc(project.id)}/situation/preview`,
     { method: "POST", body: JSON.stringify(changes), signal },
-    { timeoutMs: 15000 },
+    { timeoutMs: 15000, translate: previewError },
   );
   const preview = previewFromApi(raw);
   if (!preview) throw new Error("Die Vorschau hat keine Kurve geliefert.");

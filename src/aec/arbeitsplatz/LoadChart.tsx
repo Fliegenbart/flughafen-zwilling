@@ -1,17 +1,21 @@
 /**
  * Die Tageskurve: Was der Flughafen aus dem Netz braucht, gegen die Grenze des Anschlusses.
- * Ueber der Grenze: gruen, was die Batterie deckt; rot, was fehlt. Die heutige Kurve bleibt als
- * graue Linie stehen, sobald eine Stellschraube veraendert ist.
+ * Ueber der Grenze: gruen, was die Batterie deckt; rot und schraffiert, was fehlt. Die heutige
+ * Kurve bleibt als graue Linie stehen, sobald eine Stellschraube veraendert ist. Eine Legende
+ * nennt, was gerade gezeichnet ist.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { DepartureBin } from "../api/preview";
 import { points, STEP, type Point } from "../model/dayCurve";
 import { clock, powerText } from "../model/format";
 import { shortfallHeadline, worstShortfall } from "../model/headline";
 import type { LiveResult } from "../model/livePower";
 
-const H = 360;
-const DEP_H = 96;
+const SCREEN = { h: 360, depH: 96 };
+// Im Druck steht die Grafik in fester Groesse (A4 hat 703 px Satzbreite). So haengen Schrift und
+// Seitenhoehe der Handreichung nicht von der Fensterbreite ab.
+const PRINT = { width: 700, h: 230, depH: 64 };
 const PAD = { left: 52, right: 16, top: 44, bottom: 28 };
 
 function useWidth<T extends HTMLElement>() {
@@ -27,6 +31,28 @@ function useWidth<T extends HTMLElement>() {
   return [ref, width] as const;
 }
 
+/** Wahr, solange gedruckt wird (Druckdialog offen); der Browser meldet es vor dem Layout. */
+function usePrinting() {
+  const [printing, setPrinting] = useState(false);
+  useEffect(() => {
+    // flushSync: Die Grafik muss neu gezeichnet sein, bevor der Browser die Druckseite setzt.
+    const set = (on: boolean) => flushSync(() => setPrinting(on));
+    const media = typeof window.matchMedia === "function" ? window.matchMedia("print") : null;
+    const onBefore = () => set(true);
+    const onAfter = () => set(false);
+    const onMedia = () => set(!!media?.matches);
+    window.addEventListener("beforeprint", onBefore);
+    window.addEventListener("afterprint", onAfter);
+    media?.addEventListener?.("change", onMedia);
+    return () => {
+      window.removeEventListener("beforeprint", onBefore);
+      window.removeEventListener("afterprint", onAfter);
+      media?.removeEventListener?.("change", onMedia);
+    };
+  }, []);
+  return printing;
+}
+
 export default function LoadChart({
   result,
   today,
@@ -38,7 +64,10 @@ export default function LoadChart({
   departures: DepartureBin[];
   changed: boolean;
 }) {
-  const [box, width] = useWidth<HTMLDivElement>();
+  const [box, measured] = useWidth<HTMLDivElement>();
+  const printing = usePrinting();
+  const width = printing ? PRINT.width : measured;
+  const { h: H, depH: DEP_H } = printing ? PRINT : SCREEN;
   // Zeiger: mit der Maus ueber dem Diagramm, oder mit dem Schieber darunter (Tastatur, Touch).
   const [hover, setHover] = useState<number | null>(null);
   const [scrub, setScrub] = useState<number | null>(null);
@@ -95,6 +124,17 @@ export default function LoadChart({
   const ticks = Array.from({ length: Math.floor(top / 1000) + 1 }, (_, i) => i * 1000);
   const hours = [0, 3, 6, 9, 12, 15, 18, 21, 24];
   const maxDep = Math.max(1, ...departures.map((d) => d.count));
+  // Die Legende nennt nur, was gerade gezeichnet ist (gleiche Schwellen wie die Flaechen oben).
+  const legend = [
+    ...(changed
+      ? [
+          { id: "need", text: "Strombedarf mit Ihrer Einstellung" },
+          { id: "today", text: "Strombedarf heute" },
+        ]
+      : []),
+    ...(pts.some((p) => p.cover > 0.5) ? [{ id: "cover", text: "Batterie deckt" }] : []),
+    ...(pts.some((p) => p.miss > 0.5) ? [{ id: "miss", text: "Es fehlt" }] : []),
+  ];
   const cursor = hover ?? scrub;
   const hp = cursor != null ? pts[Math.min(pts.length - 1, Math.round(cursor / STEP))] : null;
   const readout = hp
@@ -125,6 +165,18 @@ export default function LoadChart({
         }}
         onPointerLeave={() => setHover(null)}
       >
+        <defs>
+          <pattern
+            id="ap-miss-hatch"
+            className="ap-chart__hatch"
+            width={6}
+            height={6}
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <rect width={4} height={6} />
+          </pattern>
+        </defs>
         {ticks.map((t) => (
           <g key={t} className="ap-chart__grid">
             <line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} />
@@ -194,21 +246,32 @@ export default function LoadChart({
           </g>
         ) : null}
       </svg>
+      <div className="ap-chart__keybox">
+        {legend.length ? (
+          <ul className="ap-chart__key" aria-label="Legende">
+            {legend.map((k) => (
+              <li key={k.id}>
+                <span className={`ap-chart__swatch ap-chart__swatch--${k.id}`} aria-hidden="true" />
+                {k.text}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
       <input
         type="range"
         className="ap-scrub"
         aria-label="Uhrzeit im Tagesverlauf"
-        aria-valuetext={readout || undefined}
+        aria-valuetext={readout || `${clock(scrub ?? 0)} Uhr`}
         min={0}
         max={dayMin - STEP}
         step={STEP}
         value={scrub ?? 0}
+        onFocus={() => setScrub((s) => s ?? 0)}
         onChange={(e) => setScrub(Number(e.target.value))}
         onBlur={() => setScrub(null)}
       />
-      <figcaption className="ap-chart__readout" aria-live="polite">
-        {readout}
-      </figcaption>
+      <figcaption className="ap-chart__readout">{readout}</figcaption>
     </figure>
   );
 }

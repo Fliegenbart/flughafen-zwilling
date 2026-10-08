@@ -48,8 +48,17 @@ export async function request<T>(
   init?: RequestInit,
   { timeoutMs = 12000, translate = explain }: Options = {},
 ): Promise<T> {
+  // Zeitgrenze und Abbruch des Aufrufers wirken auf dieselbe Anfrage.
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const caller = init?.signal;
+  const forward = () => controller.abort();
+  if (caller?.aborted) forward();
+  else caller?.addEventListener("abort", forward, { once: true });
   try {
     let response: Response;
     try {
@@ -60,9 +69,10 @@ export async function request<T>(
           "X-Exchange-Role": storedRole(),
           ...init?.headers,
         },
-        signal: init?.signal ?? controller.signal,
+        signal: controller.signal,
       });
     } catch (e) {
+      if (timedOut) throw new Error("Der Server antwortet nicht.");
       throw new Error(translate(e instanceof Error ? e.message : "Failed to fetch"));
     }
     const body = (await response.json().catch(() => null)) as unknown;
@@ -74,6 +84,7 @@ export async function request<T>(
     return body as T;
   } finally {
     clearTimeout(timer);
+    caller?.removeEventListener("abort", forward);
   }
 }
 

@@ -1,17 +1,21 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import AirportEnergyCheck from "./AirportEnergyCheck";
 import { exchangeFromApi } from "./api/exchange";
 import { situationFromApi } from "./api/situation";
 import { boardFromApi } from "./api/variants";
 import { exchangeAnswer, nextStatus, whoseTurn } from "./model/exchange";
-import { bottleneckAnswer, situationKpis } from "./model/situation";
+import { clock } from "./model/format";
+import { shortfallHeadline, shortfallPhases, worstShortfall } from "./model/headline";
+import { resultFromExact } from "./model/livePower";
+import { bottleneckAnswer, worstWindow } from "./model/situation";
 import { legacyRedirect, parseRoute, toSearch } from "./routes";
-import { SAMPLE_PROJECT, sampleExchange, sampleSituation } from "./sample";
+import { SAMPLE_PROJECT, sampleExchange, samplePreview, sampleSituation } from "./sample";
 import DayLandscape from "./DayLandscape";
 import { SCENARIO_CASES } from "./scenarios";
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   window.history.replaceState(null, "", "/");
   sessionStorage.clear();
 });
@@ -66,16 +70,38 @@ describe("Adressen und Weiterleitungen", () => {
 
 describe("Antwortsatz zur knappsten Phase", () => {
   const s = sampleSituation();
-  it("nennt das Engpassfenster und die fehlende Leistung aus den Daten", () => {
-    const w = situationKpis(s).worst!;
+  const exact = resultFromExact(samplePreview().basis);
+  it("nennt die knappste Phase und die fehlende Leistung aus den Daten", () => {
+    const w = worstWindow(s)!;
     expect(w.deficitKw).toBeGreaterThan(0);
     expect(bottleneckAnswer(s)).toMatch(
       /^Von \d\d:\d\d bis \d\d:\d\d Uhr fehlen bis zu [\d,]+\sMW\./,
     );
   });
+  it("sagt auf dem Beispieltag dasselbe wie Durchrechnen", () => {
+    expect(bottleneckAnswer(s)).toBe(shortfallHeadline(exact));
+    expect(s.windows).toEqual(
+      shortfallPhases(exact).map((p) => ({
+        start: p.start,
+        end: p.end,
+        deficitKw: p.maxMissingKw,
+      })),
+    );
+  });
   it("sagt ehrlich, wenn nichts eng wird", () => {
-    const calm = { ...s, gridLimitKw: 10000 };
-    expect(bottleneckAnswer(calm)).toBe("Es wird an keinem Punkt des Tages eng.");
+    expect(bottleneckAnswer({ ...s, windows: [] })).toBe("Der Anschluss reicht den ganzen Tag.");
+  });
+  it("wählt bei gleichem Defizit die längste Phase, nicht die erste", () => {
+    const w = (start: number, end: number, deficitKw = 0) => ({ start, end, deficitKw });
+    const api = { ...s, windows: [w(310, 320), w(1060, 1153), w(400, 430)] };
+    expect(worstWindow(api)).toEqual(w(1060, 1153));
+    expect(bottleneckAnswer(api)).toBe(
+      "Von 17:40 bis 19:13 Uhr ist der Anschluss voll ausgelastet.",
+    );
+    // Mehr fehlende Leistung geht vor Länge.
+    expect(worstWindow({ ...s, windows: [w(310, 320, 900), w(1060, 1153, 100)] })).toEqual(
+      w(310, 320, 900),
+    );
   });
 });
 
@@ -135,7 +161,6 @@ describe("Varianten aus der API", () => {
     expect(board.base?.fleet.total).toBe(100);
     expect(board.variants.map((v) => v.kind)).toEqual(["basis", "fahrzeuge"]);
     expect(board.variants[1]!.deltaOnTimePct).toBe(12);
-    expect(board.variants[1]!.fleetTotal).toBe(105);
     expect(board.answer?.bestId).toBe("v1");
     expect(board.run?.done).toBe(2);
   });
@@ -221,9 +246,35 @@ describe("Austausch-Status", () => {
       evidence_level: "model_checked",
     })!;
     expect(s.kind).toBe("bezug");
-    expect(s.windows).toEqual([{ start: 360, end: 390, peakKw: 3500, deficitKw: 0 }]);
+    expect(s.windows).toEqual([{ start: 360, end: 390, deficitKw: 0 }]);
     expect(bottleneckAnswer(s)).toBe("Von 06:00 bis 06:30 Uhr ist der Anschluss voll ausgelastet.");
     expect(situationFromApi(SAMPLE_PROJECT, { available: false, series: [] })).toBeNull();
+  });
+  it("nennt als knappste Phase die längste im Verkehrstag, nicht den Vorlauf", () => {
+    // Ortstag 04.10.2026 beginnt um 22:00 UTC; die Rechnung läuft 120 Minuten davor an.
+    const dayStart = Date.parse("2026-10-03T22:00:00Z");
+    const at = (minute: number) => new Date(dayStart + minute * 60000).toISOString();
+    const win = (a: number, b: number) => ({ start_utc: at(a), end_utc: at(b), peak_kw: 3500 });
+    const s = situationFromApi(SAMPLE_PROJECT, {
+      available: true,
+      day_start_utc: at(0),
+      interval_min: 15,
+      series: [{ start_utc: at(0), grid_import_kw: 800, grid_limit_kw: 3500, pv_kw: 0 }],
+      bottleneck_windows: [
+        win(-120, -90),
+        win(-89, -60),
+        win(310, 316),
+        win(1060, 1147),
+        win(1148, 1153),
+        win(1430, 1500),
+      ],
+    })!;
+    expect(s.windows).toEqual([
+      { start: 310, end: 316, deficitKw: 0 },
+      { start: 1060, end: 1153, deficitKw: 0 },
+      { start: 1430, end: 1440, deficitKw: 0 },
+    ]);
+    expect(bottleneckAnswer(s)).toBe("Von 17:40 bis 19:13 Uhr ist der Anschluss voll ausgelastet.");
   });
 });
 
@@ -307,7 +358,7 @@ describe("Oberfläche", () => {
     );
   });
 
-  it("zeigt alle acht Fälle in der Bibliothek und übernimmt einen ins Projekt", async () => {
+  it("zeigt alle acht Fälle in der Bibliothek und übernimmt einen ins Beispielprojekt", async () => {
     openApp("?seite=bibliothek");
     const cases = await screen.findAllByRole("article");
     expect(cases).toHaveLength(8);
@@ -318,11 +369,55 @@ describe("Oberfläche", () => {
     expect(
       await screen.findByText(/„Enteisung“ gehört jetzt zu MUC · Vorfeld Süd \(Beispiel\)/),
     ).toBeVisible();
+    // Das Beispielprojekt rechnet keinen Krisenfall: kein Link, der das verspricht.
+    expect(
+      screen.getByText(/Durchrechnen können Sie den Fall nur in einem eigenen Projekt/),
+    ).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Jetzt durchrechnen" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Was das Lab prüft" })).toBeVisible();
     expect(screen.getByText(/Kälte nimmt allen Akkus 20 % Kapazität/)).toBeVisible();
-    fireEvent.click(screen.getByRole("link", { name: "Jetzt durchrechnen" }));
-    await waitFor(() =>
-      expect(window.location.search).toBe(`?projekt=${SAMPLE_PROJECT.id}&krise=enteisung`),
+  });
+
+  it("führt aus der Bibliothek mit dem Krisenfall in ein eigenes Projekt", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const body = url.endsWith("/pilot/projects")
+          ? [{ id: "p-ham", name: "HAM · Vorfeld Nord", scope: "Hamburg", decision: "?" }]
+          : {};
+        return new Response(JSON.stringify(body), { status: 200 });
+      }),
     );
+    openApp("?seite=bibliothek");
+    const target = await screen.findByRole("combobox", { name: "In welches Projekt?" });
+    await screen.findByRole("option", { name: "HAM · Vorfeld Nord" });
+    fireEvent.change(target, { target: { value: "p-ham" } });
+    fireEvent.click(screen.getByRole("button", { name: "Enteisung ins Projekt holen" }));
+    expect(
+      await screen.findByText(/„Enteisung“ gehört jetzt zu HAM · Vorfeld Nord\./),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("link", { name: "Jetzt durchrechnen" }));
+    await waitFor(() => expect(window.location.search).toBe("?projekt=p-ham&krise=enteisung"));
+  });
+
+  it("nennt das Übernehmen beim Namen, wenn es scheitert", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url.endsWith("/pilot/projects")
+          ? new Response(JSON.stringify([{ id: "p-ham", name: "HAM", scope: "Hamburg" }]))
+          : new Response(JSON.stringify({ detail: "Projekt gesperrt" }), { status: 409 }),
+      ),
+    );
+    openApp("?seite=bibliothek");
+    await screen.findByRole("option", { name: "HAM" });
+    fireEvent.change(screen.getByRole("combobox", { name: "In welches Projekt?" }), {
+      target: { value: "p-ham" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Wetter ins Projekt holen" }));
+    expect(
+      await screen.findByText("„Wetter“ ließ sich nicht ins Projekt holen (Projekt gesperrt)."),
+    ).toBeVisible();
   });
 
   it("liest den Krisenfall aus der Adresse und verwirft unbekannte", () => {
@@ -341,6 +436,38 @@ describe("Oberfläche", () => {
       krise: "schwarzstart",
     });
     expect(parseRoute("?projekt=p1&krise=gibtsnicht")).not.toHaveProperty("krise");
+  });
+
+  it("nennt auf der Startseite dieselben knappen Phasen wie Durchrechnen", () => {
+    openApp();
+    const exact = resultFromExact(samplePreview().basis);
+    const worst = worstShortfall(exact)!;
+    expect(
+      screen.getByText(`Am knappsten ${clock(worst.start)}–${clock(worst.end)} Uhr`),
+    ).toBeVisible();
+    const phases = shortfallPhases(exact).map((p) => `${clock(p.start)}–${clock(p.end)} Uhr`);
+    expect(document.querySelector(".aec-land__caption")!.textContent).toContain(
+      `Knapp wird es ${phases.join(", ")}.`,
+    );
+  });
+
+  it("nennt für Serverprojekte keinen Anschluss, den die Liste nicht kennt", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const body = url.endsWith("/pilot/projects")
+          ? [{ id: "p-ham", name: "HAM · Vorfeld Nord", scope: "Hamburg", decision: "?" }]
+          : {};
+        return new Response(JSON.stringify(body), { status: 200 });
+      }),
+    );
+    openApp();
+    const card = await screen.findByRole("link", { name: /HAM · Vorfeld Nord/ });
+    expect(card).toHaveTextContent("Hamburg");
+    expect(card).not.toHaveTextContent("Anschluss");
+    expect(screen.getByRole("link", { name: /MUC · Vorfeld Süd/ })).toHaveTextContent(
+      "Anschluss 3,50 MW",
+    );
   });
 
   it("lässt sich auf der Startseite ein Projekt anlegen", async () => {

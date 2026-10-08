@@ -13,6 +13,7 @@ from app.exchange.variants import (
     VariantChanges,
     apply_changes,
     build_answer,
+    invalid_variant_detail,
     mission_signature,
 )
 from app.main import create_app
@@ -82,6 +83,32 @@ def test_api_validation_base_required_and_domain_limits(client, tmp_path):
     assert ok.status_code == 201, ok.text
     assert ok.json()["varied_parameters"] == {"power.grid_import_limit_kw": 4500}
     assert _variant(client, pid, "anschluss +1 mw", pv_factor=2).status_code == 409
+
+
+def test_additional_vehicles_stop_at_the_model_limits_with_a_plain_sentence():
+    few = CoupledConfig(fleets=[FleetSpec(kind="bus", vehicles=150, chargers=8)],
+                        power=PowerConfig(parking_sessions=0))
+    with pytest.raises(ValueError, match="höchstens 200 Fahrzeuge je Art, Busse kämen auf 210"):
+        apply_changes(few, "uncontrolled", VariantChanges(extra_vehicles={"bus": 60}), 1440)
+    full = CoupledConfig(fleets=[FleetSpec(kind="bus", vehicles=100, chargers=8),
+                                 FleetSpec(kind="gpu", vehicles=100, chargers=8),
+                                 FleetSpec(kind="pushback_tug", vehicles=90, chargers=8)])
+    with pytest.raises(ValueError, match="höchstens 300 Fahrzeuge, die Flotte käme auf 305"):
+        apply_changes(full, "uncontrolled", VariantChanges(extra_vehicles={"gpu": 15}), 1440)
+
+
+def test_invalid_variant_detail_drops_pydantic_text():
+    with pytest.raises(ValidationError) as value_error:
+        CoupledConfig(fleets=[FleetSpec(kind="bus", vehicles=200, chargers=8),
+                              FleetSpec(kind="gpu", vehicles=101, chargers=8)])
+    assert invalid_variant_detail(value_error.value) == (
+        "invalid_variant: Maximal 300 modellierte Fahrzeuge")
+    with pytest.raises(ValidationError) as constraint:
+        FleetSpec(kind="bus", vehicles=201)
+    assert invalid_variant_detail(constraint.value) == (
+        "invalid_variant: Die Werte liegen außerhalb dessen, was das Modell rechnet.")
+    assert invalid_variant_detail(ValueError("Mehr Ladepunkte offline als bus besitzt")) == (
+        "invalid_variant: Mehr Ladepunkte offline als bus besitzt")
 
 
 def test_roles_lab_reads_but_cannot_write(client, tmp_path):

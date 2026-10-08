@@ -27,11 +27,11 @@ sys.path.insert(0, str(ROOT))
 
 from app.exchange.demo_day import SEED, TITLE, busy_day, heute_config  # noqa: E402
 from app.exchange.live import basis_from_series, departures_by_half_hour  # noqa: E402
+from app.exchange.situation import day_rows, minutes_at_limit  # noqa: E402
 from app.exchange.variants import VariantChanges, apply_changes  # noqa: E402
 from app.munich.coupled_simulator import simulate_coupled  # noqa: E402
 from app.munich.coupled_world import build_world  # noqa: E402
 
-LIMIT_TOLERANCE_KW = 0.5
 SRC = ROOT.parent / "src" / "aec"
 DAY_OUT = SRC / "beispieltag.json"
 REFERENCE_OUT = SRC / "model" / "__fixtures__" / "livePowerReference.json"
@@ -58,13 +58,11 @@ CASES = [
 
 
 def metrics(series, day_minutes):
-    day = [r for r in series if 0 <= r["minute"] - 1 < day_minutes]
-    at_limit = sum(1 for r in day if r["effective_grid_cap_kw"] > 0
-                   and r["grid_import_kw"] >= r["effective_grid_cap_kw"] - LIMIT_TOLERANCE_KW)
+    day = day_rows(series, day_minutes)
     missing = [max(0.0, r.get("charging_requested_kw", 0.0)
                    - r["ground_charging_kw"] - r["parking_kw"]) for r in day]
     return {
-        "minutes_at_limit": at_limit,
+        "minutes_at_limit": minutes_at_limit(series, day_minutes),
         "peak_import_kw": round(max(r["grid_import_kw"] for r in day), 3),
         "max_missing_kw": round(max(missing), 3),
         "missing_kwh": round(sum(missing) / 60, 3),

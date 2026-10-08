@@ -54,8 +54,8 @@ def _series(minutes=range(1, 62)):
     ]
 
 
-def _persist_rich_run(tmp_path, run_id=RUN_ID):
-    sha = persisted_coupled_run(tmp_path, run_id, _series())
+def _persist_rich_run(tmp_path, run_id=RUN_ID, series=None):
+    sha = persisted_coupled_run(tmp_path, run_id, series or _series())
     # Abfluege ergaenzen (Artefakt + Hash neu schreiben).
     from app.storage import FileStorage
 
@@ -323,6 +323,31 @@ def test_situation_empty_and_aggregated(client, tmp_path, safe_run):
     assert answer["bottleneck"] == "energy"
     assert [d["count"] for d in situation["departures"]] == [2, 1]
     assert situation["evidence_level"] == "model_checked"
+
+
+def test_situation_windows_cover_only_the_traffic_day(client, tmp_path, safe_run):
+    """Vorlauf und Nachlauf stehen in der Reihe, zaehlen aber weder als Fenster noch als Minute."""
+    def row(minute, grid):
+        return {"minute": minute, "grid_import_kw": grid, "effective_grid_cap_kw": 100.0,
+                "pv_kw": 0.0, "ground_charging_kw": 0.0, "parking_kw": 0.0}
+
+    # Vorlauf (Intervall -120 bis 0) und Nachlauf (ab Tagesende) liegen am Limit, mit hoeherer
+    # Last als im Tag; im Tag nur 10 Minuten (1 bis 10) und 5 Minuten (30 bis 34).
+    series = (
+        [row(m, 150.0) for m in range(-119, 1)]
+        + [row(m, 100.0 if m <= 10 or 30 <= m <= 34 else 40.0) for m in range(1, 61)]
+        + [row(m, 150.0) for m in range(1441, 1500)]
+    )
+    pid = project(client)["id"]
+    run_id = _persist_rich_run(tmp_path, series=series)
+    client.post(f"/api/v1/projects/{pid}/links", json={"kind": "coupled_run", "ref_id": run_id})
+    situation = client.get(f"/api/v1/projects/{pid}/situation").json()
+    answer = situation["answer"]
+    assert [(w["start_utc"], w["minutes"]) for w in situation["bottleneck_windows"]] == [
+        ("2026-10-04T00:00:00Z", 10), ("2026-10-04T00:29:00Z", 5)]
+    assert sum(w["minutes"] for w in situation["bottleneck_windows"]) == answer[
+        "minutes_at_limit"] == 15
+    assert answer["peak_kw"] == 100.0
 
 
 def test_library_lists_eight_cases_and_adopts(client):

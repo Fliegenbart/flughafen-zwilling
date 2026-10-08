@@ -1,7 +1,9 @@
 /*
  * Arbeitsbildschirm. Heller Grund fuer den Beamer, eine Schrift, Farbe nur mit Bedeutung:
- * Rot wie der Haltebalken auf dem Rollfeld (Grenze, Fehlendes), Gruen wie die Rollweg-
- * Mittellinie (Batterie deckt, besser als heute), Bernstein fuer "Naeherung laeuft".
+ * Rot wie der Haltebalken auf dem Rollfeld (Grenze, Fehlendes, schlechter als heute), Gruen wie
+ * die Rollweg-Mittellinie (Batterie deckt, besser als heute), Blau fuer "von Ihnen veraendert",
+ * Bernstein fuer "Naeherung laeuft". Die Farbe allein traegt nie die Bedeutung: Fehlendes ist
+ * zusaetzlich schraffiert, jede Linie und Flaeche steht in der Legende unter der Kurve.
  */
 .ap {
   --ap-bg: #ffffff;
@@ -9,6 +11,8 @@
   --ap-ink: #1c2632;
   --ap-muted: #5f6b78;
   --ap-faint: #c9d0d7;
+  /* Vergleichslinie und Balken: mindestens 3:1 auf Weiss (WCAG 1.4.11) */
+  --ap-ghost: #7d8794;
   --ap-stop: #c62a1f;
   --ap-go: #1f7a4a;
   --ap-amber: #b7791f;
@@ -32,8 +36,9 @@
 /* ------------------------------------------------------------- Kopfzeile */
 .ap-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 24px;
+  gap: 8px 24px;
   padding: 18px 32px 14px;
   border-bottom: 1px solid var(--ap-faint);
 }
@@ -42,16 +47,14 @@
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  flex: 1;
+  flex: 1 1 22ch;
 }
-.ap-head__back,
-.ap-head__link {
+.ap-head__back {
   font-size: 15px;
   color: var(--ap-muted);
   text-decoration: none;
 }
-.ap-head__back:hover,
-.ap-head__link:hover {
+.ap-head__back:hover {
   color: var(--ap-ink);
   text-decoration: underline;
 }
@@ -138,7 +141,7 @@
   line-height: 1.1;
 }
 .ap-lever[data-changed] .ap-lever__value {
-  color: var(--ap-go);
+  color: var(--ap-focus);
 }
 .ap-lever__track {
   position: relative;
@@ -153,8 +156,7 @@
   top: 2px;
   bottom: 0;
   width: 2px;
-  background: var(--ap-ink);
-  opacity: 0.35;
+  background: var(--ap-ghost);
   pointer-events: none;
 }
 .ap-lever input[type="range"] {
@@ -181,7 +183,7 @@
   color: var(--ap-muted);
 }
 .ap-lever[data-changed] .ap-select {
-  border-color: var(--ap-go);
+  border-color: var(--ap-focus);
 }
 .ap-crisis[data-changed] .ap-select {
   border-color: var(--ap-stop);
@@ -215,7 +217,15 @@
 }
 .ap-chip:disabled {
   color: var(--ap-muted);
+  background: var(--ap-surface);
+  border-style: dashed;
   cursor: default;
+}
+.ap-chips__note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ap-muted);
 }
 .ap-reset {
   justify-self: start;
@@ -260,7 +270,7 @@
 }
 .ap-chart__today {
   fill: none;
-  stroke: var(--ap-faint);
+  stroke: var(--ap-ghost);
   stroke-width: 2;
   stroke-linejoin: round;
 }
@@ -274,9 +284,13 @@
   font-size: 14px;
   font-weight: 600;
 }
+/* Fehlendes ist schraffiert (Muster in LoadChart): Rot und Gruen unterscheiden sich auch ohne Farbe. */
 .ap-chart__miss {
-  fill: var(--ap-stop);
+  fill: url(#ap-miss-hatch) var(--ap-stop);
   fill-opacity: 0.85;
+}
+.ap-chart__hatch rect {
+  fill: var(--ap-stop);
 }
 .ap-chart__cover {
   fill: var(--ap-go);
@@ -297,7 +311,7 @@
   font-weight: 600;
 }
 .ap-chart__dep {
-  fill: var(--ap-faint);
+  fill: var(--ap-ghost);
 }
 .ap-chart__late {
   fill: var(--ap-stop);
@@ -320,6 +334,47 @@
   margin-top: 6px;
   font-size: 15px;
   color: var(--ap-muted);
+}
+/* Legende: nur, was gerade gezeichnet ist; die Zeile behaelt ihre Hoehe, damit nichts springt. */
+.ap-chart__keybox {
+  min-height: 1.6em;
+  margin: 8px 0 0 52px;
+}
+.ap-chart__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  color: var(--ap-muted);
+}
+.ap-chart__key li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ap-chart__swatch {
+  flex: none;
+  width: 22px;
+  height: 12px;
+}
+.ap-chart__swatch--need,
+.ap-chart__swatch--today {
+  height: 0;
+  border-top: 2px solid var(--ap-ink);
+}
+.ap-chart__swatch--today {
+  border-top-color: var(--ap-ghost);
+}
+.ap-chart__swatch--cover {
+  background: var(--ap-go);
+  opacity: 0.75;
+}
+.ap-chart__swatch--miss {
+  background: repeating-linear-gradient(135deg, var(--ap-stop) 0 4px, transparent 4px 6px);
+  opacity: 0.85;
 }
 
 /* ------------------------------------------------------- Knappe Phasen */
@@ -476,7 +531,11 @@
 }
 
 /* ---------------------------------------------------------------- Vergleichstabelle */
+/* Die Tabelle steht auch auf der Zusage-Seite, ausserhalb von .ap: Tokens hier, nicht nur dort. */
 .ap-compare {
+  --ap-surface: #f2f4f6;
+  --ap-muted: #5f6b78;
+  --ap-go: #1f7a4a;
   overflow-x: auto;
 }
 .ap-compare table {
@@ -523,21 +582,30 @@
   color: var(--ap-muted);
 }
 
-/* ----------------------------------------------------------- Schmal / Druck */
+/* ------------------------------------------------------------------- Schmal */
 @media (max-width: 900px) {
   .ap-body {
     grid-template-columns: minmax(0, 1fr);
     padding: 20px 16px 40px;
   }
   .ap-head {
-    flex-wrap: wrap;
     padding: 14px 16px;
-    gap: 12px;
+    gap: 8px 12px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .ap * {
-    transition: none !important;
+/* Die Reglerspalte bleibt beim Scrollen stehen: Regler und Ergebnis sind zugleich zu sehen. */
+@media (min-width: 901px) {
+  .ap-levers {
+    position: sticky;
+    top: 12px;
+    align-self: start;
+    max-height: calc(100vh - 36px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    /* Rand, damit der Scrollbereich den Fokusring nicht abschneidet */
+    margin: -6px;
+    padding: 6px;
   }
 }
 
@@ -553,6 +621,16 @@
   cursor: pointer;
   white-space: nowrap;
 }
+.ap-tool__key {
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.75;
+}
 .ap-tool:hover:not(:disabled) {
   border-color: var(--ap-ink);
 }
@@ -566,89 +644,106 @@
   cursor: default;
 }
 
-/* Die Seite zum Hinterlassen ist nur im Druck sichtbar. */
-.ap-handout {
+/* Die Seite zum Hinterlassen und der Klartext zu Auswahlfeldern sind nur im Druck sichtbar. */
+.ap-handout,
+.ap-print-only {
   display: none;
 }
 
 /* ------------------------------------------------------ Praesentationsmodus */
-/* Beamer: groessere Schrift, nur das Noetige. Kopfzeile bleibt, Links zu anderen Seiten gehen. */
-.ap[data-presenting] {
-  font-size: 20px;
-}
-.ap[data-presenting] .ap-head {
-  padding: 14px 40px;
-}
-.ap[data-presenting] .ap-keep,
-.ap[data-presenting] .ap-basis,
-.ap[data-presenting] .ap-scrub {
-  display: none;
-}
-.ap[data-presenting] .ap-chip {
-  font-size: 17px;
-  padding: 8px 16px;
-}
-.ap[data-presenting] .ap-shortfalls {
-  max-width: none;
-  font-size: 20px;
-}
-.ap[data-presenting] .ap-select {
-  font-size: 18px;
-}
-.ap[data-presenting] .ap-head__link,
-.ap[data-presenting] .ap-head__data,
-.ap[data-presenting] .ap-steps,
-.ap[data-presenting] .ap-head__back,
-.ap[data-presenting] .ap-lever__today {
-  display: none;
-}
-.ap[data-presenting] .ap-head__title {
-  font-size: 28px;
-}
-.ap[data-presenting] .ap-body {
-  grid-template-columns: 340px minmax(0, 1fr);
-  gap: 48px;
-  max-width: none;
-  padding: 24px 40px 40px;
-}
-.ap[data-presenting] .ap-lever__name {
-  font-size: 18px;
-}
-.ap[data-presenting] .ap-lever__value {
-  font-size: 40px;
-}
-.ap[data-presenting] .ap-lever input[type="range"] {
-  height: 28px;
-}
-.ap[data-presenting] .ap-chart__grid text,
-.ap[data-presenting] .ap-chart__hour,
-.ap[data-presenting] .ap-chart__deplabel {
-  font-size: 16px;
-}
-.ap[data-presenting] .ap-chart__limitlabel {
-  font-size: 18px;
-}
-.ap[data-presenting] .ap-chart__note text,
-.ap[data-presenting] .ap-chart__ok {
-  font-size: 22px;
-}
-.ap[data-presenting] .ap-chart__readout {
-  font-size: 18px;
-}
-.ap[data-presenting] .ap-outcome {
-  max-width: none;
-}
-.ap[data-presenting] .ap-outcome table {
-  font-size: 20px;
-}
-.ap[data-presenting] .ap-outcome__title {
-  font-size: 20px;
-}
-.ap[data-presenting] .ap-accuracy {
-  font-size: 16px;
+/* Beamer: groessere Schrift, nur das Noetige. Kopfzeile bleibt, Links zu anderen Seiten gehen.
+   Nur am Bildschirm; der Druck behaelt seine eigenen Groessen. */
+@media screen {
+  .ap[data-presenting] {
+    font-size: 20px;
+  }
+  .ap[data-presenting] .ap-head {
+    padding: 14px 40px;
+  }
+  .ap[data-presenting] .ap-keep,
+  .ap[data-presenting] .ap-basis,
+  .ap[data-presenting] .ap-scrub {
+    display: none;
+  }
+  .ap[data-presenting] .ap-chip {
+    font-size: 17px;
+    padding: 8px 16px;
+  }
+  .ap[data-presenting] .ap-reset {
+    font-size: 18px;
+  }
+  .ap[data-presenting] .ap-shortfalls {
+    max-width: none;
+    font-size: 20px;
+  }
+  .ap[data-presenting] .ap-select {
+    font-size: 18px;
+  }
+  .ap[data-presenting] .ap-head__data,
+  .ap[data-presenting] .ap-steps,
+  .ap[data-presenting] .ap-head__back,
+  .ap[data-presenting] .ap-lever__today {
+    display: none;
+  }
+  /* Der Grund fuer gesperrte Regler bleibt, sonst stehen sie auf dem Beamer ohne Erklaerung da. */
+  .ap[data-presenting] .ap-lever:not(:has(.ap-lever__name)) .ap-lever__today {
+    display: block;
+    font-size: 16px;
+  }
+  .ap[data-presenting] .ap-head__title {
+    font-size: 28px;
+  }
+  .ap[data-presenting] .ap-body {
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: 48px;
+    max-width: none;
+    padding: 24px 40px 40px;
+  }
+  .ap[data-presenting] .ap-lever__name {
+    font-size: 18px;
+  }
+  .ap[data-presenting] .ap-lever__value {
+    font-size: 40px;
+  }
+  .ap[data-presenting] .ap-lever input[type="range"] {
+    height: 28px;
+  }
+  .ap[data-presenting] .ap-chart__grid text,
+  .ap[data-presenting] .ap-chart__hour,
+  .ap[data-presenting] .ap-chart__deplabel {
+    font-size: 16px;
+  }
+  .ap[data-presenting] .ap-chart__limitlabel {
+    font-size: 18px;
+  }
+  .ap[data-presenting] .ap-chart__note text,
+  .ap[data-presenting] .ap-chart__ok {
+    font-size: 22px;
+  }
+  .ap[data-presenting] .ap-chart__readout,
+  .ap[data-presenting] .ap-chart__key {
+    font-size: 18px;
+  }
+  .ap[data-presenting] .ap-outcome {
+    max-width: none;
+  }
+  .ap[data-presenting] .ap-outcome table {
+    font-size: 20px;
+  }
+  .ap[data-presenting] .ap-outcome thead th {
+    font-size: 17px;
+  }
+  .ap[data-presenting] .ap-outcome__title {
+    font-size: 20px;
+  }
+  .ap[data-presenting] .ap-accuracy {
+    font-size: 18px;
+  }
 }
 
 /* -------------------------------------------------------------------- Druck */
+/* Eine A4-Seite, unabhaengig von der Fenstergroesse: Die Grafik zeichnet sich im Druck in fester
+   Groesse (LoadChart), Auswahlfelder erscheinen als Text, Hinweise nur fuer den Bildschirm fehlen. */
 @page {
   size: A4 portrait;
   margin: 12mm;
@@ -666,16 +761,24 @@
   .ap-keep,
   .ap-basis,
   .ap-reset,
+  .ap-chips__note,
   .ap-lever__track,
+  .ap-lever__note,
   .ap-chart__readout,
   .ap-accuracy,
   .ap-loading {
+    display: none !important;
+  }
+  /* Der Hinweis zu gesperrten Reglern (ein Regler ohne Namen) gilt nur am Bildschirm. Eigene
+     Regel mit :has(), damit ein Browser ohne :has() nicht die Liste oben verliert. */
+  .ap-lever:not(:has(.ap-lever__name)) {
     display: none !important;
   }
   .ap-body {
     display: block;
     padding: 0;
     max-width: none;
+    break-inside: avoid;
   }
   .ap-handout {
     display: block;
@@ -688,35 +791,94 @@
   }
   .ap-handout__title {
     margin: 0 0 4px;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 600;
     letter-spacing: -0.01em;
   }
   .ap-handout__lead {
-    margin: 0 0 10px;
-    font-size: 16px;
+    margin: 0 0 8px;
+    font-size: 15px;
     font-weight: 500;
   }
   .ap-handout--foot {
-    margin-top: 12px;
-    padding-top: 8px;
+    margin-top: 10px;
+    padding-top: 6px;
     border-top: 1px solid var(--ap-faint);
     font-size: 11px;
+    line-height: 1.35;
     color: var(--ap-muted);
   }
   .ap-levers {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    margin: 0 0 8px;
+    padding: 0;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 8px;
+    gap: 8px 12px;
+  }
+  .ap-lever {
+    gap: 2px;
+    break-inside: avoid;
+  }
+  .ap-lever__name {
+    font-size: 12px;
   }
   .ap-lever__value {
-    font-size: 18px;
+    font-size: 17px;
   }
   .ap-lever__today {
     font-size: 11px;
   }
+  /* Laderegel und Krisenfall stehen als Text und brauchen mehr Breite als ein Regler. */
+  .ap-lever:not(:has(.ap-lever__value)) {
+    grid-column: span 2;
+  }
+  .ap-print-only {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  /* "Wirkt erst, wenn die Rechnung fertig ist" gilt nur am Bildschirm; die Annahme zum Krisenfall bleibt. */
+  .ap-lever > select ~ .ap-lever__today {
+    display: none;
+  }
+  .ap-crisis[data-changed] > select ~ .ap-lever__today {
+    display: block;
+  }
+  .ap-lever:has(.ap-print-only) .ap-select {
+    display: none;
+  }
+  .ap-chart {
+    break-inside: avoid;
+  }
   .ap-chart svg {
     width: 100%;
+  }
+  .ap-chart__keybox {
+    min-height: 0;
+    margin: 4px 0 0 52px;
+  }
+  .ap-chart__key {
+    font-size: 11px;
+  }
+  .ap-shortfalls {
+    margin-top: 8px;
+    max-width: none;
+    break-inside: avoid;
+  }
+  .ap-shortfalls ul {
+    columns: 2;
+    column-gap: 24px;
+  }
+  .ap-shortfalls li {
+    padding: 2px 0;
+    break-inside: avoid;
+  }
+  .ap-outcome__title {
+    margin-bottom: 4px;
+    font-size: 14px;
   }
   .ap-outcome {
     margin-top: 10px;
@@ -726,8 +888,11 @@
   .ap-outcome table {
     font-size: 12px;
   }
+  .ap-outcome thead th {
+    font-size: 12px;
+  }
   .ap-outcome th,
   .ap-outcome td {
-    padding: 5px 0 5px 12px;
+    padding: 3px 0 3px 12px;
   }
 }
