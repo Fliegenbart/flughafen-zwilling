@@ -10,7 +10,7 @@ import {
   linkFlightPlan,
   saveAssets,
   type AssetInput,
-} from "../dataApi";
+} from "../api/data";
 import {
   deDate,
   importError,
@@ -21,7 +21,7 @@ import {
   type DataItem,
   type DataItemId,
   type DataStatus,
-} from "../dataStatus";
+} from "../model/dataStatus";
 import Link from "../Link";
 import { AnswerHead, Details } from "../parts";
 import type { Route } from "../routes";

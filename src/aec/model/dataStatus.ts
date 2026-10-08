@@ -5,8 +5,8 @@
  * sagt getrennt die Evidenzstufe. Abgewiesene Importe (schlechte Datenqualitaet) zaehlen
  * nie als echt; "empirisch bestanden" gibt es nur ueber eine Holdout-Bewertung mit PASS.
  */
-import type { EvidenceLevel } from "../ui/EvidenceBadge";
-import { issueLabel } from "../pilot/issues";
+import type { EvidenceLevel } from "../../ui/EvidenceBadge";
+import { issueLabel } from "../../pilot/issues";
 
 export type DataState = "echt" | "annahme" | "fehlt";
 export type DataItemId = "flugplan" | "flotte" | "messdaten" | "lab";

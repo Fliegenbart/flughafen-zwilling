@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { bestVariant, dec1, int, powerText, variantsAnswer } from "../analysis";
-import { createVariant, deleteVariant, runVariants } from "../api";
+import { dec1, int, powerText } from "../model/format";
+import { bestVariant, variantsAnswer } from "../model/variants";
+import { createVariant, deleteVariant, runVariants } from "../api/variants";
 import { sampleVariants } from "../sample";
 import { caseBySlug, SCENARIO_CASES } from "../scenarios";
 import { AnswerHead, Details, Section, SourceTag } from "../parts";

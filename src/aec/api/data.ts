@@ -4,8 +4,6 @@
  * Verknuepfungen (`/projects/{id}/links`), Projektwerte (`/projects/{id}/assets`),
  * Pilot-Messdaten (`/pilot/projects/{id}/imports`) und FlexLab (`/lab/imports`).
  */
-import { apiBase } from "../lab/api";
-import { storedRole } from "./api";
 import {
   EMPTY_INPUTS,
   importError,
@@ -17,60 +15,15 @@ import {
   type LabRun,
   type LinkedPlan,
   type MeasurementImport,
-} from "./dataStatus";
-import type { Project } from "./types";
+} from "../model/dataStatus";
+import type { Project } from "../types";
+import { optional as optionalRequest, request } from "./http";
+import { enc, isObj, num, str } from "./parse";
 
-const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
-const str = (v: unknown, d = "") => (typeof v === "string" ? v : d);
-const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
-const enc = encodeURIComponent;
-
-/** Antwort lesen; Fehler als verstaendliche deutsche Meldung. */
-async function send<T>(path: string, init?: RequestInit, timeoutMs = 20000): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    let response: Response;
-    try {
-      response = await fetch(`${apiBase()}/api/v1${path}`, {
-        ...init,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Exchange-Role": storedRole(),
-          ...init?.headers,
-        },
-        signal: controller.signal,
-      });
-    } catch (e) {
-      throw new Error(importError(e instanceof Error ? e.message : "Failed to fetch"));
-    }
-    const body = (await response.json().catch(() => null)) as unknown;
-    if (!response.ok) {
-      const detail = isObj(body) ? body.detail : undefined;
-      let text = typeof detail === "string" ? detail : `API-Fehler ${response.status}`;
-      if (Array.isArray(detail)) {
-        // Pydantic-Validierung: erstes Feld nennen.
-        const first = detail.find(isObj);
-        const field = first && Array.isArray(first.loc) ? first.loc[first.loc.length - 1] : "";
-        text = `Eingabe ungültig${field ? ` (${String(field)})` : ""}: ${str(first?.msg)}`;
-      }
-      const error = new Error(importError(text)) as Error & { body?: unknown };
-      error.body = body;
-      throw error;
-    }
-    return body as T;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function optional<T>(path: string): Promise<T | null> {
-  try {
-    return await send<T>(path);
-  } catch {
-    return null;
-  }
-}
+/** Datenimporte: laengere Zeitgrenze, Fehler in Import-Sprache. */
+const DATA = { timeoutMs: 20000, translate: importError };
+const send = <T>(path: string, init?: RequestInit) => request<T>(path, init, DATA);
+const optional = <T>(path: string) => optionalRequest<T>(path, DATA);
 
 /* ------------------------------------------------------------------ Mapper */
 

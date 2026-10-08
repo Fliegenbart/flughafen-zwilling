@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { EvidenceBadge } from "../ui/EvidenceBadge";
-import { adoptScenario, listProjects } from "./api";
+import { adoptScenario } from "./api/exchange";
+import { listProjects } from "./api/projects";
 import Link from "./Link";
 import { SAMPLE_PROJECT } from "./sample";
 import { SCENARIO_CASES } from "./scenarios";

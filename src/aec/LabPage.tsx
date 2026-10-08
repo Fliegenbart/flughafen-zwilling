@@ -1,14 +1,8 @@
 import { useEffect, useState } from "react";
 import { EvidenceBadge } from "../ui/EvidenceBadge";
-import {
-  advanceExchange,
-  getProject,
-  listExchange,
-  listProjects,
-  storedRole,
-  storeRole,
-  type Role,
-} from "./api";
+import { advanceExchange, listExchange } from "./api/exchange";
+import { getProject, listProjects } from "./api/projects";
+import { storedRole, storeRole, type Role } from "./api/role";
 import {
   ACTION_LABEL,
   EXCHANGE_FLOW,
@@ -17,10 +11,10 @@ import {
   PARTY_LABEL,
   STATUS_LABEL,
   whoseTurn,
-} from "./analysis";
+} from "./model/exchange";
 import Link from "./Link";
-import { loadDataInputs } from "./dataApi";
-import { EMPTY_INPUTS, type DataInputs } from "./dataStatus";
+import { loadDataInputs } from "./api/data";
+import { EMPTY_INPUTS, type DataInputs } from "./model/dataStatus";
 import { AnswerHead, Details, Section } from "./parts";
 import { useNav } from "./context";
 import type { Route } from "./routes";

@@ -7,7 +7,8 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
-import { clock, limitWindows, pointAt, power, powerText } from "./analysis";
+import { clock, power, powerText } from "./model/format";
+import { limitWindows, pointAt } from "./model/situation";
 import type { Situation } from "./types";
 
 type Props = {
