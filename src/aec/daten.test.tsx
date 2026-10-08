@@ -94,7 +94,8 @@ describe("Datenstand", () => {
     expect(fp!.warnings[0]).toMatch(/3 Flüge stehen eventuell doppelt drin/);
     expect(fl!.state).toBe("annahme");
     expect(s.answer).toMatch(/Für Fahrzeuge und Anlagen gelten noch Annahmen\./);
-    expect(needsFlightPlan(s)).toBe(true);
+    // Der Flugplan ist da: Durchrechnen startet, auch wenn die Flotte noch Annahme ist.
+    expect(needsFlightPlan(s)).toBe(false);
   });
 
   it("abgewiesene Importe zählen nie, PASS nur über Holdout-Bewertung", () => {
