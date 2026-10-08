@@ -10,7 +10,6 @@ import { getOverview, type Overview } from "../api/overview";
 import { REPORT_STYLES } from "../../ui/reportStyles";
 import { powerText } from "../model/format";
 import { bottleneckAnswer } from "../model/situation";
-import { variantsAnswer } from "../model/variants";
 import { AnswerHead, Details, Section } from "../parts";
 import type { ViewProps } from "../ProjectPage";
 import Pruefstatus from "./Pruefstatus";
@@ -64,7 +63,7 @@ function reportHtml(props: ViewProps, claims: Claim[], overview: Overview | null
 <small>Airport Energy Check · Zusammenfassung${props.situation.source === "beispiel" ? " · <b>Beispielwerte</b>" : ""}</small>
 <h1>${esc(props.project.name)}</h1>
 <p><b>Wann es knapp wird:</b> ${esc(bottleneckAnswer(props.situation))}</p>
-<p><b>Was hilft:</b> ${esc(props.board.answer?.headline ?? variantsAnswer(props.variants))}${props.board.source === "beispiel" ? " (Beispielwerte)" : ""}</p>
+${props.board.answer ? `<p><b>Was hilft:</b> ${esc(props.board.answer.headline)}${props.board.source === "beispiel" ? " (Beispielwerte)" : ""}</p>` : ""}
 <table>${rows}</table>
 <h2>Anhang für Fachleute</h2><ul>${tech || "<li>Noch keine gespeicherten Berechnungen.</li>"}</ul>
 <p>Modellversion: ${CURRENT_COUPLED_ENGINE}. Prüfgrenzen vorab festgelegt: ${overview?.locked ? `ja, SHA256 ${esc(overview.sha256 ?? "")}` : "nein"}.</p>
@@ -173,7 +172,7 @@ export default function NachweisView(props: ViewProps) {
             </li>
           ) : null}
         </ul>
-        <WerkstattLinks items={["nachweise"]} base={route} />
+        <WerkstattLinks items={["nachweise", "robustheit", "betrieb"]} base={route} />
       </Details>
     </>
   );

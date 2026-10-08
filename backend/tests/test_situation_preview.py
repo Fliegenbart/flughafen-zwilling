@@ -8,10 +8,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from make_live_power_fixture import busy_day  # noqa: E402
 from test_pilot_evidence import project  # noqa: E402
 from test_variants import AIRPORT, client  # noqa: E402,F401
 
+from app.exchange.demo_day import busy_day  # noqa: E402
 from app.munich.flightplan_store import FlightPlanStore  # noqa: E402
 
 
@@ -31,7 +31,7 @@ def test_preview_is_exact_fast_and_stores_nothing(client, tmp_path):  # noqa: F8
     elapsed = time.perf_counter() - started
     assert base["preview"] is True and base["changes"] == {}
     assert base["day_minutes"] == 1440 and len(base["requested_kw"]) > 1440
-    assert base["kpis"]["departures_total"] > 300
+    assert base["kpis"]["departures_total"] == 205
     assert elapsed < 2.5, f"Vorschau zu langsam: {elapsed:.2f} s"
     # Mehr Anschluss: nichts fehlt mehr; weniger Anschluss: mehr Verspaetungen.
     more = client.post(f"/api/v1/projects/{pid}/situation/preview",
@@ -73,3 +73,19 @@ def test_preview_under_crisis_shows_the_assumption_and_hurts(client, tmp_path): 
     fixed = client.post(url, json={"crisis": "airport_case_07_enteisungsfenster_v1",
                                    "grid_import_limit_kw": 5500}).json()
     assert fixed["power"]["grid_import_limit_kw"] == 5500
+
+
+def test_preview_reports_limit_minutes_unserved_load_and_charging_rule(client, tmp_path):  # noqa: F811
+    pid = _busy_project(client, tmp_path)
+    url = f"/api/v1/projects/{pid}/situation/preview"
+    base = client.post(url, json={}).json()
+    k = base["kpis"]
+    at_limit = sum(1 for cap, imp in zip(base["grid_cap_kw"], base["grid_import_kw"])
+                   if cap > 0 and imp >= cap - 0.5)
+    assert k["minutes_at_limit"] == at_limit and at_limit > 0
+    assert k["background_unserved_kwh"] >= 0
+    assert base["policy"] == "uncontrolled"
+    rule = client.post(url, json={"charging_policy": "mission_priority"}).json()
+    assert rule["policy"] == "mission_priority"
+    assert rule["changes"] == {"charging_policy": "mission_priority"}
+    assert client.post(url, json={"charging_policy": "egal"}).status_code == 422

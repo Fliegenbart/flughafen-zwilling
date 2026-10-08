@@ -6,13 +6,7 @@
  * Server bleiben bei der Naeherung auf einem synthetischen Referenztag.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  changesFor,
-  extraVehiclesFor,
-  getPreview,
-  previewFromApi,
-  type Preview,
-} from "../api/preview";
+import { getPreview, previewBodyFor, previewFromApi, type Preview } from "../api/preview";
 import {
   leversFromBasis,
   resultFromExact,
@@ -42,6 +36,20 @@ export type Scenario = {
 
 const SETTLE_MS = 280;
 
+/** Regler-Stellung von heute, inklusive der Laderegel, mit der gerechnet wurde. */
+export const startLevers = (p: Preview): Levers => ({
+  ...leversFromBasis(p.basis),
+  ...(p.policy ? { policy: p.policy } : {}),
+});
+
+/** Ohne Server rechnet nur die Naeherung: Laderegel, Fahrzeuge und Krisenfall gehen nicht. */
+const approximable = ({ gridLimitKw, batteryKwh, batteryKw, pvFactor }: Partial<Levers>) =>
+  Object.fromEntries(
+    Object.entries({ gridLimitKw, batteryKwh, batteryKw, pvFactor }).filter(
+      ([, v]) => v !== undefined,
+    ),
+  ) as Partial<Levers>;
+
 async function loadToday(project: Project): Promise<{ preview: Preview; sample: boolean }> {
   if (project.source === "api") return { preview: await getPreview(project, {}), sample: false };
   const ref = await import("../model/__fixtures__/livePowerReference.json");
@@ -53,7 +61,11 @@ async function loadToday(project: Project): Promise<{ preview: Preview; sample: 
   return { preview, sample: true };
 }
 
-export function useLiveScenario(project: Project | null): Scenario {
+/**
+ * `initial`: Stellung, mit der der Bildschirm nach dem Laden gleich startet (zuletzt benutzte
+ * Regler oder ein Krisenfall aus der Adresse). Muss stabil sein, sonst laedt der Tag neu.
+ */
+export function useLiveScenario(project: Project | null, initial?: Partial<Levers>): Scenario {
   const [today, setToday] = useState<Preview | null>(null);
   const [sample, setSample] = useState(false);
   const [levers, setLeversState] = useState<Levers | null>(null);
@@ -64,19 +76,53 @@ export function useLiveScenario(project: Project | null): Scenario {
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inflight = useRef<AbortController | null>(null);
 
+  /** Genaue Rechnung nach kurzer Pause; frischere Anfragen ersetzen aeltere. */
+  const requestExact = useCallback((proj: Project, base: Preview, next: Levers) => {
+    clearTimeout(timer.current);
+    inflight.current?.abort();
+    const body = previewBodyFor(next, startLevers(base));
+    timer.current = setTimeout(() => {
+      const controller = new AbortController();
+      inflight.current = controller;
+      getPreview(proj, body, controller.signal)
+        .then((p) => {
+          if (controller.signal.aborted) return;
+          setExact(p);
+          setResult(resultFromExact(p.basis));
+          setAccuracy("genau");
+          setError("");
+        })
+        .catch((e: unknown) => {
+          if (controller.signal.aborted) return;
+          setError(e instanceof Error ? e.message : "Die genaue Rechnung ist fehlgeschlagen.");
+        });
+    }, SETTLE_MS);
+  }, []);
+
   useEffect(() => {
     if (!project) return;
     let alive = true;
     loadToday(project)
       .then(({ preview, sample: isSample }) => {
         if (!alive) return;
-        const todayLevers = leversFromBasis(preview.basis);
+        const todayLevers = startLevers(preview);
         setToday(preview);
         setSample(isSample);
-        setLeversState(todayLevers);
-        setResult(resultFromExact(preview.basis));
-        setExact(preview);
-        setAccuracy("genau");
+        const wanted = (isSample ? approximable(initial ?? {}) : initial) ?? {};
+        const start: Levers = { ...todayLevers, ...wanted };
+        if (JSON.stringify(start) === JSON.stringify(todayLevers)) {
+          setLeversState(todayLevers);
+          setResult(resultFromExact(preview.basis));
+          setExact(preview);
+          setAccuracy("genau");
+          return;
+        }
+        // Gleich mit der gemerkten oder aus der Adresse gelesenen Stellung starten.
+        setLeversState(start);
+        setResult(simulateLive(preview.basis, start));
+        setExact(null);
+        setAccuracy("naeherung");
+        if (!isSample) requestExact(project, preview, start);
       })
       .catch((e: unknown) => {
         if (!alive) return;
@@ -88,9 +134,9 @@ export function useLiveScenario(project: Project | null): Scenario {
       clearTimeout(timer.current);
       inflight.current?.abort();
     };
-  }, [project]);
+  }, [project, initial, requestExact]);
 
-  const todayLevers = today ? leversFromBasis(today.basis) : null;
+  const todayLevers = today ? startLevers(today) : null;
   const todayResult = today ? resultFromExact(today.basis) : null;
 
   const setLevers = useCallback(
@@ -102,38 +148,16 @@ export function useLiveScenario(project: Project | null): Scenario {
       setAccuracy("naeherung");
       clearTimeout(timer.current);
       inflight.current?.abort();
-      if (sample) return;
-      const extra = extraVehiclesFor(next);
-      const changes = {
-        ...changesFor(next, leversFromBasis(today.basis)),
-        ...(extra ? { extra_vehicles: extra } : {}),
-        ...(next.crisis ? { crisis: next.crisis } : {}),
-      };
-      timer.current = setTimeout(() => {
-        const controller = new AbortController();
-        inflight.current = controller;
-        getPreview(project, changes, controller.signal)
-          .then((p) => {
-            if (controller.signal.aborted) return;
-            setExact(p);
-            setResult(resultFromExact(p.basis));
-            setAccuracy("genau");
-            setError("");
-          })
-          .catch((e: unknown) => {
-            if (controller.signal.aborted) return;
-            setError(e instanceof Error ? e.message : "Die genaue Rechnung ist fehlgeschlagen.");
-          });
-      }, SETTLE_MS);
+      if (!sample) requestExact(project, today, next);
     },
-    [today, project, sample],
+    [today, project, sample, requestExact],
   );
 
   const reset = useCallback(() => {
     if (!today) return;
     clearTimeout(timer.current);
     inflight.current?.abort();
-    setLeversState(leversFromBasis(today.basis));
+    setLeversState(startLevers(today));
     setResult(resultFromExact(today.basis));
     setExact(today);
     setAccuracy("genau");

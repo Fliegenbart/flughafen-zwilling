@@ -11,6 +11,8 @@
  * backend/scripts/make_live_power_fixture.py.
  */
 
+import type { FleetKind } from "../types";
+
 export type LiveBasis = {
   dayMinutes: number;
   /** Erste Minute der Reihen (Intervallbeginn); negativ = Vorlauf vor Mitternacht. */
@@ -46,6 +48,10 @@ export type Levers = {
   pvFactor: number;
   /** Zusaetzliche Fahrzeuge; die Naeherung rechnet sie nicht, nur die genaue Vorschau. */
   extraVehicles?: number;
+  /** Art der zusaetzlichen Fahrzeuge; ohne Angabe im Verhaeltnis der Standardflotte. */
+  extraKind?: FleetKind;
+  /** Laderegel; wirkt nur in der genauen Rechnung. */
+  policy?: "uncontrolled" | "mission_priority";
   /** Krisenfall der Bibliothek (scenarioId); wirkt nur in der genauen Rechnung. */
   crisis?: string;
 };

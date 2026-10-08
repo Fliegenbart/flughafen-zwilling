@@ -1,28 +1,7 @@
-/** Vorschlaege und Kurzbeschreibung einer Loesung relativ zum heutigen Stand. */
+/** Kurzbeschreibung einer festgehaltenen Loesung in Alltagssprache. */
 import { FLEET_LABEL } from "../../model/fleet";
 import { dec1, powerText } from "../../model/format";
-import type { FleetKind, VariantBoard, VariantChanges } from "../../types";
-
-/** Vorschlaege relativ zur Projekt-Basis; nur gueltige Aenderungen werden angeboten. */
-export function suggestions(board: VariantBoard): { name: string; changes: VariantChanges }[] {
-  const base = board.base;
-  if (!base) return [];
-  const list: { name: string; changes: VariantChanges }[] = [
-    { name: "5 Schlepper mehr", changes: { extra_vehicles: { pushback_tug: 5 } } },
-    { name: "Batteriespeicher 2 MWh", changes: { storage_kwh: 2000, storage_kw: 1000 } },
-    {
-      name: "1 MW mehr Anschluss",
-      changes: { grid_import_limit_kw: base.gridLimitKw + 1000 },
-    },
-  ];
-  if (base.policy !== "mission_priority")
-    list.push({
-      name: "Wer zuerst los muss, lädt zuerst",
-      changes: { charging_policy: "mission_priority" },
-    });
-  const taken = new Set(board.definitions.map((d) => d.name.toLowerCase()));
-  return list.filter((s) => !taken.has(s.name.toLowerCase()));
-}
+import type { FleetKind, VariantChanges } from "../../types";
 
 export function describeChanges(changes: VariantChanges): string {
   const parts: string[] = [];

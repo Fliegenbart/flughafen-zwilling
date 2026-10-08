@@ -1,4 +1,5 @@
 /** Vergleich heute gegen die aktuelle Stellung, mit dem Hinweis, wie genau die Zahl ist. */
+import { EvidenceBadge } from "../../ui/EvidenceBadge";
 import type { Preview } from "../api/preview";
 import { int, powerText } from "../model/format";
 import type { LiveResult } from "../model/livePower";
@@ -39,8 +40,11 @@ export default function Outcome({
       : null;
   // Rest der Wartezeit: kein freies Fahrzeug. Bleiben Abfluege trotz genug Strom spaet,
   // liegt es an der Flotte, nicht am Anschluss.
-  const share = (p: Preview | null) =>
-    p?.energyWaitSharePct != null && p.delayedDepartures ? `${int(p.energyWaitSharePct)} %` : null;
+  const cause = (p: Preview | null) =>
+    p?.energyWaitSharePct != null && p.delayedDepartures
+      ? `${int(p.energyWaitSharePct)} % Strom, ${int(100 - p.energyWaitSharePct)} % Fahrzeuge`
+      : null;
+  const pending = sample ? "nur mit eigenem Projekt" : "wird gerechnet …";
   const rows: Row[] = [
     {
       label: "Fehlende Ladeleistung in der Spitze",
@@ -55,20 +59,42 @@ export default function Outcome({
       better: compare(today.missingKwh, result.missingKwh, 1),
     },
     {
+      label: "Minuten mit voll ausgelastetem Anschluss",
+      today: `${int(today.minutesAtLimit)} min`,
+      now: `${int(result.minutesAtLimit)} min`,
+      better: compare(today.minutesAtLimit, result.minutesAtLimit, 1),
+    },
+    {
       label: "Abflüge nicht rechtzeitig fertig",
       today: late(todayPreview) ?? "–",
-      now: late(exact) ?? (sample ? "nur mit eigenem Projekt" : "wird gerechnet …"),
+      now: late(exact) ?? pending,
       better:
         exact?.delayedDepartures != null && todayPreview.delayedDepartures != null
           ? compare(todayPreview.delayedDepartures, exact.delayedDepartures, 0.5)
           : null,
     },
     {
-      label: "Verspätungen, weil ein Akku zu leer war",
-      today: share(todayPreview) ?? "–",
-      now: share(exact) ?? (sample ? "–" : "wird gerechnet …"),
+      label: "Woran die Wartezeit liegt",
+      today: cause(todayPreview) ?? "–",
+      now: cause(exact) ?? (exact ? "–" : pending),
       better: null,
     },
+    ...(todayPreview.backgroundUnservedKwh || exact?.backgroundUnservedKwh
+      ? [
+          {
+            label: "Übriger Flughafenbetrieb ohne Strom",
+            today: kwh(todayPreview.backgroundUnservedKwh ?? 0),
+            now: exact ? kwh(exact.backgroundUnservedKwh ?? 0) : pending,
+            better: exact
+              ? compare(
+                  todayPreview.backgroundUnservedKwh ?? 0,
+                  exact.backgroundUnservedKwh ?? 0,
+                  1,
+                )
+              : null,
+          },
+        ]
+      : []),
     {
       label: "Höchster Bezug aus dem Netz",
       today: powerText(today.peakImportKw),
@@ -104,6 +130,9 @@ export default function Outcome({
         </tbody>
       </table>
       <p className="ap-accuracy" data-accuracy={accuracy} role="status">
+        {sample || accuracy === "genau" ? (
+          <EvidenceBadge level="synthetic" label="Vorschau" />
+        ) : null}{" "}
         {sample
           ? "Beispieltag: Die Kurve folgt den Reglern als Näherung. Genau gerechnet wird in einem eigenen Projekt."
           : accuracy === "naeherung"

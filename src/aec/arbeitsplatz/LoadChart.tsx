@@ -63,7 +63,9 @@ export default function LoadChart({
   changed: boolean;
 }) {
   const [box, width] = useWidth<HTMLDivElement>();
+  // Zeiger: mit der Maus ueber dem Diagramm, oder mit dem Schieber darunter (Tastatur, Touch).
   const [hover, setHover] = useState<number | null>(null);
+  const [scrub, setScrub] = useState<number | null>(null);
   const pts = useMemo(() => points(result), [result]);
   const base = useMemo(() => points(today), [today]);
   const dayMin = result.importKw.length || 1440;
@@ -90,10 +92,31 @@ export default function LoadChart({
   // Nennwert des Anschlusses; Stoerungen druecken die Linie nur zeitweise darunter.
   const capNow = Math.max(0, ...pts.map((p) => p.cap).filter(Number.isFinite));
   const worst = worstShortfall(result);
+  // Der Satz zur Engstelle steht mittig ueber ihr, aber nie ausserhalb der Grafik.
+  const noteText = worst
+    ? `${clock(worst.start)}–${clock(worst.end)} Uhr: bis zu ${powerText(worst.maxMissingKw)} fehlen`
+    : "";
+  const noteHalf = noteText.length * 4.6;
+  const noteX = worst
+    ? Math.min(
+        width - PAD.right - noteHalf,
+        Math.max(PAD.left + noteHalf, x((worst.start + worst.end) / 2)),
+      )
+    : 0;
   const ticks = Array.from({ length: Math.floor(top / 1000) + 1 }, (_, i) => i * 1000);
   const hours = [0, 3, 6, 9, 12, 15, 18, 21, 24];
   const maxDep = Math.max(1, ...departures.map((d) => d.count));
-  const hp = hover != null ? pts[Math.min(pts.length - 1, Math.round(hover / STEP))] : null;
+  const cursor = hover ?? scrub;
+  const hp = cursor != null ? pts[Math.min(pts.length - 1, Math.round(cursor / STEP))] : null;
+  const readout = hp
+    ? `${clock(hp.m)} Uhr: ${powerText(hp.need)} gebraucht${
+        hp.miss > 0.5
+          ? `, ${powerText(hp.miss)} fehlen`
+          : hp.cover > 0.5
+            ? `, Batterie gibt ${powerText(hp.cover)}`
+            : ""
+      }`
+    : "";
 
   return (
     <figure className="ap-chart" ref={box}>
@@ -137,9 +160,8 @@ export default function LoadChart({
         {worst ? (
           <g className="ap-chart__note">
             <line x1={x(worst.start)} x2={x(worst.end)} y1={PAD.top - 14} y2={PAD.top - 14} />
-            <text x={x(worst.start)} y={PAD.top - 22}>
-              {clock(worst.start)}–{clock(worst.end)} Uhr: bis zu {powerText(worst.maxMissingKw)}{" "}
-              fehlen
+            <text x={noteX} y={PAD.top - 22} textAnchor="middle">
+              {noteText}
             </text>
           </g>
         ) : (
@@ -188,16 +210,20 @@ export default function LoadChart({
           </g>
         ) : null}
       </svg>
+      <input
+        type="range"
+        className="ap-scrub"
+        aria-label="Uhrzeit im Tagesverlauf"
+        aria-valuetext={readout || undefined}
+        min={0}
+        max={dayMin - STEP}
+        step={STEP}
+        value={scrub ?? 0}
+        onChange={(e) => setScrub(Number(e.target.value))}
+        onBlur={() => setScrub(null)}
+      />
       <figcaption className="ap-chart__readout" aria-live="polite">
-        {hp
-          ? `${clock(hp.m)} Uhr: ${powerText(hp.need)} gebraucht${
-              hp.miss > 0.5
-                ? `, ${powerText(hp.miss)} fehlen`
-                : hp.cover > 0.5
-                  ? `, Batterie gibt ${powerText(hp.cover)}`
-                  : ""
-            }`
-          : ""}
+        {readout}
       </figcaption>
     </figure>
   );

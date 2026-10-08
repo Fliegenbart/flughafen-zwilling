@@ -182,9 +182,8 @@ describe("Datenstand", () => {
 describe("Navigation zum Daten-Schritt", () => {
   it("Adresse ohne Frage startet automatisch, Weiterleitungen bleiben", () => {
     expect(parseRoute("?projekt=p1")).toEqual({
-      page: "projekt",
+      page: "arbeitsplatz",
       projekt: "p1",
-      frage: "lage",
       auto: true,
     });
     expect(toSearch(parseRoute("?projekt=p1"))).toBe("?projekt=p1");
@@ -195,11 +194,12 @@ describe("Navigation zum Daten-Schritt", () => {
     });
   });
 
-  it("zeigt Datenstand im Kopf, Schild 0 und Warnhinweis im Daten-Schritt", async () => {
-    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}&frage=lage`);
+  it("zeigt Datenstand im Kopf, Schild A und Warnhinweis im Daten-Schritt", async () => {
+    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}`);
     render(<AirportEnergyCheck basePath="/" />);
-    const meter = await screen.findByRole("link", { name: /^0 von 4 Datenquellen belegt/ });
-    fireEvent.click(meter);
+    expect(await screen.findByText("Daten: 0 von 4 belegt")).toBeVisible();
+    const steps = screen.getByRole("navigation", { name: "Drei Schritte des Projekts" });
+    fireEvent.click(within(steps).getByRole("link", { name: /Daten/ }));
     expect(
       await screen.findByRole("heading", { level: 1, name: /Noch ist keine der 4 Datenquellen/ }),
     ).toBeVisible();

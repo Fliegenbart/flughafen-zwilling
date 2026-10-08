@@ -82,9 +82,8 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
               <>
                 <Link
                   to={{
-                    page: "projekt",
+                    page: "arbeitsplatz",
                     projekt: notice.project,
-                    frage: "varianten",
                     ...(notice.slug ? { krise: notice.slug } : {}),
                   }}
                 >

@@ -35,10 +35,10 @@ function storedTheme(): Theme {
 function titleFor(route: Route): string {
   if (route.page === "bibliothek") return "Szenario-Bibliothek · Airport Energy Check";
   if (route.page === "lab") return "Testing-Lab · Airport Energy Check";
-  if (route.page === "arbeitsplatz") return "Arbeitsplatz · Airport Energy Check";
+  if (route.page === "arbeitsplatz") return `${STEPS[1].label} · Airport Energy Check`;
   if (route.page === "projekt") {
-    const q = STEPS.find((x) => x.id === route.frage)!;
-    return `${q.label} · Airport Energy Check`;
+    const step = STEPS.find((x) => x.id === route.frage)!;
+    return `${step.label} · Airport Energy Check`;
   }
   return "Airport Energy Check";
 }
@@ -56,7 +56,7 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
     }
   }, [theme]);
 
-  // Alte Adressen (Schritt D "Abgleich", Lab-Werkstatt im Projekt) zeigen den Lab-Raum;
+  // Alte Adressen (frueherer Schritt "Abgleich", Lab-Werkstatt im Projekt) zeigen den Lab-Raum;
   // die Adresszeile auf die neue Form bringen, damit Lesezeichen danach stimmen.
   useEffect(() => {
     const canonical = toSearch(parseRoute(window.location.search));

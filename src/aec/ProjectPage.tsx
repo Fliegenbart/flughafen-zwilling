@@ -1,25 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getProject } from "./api/projects";
 import { getSituation } from "./api/situation";
 import { getVariantBoard, runVariants } from "./api/variants";
-import { useNav } from "./context";
 import Link from "./Link";
 import { SourceTag } from "./parts";
 import {
   computeDataStatus,
   EMPTY_INPUTS,
-  needsDataStep,
   type DataInputs,
   type DataStatus,
 } from "./model/dataStatus";
 import { loadDataInputs } from "./api/data";
-import { DATA_STEP, QUESTIONS, STEPS, type Route, type Step } from "./routes";
+import { STEPS, stepRoute, type Route } from "./routes";
+import StepNav from "./StepNav";
 import DatenView from "./views/DatenView";
 import type { Project, Situation, Variant, VariantBoard } from "./types";
 import { WerkstattFrame } from "./Werkstatt";
-import LageView from "./views/LageView";
-import EngpassView from "./views/EngpassView";
-import VariantenView from "./views/VariantenView";
 import NachweisView from "./views/NachweisView";
 
 type ProjectRoute = Extract<Route, { page: "projekt" }>;
@@ -32,66 +28,6 @@ export type ViewProps = {
   reloadBoard: () => Promise<VariantBoard>;
   route: ProjectRoute;
 };
-
-/** Navigation als Rollwegbeschilderung: der aktuelle Ort ist das gelb-schwarze Positionsschild. */
-function QuestionNav({ route }: { route: ProjectRoute }) {
-  const nav = useNav();
-  const list = useRef<HTMLOListElement>(null);
-  useEffect(() => {
-    const current = list.current?.querySelector<HTMLElement>('[aria-current="page"]');
-    current?.scrollIntoView?.({ block: "nearest", inline: "center" });
-  }, [route.frage]);
-  const index = QUESTIONS.findIndex((q) => q.id === route.frage);
-  const onData = route.frage === "daten";
-  return (
-    <div className="aec-qnav">
-      <Link
-        to={{ page: "projekt", projekt: route.projekt, frage: "daten" }}
-        current={onData ? "page" : undefined}
-        className="aec-qnav__item aec-qnav__item--data"
-      >
-        <span className="aec-qnav__sign">
-          <span className="aec-qnav__letter" aria-hidden="true">
-            0
-          </span>
-          {DATA_STEP.label}
-        </span>
-        <span className="aec-qnav__q">{DATA_STEP.question}</span>
-      </Link>
-      <nav aria-label="Vier Fragen des Projekts">
-        <ol ref={list}>
-          {QUESTIONS.map((q, i) => (
-            <li
-              key={q.id}
-              data-state={onData ? "ahead" : i < index ? "past" : i === index ? "here" : "ahead"}
-            >
-              <Link
-                to={{ page: "projekt", projekt: route.projekt, frage: q.id }}
-                current={q.id === route.frage ? "page" : undefined}
-                className="aec-qnav__item"
-              >
-                <span className="aec-qnav__sign">
-                  <span className="aec-qnav__letter" aria-hidden="true">
-                    {String.fromCharCode(65 + i)}
-                  </span>
-                  {q.label}
-                </span>
-                <span className="aec-qnav__q">{q.question}</span>
-              </Link>
-            </li>
-          ))}
-        </ol>
-        <p className="aec-visually-hidden" aria-live="polite">
-          {nav.route.page !== "projekt"
-            ? ""
-            : onData
-              ? `Ihre Daten: ${DATA_STEP.question}`
-              : `Frage ${index + 1} von ${QUESTIONS.length}: ${QUESTIONS[index]!.question}`}
-        </p>
-      </nav>
-    </div>
-  );
-}
 
 /** Zustand des Projekt-Basislaufs gegenueber den aktuellen Projektwerten. */
 export function recomputeState(
@@ -120,8 +56,8 @@ function RecomputeBanner({
     state === "laeuft"
       ? "Der Tag wird mit Ihren Werten neu gerechnet …"
       : state === "fehlt"
-        ? "Ihr Tag ist noch nicht gerechnet, deshalb fehlen auf den folgenden Seiten Ihre Zahlen."
-        : "Seit der letzten Rechnung haben sich Ihre Werte geändert, die Seiten zeigen noch den alten Stand.";
+        ? "Für die Zusage ist der Tag noch nicht mit Ihren Werten gerechnet."
+        : "Seit der letzten Rechnung haben sich Ihre Werte geändert, die Zusage zeigt noch den alten Stand.";
   return (
     <div className="aec-recompute" data-state={state} role="status">
       <p>
@@ -161,13 +97,6 @@ function DataMeter({ status, projekt }: { status: DataStatus | null; projekt: st
   );
 }
 
-const NEXT: Partial<Record<Step, Step>> = {
-  daten: "lage",
-  lage: "engpass",
-  engpass: "varianten",
-  varianten: "nachweis",
-};
-
 export default function ProjectPage({
   route,
   theme,
@@ -179,7 +108,6 @@ export default function ProjectPage({
   const [situation, setSituation] = useState<Situation | null>(null);
   const [board, setBoard] = useState<VariantBoard | null>(null);
   const [inputs, setInputs] = useState<DataInputs | null>(null);
-  const nav = useNav();
 
   useEffect(() => {
     let alive = true;
@@ -208,13 +136,6 @@ export default function ProjectPage({
   }, [route.werkstatt]);
 
   const status = useMemo(() => (inputs ? computeDataStatus(inputs) : null), [inputs]);
-  // Ohne `frage` in der Adresse: Daten zuerst, solange Flugplan und Flotte nicht echt sind.
-  useEffect(() => {
-    if (!route.auto || !project || !status) return;
-    const frage = project.source === "api" && needsDataStep(status) ? "daten" : "lage";
-    nav.navigate({ page: "projekt", projekt: route.projekt, frage }, { replace: true });
-  }, [route.auto, route.projekt, project, status, nav]);
-
   const reloadData = async () => {
     if (!project) return;
     setInputs(await loadDataInputs(project));
@@ -259,8 +180,8 @@ export default function ProjectPage({
     project && situation && board
       ? { project, situation, variants: board.variants, board, reloadBoard, route }
       : null;
-  const next = NEXT[route.frage];
-  const nextQ = STEPS.find((q) => q.id === next);
+  // Von den Daten geht es weiter zum Durchrechnen; die Zusage ist das Ende.
+  const next = route.frage === "daten" ? STEPS[1] : null;
 
   return (
     <div className="aec-project-page">
@@ -288,7 +209,7 @@ export default function ProjectPage({
           {project ? <SourceTag source={situation?.source ?? project.source} /> : null}
           <DataMeter status={status} projekt={route.projekt} />
         </div>
-        <QuestionNav route={route} />
+        <StepNav projekt={route.projekt} current={route.frage} />
       </div>
 
       <div className="aec-page" key={route.frage}>
@@ -316,12 +237,6 @@ export default function ProjectPage({
           <p className="aec-loading" role="status">
             Der Tag wird geladen …
           </p>
-        ) : route.frage === "lage" ? (
-          <LageView {...props} />
-        ) : route.frage === "engpass" ? (
-          <EngpassView {...props} />
-        ) : route.frage === "varianten" ? (
-          <VariantenView {...props} />
         ) : (
           <NachweisView {...props} />
         )}
@@ -334,14 +249,11 @@ export default function ProjectPage({
           />
         ) : null}
 
-        {nextQ ? (
-          <Link
-            to={{ page: "projekt", projekt: route.projekt, frage: nextQ.id }}
-            className="aec-next"
-          >
+        {next ? (
+          <Link to={stepRoute(route.projekt, next.id)} className="aec-next">
             <span className="aec-eyebrow">Weiter mit</span>
             <span className="aec-next__q">
-              {nextQ.label}: {nextQ.question}
+              {next.label}: {next.question}
             </span>
             <span className="aec-next__arrow" aria-hidden="true">
               →

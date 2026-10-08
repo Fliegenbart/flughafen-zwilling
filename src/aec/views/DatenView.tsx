@@ -1,7 +1,8 @@
 import { useEffect, type ReactNode } from "react";
 import type { EvidenceLevel } from "../../ui/EvidenceBadge";
 import type { DataInputs, DataItem, DataItemId, DataStatus } from "../model/dataStatus";
-import { AnswerHead } from "../parts";
+import { AnswerHead, Details } from "../parts";
+import { WerkstattLinks } from "../Werkstatt";
 import type { Route } from "../routes";
 import type { Project } from "../types";
 import AssetsForm from "./daten/AssetsForm";
@@ -104,6 +105,9 @@ export default function DatenView({ project, inputs, status, reload, route }: Da
           </DataCard>
         ))}
       </ol>
+      <Details summary="Anlagenplan und Flugplan im Detail (für Fachleute)">
+        <WerkstattLinks items={["system"]} base={route} />
+      </Details>
     </>
   );
 }

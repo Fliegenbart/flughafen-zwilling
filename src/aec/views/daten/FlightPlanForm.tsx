@@ -35,7 +35,7 @@ export default function FlightPlanForm({ project, reload, disabled }: FormProps)
     setOk(
       `Flugplan vom ${deDate(plan.service_date)} mit ${plan.departure_entry_count} Abflügen ${imported ? "eingelesen und " : ""}übernommen.${
         groups
-          ? ` ${groups} Flüge stehen eventuell doppelt drin (Codeshares) und müssen unter „Anlagenplan und Flugplan“ auf der Seite Tag geklärt werden.`
+          ? ` ${groups} Flüge stehen eventuell doppelt drin (Codeshares) und müssen im Detailwerkzeug „Anlagenplan und Flugplan“ weiter unten geklärt werden.`
           : ""
       }`,
     );

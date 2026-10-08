@@ -24,13 +24,13 @@ function openApp(search = "") {
 
 describe("Adressen und Weiterleitungen", () => {
   it("liest und schreibt Projekt, Frage und Werkstatt", () => {
-    const r = { page: "projekt", projekt: "p1", frage: "engpass", werkstatt: "betrieb" } as const;
-    expect(toSearch(r)).toBe("?projekt=p1&frage=engpass&werkstatt=betrieb&schritt=betrieb");
+    const r = { page: "projekt", projekt: "p1", frage: "nachweis", werkstatt: "betrieb" } as const;
+    expect(toSearch(r)).toBe("?projekt=p1&frage=nachweis&werkstatt=betrieb&schritt=betrieb");
     expect(parseRoute(toSearch(r))).toEqual(r);
+    // Durchrechnen ist die Hauptseite des Projekts; Unbekanntes landet dort.
     expect(parseRoute("?projekt=p1&frage=quatsch")).toEqual({
-      page: "projekt",
+      page: "arbeitsplatz",
       projekt: "p1",
-      frage: "lage",
     });
     expect(parseRoute("")).toEqual({ page: "start" });
   });
@@ -40,9 +40,28 @@ describe("Adressen und Weiterleitungen", () => {
     expect(legacyRedirect("?workspace=airport")).toBe("?seite=bibliothek&werkstatt=simulation");
     expect(legacyRedirect("?workspace=flexlab")).toContain("seite=lab&projekt=");
     expect(legacyRedirect("?workspace=flexlab")).toContain("werkstatt=flexlab");
-    expect(legacyRedirect("?workspace=munich")).toContain("frage=lage&werkstatt=system");
+    expect(legacyRedirect("?workspace=munich")).toContain("frage=daten&werkstatt=system");
     expect(legacyRedirect("?workspace=munich&schritt=pilot")).toContain("seite=lab");
     expect(legacyRedirect("?workspace=munich&schritt=nachweise")).toContain("frage=nachweis");
+  });
+
+  it("führt die Adressen der früheren Seiten Tag, Engpass und Lösungen zu Durchrechnen", () => {
+    expect(legacyRedirect("?projekt=p1&frage=lage")).toBe("?projekt=p1");
+    expect(legacyRedirect("?projekt=p1&ansicht=neu")).toBe("?projekt=p1");
+    expect(legacyRedirect("?projekt=p1&frage=varianten&krise=enteisung")).toBe(
+      "?projekt=p1&krise=enteisung",
+    );
+    // Detailwerkzeuge ziehen auf die Seite um, zu der sie jetzt gehören.
+    expect(legacyRedirect("?projekt=p1&frage=engpass&werkstatt=betrieb&schritt=betrieb")).toBe(
+      "?projekt=p1&frage=nachweis&werkstatt=betrieb&schritt=betrieb",
+    );
+    expect(
+      legacyRedirect("?projekt=p1&frage=varianten&werkstatt=robustheit&schritt=robustheit"),
+    ).toBe("?projekt=p1&frage=nachweis&werkstatt=robustheit&schritt=robustheit");
+    // Aktuelle Adressen bleiben unberührt.
+    expect(legacyRedirect("?projekt=p1")).toBeNull();
+    expect(legacyRedirect("?projekt=p1&frage=daten")).toBeNull();
+    expect(legacyRedirect("?projekt=p1&frage=nachweis")).toBeNull();
   });
 });
 
@@ -226,28 +245,26 @@ describe("Austausch-Status", () => {
 });
 
 describe("Oberfläche", () => {
-  it("navigiert über die vier Fragen und beginnt jede mit dem Antwortsatz", async () => {
-    openApp(`?projekt=${SAMPLE_PROJECT.id}&frage=lage`);
+  it("führt in drei Schritten durch das Projekt, jeder beginnt mit dem Antwortsatz", async () => {
+    openApp(`?projekt=${SAMPLE_PROJECT.id}&frage=daten`);
     expect(
-      await screen.findByRole("heading", { level: 1, name: /reicht der Anschluss nicht/ }),
+      await screen.findByRole("heading", { level: 1, name: /Noch ist keine der 4 Datenquellen/ }),
     ).toBeVisible();
-    const nav = screen.getByRole("navigation", { name: "Vier Fragen des Projekts" });
-    expect(within(nav).getAllByRole("link")).toHaveLength(4);
+    const nav = screen.getByRole("navigation", { name: "Drei Schritte des Projekts" });
+    expect(within(nav).getAllByRole("link")).toHaveLength(3);
     // Kein Schritt "Abgleich" mehr in der Kundensicht.
     expect(within(nav).queryByRole("link", { name: /Abgleich/ })).toBeNull();
-    fireEvent.click(within(nav).getByRole("link", { name: /Engpass/ }));
-    expect(await screen.findByRole("heading", { level: 1, name: /fehlen bis zu/ })).toBeVisible();
-    expect(window.location.search).toContain("frage=engpass");
-    expect(within(nav).getByRole("link", { name: /Engpass/ })).toHaveAttribute(
+    fireEvent.click(within(nav).getByRole("link", { name: /Durchrechnen/ }));
+    expect(await screen.findByRole("table")).toBeVisible();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(SAMPLE_PROJECT.name);
+    expect(window.location.search).toBe(`?projekt=${SAMPLE_PROJECT.id}`);
+    expect(document.title).toBe("Durchrechnen · Airport Energy Check");
+    const steps = screen.getByRole("navigation", { name: "Drei Schritte des Projekts" });
+    expect(within(steps).getByRole("link", { name: /Durchrechnen/ })).toHaveAttribute(
       "aria-current",
       "page",
     );
-    expect(screen.getAllByText("Beispielwerte").length).toBeGreaterThan(0);
-    fireEvent.click(within(nav).getByRole("link", { name: /Lösungen/ }));
-    expect(
-      await screen.findByRole("heading", { level: 1, name: /hilft am meisten/ }),
-    ).toBeVisible();
-    fireEvent.click(within(nav).getByRole("link", { name: /Zusage/ }));
+    fireEvent.click(within(steps).getByRole("link", { name: /Zusage/ }));
     expect(
       await screen.findByRole("heading", { level: 1, name: /erst nach einer Messung/ }),
     ).toBeVisible();
@@ -271,7 +288,7 @@ describe("Oberfläche", () => {
 
   it("leitet den alten Schritt Abgleich in den Lab-Raum um", () => {
     expect(parseRoute(`?projekt=p1&frage=abgleich`)).toEqual({ page: "lab", projekt: "p1" });
-    expect(parseRoute(`?projekt=p1&frage=lage&werkstatt=pilot`)).toEqual({
+    expect(parseRoute(`?projekt=p1&frage=nachweis&werkstatt=pilot`)).toEqual({
       page: "lab",
       projekt: "p1",
       werkstatt: "pilot",
@@ -320,14 +337,27 @@ describe("Oberfläche", () => {
     ).toBeVisible();
     expect(screen.getByText(/Kälte nimmt allen Akkus 20 % Kapazität/)).toBeVisible();
     fireEvent.click(screen.getByRole("link", { name: "Jetzt durchrechnen" }));
-    await waitFor(() => expect(window.location.search).toMatch(/frage=varianten&krise=enteisung/));
+    await waitFor(() =>
+      expect(window.location.search).toBe(`?projekt=${SAMPLE_PROJECT.id}&krise=enteisung`),
+    );
   });
 
   it("liest den Krisenfall aus der Adresse und verwirft unbekannte", () => {
-    const route = parseRoute("?projekt=p1&frage=varianten&krise=schwarzstart");
-    expect(route).toMatchObject({ page: "projekt", frage: "varianten", krise: "schwarzstart" });
-    expect(toSearch(route)).toBe("?projekt=p1&frage=varianten&krise=schwarzstart");
-    expect(parseRoute("?projekt=p1&frage=varianten&krise=gibtsnicht")).not.toHaveProperty("krise");
+    const route = parseRoute("?projekt=p1&krise=schwarzstart");
+    expect(route).toEqual({
+      page: "arbeitsplatz",
+      projekt: "p1",
+      krise: "schwarzstart",
+      auto: true,
+    });
+    expect(toSearch(route)).toBe("?projekt=p1&krise=schwarzstart");
+    // Die frühere Adresse der Lösungen-Seite meint dasselbe, nur ohne Flugplan-Prüfung.
+    expect(parseRoute("?projekt=p1&frage=varianten&krise=schwarzstart")).toEqual({
+      page: "arbeitsplatz",
+      projekt: "p1",
+      krise: "schwarzstart",
+    });
+    expect(parseRoute("?projekt=p1&krise=gibtsnicht")).not.toHaveProperty("krise");
   });
 
   it("lässt sich auf der Startseite ein Projekt anlegen", async () => {

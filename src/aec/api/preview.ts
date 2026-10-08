@@ -1,7 +1,7 @@
 /** Genaue Vorschau eines Tages fuer eine Regler-Stellung (POST /situation/preview). */
 import { distributeFleet } from "../model/dataStatus";
 import type { LiveBasis, Levers } from "../model/livePower";
-import type { Project } from "../types";
+import type { Project, VariantChanges } from "../types";
 import { request } from "./http";
 import { enc, isObj, num, str } from "./parse";
 
@@ -14,6 +14,12 @@ export type Preview = {
   departuresTotal: number | null;
   /** Anteil der Wartezeit, die am Strom lag (Rest: kein freies Fahrzeug). */
   energyWaitSharePct: number | null;
+  /** Laderegel, mit der gerechnet wurde. */
+  policy: "uncontrolled" | "mission_priority" | null;
+  /** Minuten, in denen der Anschluss voll ausgelastet war (wie bei festgehaltenen Loesungen). */
+  minutesAtLimit: number | null;
+  /** Verbrauch des uebrigen Flughafens, den der Anschluss nicht mehr deckte. */
+  backgroundUnservedKwh: number | null;
   computeMs: number | null;
   /** Krisenfall, unter dem gerechnet wurde, samt Annahme (Wortlaut vom Backend). */
   crisis: { id: string; name: string; assumption: string } | null;
@@ -68,6 +74,10 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
     departuresTotal: typeof kpis.departures_total === "number" ? kpis.departures_total : null,
     energyWaitSharePct:
       typeof kpis.energy_wait_share_pct === "number" ? kpis.energy_wait_share_pct : null,
+    policy: raw.policy === "uncontrolled" || raw.policy === "mission_priority" ? raw.policy : null,
+    minutesAtLimit: typeof kpis.minutes_at_limit === "number" ? kpis.minutes_at_limit : null,
+    backgroundUnservedKwh:
+      typeof kpis.background_unserved_kwh === "number" ? kpis.background_unserved_kwh : null,
     computeMs: typeof raw.compute_ms === "number" ? raw.compute_ms : null,
     crisis:
       isObj(raw.crisis) && typeof raw.crisis.id === "string"
@@ -89,11 +99,31 @@ export function changesFor(levers: Levers, today: Levers): Record<string, number
   return out;
 }
 
-/** Zusaetzliche Fahrzeuge je Klasse, im Verhaeltnis der Standardflotte. */
+/** Zusaetzliche Fahrzeuge je Klasse: eine gewaehlte Art, sonst im Verhaeltnis der Standardflotte. */
 export function extraVehiclesFor(levers: Levers): Record<string, number> | undefined {
   if (!levers.extraVehicles) return undefined;
+  if (levers.extraKind) return { [levers.extraKind]: Math.round(levers.extraVehicles) };
   const parts = distributeFleet(levers.extraVehicles).filter((f) => f.vehicles > 0);
   return Object.fromEntries(parts.map((f) => [f.kind, f.vehicles]));
+}
+
+/** Alles, was sich gegenueber heute geaendert hat, ohne Krisenfall (der gilt je Rechnung). */
+export function variantChangesFor(levers: Levers, today: Levers): VariantChanges | null {
+  const extra = extraVehiclesFor(levers);
+  const changes = {
+    ...changesFor(levers, today),
+    ...(extra ? { extra_vehicles: extra } : {}),
+    ...(levers.policy && levers.policy !== today.policy ? { charging_policy: levers.policy } : {}),
+  } as VariantChanges;
+  return Object.keys(changes).length ? changes : null;
+}
+
+/** Anfrage der Vorschau: Aenderungen gegenueber heute plus gewaehlter Krisenfall. */
+export function previewBodyFor(levers: Levers, today: Levers) {
+  return {
+    ...(variantChangesFor(levers, today) ?? {}),
+    ...(levers.crisis ? { crisis: levers.crisis } : {}),
+  } as Record<string, number | string | Record<string, number>>;
 }
 
 export async function getPreview(

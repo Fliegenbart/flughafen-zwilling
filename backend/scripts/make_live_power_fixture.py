@@ -1,61 +1,63 @@
 """Referenz fuer die Live-Regler: genaue Backend-Rechnung gegen die Browser-Naeherung.
 
-Baut einen vollen, synthetischen Verkehrstag (drei Abflugwellen), rechnet ihn genau fuer
-mehrere Regler-Stellungen und schreibt Basis-Minutenreihen plus die genauen Kennzahlen nach
-src/aec/model/__fixtures__/livePowerReference.json. Der Test livePower.test.ts vergleicht die
-Naeherung damit. Neu erzeugen, wenn sich das Leistungsmodell aendert:
+Rechnet den Beispieltag (backend/app/exchange/demo_day.py) genau fuer viele Regler-Stellungen
+und schreibt Basis-Minutenreihen plus die genauen Kennzahlen nach
+src/aec/model/__fixtures__/livePowerReference.json. `cases` stimmen die Naeherung ab,
+`holdout` prueft sie an Stellungen, die beim Abstimmen nicht gesehen wurden.
+livePower.test.ts vergleicht beides. Neu erzeugen, wenn sich Modell oder Beispieltag aendern:
 
     cd backend && python scripts/make_live_power_fixture.py
+
+Die Regler gehen ueber dieselbe Funktion wie die Vorschau (variants.apply_changes).
 """
 
 from __future__ import annotations
 
 import json
-import random
 import sys
-from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from app.exchange.demo_day import SEED, TITLE, busy_day, heute_config  # noqa: E402
 from app.exchange.live import basis_from_series, departures_by_half_hour  # noqa: E402
-from app.exchange.variants import STORAGE_GRID_CHARGE_SHARE  # noqa: E402
-from app.munich.coupled_models import CoupledConfig, PowerConfig  # noqa: E402
+from app.exchange.variants import VariantChanges, apply_changes  # noqa: E402
 from app.munich.coupled_simulator import simulate_coupled  # noqa: E402
 from app.munich.coupled_world import build_world  # noqa: E402
-from app.munich.flightplan import parse_pages  # noqa: E402
 
-HEADER = """Flugplan Muenchen
-L/S Flug-Nr - Ziel ab MUC + Ziel an Tag Ziel Stop von bis Term. Airlinename
-Datenstand: 02.10.2026
-Alle Zeiten im Flugplan sind Ortszeiten. 1 ... 7 = Montag ... Sonntag
-"""
 LIMIT_TOLERANCE_KW = 0.5
 OUT = ROOT.parent / "src" / "aec" / "model" / "__fixtures__" / "livePowerReference.json"
 
-
-def code(n: int) -> str:
-    letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    return letters[n // 676 % 26] + letters[n // 26 % 26] + letters[n % 26]
-
-
-def busy_day():
-    """~330 Umlaeufe in drei Wellen; deterministisch (Seed 7)."""
-    rng = random.Random(7)
-    rows = []
-    waves = [(6 * 60, 75, 120), (11 * 60 + 30, 60, 80), (17 * 60, 70, 110)]
-    n = 0
-    for center, spread, count in waves:
-        for _ in range(count):
-            dep = int(rng.gauss(center, spread / 2))
-            dep = max(5 * 60, min(23 * 60, dep))
-            arr = dep - rng.choice([45, 50, 55, 60, 70])
-            n += 1
-            rows.append(
-                f"S XY {1000 + n} {arr // 60:02d}:{arr % 60:02d} {dep // 60:02d}:{dep % 60:02d} "
-                f"1234567 {code(n)} 03.10.26 27.03.27 1 Test Air")
-    return parse_pages([HEADER + "\n".join(rows)], date(2026, 10, 3), "b" * 64)
+# Zum Abstimmen der Naeherung.
+CASES = [
+    {"grid_import_limit_kw": 2200}, {"grid_import_limit_kw": 2600},
+    {"grid_import_limit_kw": 3000}, {"grid_import_limit_kw": 4000},
+    {"grid_import_limit_kw": 4500}, {"grid_import_limit_kw": 5500},
+    {"battery_capacity_kwh": 1000, "battery_power_kw": 500},
+    {"battery_capacity_kwh": 2000, "battery_power_kw": 1000},
+    {"battery_capacity_kwh": 4000, "battery_power_kw": 2000},
+    {"pv_factor": 0.5}, {"pv_factor": 2.0},
+    {"grid_import_limit_kw": 4000, "battery_capacity_kwh": 2000, "battery_power_kw": 1000},
+]
+# Nur zum Pruefen: andere Stellen der Regler, Kombinationen, schwache und starke Batterien.
+HOLDOUT = [
+    {"grid_import_limit_kw": 2800}, {"grid_import_limit_kw": 3300},
+    {"grid_import_limit_kw": 3800}, {"grid_import_limit_kw": 4200},
+    {"grid_import_limit_kw": 5000}, {"grid_import_limit_kw": 7000},
+    {"battery_capacity_kwh": 500, "battery_power_kw": 250},
+    {"battery_capacity_kwh": 1500, "battery_power_kw": 750},
+    {"battery_capacity_kwh": 3000, "battery_power_kw": 1500},
+    {"battery_capacity_kwh": 6000, "battery_power_kw": 3000},
+    {"battery_capacity_kwh": 2000, "battery_power_kw": 500},
+    {"pv_factor": 0.0}, {"pv_factor": 1.5},
+    {"grid_import_limit_kw": 3000, "battery_capacity_kwh": 1000, "battery_power_kw": 500},
+    {"grid_import_limit_kw": 3000, "battery_capacity_kwh": 3000, "battery_power_kw": 1500},
+    {"grid_import_limit_kw": 2600, "pv_factor": 2.0},
+    {"grid_import_limit_kw": 4000, "battery_capacity_kwh": 1000, "battery_power_kw": 500,
+     "pv_factor": 0.5},
+    {"grid_import_limit_kw": 5000, "battery_capacity_kwh": 4000, "battery_power_kw": 2000},
+]
 
 
 def metrics(series, day_minutes):
@@ -72,61 +74,49 @@ def metrics(series, day_minutes):
     }
 
 
+def changes_for(lever: dict) -> VariantChanges:
+    out = {}
+    if "grid_import_limit_kw" in lever:
+        out["grid_import_limit_kw"] = lever["grid_import_limit_kw"]
+    if "battery_capacity_kwh" in lever:
+        out["storage_kwh"] = lever["battery_capacity_kwh"]
+        out["storage_kw"] = lever["battery_power_kw"]
+    if "pv_factor" in lever:
+        out["pv_factor"] = lever["pv_factor"]
+    return VariantChanges.model_validate(out)
+
+
+def run(plan, base_cfg, policy, lever, day_minutes):
+    cfg, pol, _ = apply_changes(base_cfg, policy, changes_for(lever), day_minutes)
+    result = simulate_coupled(build_world(plan, cfg, SEED), plan, pol)
+    return {"lever": lever, "exact": metrics(result.series, day_minutes)}
+
+
 def main() -> None:
     plan = busy_day()
-    base_power = PowerConfig(grid_import_limit_kw=3500)
-    base_cfg = CoupledConfig(power=base_power)
+    base_cfg = heute_config()
     policy = "uncontrolled"
-    world = build_world(plan, base_cfg, 42)
+    world = build_world(plan, base_cfg, SEED)
     base = simulate_coupled(world, plan, policy)
-    cases = []
-    levers = [
-        {"grid_import_limit_kw": 2200}, {"grid_import_limit_kw": 2600},
-        {"grid_import_limit_kw": 3000}, {"grid_import_limit_kw": 4000},
-        {"grid_import_limit_kw": 4500}, {"grid_import_limit_kw": 5500},
-        {"battery_capacity_kwh": 1000, "battery_power_kw": 500},
-        {"battery_capacity_kwh": 2000, "battery_power_kw": 1000},
-        {"battery_capacity_kwh": 4000, "battery_power_kw": 2000},
-        {"pv_factor": 0.5}, {"pv_factor": 2.0},
-        {"grid_import_limit_kw": 4000, "battery_capacity_kwh": 2000, "battery_power_kw": 1000},
-    ]
-    for lever in levers:
-        values = base_power.model_dump(mode="json")
-        values.pop("battery_grid_charge_below_kw", None)
-        if "grid_import_limit_kw" in lever:
-            values["grid_import_limit_kw"] = lever["grid_import_limit_kw"]
-        if "battery_capacity_kwh" in lever:
-            values.update(
-                battery_capacity_kwh=lever["battery_capacity_kwh"],
-                battery_power_kw=lever["battery_power_kw"],
-                battery_initial_soc_pct=max(values["battery_reserve_pct"], 50.0),
-                battery_grid_charge_below_kw=round(
-                    values["grid_import_limit_kw"] * STORAGE_GRID_CHARGE_SHARE, 3),
-            )
-        if "pv_factor" in lever:
-            values["pv_capacity_kwp"] = values["pv_capacity_kwp"] * lever["pv_factor"]
-        cfg = CoupledConfig(power=PowerConfig(**values))
-        exact = simulate_coupled(build_world(plan, cfg, 42), plan, policy)
-        cases.append({"lever": lever, "exact": metrics(exact.series, world.day_minutes)})
+    cases = [run(plan, base_cfg, policy, lever, world.day_minutes) for lever in CASES]
+    holdout = [run(plan, base_cfg, policy, lever, world.day_minutes) for lever in HOLDOUT]
+    departures, delayed = departures_by_half_hour(base)
     payload = {
-        "note": "Synthetischer Verkehrstag; erzeugt von backend/scripts/make_live_power_fixture.py",
+        "note": f"{TITLE}; erzeugt von backend/scripts/make_live_power_fixture.py",
         "basis": basis_from_series(base.series, base_cfg, day_minutes=world.day_minutes,
                                    start_min=world.start_min, day_start_utc=world.day_start_utc,
                                    policy=policy, run_id=None),
-        "departures": departures_by_half_hour(base)[0],
-        "kpis": {
-            "departures_total": len(base.departures),
-            "delayed_departures": departures_by_half_hour(base)[1],
-        },
+        "departures": departures,
+        "kpis": {"departures_total": len(base.departures), "delayed_departures": delayed},
         "base_exact": metrics(base.series, world.day_minutes),
         "cases": cases,
+        "holdout": holdout,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")
-    print(f"{OUT.relative_to(ROOT.parent)}: {len(cases)} Faelle, "
+    print(f"{OUT.relative_to(ROOT.parent)}: {len(cases)}+{len(holdout)} Faelle, "
+          f"{len(base.departures)} Abfluege ({delayed} nicht rechtzeitig), "
           f"Basis {payload['base_exact']}, {OUT.stat().st_size // 1024} KB")
-    for c in cases:
-        print(c["lever"], c["exact"])
 
 
 if __name__ == "__main__":

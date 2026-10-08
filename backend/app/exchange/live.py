@@ -14,10 +14,11 @@ from time import perf_counter
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..munich.coupled_models import CoupledConfig, FleetKind
+from ..munich.coupled_models import CoupledConfig, CoupledPolicy, FleetKind
 from ..munich.coupled_simulator import simulate_coupled
 from ..munich.coupled_world import build_world
 from .crisis import crisis_config, crisis_stress
+from .situation import LIMIT_TOLERANCE_KW
 
 ROUND = 3
 
@@ -82,6 +83,7 @@ class PreviewRequest(BaseModel):
     storage_kw: float | None = Field(default=None, gt=0, le=20000)
     pv_factor: float | None = Field(default=None, ge=0, le=3)
     extra_vehicles: dict[FleetKind, int] = Field(default_factory=dict)
+    charging_policy: CoupledPolicy | None = None
     # Krisenfall der Szenario-Bibliothek als Stoerung ueber den ganzen Tag (siehe crisis.py).
     crisis: str | None = Field(default=None, pattern=r"^airport_case_0[1-8]_[a-z_]+_v1$")
 
@@ -92,6 +94,12 @@ class PreviewRequest(BaseModel):
             out.pop("storage_kwh")
             out.pop("storage_kw", None)
         return out
+
+
+def minutes_at_limit(series: list[dict]) -> int:
+    """Minuten, in denen der Netzbezug an der Grenze des Anschlusses liegt (wie bei Loesungen)."""
+    return sum(1 for r in series if r["effective_grid_cap_kw"] > 0
+               and r["grid_import_kw"] >= r["effective_grid_cap_kw"] - LIMIT_TOLERANCE_KW)
 
 
 def departures_by_half_hour(result) -> tuple[list[dict], int]:
@@ -152,6 +160,9 @@ def preview(variants, project_id: str, request: PreviewRequest) -> dict:
             "departures_total": total,
             "delayed_departures": delayed,
             "on_time_pct": round((total - delayed) / total * 100, 2) if total else None,
+            "minutes_at_limit": minutes_at_limit(result.series),
+            # Verbrauch des uebrigen Flughafens, den der Anschluss nicht mehr deckt.
+            "background_unserved_kwh": round(float(kpis.background_unserved_kwh), 1),
             "energy_wait_share_pct": round(float(kpis.energy_wait_total_min) / waits * 100, 1)
             if waits else 0.0,
             "bottleneck": kpis.bottleneck,
