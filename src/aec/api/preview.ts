@@ -1,5 +1,6 @@
 /** Genaue Vorschau eines Tages fuer eine Regler-Stellung (POST /situation/preview). */
 import { distributeFleet } from "../model/dataStatus";
+import { isPolicy, type ChargingPolicy } from "../model/policy";
 import type { LiveBasis, Levers } from "../model/livePower";
 import type { Project, VariantChanges } from "../types";
 import { fleetFromApi } from "./fleet";
@@ -16,7 +17,7 @@ export type Preview = {
   /** Anteil der Wartezeit, die am Strom lag (Rest: kein freies Fahrzeug). */
   energyWaitSharePct: number | null;
   /** Laderegel, mit der gerechnet wurde. */
-  policy: "uncontrolled" | "mission_priority" | null;
+  policy: ChargingPolicy | null;
   /** Minuten, in denen der Anschluss voll ausgelastet war (wie bei festgehaltenen Loesungen). */
   minutesAtLimit: number | null;
   /** Verbrauch des uebrigen Flughafens, den der Anschluss nicht mehr deckte. */
@@ -79,7 +80,7 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
     departuresTotal: typeof kpis.departures_total === "number" ? kpis.departures_total : null,
     energyWaitSharePct:
       typeof kpis.energy_wait_share_pct === "number" ? kpis.energy_wait_share_pct : null,
-    policy: raw.policy === "uncontrolled" || raw.policy === "mission_priority" ? raw.policy : null,
+    policy: isPolicy(raw.policy) ? raw.policy : null,
     minutesAtLimit: typeof kpis.minutes_at_limit === "number" ? kpis.minutes_at_limit : null,
     backgroundUnservedKwh:
       typeof kpis.background_unserved_kwh === "number" ? kpis.background_unserved_kwh : null,

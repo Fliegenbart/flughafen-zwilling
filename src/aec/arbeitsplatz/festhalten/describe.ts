@@ -1,6 +1,7 @@
 /** Kurzbeschreibung einer festgehaltenen Loesung in Alltagssprache. */
 import { FLEET_LABEL } from "../../model/fleet";
 import { dec1, powerText } from "../../model/format";
+import { POLICY_LABEL } from "../../model/policy";
 import type { FleetKind, VariantChanges } from "../../types";
 
 export function describeChanges(changes: VariantChanges): string {
@@ -15,12 +16,7 @@ export function describeChanges(changes: VariantChanges): string {
     parts.push(`${n} ${FLEET_LABEL[k as FleetKind] ?? k} mehr`);
   for (const [k, n] of Object.entries(changes.chargers_offline ?? {}))
     parts.push(`${n} Ladepunkte für ${FLEET_LABEL[k as FleetKind] ?? k} ausgefallen`);
-  if (changes.charging_policy)
-    parts.push(
-      changes.charging_policy === "mission_priority"
-        ? "Wer zuerst los muss, lädt zuerst"
-        : "Jedes Fahrzeug lädt, sobald es steckt",
-    );
+  if (changes.charging_policy) parts.push(POLICY_LABEL[changes.charging_policy]);
   if (changes.pv_factor !== undefined) parts.push(`Photovoltaik × ${dec1(changes.pv_factor)}`);
   return parts.join(" · ");
 }

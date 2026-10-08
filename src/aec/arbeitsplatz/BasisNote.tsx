@@ -2,12 +2,8 @@
 import type { Preview } from "../api/preview";
 import { dec1, powerText } from "../model/format";
 import type { DataStatus } from "../model/dataStatus";
+import { POLICY_LABEL } from "../model/policy";
 import type { VariantBoard } from "../types";
-
-const POLICY = {
-  uncontrolled: "Jedes Fahrzeug lädt, sobald es steckt.",
-  mission_priority: "Wer zuerst los muss, lädt zuerst.",
-} as const;
 
 export default function BasisNote({
   today,
@@ -37,7 +33,7 @@ export default function BasisNote({
     <details className="ap-basis">
       <summary>Worauf diese Zahlen beruhen</summary>
       <p>
-        Heute: {standing.join(", ")}. {today.policy ? POLICY[today.policy] : ""}
+        Heute: {standing.join(", ")}. {today.policy ? `${POLICY_LABEL[today.policy]}.` : ""}
       </p>
       <p>
         {sample

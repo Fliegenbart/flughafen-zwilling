@@ -3,6 +3,7 @@
  * Jede Zahl traegt ihre Herkunft: `source` = "api" (aus dem Backend) oder
  * "beispiel" (klar markierte Beispieldaten zur Gestaltung/Vorfuehrung).
  */
+import type { ChargingPolicy } from "./model/policy";
 import type { EvidenceLevel } from "../ui/EvidenceBadge";
 
 export type DataSource = "api" | "beispiel";
@@ -77,7 +78,7 @@ export type VariantChanges = {
   storage_kwh?: number;
   storage_kw?: number;
   extra_vehicles?: Partial<Record<FleetKind, number>>;
-  charging_policy?: "uncontrolled" | "mission_priority";
+  charging_policy?: ChargingPolicy;
   chargers_offline?: Partial<Record<FleetKind, number>>;
   pv_factor?: number;
 };

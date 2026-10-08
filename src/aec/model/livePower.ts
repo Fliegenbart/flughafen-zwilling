@@ -18,6 +18,7 @@
  */
 
 import type { FleetKind } from "../types";
+import type { ChargingPolicy } from "./policy";
 import { FleetState, type LiveFleet } from "./liveFleet";
 
 export type LiveBasis = {
@@ -62,7 +63,7 @@ export type Levers = {
   /** Art der zusaetzlichen Fahrzeuge; ohne Angabe im Verhaeltnis der Standardflotte. */
   extraKind?: FleetKind;
   /** Laderegel; wirkt nur in der genauen Rechnung. */
-  policy?: "uncontrolled" | "mission_priority";
+  policy?: ChargingPolicy;
   /** Krisenfall der Bibliothek (scenarioId); wirkt nur in der genauen Rechnung. */
   crisis?: string;
 };

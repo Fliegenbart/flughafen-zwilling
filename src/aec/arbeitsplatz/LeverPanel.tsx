@@ -2,6 +2,7 @@
 import { dec1, int, powerText } from "../model/format";
 import { FLEET_LABEL } from "../model/fleet";
 import type { Levers } from "../model/livePower";
+import { POLICY_LABEL, type ChargingPolicy } from "../model/policy";
 import { caseByScenarioId, SCENARIO_CASES } from "../scenarios";
 import type { FleetKind } from "../types";
 import { leverRanges, type RangeKey } from "./levers";
@@ -37,10 +38,6 @@ const SLIDERS: Slider[] = [
   },
 ];
 
-const POLICY_LABEL = {
-  uncontrolled: "Jedes Fahrzeug lädt, sobald es steckt",
-  mission_priority: "Wer zuerst los muss, lädt zuerst",
-} as const;
 const KINDS = Object.keys(FLEET_LABEL) as FleetKind[];
 
 export default function LeverPanel({
@@ -152,7 +149,7 @@ export default function LeverPanel({
           disabled={!exactEnabled}
           onChange={(e) => onChange({ ...levers, policy: e.target.value as Levers["policy"] })}
         >
-          {(Object.keys(POLICY_LABEL) as (keyof typeof POLICY_LABEL)[]).map((k) => (
+          {(Object.keys(POLICY_LABEL) as ChargingPolicy[]).map((k) => (
             <option key={k} value={k}>
               {POLICY_LABEL[k]}
               {k === today.policy ? " (heute)" : ""}
