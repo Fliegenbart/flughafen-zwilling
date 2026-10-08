@@ -304,5 +304,5 @@ Ohne Quelle bleibt ein Wert `annahme`; `echt` = Netzanschluss + Fahrzeugzahl, al
 
 Wirkung: Die Werte überschreiben in der Varianten-Basis (gekoppelter Lauf oder Flugplan-Standard)
 die passenden Felder (`base.project_assets`, im Batch eingefroren). Der Basislauf jeder
-Variantenrechnung zählt für Lagebild/Engpass als Projektlauf; bestehende Läufe ändern sich nicht.
+Variantenrechnung zählt für Lagebild und Zusage als Projektlauf; bestehende Läufe ändern sich nicht.
 Frontend: Runtime-Flag `sharedDemoNotice` (Default an) blendet den Hinweis „geteilte Demo“ aus.
