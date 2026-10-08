@@ -16,6 +16,7 @@ import {
   type LinkedPlan,
   type MeasurementImport,
 } from "../model/dataStatus";
+import type { FlightPlanInfo, FlightPlanSnapshot } from "../../munich/flightplanTypes";
 import type { Project } from "../types";
 import { optional as optionalRequest, request } from "./http";
 import { enc, isObj, num, str } from "./parse";
@@ -287,4 +288,20 @@ export async function importLab(
     }),
   });
   return run;
+}
+
+/* --------------------------------------------------------------- Flugplaene */
+
+/** Schon eingelesene Saisonflugplaene (fuer die Auswahl). */
+export function listFlightPlans(): Promise<FlightPlanInfo[]> {
+  return send<FlightPlanInfo[]>("/munich/flight-plans");
+}
+
+/** Saisonflugplan-PDF einlesen; Fehlertexte uebersetzt die Seite (flightPlanError). */
+export function importFlightPlan(date: string, file: File): Promise<FlightPlanSnapshot> {
+  return request<FlightPlanSnapshot>(
+    `/munich/flight-plans?service_date=${enc(date)}`,
+    { method: "POST", body: file, headers: { "Content-Type": "application/pdf" } },
+    { timeoutMs: 45000, translate: (detail) => detail },
+  );
 }

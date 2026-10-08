@@ -12,7 +12,7 @@ import {
 import { assetsFromApi, importFromApi } from "./api/data";
 import { parseRoute, toSearch } from "./routes";
 import { SAMPLE_PROJECT } from "./sample";
-import { flightPlanError } from "./views/DatenView";
+import { flightPlanError } from "./views/daten/FlightPlanForm";
 import { distributeFleet } from "./model/dataStatus";
 import { recomputeState } from "./ProjectPage";
 import { sampleBoard } from "./api/variants";
