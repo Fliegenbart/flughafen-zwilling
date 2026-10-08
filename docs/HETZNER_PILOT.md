@@ -103,6 +103,19 @@ Zugangsdaten nur nach Challenge und lehnt Redirects ausserhalb dieses HTTPS-
 Pilotpfads ab. Vor Freigabe unauthentifiziert 401 fuer UI/API/Artefakte pruefen.
 HTTP ohne TLS darf nur umleiten, nie Zugangsdaten abfragen oder Inhalte liefern.
 
+## Aufbewahrung auf dem Server
+
+Nach jedem Deploy, sobald die neue Version geprueft ist:
+
+- Entpackte Pruefkopien `/opt/airport-backups/verify-pre-*` loeschen; sie dienen nur dem
+  Hash-Vergleich direkt nach der Sicherung.
+- Sicherungen `pre-*.tar.gz` und Release-Worktrees `/opt/airport-releases/<sha>` der letzten
+  fuenf Releases behalten, aeltere entfernen (`git worktree remove`, nie das aktive Release).
+- Smoke-Images (`airport-proxy-smoke-*`, `airport-library-smoke`) und alte Image-Tags
+  entfernen. Rollback erfolgt ueber den Release-Worktree und `up --build`, nicht ueber Tags.
+
+Stand 08.10.2026 nach dem ersten Aufraeumen: Sicherungen 90 MB statt 2,5 GB, Releases 27 MB.
+
 ## Aktiver Release vom 07.10.2026 (Texte)
 
 Code-Release `27b385046eb84e17b6ba3b446afc1ee868d3eacf` aus `codex/recovery-audit` (PR #26,
