@@ -109,8 +109,8 @@ export default function NachweisView(props: ViewProps) {
         question="Zusage · Was können wir versprechen?"
         answer={
           passed
-            ? "Die Rechnung ist geprüft, und eine Messung vom Flughafen hat sie bestätigt."
-            : "Die Rechnung ist geprüft, verbindlich zusagen lassen sich die Zahlen erst nach einer Messung."
+            ? "Die Rechnung ist in sich stimmig, und eine Messung vom Flughafen hat sie bestätigt."
+            : "Die Rechnung ist in sich stimmig, verbindlich zusagen lassen sich die Zahlen erst nach einer Messung."
         }
         lead="Grün wird eine Aussage erst, wenn eine Messung die vorher vereinbarten Grenzen einhält."
         evidence={top}

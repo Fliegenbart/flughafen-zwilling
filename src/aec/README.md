@@ -28,8 +28,9 @@ reale Last und zeigt, wo es kritisch wird und was hilft. Texte nach
 - **Klein halten.** Wächst eine Datei über rund 300 Zeilen oder mischt sie zwei Themen,
   bekommt sie einen Unterordner mit Bausteinen.
 - **Antwortsätze an einer Stelle.** Der Satz zu den festgehaltenen Lösungen kommt aus dem
-  Backend (`backend/app/exchange/variants.py`), der Satz zur Tageskurve aus
-  `model/headline.ts`.
+  Backend (`backend/app/exchange/variants.py`). Knappe Phasen und der Satz „Von … bis … Uhr
+  fehlen bis zu …“ stehen in `model/situation.ts`; `model/headline.ts` (Durchrechnen) und die
+  Zusage nutzen sie gemeinsam.
 - **Zwei Rechnungen, eine Aussage.** Beim Ziehen rechnet `model/livePower.ts` Minute für Minute
   wie das Backend (Leistungsbilanz) auf der Ladenachfrage aus `model/liveFleet.ts` (dieselben
   Regeln wie `coupled_simulator.py`, Laderegel „uncontrolled“, keine abgestimmten Konstanten).
