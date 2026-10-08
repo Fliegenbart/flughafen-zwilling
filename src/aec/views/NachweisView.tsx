@@ -16,7 +16,7 @@ import { WerkstattLinks } from "../Werkstatt";
 
 type Claim = { level: EvidenceLevel; title: string; text: string };
 
-export function claimsFor(
+function claimsFor(
   { project }: Pick<ViewProps, "project">,
   overview: Overview | null,
 ): Claim[] {

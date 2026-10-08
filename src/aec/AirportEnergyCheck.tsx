@@ -31,7 +31,7 @@ function storedTheme(): Theme {
   }
 }
 
-export function titleFor(route: Route): string {
+function titleFor(route: Route): string {
   if (route.page === "bibliothek") return "Szenario-Bibliothek · Airport Energy Check";
   if (route.page === "lab") return "Testing-Lab · Airport Energy Check";
   if (route.page === "projekt") {

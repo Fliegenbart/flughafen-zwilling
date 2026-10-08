@@ -69,7 +69,7 @@ const isMeasured = (i: ExchangeItem) => i.kind === "ergebnis" || i.kind === "aus
  * Modellabgleich ehrlich benennen: nur PASS auf Holdout-Messdaten mit vorab
  * gesperrten Kriterien zaehlt. Alles andere bleibt offen.
  */
-export function modelAnswer(inp: DataInputs): { answer: string; detail: string } {
+function modelAnswer(inp: DataInputs): { answer: string; detail: string } {
   const holdout = inp.imports.filter((i) => i.role === "holdout" && i.valid);
   if (inp.holdoutPass)
     return {

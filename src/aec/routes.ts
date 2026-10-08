@@ -62,7 +62,7 @@ const isWerkstatt = (v: string | null): v is Exclude<Werkstatt, LabWerkstatt> =>
   WERKSTATT.includes(v as Werkstatt) && !isLabWerkstatt(v);
 
 /** Welche Frage beherbergt welches Bestandswerkzeug. */
-export const WERKSTATT_HOME: Record<Exclude<Werkstatt, LabWerkstatt>, Question> = {
+const WERKSTATT_HOME: Record<Exclude<Werkstatt, LabWerkstatt>, Question> = {
   system: "lage",
   betrieb: "engpass",
   robustheit: "varianten",

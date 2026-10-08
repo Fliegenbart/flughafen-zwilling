@@ -333,7 +333,7 @@ const join = (parts: string[]) =>
     ? (parts[0] ?? "")
     : `${parts.slice(0, -1).join(", ")} ${parts.some((p) => p.includes(" und ")) ? "sowie" : "und"} ${parts[parts.length - 1]}`;
 
-export function dataAnswer(items: DataItem[]): string {
+function dataAnswer(items: DataItem[]): string {
   const real = items.filter((i) => i.state === "echt").length;
   const head =
     real === items.length
@@ -410,7 +410,7 @@ export function isExampleFile(name: string): boolean {
  * Standardflotte des gekoppelten Modells (backend/app/munich/coupled_models.py,
  * `default_fleets`): 100 Fahrzeuge. Eine Gesamtzahl wird nach diesen Anteilen verteilt.
  */
-export const DEFAULT_FLEET = [
+const DEFAULT_FLEET = [
   { kind: "bus", label: "Busse", vehicles: 20, chargers: 8 },
   { kind: "baggage_tractor", label: "Gepäckschlepper", vehicles: 35, chargers: 12 },
   { kind: "pushback_tug", label: "Pushback-Schlepper", vehicles: 10, chargers: 4 },

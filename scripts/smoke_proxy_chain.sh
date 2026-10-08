@@ -17,7 +17,10 @@ services:
 YAML
 compose up --build -d --wait --wait-timeout 120
 address=$(compose port frontend 80)
-curl --fail --silent --show-error --retry 5 --retry-connrefused \
+# Docker leitet den Port weiter, bevor nginx im Container annimmt; der erste Versuch kann
+# dann mit "connection reset" (curl 56) scheitern. --retry-all-errors wiederholt auch das;
+# --fail sorgt weiter dafuer, dass ein echter HTTP-Fehler den Smoke rot macht.
+curl --fail --silent --show-error --retry 10 --retry-delay 1 --retry-all-errors \
   -H 'X-Real-IP: 198.51.100.42' -H 'Host: labpulse.ai' \
   "http://$address/api/v1/health?proxy-smoke=1" >/dev/null
 compose logs twin-core | grep '198.51.100.42:0.*proxy-smoke=1.*200 OK'

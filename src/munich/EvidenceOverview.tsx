@@ -3,7 +3,7 @@ import { EvidenceBadge, EvidenceLegend, type EvidenceLevel } from "../ui/Evidenc
 type Claim = { topic: string; level: EvidenceLevel; basis: string };
 
 /** Was dieser Prototyp belegt – und was ausdruecklich nicht. */
-export const CLAIMS: Claim[] = [
+const CLAIMS: Claim[] = [
   {
     topic: "Flugplanzeiten",
     level: "assumption",

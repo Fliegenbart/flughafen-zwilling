@@ -141,7 +141,7 @@ function RecomputeBanner({
 }
 
 /** Datenstand im Projektkopf: N von 4 echt, Mini-Leiste, fuehrt zum Schritt Daten. */
-export function DataMeter({ status, projekt }: { status: DataStatus | null; projekt: string }) {
+function DataMeter({ status, projekt }: { status: DataStatus | null; projekt: string }) {
   const label = status
     ? `${status.real} von 4 Datenquellen belegt. ${status.answer} Zu Ihren Daten.`
     : "Datenstand wird geladen. Zu Ihren Daten.";
