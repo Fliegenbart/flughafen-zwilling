@@ -116,7 +116,20 @@ Nach jedem Deploy, sobald die neue Version geprueft ist:
 
 Stand 08.10.2026 nach dem ersten Aufraeumen: Sicherungen 90 MB statt 2,5 GB, Releases 27 MB.
 
-## Aktiver Release vom 07.10.2026 (Texte)
+## Aktiver Release vom 08.10.2026 (Arbeitsbildschirm)
+
+Code-Release `78a6bab5b664b9b08b131fd1d65735db14a3cd50` (PR #30) ist aktiv, gebaut aus
+`/opt/airport-releases/78a6bab`; vorher `27b3850`. Keine Netz- oder Compose-Aenderung.
+Datenvolume vorher offline gesichert (`pre-78a6bab-20261008.tar.gz`, 1.500 Dateien,
+hashgleich wiederhergestellt). 401 ohne Login, Smokes ueber die Host-Bridge gruen.
+
+Neu: Arbeitsbildschirm unter `?projekt=<id>&ansicht=neu` und `POST /situation/preview`.
+Fuer die Vorfuehrung angelegt: Projekt "Testtag Vorfeld (synthetisch)"
+(`d7c0aede-4e70-4275-8085-3cb44272d540`) mit synthetischem Flugplan (310 Abfluege).
+Gemessene Vorschau auf dem Server: rund 0,8 s Rechnung, rund 1 s mit Netzweg (lokal 0,3 s);
+Backend laeuft mit `cpus: 1.0` auf einem ausgelasteten Host.
+
+## Release vom 07.10.2026 (Texte)
 
 Code-Release `27b385046eb84e17b6ba3b446afc1ee868d3eacf` aus `codex/recovery-audit` (PR #26,
 neue Texte nach `docs/TEXTLEITFADEN.md`) ist aktiv, gebaut aus `/opt/airport-releases/27b3850`.
