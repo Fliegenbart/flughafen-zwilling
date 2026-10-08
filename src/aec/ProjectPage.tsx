@@ -3,18 +3,15 @@ import { getProject } from "./api/projects";
 import { getSituation } from "./api/situation";
 import { getVariantBoard, runVariants } from "./api/variants";
 import Link from "./Link";
+import DataMeter from "./DataMeter";
 import { SourceTag } from "./parts";
-import {
-  computeDataStatus,
-  EMPTY_INPUTS,
-  type DataInputs,
-  type DataStatus,
-} from "./model/dataStatus";
+import RecomputeBanner, { recomputeState } from "./RecomputeBanner";
+import { computeDataStatus, EMPTY_INPUTS, type DataInputs } from "./model/dataStatus";
 import { loadDataInputs } from "./api/data";
 import { STEPS, stepRoute, type Route } from "./routes";
 import StepNav from "./StepNav";
 import DatenView from "./views/DatenView";
-import type { Project, Situation, Variant, VariantBoard } from "./types";
+import type { Project, Situation, VariantBoard } from "./types";
 import { WerkstattFrame } from "./Werkstatt";
 import NachweisView from "./views/NachweisView";
 
@@ -23,79 +20,10 @@ type ProjectRoute = Extract<Route, { page: "projekt" }>;
 export type ViewProps = {
   project: Project;
   situation: Situation;
-  variants: Variant[];
   board: VariantBoard;
   reloadBoard: () => Promise<VariantBoard>;
   route: ProjectRoute;
 };
-
-/** Zustand des Projekt-Basislaufs gegenueber den aktuellen Projektwerten. */
-export function recomputeState(
-  board: VariantBoard | null,
-): "aktuell" | "veraltet" | "fehlt" | "laeuft" {
-  if (!board || board.source !== "api" || !board.base) return "aktuell";
-  if (board.run && (board.run.status === "queued" || board.run.status === "running"))
-    return "laeuft";
-  if (!board.run) return "fehlt";
-  return board.run.inputsStale ? "veraltet" : "aktuell";
-}
-
-function RecomputeBanner({
-  state,
-  busy,
-  error,
-  onRun,
-}: {
-  state: ReturnType<typeof recomputeState>;
-  busy: boolean;
-  error: string;
-  onRun: () => void;
-}) {
-  if (state === "aktuell") return null;
-  const text =
-    state === "laeuft"
-      ? "Der Tag wird mit Ihren Werten neu gerechnet …"
-      : state === "fehlt"
-        ? "Für die Zusage ist der Tag noch nicht mit Ihren Werten gerechnet."
-        : "Seit der letzten Rechnung haben sich Ihre Werte geändert, die Zusage zeigt noch den alten Stand.";
-  return (
-    <div className="aec-recompute" data-state={state} role="status">
-      <p>
-        {state === "veraltet" ? <strong className="aec-recompute__tag">veraltet</strong> : null}
-        {text}
-      </p>
-      {state !== "laeuft" ? (
-        <button type="button" className="aec-button" disabled={busy} onClick={onRun}>
-          {busy ? "Wird gestartet …" : "Tag neu rechnen"}
-        </button>
-      ) : null}
-      {error ? (
-        <p className="aec-derror" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-/** Datenstand im Projektkopf: N von 4 echt, Mini-Leiste, fuehrt zum Schritt Daten. */
-function DataMeter({ status, projekt }: { status: DataStatus | null; projekt: string }) {
-  const label = status
-    ? `${status.real} von 4 Datenquellen belegt. ${status.answer} Zu Ihren Daten.`
-    : "Datenstand wird geladen. Zu Ihren Daten.";
-  return (
-    <Link to={{ page: "projekt", projekt, frage: "daten" }} className="aec-dmeter" label={label}>
-      <span className="aec-dmeter__text" aria-hidden="true">
-        Belegt: <strong>{status ? `${status.real} von 4` : "…"}</strong>
-      </span>
-      <span className="aec-dmeter__bar" aria-hidden="true">
-        {(status?.items ?? []).map((i) => (
-          <i key={i.id} data-state={i.state} title={`${i.title}: ${i.state}`} />
-        ))}
-      </span>
-    </Link>
-  );
-}
 
 export default function ProjectPage({
   route,
@@ -177,9 +105,7 @@ export default function ProjectPage({
     return b!;
   };
   const props =
-    project && situation && board
-      ? { project, situation, variants: board.variants, board, reloadBoard, route }
-      : null;
+    project && situation && board ? { project, situation, board, reloadBoard, route } : null;
   // Von den Daten geht es weiter zum Durchrechnen; die Zusage ist das Ende.
   const next = route.frage === "daten" ? STEPS[1] : null;
 

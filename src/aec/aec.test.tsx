@@ -5,10 +5,9 @@ import { exchangeFromApi } from "./api/exchange";
 import { situationFromApi } from "./api/situation";
 import { boardFromApi } from "./api/variants";
 import { exchangeAnswer, nextStatus, whoseTurn } from "./model/exchange";
-import { bottleneckAnswer, situationAnswer, situationKpis } from "./model/situation";
-import { variantsAnswer } from "./model/variants";
+import { bottleneckAnswer, situationKpis } from "./model/situation";
 import { legacyRedirect, parseRoute, toSearch } from "./routes";
-import { SAMPLE_PROJECT, sampleExchange, sampleSituation, sampleVariants } from "./sample";
+import { SAMPLE_PROJECT, sampleExchange, sampleSituation } from "./sample";
 import DayLandscape from "./DayLandscape";
 import { SCENARIO_CASES } from "./scenarios";
 
@@ -65,34 +64,18 @@ describe("Adressen und Weiterleitungen", () => {
   });
 });
 
-describe("Antwortsätze", () => {
+describe("Antwortsatz zur knappsten Phase", () => {
   const s = sampleSituation();
   it("nennt das Engpassfenster und die fehlende Leistung aus den Daten", () => {
     const w = situationKpis(s).worst!;
     expect(w.deficitKw).toBeGreaterThan(0);
-    expect(bottleneckAnswer(s)).toMatch(/^Von 06:\d\d bis 07:\d\d Uhr fehlen bis zu \d+\skW\./);
-    expect(situationAnswer(s)).toMatch(/^Von 06:\d\d bis 07:\d\d Uhr reicht der Anschluss nicht\./);
+    expect(bottleneckAnswer(s)).toMatch(
+      /^Von \d\d:\d\d bis \d\d:\d\d Uhr fehlen bis zu [\d,]+\sMW\./,
+    );
   });
   it("sagt ehrlich, wenn nichts eng wird", () => {
     const calm = { ...s, gridLimitKw: 10000 };
     expect(bottleneckAnswer(calm)).toBe("Es wird an keinem Punkt des Tages eng.");
-    expect(situationAnswer(calm)).toMatch(/reicht den ganzen Tag/);
-  });
-  it("benennt die beste Variante und die wirkungslosen", () => {
-    const a = variantsAnswer(sampleVariants());
-    expect(a).toMatch(
-      /^„5 Schlepper mehr“ hilft am meisten, mit 18,0 Prozentpunkten mehr pünktlichen Abflügen\./,
-    );
-    expect(a).toMatch(/Dafür ist der Anschluss 19 Minuten länger am Limit\./);
-    expect(a).toMatch(
-      /„Batteriespeicher 2 MWh“ entlastet den Anschluss am stärksten, um 52 Minuten am Limit\./,
-    );
-  });
-  it("sagt ausdrücklich, wenn keine Variante die Pünktlichkeit verbessert", () => {
-    const vs = sampleVariants().map((v) => (v.kind === "basis" ? v : { ...v, onTimePct: 78.2 }));
-    expect(variantsAnswer(vs)).toMatch(
-      /^Keine Lösung bringt mehr als einen halben Prozentpunkt mehr pünktliche Abflüge\. „Batteriespeicher 2 MWh“ entlastet den Anschluss am stärksten, um 52 Minuten am Limit\./,
-    );
   });
 });
 

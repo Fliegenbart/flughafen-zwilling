@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import day from "../beispieltag.json";
 import reference from "./__fixtures__/livePowerReference.json";
 import {
   leversFromBasis,
@@ -8,7 +9,7 @@ import {
   type Levers,
 } from "./livePower";
 
-type Raw = typeof reference.basis;
+type Raw = typeof day.basis;
 function basisFrom(raw: Raw): LiveBasis {
   const p = raw.power;
   return {
@@ -37,7 +38,7 @@ function basisFrom(raw: Raw): LiveBasis {
   };
 }
 
-const basis = basisFrom(reference.basis);
+const basis = basisFrom(day.basis);
 const base = leversFromBasis(basis);
 
 function leversFor(l: Record<string, number>): Levers {

@@ -1,9 +1,12 @@
 /**
- * Beispieldaten: deterministisch erzeugt, nicht gemessen, nicht simuliert.
- * Werden nur gezeigt, wenn das Backend keine Daten liefert, und sind dann
- * in der Oberflaeche ueberall als "Beispieldaten" markiert.
+ * Beispielwerte: ein erfundener Verkehrstag, nicht gemessen. Sie erscheinen, wenn das Backend
+ * keine Daten liefert, und sind in der Oberflaeche ueberall als "Beispielwerte" markiert.
  */
-import type { ExchangeItem, Project, Situation, Variant } from "./types";
+import { previewFromApi, type Preview } from "./api/preview";
+import day from "./beispieltag.json";
+import { points, STEP } from "./model/dayCurve";
+import { resultFromExact } from "./model/livePower";
+import type { ExchangeItem, Project, Situation } from "./types";
 
 export const SAMPLE_PROJECT: Project = {
   id: "beispiel-muc-sued",
@@ -11,106 +14,42 @@ export const SAMPLE_PROJECT: Project = {
   airport: "München",
   site: "Netzabgang Vorfeld Süd",
   dayLabel: "Verkehrstag 03.10.2026",
-  fleetSize: 100,
+  fleetSize: 101,
   gridLimitKw: 3500,
-  decision: "Reicht der Anschluss für 100 E-Fahrzeuge, und wo wird es zuerst eng?",
+  decision: "Reicht der Anschluss für 101 E-Fahrzeuge, und wo wird es zuerst eng?",
   source: "beispiel",
 };
 
-const bump = (m: number, center: number, width: number, height: number) =>
-  height * Math.exp(-(((m - center) / width) ** 2));
+/** Der Beispieltag, gerechnet mit dem Backend (backend/app/exchange/demo_day.py). */
+export function samplePreview(): Preview {
+  const preview = previewFromApi({ ...day.basis, kpis: day.kpis }, day.departures);
+  if (!preview) throw new Error("Beispieltag fehlt.");
+  return preview;
+}
 
-/** Glatte, reproduzierbare Tageskurve mit drei Flugwellen und einer Busspitze. */
+/** Die Tageskurve des Beispieltags in der Form der Lage-Grafik (Startseite). */
 export function sampleSituation(project: Project = SAMPLE_PROJECT): Situation {
-  const step = 5;
-  const scale = project.gridLimitKw / 3500;
-  const load = Array.from({ length: (24 * 60) / step }, (_, i) => {
-    const m = i * step;
-    const base = 900 + bump(m, 13 * 60, 330, 380) + bump(m, 7 * 60, 160, 160);
-    const charging =
-      bump(m, 6 * 60 + 50, 46, 2600) +
-      bump(m, 6 * 60 + 5, 40, 700) +
-      bump(m, 12 * 60, 30, 2200) +
-      bump(m, 17 * 60 + 10, 60, 1500) +
-      bump(m, 20 * 60 + 30, 50, 900) +
-      bump(m, 2 * 60, 140, 500) +
-      180 * Math.sin(m / 23) ** 2;
-    const pv = Math.max(0, Math.sin(((m - 6.5 * 60) / (13 * 60)) * Math.PI)) * 620;
-    return {
-      minute: m,
-      demandKw: Math.round((base + charging - pv * 0.55) * scale),
-      baseKw: Math.round(base * scale),
-      pvKw: Math.round(pv * scale),
-    };
-  });
-  const departures = Array.from({ length: 48 }, (_, i) => {
-    const m = i * 30;
-    const c =
-      bump(m, 6 * 60 + 40, 55, 21) +
-      bump(m, 11 * 60 + 50, 70, 13) +
-      bump(m, 16 * 60 + 50, 80, 15) +
-      bump(m, 20 * 60 + 10, 60, 9) +
-      (m > 5 * 60 && m < 23 * 60 ? 3 : 0);
-    return { minute: m, count: Math.round(c) };
-  });
+  const preview = samplePreview();
+  const b = preview.basis;
+  const curve = points(resultFromExact(b));
+  // Grundlast und Photovoltaik je Fuenf-Minuten-Fenster; Reihen beginnen bei startMin.
+  const at = (series: number[], m: number) => series[m - b.startMin] ?? 0;
+  const load = curve.map((p) => ({
+    minute: p.m,
+    demandKw: Math.round(p.need),
+    baseKw: Math.round(at(b.backgroundKw, p.m)),
+    pvKw: Math.round(at(b.pvKw, p.m)),
+  }));
   return {
     projectId: project.id,
     source: "beispiel",
     evidence: "synthetic",
     kind: "bedarf",
-    gridLimitKw: project.gridLimitKw,
-    stepMinutes: step,
+    gridLimitKw: b.power.gridImportLimitKw,
+    stepMinutes: STEP,
     load,
-    departures,
-    delayedDepartures: 38,
-    vehicleShare: 0.96,
+    departures: preview.departures.map((d) => ({ minute: d.startMin, count: d.count })),
   };
-}
-
-export function sampleVariants(): Variant[] {
-  const v = (x: Omit<Variant, "evidence" | "source">): Variant => ({
-    ...x,
-    evidence: "synthetic",
-    source: "beispiel",
-  });
-  return [
-    v({
-      id: "basis",
-      name: "Heute",
-      kind: "basis",
-      onTimePct: 78,
-      minutesAtLimit: 52,
-      gridEnergyMwh: 41.2,
-      peakKw: 4140,
-    }),
-    v({
-      id: "speicher",
-      name: "Batteriespeicher 2 MWh",
-      kind: "speicher",
-      onTimePct: 79,
-      minutesAtLimit: 0,
-      gridEnergyMwh: 41.9,
-      peakKw: 3480,
-    }),
-    v({
-      id: "schlepper",
-      name: "5 Schlepper mehr",
-      kind: "fahrzeuge",
-      onTimePct: 96,
-      minutesAtLimit: 71,
-      gridEnergyMwh: 43.0,
-      peakKw: 4390,
-    }),
-    v({
-      id: "laderegel",
-      name: "Wer zuerst los muss, lädt zuerst",
-      kind: "laderegel",
-      onTimePct: 78,
-      minutesAtLimit: 49,
-      gridEnergyMwh: 41.2,
-      peakKw: 4080,
-    }),
-  ];
 }
 
 export function sampleExchange(projectId: string): ExchangeItem[] {

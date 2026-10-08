@@ -1,5 +1,4 @@
 /** Loesungen (Varianten): laden, anlegen, loeschen, rechnen. */
-import { sampleVariants } from "../sample";
 import type { Project, Variant, VariantBoard, VariantChanges } from "../types";
 import { fleetFromApi } from "./situation";
 import { request as call } from "./http";
@@ -25,7 +24,7 @@ export function sampleBoard(): VariantBoard {
     base: null,
     definitions: [],
     run: null,
-    variants: sampleVariants(),
+    variants: [],
     answer: null,
   };
 }

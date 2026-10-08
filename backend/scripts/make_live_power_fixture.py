@@ -1,10 +1,14 @@
-"""Referenz fuer die Live-Regler: genaue Backend-Rechnung gegen die Browser-Naeherung.
+"""Beispieltag und Referenz fuer die Live-Regler: genaue Backend-Rechnung gegen die Naeherung.
 
-Rechnet den Beispieltag (backend/app/exchange/demo_day.py) genau fuer viele Regler-Stellungen
-und schreibt Basis-Minutenreihen plus die genauen Kennzahlen nach
-src/aec/model/__fixtures__/livePowerReference.json. `cases` stimmen die Naeherung ab,
-`holdout` prueft sie an Stellungen, die beim Abstimmen nicht gesehen wurden.
-livePower.test.ts vergleicht beides. Neu erzeugen, wenn sich Modell oder Beispieltag aendern:
+Rechnet den Beispieltag (backend/app/exchange/demo_day.py) und schreibt zwei Dateien:
+
+- src/aec/beispieltag.json: der heutige Stand als Minutenreihen, Abflugbloecke und Kennzahlen.
+  Das Beispielprojekt ohne Server zeigt genau diesen Tag.
+- src/aec/model/__fixtures__/livePowerReference.json: die genauen Kennzahlen fuer viele
+  Regler-Stellungen. `cases` stimmen die Naeherung ab, `holdout` prueft sie an Stellungen, die
+  beim Abstimmen nicht gesehen wurden. livePower.test.ts vergleicht beides.
+
+Neu erzeugen, wenn sich Modell oder Beispieltag aendern:
 
     cd backend && python scripts/make_live_power_fixture.py
 
@@ -27,7 +31,9 @@ from app.munich.coupled_simulator import simulate_coupled  # noqa: E402
 from app.munich.coupled_world import build_world  # noqa: E402
 
 LIMIT_TOLERANCE_KW = 0.5
-OUT = ROOT.parent / "src" / "aec" / "model" / "__fixtures__" / "livePowerReference.json"
+SRC = ROOT.parent / "src" / "aec"
+DAY_OUT = SRC / "beispieltag.json"
+REFERENCE_OUT = SRC / "model" / "__fixtures__" / "livePowerReference.json"
 
 # Zum Abstimmen der Naeherung.
 CASES = [
@@ -101,23 +107,24 @@ def main() -> None:
     cases = [run(plan, base_cfg, policy, lever, world.day_minutes) for lever in CASES]
     holdout = [run(plan, base_cfg, policy, lever, world.day_minutes) for lever in HOLDOUT]
     departures, delayed = departures_by_half_hour(base)
-    payload = {
-        "note": f"{TITLE}; erzeugt von backend/scripts/make_live_power_fixture.py",
+    note = f"{TITLE}; erzeugt von backend/scripts/make_live_power_fixture.py"
+    day = {
+        "note": note,
         "basis": basis_from_series(base.series, base_cfg, day_minutes=world.day_minutes,
                                    start_min=world.start_min, day_start_utc=world.day_start_utc,
                                    policy=policy, run_id=None),
         "departures": departures,
         "kpis": {"departures_total": len(base.departures), "delayed_departures": delayed},
-        "base_exact": metrics(base.series, world.day_minutes),
-        "cases": cases,
-        "holdout": holdout,
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")
-    print(f"{OUT.relative_to(ROOT.parent)}: {len(cases)}+{len(holdout)} Faelle, "
+    reference = {"note": note, "base_exact": metrics(base.series, world.day_minutes),
+                 "cases": cases, "holdout": holdout}
+    REFERENCE_OUT.parent.mkdir(parents=True, exist_ok=True)
+    for out, payload in ((DAY_OUT, day), (REFERENCE_OUT, reference)):
+        out.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")
+    print(f"{DAY_OUT.relative_to(ROOT.parent)} ({DAY_OUT.stat().st_size // 1024} KB), "
+          f"{REFERENCE_OUT.relative_to(ROOT.parent)}: {len(cases)}+{len(holdout)} Faelle, "
           f"{len(base.departures)} Abfluege ({delayed} nicht rechtzeitig), "
-          f"Basis {payload['base_exact']}, {OUT.stat().st_size // 1024} KB")
-
+          f"Basis {reference['base_exact']}")
 
 if __name__ == "__main__":
     main()

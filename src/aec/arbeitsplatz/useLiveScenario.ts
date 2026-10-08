@@ -6,7 +6,7 @@
  * Server bleiben bei der Naeherung auf einem synthetischen Referenztag.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getPreview, previewBodyFor, previewFromApi, type Preview } from "../api/preview";
+import { getPreview, previewBodyFor, type Preview } from "../api/preview";
 import {
   leversFromBasis,
   resultFromExact,
@@ -14,6 +14,7 @@ import {
   type Levers,
   type LiveResult,
 } from "../model/livePower";
+import { samplePreview } from "../sample";
 import type { Project } from "../types";
 
 export type Accuracy = "laedt" | "naeherung" | "genau" | "fehler";
@@ -52,13 +53,7 @@ const approximable = ({ gridLimitKw, batteryKwh, batteryKw, pvFactor }: Partial<
 
 async function loadToday(project: Project): Promise<{ preview: Preview; sample: boolean }> {
   if (project.source === "api") return { preview: await getPreview(project, {}), sample: false };
-  const ref = await import("../model/__fixtures__/livePowerReference.json");
-  const preview = previewFromApi(
-    { ...ref.default.basis, kpis: ref.default.kpis },
-    ref.default.departures,
-  );
-  if (!preview) throw new Error("Beispieltag fehlt.");
-  return { preview, sample: true };
+  return { preview: samplePreview(), sample: true };
 }
 
 /**

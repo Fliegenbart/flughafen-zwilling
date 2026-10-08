@@ -16,7 +16,14 @@ import Compare from "./Compare";
 const MAX_KEPT = 8;
 const NAME_MAX = 80;
 
-const canonical = (c: VariantChanges) => JSON.stringify(c, Object.keys(c).sort());
+/** Gleiche Aenderungen, egal in welcher Reihenfolge die Felder stehen (auch verschachtelt). */
+const canonical = (v: unknown): string =>
+  v && typeof v === "object"
+    ? `{${Object.entries(v)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, x]) => `${JSON.stringify(k)}:${canonical(x)}`)
+        .join(",")}}`
+    : JSON.stringify(v);
 
 /** Name aus der Beschreibung der Aenderungen; eindeutig im Projekt, hoechstens 80 Zeichen. */
 function nameFor(changes: VariantChanges, taken: Set<string>): string {

@@ -34,9 +34,6 @@ export type Situation = {
   departures: DepartureSlot[];
   /** Engpassfenster, falls die API sie liefert; sonst aus dem Verlauf abgeleitet. */
   windows?: Window[];
-  /** Abfluege mit verspaeteter Abfertigung und Anteil fahrzeugbedingt (0..1). */
-  delayedDepartures: number;
-  vehicleShare: number;
   /** Modellierte Flotte des Laufs (nur API). */
   fleet?: Fleet;
 };

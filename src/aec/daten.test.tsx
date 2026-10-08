@@ -14,7 +14,7 @@ import { parseRoute, toSearch } from "./routes";
 import { SAMPLE_PROJECT } from "./sample";
 import { flightPlanError } from "./views/daten/FlightPlanForm";
 import { distributeFleet } from "./model/dataStatus";
-import { recomputeState } from "./ProjectPage";
+import { recomputeState } from "./RecomputeBanner";
 import { sampleBoard } from "./api/variants";
 
 afterEach(() => {

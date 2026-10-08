@@ -140,6 +140,19 @@ describe("Einstellung festhalten", () => {
     expect(screen.getByRole("button", { name: "Einstellung festhalten" })).toBeDisabled();
   });
 
+  it("hält Fahrzeuge verschiedener Art auseinander", () => {
+    view({
+      levers: { ...today, extraVehicles: 5, extraKind: "gpu" },
+      board: board({
+        definitions: [
+          { id: "v1", name: "Schlepper", changes: { extra_vehicles: { pushback_tug: 5 } } },
+        ],
+      }),
+    });
+    expect(screen.getByRole("button", { name: "Einstellung festhalten" })).toBeEnabled();
+    expect(screen.queryByText(/schon festgehalten/)).toBeNull();
+  });
+
   it("hält höchstens acht Lösungen", () => {
     const definitions = Array.from({ length: 8 }, (_, i) => ({
       id: `v${i}`,

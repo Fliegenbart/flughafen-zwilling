@@ -33,8 +33,6 @@ export function situationFromApi(project: Project, data: unknown): Situation | n
   const step = num(data.interval_min, 15);
   const limit =
     series.reduce((m, p) => Math.max(m, num(p.grid_limit_kw)), 0) || project.gridLimitKw;
-  const answer = isObj(data.answer) ? data.answer : {};
-  const shares = isObj(answer.cause_shares_pct) ? answer.cause_shares_pct : {};
   const windows = Array.isArray(data.bottleneck_windows)
     ? data.bottleneck_windows.filter(isObj).map((w) => ({
         start: minuteOf(str(w.start_utc), dayStart),
@@ -65,8 +63,6 @@ export function situationFromApi(project: Project, data: unknown): Situation | n
           .filter(inDay)
       : [],
     windows,
-    delayedDepartures: num(answer.delayed_departures),
-    vehicleShare: num(shares.resource) / 100,
     fleet: fleetFromApi(data.fleet),
   };
 }

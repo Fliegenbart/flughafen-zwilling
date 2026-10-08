@@ -55,20 +55,7 @@ export function pointAt(s: Situation, minute: number) {
   return { ...p, reserveKw: s.gridLimitKw - p.demandKw, departures: slot?.count ?? 0 };
 }
 
-/** Der grosse Antwortsatz der Ansicht "Lage". */
-export function situationAnswer(s: Situation): string {
-  const { windows, minReserve } = situationKpis(s);
-  if (!windows.length)
-    return `Der Anschluss reicht den ganzen Tag, im knappsten Moment bleiben ${powerText(minReserve)} frei.`;
-  const w = windows.reduce((a, b) => (b.deficitKw > a.deficitKw ? b : a));
-  const more =
-    windows.length > 1
-      ? ` Dazu ${windows.length === 2 ? "kommt eine kürzere enge Phase" : `kommen ${windows.length - 1} kürzere enge Phasen`}.`
-      : "";
-  return `Von ${clock(w.start)} bis ${clock(w.end)} Uhr reicht der Anschluss nicht.${more}`;
-}
-
-/** Der grosse Antwortsatz der Ansicht "Engpass". */
+/** Der Satz zur knappsten Phase des Tages (Zusage). */
 export function bottleneckAnswer(s: Situation): string {
   const { worst } = situationKpis(s);
   if (!worst) return "Es wird an keinem Punkt des Tages eng.";
