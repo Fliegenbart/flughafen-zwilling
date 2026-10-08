@@ -6,7 +6,7 @@ import {
   EMPTY_INPUTS,
   importError,
   isExampleFile,
-  needsDataStep,
+  needsFlightPlan,
   type DataInputs,
 } from "./model/dataStatus";
 import { assetsFromApi, importFromApi } from "./api/data";
@@ -65,7 +65,7 @@ describe("Datenstand", () => {
     expect(s.answer).toBe(
       "Noch ist keine der 4 Datenquellen belegt, gerechnet wird mit Annahmen. Es fehlen der offizielle Flugplan, Angaben zu Fahrzeugen und Anlagen sowie Messungen vom Flughafen und aus dem Testing-Lab.",
     );
-    expect(needsDataStep(s)).toBe(true);
+    expect(needsFlightPlan(s)).toBe(true);
   });
 
   it("teilweise: Flugplan und Flotte echt, Messdaten fehlen", () => {
@@ -79,7 +79,7 @@ describe("Datenstand", () => {
     expect(s.answer).toBe(
       "2 von 4 Datenquellen sind belegt. Es fehlen Messungen vom Flughafen und aus dem Testing-Lab.",
     );
-    expect(needsDataStep(s)).toBe(false);
+    expect(needsFlightPlan(s)).toBe(false);
   });
 
   it("Werte ohne Quelle bleiben Annahme; Mehrfachgruppen warnen", () => {
@@ -94,7 +94,7 @@ describe("Datenstand", () => {
     expect(fp!.warnings[0]).toMatch(/3 Flüge stehen eventuell doppelt drin/);
     expect(fl!.state).toBe("annahme");
     expect(s.answer).toMatch(/Für Fahrzeuge und Anlagen gelten noch Annahmen\./);
-    expect(needsDataStep(s)).toBe(true);
+    expect(needsFlightPlan(s)).toBe(true);
   });
 
   it("abgewiesene Importe zählen nie, PASS nur über Holdout-Bewertung", () => {

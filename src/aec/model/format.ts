@@ -14,9 +14,11 @@ export function power(kw: number): { value: string; unit: string } {
     ? { value: nf2.format(kw / 1000), unit: "MW" }
     : { value: nf0.format(kw), unit: "kW" };
 }
+/** Zahl und Einheit mit geschuetztem Leerzeichen, damit sie nie auseinanderbrechen. */
+export const unit = (value: string | number, u: string) => `${value}\u00a0${u}`;
 export const powerText = (kw: number) => {
   const p = power(kw);
-  return `${p.value}\u00a0${p.unit}`;
+  return unit(p.value, p.unit);
 };
 export const int = (n: number) => nf0.format(n);
 export const dec1 = (n: number) => nf1.format(n);

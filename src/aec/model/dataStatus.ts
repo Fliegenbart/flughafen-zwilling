@@ -373,10 +373,9 @@ export function computeDataStatus(inp: DataInputs): DataStatus {
   };
 }
 
-/** Startschritt: Daten, solange Flugplan und Flotte nicht beide echt sind. */
-export function needsDataStep(status: DataStatus): boolean {
-  const s = (id: DataItemId) => status.items.find((i) => i.id === id)?.state;
-  return !(s("flugplan") === "echt" && s("flotte") === "echt");
+/** Ohne echten Flugplan gibt es nichts durchzurechnen: dann zuerst zu den Daten. */
+export function needsFlightPlan(status: DataStatus | null): boolean {
+  return !!status && status.items.find((i) => i.id === "flugplan")?.state !== "echt";
 }
 
 /**

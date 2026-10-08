@@ -11,6 +11,7 @@ import { getProject } from "../api/projects";
 import { useNav } from "../context";
 import Link from "../Link";
 import type { Levers } from "../model/livePower";
+import { needsFlightPlan } from "../model/dataStatus";
 import { caseBySlug } from "../scenarios";
 import type { Route } from "../routes";
 import type { Project } from "../types";
@@ -44,12 +45,12 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
   const nav = useNav();
   // Nackte Projektadresse: ohne Flugplan gibt es nichts zu rechnen, also zuerst zu den Daten.
   // Bis das geklaert ist, startet auch die Rechnung nicht.
-  const plan = status?.items.find((i) => i.id === "flugplan")?.state;
-  const checking = !!route.auto && project?.source === "api" && (!plan || plan !== "echt");
+  const noPlan = needsFlightPlan(status);
+  const checking = !!route.auto && project?.source === "api" && (!status || noPlan);
   useEffect(() => {
-    if (checking && plan)
+    if (checking && noPlan)
       nav.navigate({ page: "projekt", projekt: route.projekt, frage: "daten" }, { replace: true });
-  }, [checking, plan, route.projekt, nav]);
+  }, [checking, noPlan, route.projekt, nav]);
   // Zuletzt benutzte Regler dieser Sitzung; ein Krisenfall aus der Adresse hat Vorrang.
   const [initial] = useState<Partial<Levers>>(() => {
     const crisis = caseBySlug(route.krise)?.scenarioId;
