@@ -21,6 +21,9 @@ export type LiveBasis = {
   pvKw: number[];
   chpKw: number[];
   gridCapKw: number[];
+  /** Nur aus einer genauen Rechnung: tatsaechlicher Netzbezug und Batterie (+ gibt ab). */
+  gridImportKw?: number[];
+  batteryKw?: number[];
   power: {
     gridImportLimitKw: number;
     pvCapacityKwp: number;
@@ -41,6 +44,8 @@ export type Levers = {
   /** Leistung der Batterie; Standard wie bei Loesungen: halbe Kapazitaet je Stunde. */
   batteryKw?: number;
   pvFactor: number;
+  /** Zusaetzliche Fahrzeuge; die Naeherung rechnet sie nicht, nur die genaue Vorschau. */
+  extraVehicles?: number;
 };
 
 export type LiveResult = {
@@ -62,6 +67,7 @@ const LIMIT_TOLERANCE_KW = 0.5;
 /** Wie backend/app/exchange/variants.py: Speicher laedt aus dem Netz unter 80 % der Grenze. */
 const STORAGE_GRID_CHARGE_SHARE = 0.8;
 const EPS = 1e-6;
+const CARRY_DECAY = 0.8;
 
 export function leversFromBasis(b: LiveBasis): Levers {
   return {
@@ -91,23 +97,11 @@ export function simulateLive(b: LiveBasis, levers: Levers): LiveResult {
   // Hoechste angefragte Leistung als Ersatz fuer die Zahl der Ladepunkte.
   const requestCap = b.requestedKw.reduce((m, v) => Math.max(m, v), 0);
 
-  const out: LiveResult = {
-    importKw: [],
-    capKw: [],
-    missingKw: [],
-    batteryKw: [],
-    minutesAtLimit: 0,
-    peakImportKw: 0,
-    maxMissingKw: 0,
-    missingKwh: 0,
-    shortfalls: [],
-  };
-  // Rueckstau: Was in einer Minute nicht geladen wird, fragt das Fahrzeug in der naechsten
-  // erneut an. Der eigene Rueckstau des Basislaufs steckt schon in dessen Anfragen.
+  const out = emptyResult();
   let carryBase = 0;
   let carry = 0;
   for (let i = 0; i < n; i++) {
-    const fresh = Math.max(0, b.requestedKw[i]! - carryBase);
+    const fresh = Math.max(0, b.requestedKw[i]! - carryBase * CARRY_DECAY);
     carryBase = Math.max(0, b.requestedKw[i]! - b.deliveredKw[i]!);
     const request = Math.min(fresh + carry, Math.max(requestCap, fresh));
 
@@ -154,32 +148,77 @@ export function simulateLive(b: LiveBasis, levers: Levers): LiveResult {
     stored = Math.min(capacity, Math.max(reserve, stored));
 
     const missing = Math.max(0, request - delivered);
-    carry = missing;
+    // Der Rueckstau klingt pro Minute auf 80 % ab: Ein Teil der wartenden Fahrzeuge faehrt
+    // ohnehin los oder ist voll. Gegen die genaue Rechnung gemessen (2,2 bis 3 MW) am besten.
+    carry = missing * CARRY_DECAY;
 
-    const minute = b.startMin + i;
-    if (minute < 0 || minute >= b.dayMinutes) continue;
-    out.importKw.push(imported);
-    out.capKw.push(cap);
-    out.missingKw.push(missing);
-    out.batteryKw.push(discharge - charge);
-    if (cap > 0 && imported >= cap - LIMIT_TOLERANCE_KW) out.minutesAtLimit += 1;
-    out.peakImportKw = Math.max(out.peakImportKw, imported);
-    out.maxMissingKw = Math.max(out.maxMissingKw, missing);
-    out.missingKwh += missing * DT_H;
-    const last = out.shortfalls[out.shortfalls.length - 1];
-    if (missing > LIMIT_TOLERANCE_KW) {
-      if (last && last.end === minute) {
-        last.end = minute + 1;
-        last.maxMissingKw = Math.max(last.maxMissingKw, missing);
-        last.missingKwh += missing * DT_H;
-      } else
-        out.shortfalls.push({
-          start: minute,
-          end: minute + 1,
-          maxMissingKw: missing,
-          missingKwh: missing * DT_H,
-        });
-    }
+    record(out, b.startMin + i, b.dayMinutes, imported, cap, missing, discharge - charge);
   }
+  return out;
+}
+
+function emptyResult(): LiveResult {
+  return {
+    importKw: [],
+    capKw: [],
+    missingKw: [],
+    batteryKw: [],
+    minutesAtLimit: 0,
+    peakImportKw: 0,
+    maxMissingKw: 0,
+    missingKwh: 0,
+    shortfalls: [],
+  };
+}
+
+/** Eine Minute verbuchen; gleiche Definitionen fuer Naeherung und genaue Rechnung. */
+function record(
+  out: LiveResult,
+  minute: number,
+  dayMinutes: number,
+  imported: number,
+  cap: number,
+  missing: number,
+  battery: number,
+) {
+  if (minute < 0 || minute >= dayMinutes) return;
+  out.importKw.push(imported);
+  out.capKw.push(cap);
+  out.missingKw.push(missing);
+  out.batteryKw.push(battery);
+  if (cap > 0 && imported >= cap - LIMIT_TOLERANCE_KW) out.minutesAtLimit += 1;
+  out.peakImportKw = Math.max(out.peakImportKw, imported);
+  out.maxMissingKw = Math.max(out.maxMissingKw, missing);
+  out.missingKwh += missing * DT_H;
+  const last = out.shortfalls[out.shortfalls.length - 1];
+  if (missing <= LIMIT_TOLERANCE_KW) return;
+  if (last && last.end === minute) {
+    last.end = minute + 1;
+    last.maxMissingKw = Math.max(last.maxMissingKw, missing);
+    last.missingKwh += missing * DT_H;
+  } else
+    out.shortfalls.push({
+      start: minute,
+      end: minute + 1,
+      maxMissingKw: missing,
+      missingKwh: missing * DT_H,
+    });
+}
+
+/** Kennzahlen direkt aus einer genauen Vorschau (ohne Naeherung). */
+export function resultFromExact(b: LiveBasis): LiveResult {
+  const out = emptyResult();
+  const grid = b.gridImportKw ?? [];
+  const battery = b.batteryKw ?? [];
+  for (let i = 0; i < b.requestedKw.length; i++)
+    record(
+      out,
+      b.startMin + i,
+      b.dayMinutes,
+      grid[i] ?? 0,
+      b.gridCapKw[i]!,
+      Math.max(0, b.requestedKw[i]! - b.deliveredKw[i]!),
+      battery[i] ?? 0,
+    );
   return out;
 }

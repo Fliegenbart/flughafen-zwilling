@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import reference from "./__fixtures__/livePowerReference.json";
-import { leversFromBasis, simulateLive, type LiveBasis, type Levers } from "./livePower";
+import {
+  leversFromBasis,
+  resultFromExact,
+  simulateLive,
+  type LiveBasis,
+  type Levers,
+} from "./livePower";
 
 type Raw = typeof reference.basis;
 function basisFrom(raw: Raw): LiveBasis {
@@ -14,6 +20,8 @@ function basisFrom(raw: Raw): LiveBasis {
     pvKw: raw.pv_kw,
     chpKw: raw.chp_kw,
     gridCapKw: raw.grid_cap_kw,
+    gridImportKw: raw.grid_import_kw,
+    batteryKw: raw.battery_kw,
     power: {
       gridImportLimitKw: p.grid_import_limit_kw,
       pvCapacityKwp: p.pv_capacity_kwp,
@@ -44,12 +52,22 @@ function leversFor(l: Record<string, number>): Levers {
 /**
  * Rolle der Naeherung: sofortige Rueckmeldung beim Ziehen. Nach einer kurzen Pause ersetzt die
  * genaue Vorschau (POST /situation/preview) sie. Darum gilt: Ob etwas fehlt, muss stimmen; die
- * Spitze auf 3 % genau; bei starkem Engpass die Groessenordnung (Faktor 2).
+ * Spitze auf 3 % genau; bei starkem Engpass fehlende Energie auf 30 %, fehlende Leistung auf
+ * 20 % (gemessen: hoechstens 22 % bzw. 15 % daneben, siehe CARRY_DECAY).
  */
-const TOL = { peakImportRel: 0.03, smallMissingKwh: 25, severeFactor: 2 };
+const TOL = { peakImportRel: 0.03, smallMissingKwh: 25, severeKwhRel: 0.3, severeKwRel: 0.2 };
 const SEVERE_KWH = 500;
 
 describe("Live-Naeherung gegen genaue Rechnung", () => {
+  it("liest die genaue Rechnung mit denselben Definitionen wie das Backend", () => {
+    const r = resultFromExact(basis);
+    const e = reference.base_exact;
+    expect(r.minutesAtLimit).toBe(e.minutes_at_limit);
+    expect(r.peakImportKw).toBeCloseTo(e.peak_import_kw, 1);
+    expect(r.maxMissingKw).toBeCloseTo(e.max_missing_kw, 1);
+    expect(r.missingKwh).toBeCloseTo(e.missing_kwh, 0);
+  });
+
   it("trifft den Basislauf selbst", () => {
     const r = simulateLive(basis, base);
     const e = reference.base_exact;
@@ -70,8 +88,12 @@ describe("Live-Naeherung gegen genaue Rechnung", () => {
         e.peak_import_kw * TOL.peakImportRel,
       );
       if (e.missing_kwh >= SEVERE_KWH) {
-        expect(r.missingKwh).toBeGreaterThan(e.missing_kwh / TOL.severeFactor);
-        expect(r.missingKwh).toBeLessThan(e.missing_kwh * TOL.severeFactor);
+        expect(Math.abs(r.missingKwh - e.missing_kwh)).toBeLessThan(
+          e.missing_kwh * TOL.severeKwhRel,
+        );
+        expect(Math.abs(r.maxMissingKw - e.max_missing_kw)).toBeLessThan(
+          e.max_missing_kw * TOL.severeKwRel,
+        );
       } else {
         expect(Math.abs(r.missingKwh - e.missing_kwh)).toBeLessThanOrEqual(TOL.smallMissingKwh);
       }

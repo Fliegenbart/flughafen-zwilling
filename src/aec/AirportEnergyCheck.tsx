@@ -13,6 +13,7 @@ import Link from "./Link";
 import { Mark } from "./parts";
 import { SAMPLE_PROJECT } from "./sample";
 import Home from "./Home";
+import Arbeitsplatz from "./arbeitsplatz/Arbeitsplatz";
 import LabPage from "./labraum/LabPage";
 import Library from "./Library";
 import ProjectPage from "./ProjectPage";
@@ -34,6 +35,7 @@ function storedTheme(): Theme {
 function titleFor(route: Route): string {
   if (route.page === "bibliothek") return "Szenario-Bibliothek · Airport Energy Check";
   if (route.page === "lab") return "Testing-Lab · Airport Energy Check";
+  if (route.page === "arbeitsplatz") return "Arbeitsplatz · Airport Energy Check";
   if (route.page === "projekt") {
     const q = STEPS.find((x) => x.id === route.frage)!;
     return `${q.label} · Airport Energy Check`;
@@ -100,6 +102,14 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
 
   const nav = useMemo<Nav>(() => ({ basePath, route, navigate }), [basePath, route, navigate]);
   const dataTheme = theme === "system" ? undefined : theme;
+
+  // Arbeitsbildschirm: eigener, schlanker Rahmen ohne die bisherige Kopfzeile.
+  if (route.page === "arbeitsplatz")
+    return (
+      <NavContext.Provider value={nav}>
+        <Arbeitsplatz key={route.projekt} route={route} />
+      </NavContext.Provider>
+    );
 
   return (
     <NavContext.Provider value={nav}>

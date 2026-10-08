@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from app.exchange.live import basis_from_series  # noqa: E402
+from app.exchange.live import basis_from_series, departures_by_half_hour  # noqa: E402
 from app.exchange.variants import STORAGE_GRID_CHARGE_SHARE  # noqa: E402
 from app.munich.coupled_models import CoupledConfig, PowerConfig  # noqa: E402
 from app.munich.coupled_simulator import simulate_coupled  # noqa: E402
@@ -81,6 +81,7 @@ def main() -> None:
     base = simulate_coupled(world, plan, policy)
     cases = []
     levers = [
+        {"grid_import_limit_kw": 2200}, {"grid_import_limit_kw": 2600},
         {"grid_import_limit_kw": 3000}, {"grid_import_limit_kw": 4000},
         {"grid_import_limit_kw": 4500}, {"grid_import_limit_kw": 5500},
         {"battery_capacity_kwh": 1000, "battery_power_kw": 500},
@@ -112,6 +113,11 @@ def main() -> None:
         "basis": basis_from_series(base.series, base_cfg, day_minutes=world.day_minutes,
                                    start_min=world.start_min, day_start_utc=world.day_start_utc,
                                    policy=policy, run_id=None),
+        "departures": departures_by_half_hour(base)[0],
+        "kpis": {
+            "departures_total": len(base.departures),
+            "delayed_departures": departures_by_half_hour(base)[1],
+        },
         "base_exact": metrics(base.series, world.day_minutes),
         "cases": cases,
     }

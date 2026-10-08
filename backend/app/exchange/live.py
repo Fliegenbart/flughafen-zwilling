@@ -46,6 +46,8 @@ def basis_from_series(series: list[dict], config: CoupledConfig, *, day_minutes:
         "chp_kw": col(lambda r: r["chp_kw"]),
         "grid_cap_kw": col(lambda r: r["effective_grid_cap_kw"]),
         "grid_import_kw": col(lambda r: r["grid_import_kw"]),
+        # Positiv = Batterie gibt ab, negativ = Batterie laedt.
+        "battery_kw": col(lambda r: r["battery_discharge_kw"] - r["battery_charge_kw"]),
         "power": {
             "grid_import_limit_kw": p.grid_import_limit_kw,
             "pv_capacity_kwp": p.pv_capacity_kwp,
@@ -88,7 +90,7 @@ class PreviewRequest(BaseModel):
         return out
 
 
-def _departures(result) -> tuple[list[dict], int]:
+def departures_by_half_hour(result) -> tuple[list[dict], int]:
     bins: dict[int, list[int]] = {}
     for d in result.departures:
         bucket = bins.setdefault(int(d["published_min"]) // DEPARTURE_BIN_MIN, [0, 0])
@@ -123,7 +125,7 @@ def preview(variants, project_id: str, request: PreviewRequest) -> dict:
         elapsed = perf_counter() - started
     finally:
         _PREVIEW_LOCK.release()
-    departures, delayed = _departures(result)
+    departures, delayed = departures_by_half_hour(result)
     total = len(result.departures)
     kpis = result.kpis
     waits = float(kpis.energy_wait_total_min) + float(kpis.resource_wait_total_min)

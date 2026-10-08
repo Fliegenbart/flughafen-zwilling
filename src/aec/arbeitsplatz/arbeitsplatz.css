@@ -1,0 +1,303 @@
+/*
+ * Arbeitsbildschirm. Heller Grund fuer den Beamer, eine Schrift, Farbe nur mit Bedeutung:
+ * Rot wie der Haltebalken auf dem Rollfeld (Grenze, Fehlendes), Gruen wie die Rollweg-
+ * Mittellinie (Batterie deckt, besser als heute), Bernstein fuer "Naeherung laeuft".
+ */
+.ap {
+  --ap-bg: #ffffff;
+  --ap-surface: #f2f4f6;
+  --ap-ink: #1c2632;
+  --ap-muted: #5f6b78;
+  --ap-faint: #c9d0d7;
+  --ap-stop: #c62a1f;
+  --ap-go: #1f7a4a;
+  --ap-amber: #b7791f;
+  --ap-focus: #1d5fd1;
+  min-height: 100vh;
+  background: var(--ap-bg);
+  color: var(--ap-ink);
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+.ap :focus-visible {
+  outline: 3px solid var(--ap-focus);
+  outline-offset: 2px;
+}
+.ap a {
+  color: inherit;
+}
+
+/* ------------------------------------------------------------- Kopfzeile */
+.ap-head {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  padding: 18px 32px 14px;
+  border-bottom: 1px solid var(--ap-faint);
+}
+.ap-head__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  flex: 1;
+}
+.ap-head__back,
+.ap-head__link {
+  font-size: 15px;
+  color: var(--ap-muted);
+  text-decoration: none;
+}
+.ap-head__back:hover,
+.ap-head__link:hover {
+  color: var(--ap-ink);
+  text-decoration: underline;
+}
+.ap-head__back::before {
+  content: "‹ ";
+}
+
+/* --------------------------------------------------------------- Raster */
+.ap-body {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 40px;
+  padding: 28px 32px 48px;
+  max-width: 1500px;
+}
+.ap-main {
+  min-width: 0;
+}
+.ap-loading,
+.ap-error {
+  padding: 28px 32px;
+  margin: 0;
+}
+.ap-error {
+  color: var(--ap-stop);
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------- Regler */
+.ap-levers {
+  display: grid;
+  gap: 28px;
+  align-content: start;
+}
+.ap-lever {
+  display: grid;
+  gap: 4px;
+}
+.ap-lever__name {
+  font-size: 15px;
+  color: var(--ap-muted);
+}
+.ap-lever__value {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+.ap-lever[data-changed] .ap-lever__value {
+  color: var(--ap-go);
+}
+.ap-lever__track {
+  position: relative;
+  display: block;
+  padding: 8px 0 4px;
+}
+/* Markierung "heute" auf der Schiene */
+.ap-lever__track::after {
+  content: "";
+  position: absolute;
+  left: var(--today);
+  top: 2px;
+  bottom: 0;
+  width: 2px;
+  background: var(--ap-ink);
+  opacity: 0.35;
+  pointer-events: none;
+}
+.ap-lever input[type="range"] {
+  width: 100%;
+  accent-color: var(--ap-ink);
+  margin: 0;
+}
+.ap-lever__today {
+  font-size: 13px;
+  color: var(--ap-muted);
+}
+.ap-reset {
+  justify-self: start;
+  font: inherit;
+  font-size: 15px;
+  padding: 8px 14px;
+  border: 1px solid var(--ap-faint);
+  border-radius: 6px;
+  background: var(--ap-bg);
+  color: var(--ap-ink);
+  cursor: pointer;
+}
+.ap-reset:disabled {
+  color: var(--ap-faint);
+  cursor: default;
+}
+
+/* -------------------------------------------------------------- Diagramm */
+.ap-chart {
+  margin: 0;
+}
+.ap-chart svg {
+  display: block;
+  overflow: visible;
+  font-family: inherit;
+}
+.ap-chart__grid line {
+  stroke: var(--ap-surface);
+  stroke-width: 1;
+}
+.ap-chart__grid text,
+.ap-chart__hour,
+.ap-chart__deplabel {
+  fill: var(--ap-muted);
+  font-size: 13px;
+}
+.ap-chart__need {
+  fill: none;
+  stroke: var(--ap-ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.ap-chart__today {
+  fill: none;
+  stroke: var(--ap-faint);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.ap-chart__limit {
+  fill: none;
+  stroke: var(--ap-stop);
+  stroke-width: 4;
+}
+.ap-chart__limitlabel {
+  fill: var(--ap-stop);
+  font-size: 14px;
+  font-weight: 600;
+}
+.ap-chart__miss {
+  fill: var(--ap-stop);
+  fill-opacity: 0.85;
+}
+.ap-chart__cover {
+  fill: var(--ap-go);
+  fill-opacity: 0.75;
+}
+.ap-chart__note line {
+  stroke: var(--ap-stop);
+  stroke-width: 2;
+}
+.ap-chart__note text {
+  fill: var(--ap-stop);
+  font-size: 17px;
+  font-weight: 600;
+}
+.ap-chart__ok {
+  fill: var(--ap-go);
+  font-size: 17px;
+  font-weight: 600;
+}
+.ap-chart__dep {
+  fill: var(--ap-faint);
+}
+.ap-chart__late {
+  fill: var(--ap-stop);
+}
+.ap-chart__cursor line {
+  stroke: var(--ap-muted);
+  stroke-width: 1;
+}
+.ap-chart__cursor circle {
+  fill: var(--ap-ink);
+}
+.ap-chart__readout {
+  min-height: 1.5em;
+  margin-top: 6px;
+  font-size: 15px;
+  color: var(--ap-muted);
+}
+
+/* -------------------------------------------------------------- Vergleich */
+.ap-outcome {
+  margin-top: 28px;
+  max-width: 820px;
+}
+.ap-outcome__title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.ap-outcome table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+.ap-outcome th,
+.ap-outcome td {
+  text-align: right;
+  padding: 9px 0 9px 16px;
+  border-bottom: 1px solid var(--ap-surface);
+}
+.ap-outcome thead th {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ap-muted);
+}
+.ap-outcome tbody th {
+  text-align: left;
+  padding-left: 0;
+  font-weight: 400;
+}
+.ap-outcome td:last-child {
+  font-weight: 600;
+}
+.ap-outcome tr[data-better] td:last-child {
+  color: var(--ap-go);
+}
+.ap-outcome tr[data-worse] td:last-child {
+  color: var(--ap-stop);
+}
+.ap-accuracy {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--ap-muted);
+}
+.ap-accuracy[data-accuracy="naeherung"]::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--ap-amber);
+  vertical-align: 1px;
+}
+
+/* ----------------------------------------------------------- Schmal / Druck */
+@media (max-width: 900px) {
+  .ap-body {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px 16px 40px;
+  }
+  .ap-head {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    gap: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap * {
+    transition: none !important;
+  }
+}
