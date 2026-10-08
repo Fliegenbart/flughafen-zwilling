@@ -763,7 +763,7 @@ class ExchangeStore:
         for item in self.list_items(project_id, "scenario_package"):
             candidates.update(run["run_id"] for run in item["content"]["runs"])
         # Basislauf jeder Variantenrechnung: gerechnet mit den Projektwerten (Schritt "Daten"),
-        # damit Lagebild und Engpass nach einem Lauf die eingetragenen Anlagen zeigen.
+        # damit Lagebild und Zusage nach einem Lauf die eingetragenen Anlagen zeigen.
         with self.pilot._connect() as connection:
             try:
                 batches = connection.execute(

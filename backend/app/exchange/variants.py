@@ -31,7 +31,7 @@ from ..munich.coupled_world import CoupledWorld, build_world
 from ..pilot.router import _verified_coupled_series
 from .assets import base_assets
 from .crisis import crisis_config, crisis_stress
-from .situation import LIMIT_TOLERANCE_KW
+from .situation import minutes_at_limit
 
 MAX_VARIANTS = 8
 # Varianten-Batches duerfen die Queue ueber das Vergleichslimit (10) hinaus fuellen;
@@ -197,13 +197,11 @@ def run_kpis(base_dir, record) -> dict:
     _, _, frozen = _verified_coupled_series(base_dir, record.status.run_id, "grid_import_kw")
     evidence = json.loads(frozen["coupled-evidence.json"])
     day_minutes = int(evidence.get("day_minutes") or 1440)
-    peak, at_limit, missing = 0.0, 0, None
+    peak, missing = 0.0, None
     grid_day: list[float] = []
     for row in evidence["series"]:
-        grid, cap = float(row["grid_import_kw"]), float(row["effective_grid_cap_kw"])
+        grid = float(row["grid_import_kw"])
         peak = max(peak, grid)
-        if cap > 0 and grid >= cap - LIMIT_TOLERANCE_KW:
-            at_limit += 1
         if 0 <= int(row["minute"]) - 1 < day_minutes:
             grid_day.append(grid)
         if "charging_requested_kw" in row:
@@ -224,7 +222,7 @@ def run_kpis(base_dir, record) -> dict:
         "departures_total": len(departures),
         "departures_on_time": on_time,
         "delayed_departures": len(departures) - on_time,
-        "minutes_at_limit": at_limit,
+        "minutes_at_limit": minutes_at_limit(evidence["series"], day_minutes),
         "peak_kw": _round(peak),
         "missing_kw_peak": _round(missing),
         "grid_energy_mwh_day": _round(math.fsum(grid_day) / 60 / 1000, 3),

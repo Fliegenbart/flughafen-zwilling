@@ -1,11 +1,12 @@
 /** Die knappen Phasen des Tages als Liste: wann, wie viel, zusammen wie viel Energie. */
 import { clock, int, powerText } from "../model/format";
+import { shortfallPhases } from "../model/headline";
 import type { LiveResult } from "../model/livePower";
 
 const SHOWN = 6;
 
 export default function Shortfalls({ result }: { result: LiveResult }) {
-  const list = [...result.shortfalls].sort((a, b) => a.start - b.start);
+  const list = shortfallPhases(result);
   if (!list.length) return null;
   return (
     <section className="ap-shortfalls" aria-labelledby="ap-shortfalls-title">

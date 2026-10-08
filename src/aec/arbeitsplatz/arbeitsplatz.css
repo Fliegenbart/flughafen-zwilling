@@ -579,6 +579,22 @@
 .ap[data-presenting] .ap-head {
   padding: 14px 40px;
 }
+.ap[data-presenting] .ap-keep,
+.ap[data-presenting] .ap-basis,
+.ap[data-presenting] .ap-scrub {
+  display: none;
+}
+.ap[data-presenting] .ap-chip {
+  font-size: 17px;
+  padding: 8px 16px;
+}
+.ap[data-presenting] .ap-shortfalls {
+  max-width: none;
+  font-size: 20px;
+}
+.ap[data-presenting] .ap-select {
+  font-size: 18px;
+}
 .ap[data-presenting] .ap-head__link,
 .ap[data-presenting] .ap-head__data,
 .ap[data-presenting] .ap-steps,

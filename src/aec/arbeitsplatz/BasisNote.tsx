@@ -43,7 +43,7 @@ export default function BasisNote({
         {sample
           ? "Ein erfundener Beispieltag mit Standardwerten, nichts davon stammt von einem Flughafen."
           : status
-            ? `${status.real} von ${status.total} Datenquellen sind mit Quelle belegt, für den Rest gelten Standardwerte.`
+            ? `${status.real} von ${status.total} Datenquellen sind mit Quelle belegt, für den Rest gelten Annahmen.`
             : ""}{" "}
         Das Modell ist nicht an Messungen kalibriert.
       </p>

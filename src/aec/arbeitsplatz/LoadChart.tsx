@@ -67,6 +67,19 @@ export default function LoadChart({
   const missTop = (p: Point) => coverTop(p) + (p.miss > 0.5 ? p.miss : 0);
   // Nennwert des Anschlusses; Stoerungen druecken die Linie nur zeitweise darunter.
   const capNow = Math.max(0, ...pts.map((p) => p.cap).filter(Number.isFinite));
+  // Das Anschluss-Schild steht dort, wo die Kurve am laengsten weit unter der Grenze bleibt.
+  const labelAt = (() => {
+    let best = { len: 0, mid: pts.length / 2 };
+    for (let i = 0, from = -1; i <= pts.length; i++) {
+      const roomy = i < pts.length && pts[i]!.need < pts[i]!.cap - 300;
+      if (roomy && from < 0) from = i;
+      if (!roomy && from >= 0) {
+        if (i - from > best.len) best = { len: i - from, mid: (from + i) / 2 };
+        from = -1;
+      }
+    }
+    return pts[Math.min(pts.length - 1, Math.floor(best.mid))]?.m ?? 0;
+  })();
   const worst = worstShortfall(result);
   // Der Satz zur Engstelle steht mittig ueber ihr, aber nie ausserhalb der Grafik.
   const noteText = worst
@@ -125,12 +138,7 @@ export default function LoadChart({
         <path className="ap-chart__miss" d={band(coverTop, missTop)} />
         <path className="ap-chart__need" d={line(pts, (p) => p.need)} />
         <path className="ap-chart__limit" d={line(pts, (p) => p.cap)} />
-        <text
-          className="ap-chart__limitlabel"
-          x={width - PAD.right}
-          y={y(capNow) - 8}
-          textAnchor="end"
-        >
+        <text className="ap-chart__limitlabel" x={x(labelAt)} y={y(capNow) - 8} textAnchor="middle">
           Netzanschluss {powerText(capNow)}
         </text>
         {worst ? (

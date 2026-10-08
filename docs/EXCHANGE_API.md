@@ -189,13 +189,31 @@ Pilot-Hashkette (`actor`, `role`, `created_at`, `action`, `entity_id`, `entry_ha
 ```
 Run = neuester abgeschlossener gekoppelter Run unter den Projekt-Verknuepfungen
 (`coupled_run`, sonst Runs aus Szenario-Paketen). Mittelwerte je 15 min (Leistung,
-kW); „am Limit“ = `grid_import_kw >= effective_grid_cap_kw - 0.5 kW`. Ohne Run:
+kW); „am Limit“ = `grid_import_kw >= effective_grid_cap_kw - 0.5 kW`, gezaehlt nur im
+Verkehrstag (nicht im Vorlauf vor Mitternacht). Ohne Run:
 ```json
 {"available": false, "run_id": null, "series": [], "departures": [],
  "bottleneck_windows": [], "answer": {"bottleneck": null, "minutes_at_limit": null,
  "peak_kw": null, "delayed_departures": null, "departures_total": null,
  "cause_shares_pct": null}, "evidence_level": null, "reason": "no_completed_coupled_run"}
 ```
+
+## Vorschau fuer die Regler (Durchrechnen)
+
+`POST /api/v1/projects/{id}/situation/preview` rechnet den Tag fuer eine Reglerstellung genau
+(dieselbe Basis und dieselben Aenderungen wie bei Loesungen), ohne Warteschlange, ohne Speichern,
+ohne Versiegelung. Der Browser naehert dieselbe Stellung beim Ziehen selbst und ersetzt die
+Naeherung nach rund 280 ms durch diese Antwort. Koerper, alles optional (leer = heutiger Stand):
+`grid_import_limit_kw`, `storage_kwh` (0 = keine Batterie) mit `storage_kw`, `pv_factor` (0 bis 3),
+`extra_vehicles {klasse: anzahl}`, `charging_policy` (`uncontrolled|mission_priority`) und `crisis`
+(Krisenfall der Bibliothek, Energie-Abbild wie beim Stresstest). Unbekannte Felder → 422, ebenso
+Werte, die die Variantenpruefung ablehnt. Antwort: Minutenreihen als Spalten (`requested_kw`,
+`delivered_kw`, `background_kw`, `pv_kw`, `chp_kw`, `grid_cap_kw`, `grid_import_kw`, `battery_kw`,
+Batterie + gibt ab), `power`, `policy`, `changes`, `crisis`, `departures` je halbe Stunde und
+`kpis` (`departures_total`, `delayed_departures`, `on_time_pct`, `minutes_at_limit` im
+Verkehrstag, `background_unserved_kwh`, `energy_wait_share_pct`, `bottleneck`). Die Antwort ist
+als `preview: true`, `evidence_level: synthetic` markiert; verbindlich sind nur versiegelte Laeufe
+(Varianten). Parallele Anfragen warten bis zu 8 s auf den Rechenplatz (sonst 429).
 
 ## Varianten („Was hilft?“)
 
@@ -237,7 +255,7 @@ Basis/Variante mit `world_hash`, `run_id`, `status`, `fleet`, `kpis`, `delta_to_
 (`grid_minus_20|crisis|null`) und `latest_run.crisis` (`id`, `name`, `assumption`) nennen den Stresstest.
 
 `kpis`: `on_time_pct` (Anteil Abfluege, deren modellierte Auftraege fristgerecht fertig sind),
-`delayed_departures`, `departures_total`, `minutes_at_limit` (wie Lagebild, ganzer Horizont),
+`delayed_departures`, `departures_total`, `minutes_at_limit` (wie Lagebild, nur Verkehrstag),
 `peak_kw`, `missing_kw_peak` (UI: „ungedeckter Ladebedarf in der Spitze“; Maximum je Minute von angefragter
 minus gelieferter Ladeleistung, kW, keine Summe; Feldname bleibt aus Kompatibilitaetsgruenden; `null` bei
 Laeufen ohne Spalte `charging_requested_kw`), `grid_energy_mwh_day` (Netzbezug nur

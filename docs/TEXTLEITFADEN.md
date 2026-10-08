@@ -52,8 +52,7 @@ Text muss also nicht alles erklären, aber jede Zahl muss für sich stehen.
 | --- | --- |
 | Startseite | einladend, konkret, wenig Text |
 | Daten | sachlich wie eine Checkliste |
-| Tag, Engpass | knapp wie ein Lagebericht: Uhrzeit, Menge, Folge |
-| Lösungen | vergleichend, mit Zahlen statt Wertungen |
+| Durchrechnen | knapp wie ein Lagebericht: Uhrzeit, Menge, Folge; Vergleiche mit Zahlen statt Wertungen |
 | Zusage | nüchtern, verbindlich |
 | Meldungen | trocken und hilfreich |
 | Testing-Lab | kollegial unter Fachleuten; Fachbegriffe sind erlaubt |
@@ -66,7 +65,8 @@ Text muss also nicht alles erklären, aber jede Zahl muss für sich stehen.
 | Lastgang | Strombedarf über den Tag |
 | Engpassfenster | knappe Phase |
 | Basis | heutiger Stand |
-| Variante | Lösung (Seitentitel), Variante nur im Fließtext |
+| Variante | Lösung, Variante nur im Fließtext |
+| Vorschau | Rechnung beim Verstellen, nicht gespeichert; „festhalten“ macht daraus eine Lösung im Projekt |
 | Pp. | Prozentpunkte |
 | verspätete Abfertigung | nicht rechtzeitig fertig |
 | Werkstatt | Detailwerkzeug (für Fachleute) |

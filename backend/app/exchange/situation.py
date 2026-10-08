@@ -14,6 +14,18 @@ DEPARTURE_BIN_MIN = 30
 LIMIT_TOLERANCE_KW = 0.5
 
 
+def minutes_at_limit(series, day_minutes: int) -> int:
+    """Minuten des Verkehrstags, in denen der Netzbezug an der Grenze des Anschlusses liegt.
+
+    Der Vorlauf vor Mitternacht (Fahrzeuge laden sich auf) zaehlt nicht: Er liegt ausserhalb der
+    Tageskurve, die Kunden sehen.
+    """
+    return sum(1 for r in series
+               if 0 <= int(r["minute"]) - 1 < day_minutes
+               and r["effective_grid_cap_kw"] > 0
+               and r["grid_import_kw"] >= r["effective_grid_cap_kw"] - LIMIT_TOLERANCE_KW)
+
+
 def _utc(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -53,6 +65,7 @@ def build_situation(base_dir, record) -> dict:
     except HTTPException as exc:
         return empty_situation(f"run_not_verified: {exc.detail}")
     origin = datetime.fromisoformat(evidence["day_start_utc"].replace("Z", "+00:00"))
+    day_minutes = int(evidence.get("day_minutes") or 1440)
     bins: dict[int, dict[str, list[float]]] = {}
     at_limit: list[tuple[int, float]] = []
     peak = 0.0
@@ -138,7 +151,7 @@ def build_situation(base_dir, record) -> dict:
         "bottleneck_windows": bottleneck_windows,
         "answer": {
             "bottleneck": evidence.get("bottleneck") or (kpis.bottleneck if kpis else None),
-            "minutes_at_limit": len(at_limit),
+            "minutes_at_limit": minutes_at_limit(evidence["series"], day_minutes),
             "peak_kw": round(peak, 3),
             "delayed_departures": delayed,
             "departures_total": len(evidence.get("departures", [])),

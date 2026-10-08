@@ -18,7 +18,7 @@ from ..munich.coupled_models import CoupledConfig, CoupledPolicy, FleetKind
 from ..munich.coupled_simulator import simulate_coupled
 from ..munich.coupled_world import build_world
 from .crisis import crisis_config, crisis_stress
-from .situation import LIMIT_TOLERANCE_KW
+from .situation import minutes_at_limit
 
 ROUND = 3
 
@@ -96,12 +96,6 @@ class PreviewRequest(BaseModel):
         return out
 
 
-def minutes_at_limit(series: list[dict]) -> int:
-    """Minuten, in denen der Netzbezug an der Grenze des Anschlusses liegt (wie bei Loesungen)."""
-    return sum(1 for r in series if r["effective_grid_cap_kw"] > 0
-               and r["grid_import_kw"] >= r["effective_grid_cap_kw"] - LIMIT_TOLERANCE_KW)
-
-
 def departures_by_half_hour(result) -> tuple[list[dict], int]:
     bins: dict[int, list[int]] = {}
     for d in result.departures:
@@ -160,7 +154,7 @@ def preview(variants, project_id: str, request: PreviewRequest) -> dict:
             "departures_total": total,
             "delayed_departures": delayed,
             "on_time_pct": round((total - delayed) / total * 100, 2) if total else None,
-            "minutes_at_limit": minutes_at_limit(result.series),
+            "minutes_at_limit": minutes_at_limit(result.series, world.day_minutes),
             # Verbrauch des uebrigen Flughafens, den der Anschluss nicht mehr deckt.
             "background_unserved_kwh": round(float(kpis.background_unserved_kwh), 1),
             "energy_wait_share_pct": round(float(kpis.energy_wait_total_min) / waits * 100, 1)
