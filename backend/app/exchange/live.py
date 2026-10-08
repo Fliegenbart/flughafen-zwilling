@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from ..munich.coupled_models import CoupledConfig, FleetKind
 from ..munich.coupled_simulator import simulate_coupled
 from ..munich.coupled_world import build_world
+from .crisis import crisis_config, crisis_stress
 
 ROUND = 3
 
@@ -81,9 +82,12 @@ class PreviewRequest(BaseModel):
     storage_kw: float | None = Field(default=None, gt=0, le=20000)
     pv_factor: float | None = Field(default=None, ge=0, le=3)
     extra_vehicles: dict[FleetKind, int] = Field(default_factory=dict)
+    # Krisenfall der Szenario-Bibliothek als Stoerung ueber den ganzen Tag (siehe crisis.py).
+    crisis: str | None = Field(default=None, pattern=r"^airport_case_0[1-8]_[a-z_]+_v1$")
 
     def changes(self) -> dict:
         out = self.model_dump(exclude_none=True, exclude_defaults=True)
+        out.pop("crisis", None)
         if out.get("storage_kwh") == 0:  # 0 kWh = keine Batterie
             out.pop("storage_kwh")
             out.pop("storage_kw", None)
@@ -114,7 +118,11 @@ def preview(variants, project_id: str, request: PreviewRequest) -> dict:
         if changes:
             config, policy, _ = apply_changes(config, policy, VariantChanges.model_validate(
                 changes), world0.day_minutes)
-        world = build_world(plan, config, base["seed"]) if changes else world0
+        stress = None
+        if request.crisis:
+            stress = crisis_stress(request.crisis)
+            config = crisis_config(config, request.crisis, world0.day_minutes)
+        world = build_world(plan, config, base["seed"]) if changes or stress else world0
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=f"invalid_variant: {exc}") from exc
     if not _PREVIEW_LOCK.acquire(timeout=PREVIEW_WAIT_S):
@@ -136,6 +144,8 @@ def preview(variants, project_id: str, request: PreviewRequest) -> dict:
         "preview": True,
         "evidence_level": "synthetic",
         "changes": changes,
+        "crisis": ({"id": request.crisis, "name": stress.name, "assumption": stress.assumption}
+                   if stress else None),
         "base_source": base["source"],
         "departures": departures,
         "kpis": {

@@ -11,10 +11,13 @@ import { getProject } from "../api/projects";
 import Link from "../Link";
 import type { Route } from "../routes";
 import type { Project } from "../types";
+import { HandoutFoot, HandoutHead } from "./Handout";
 import LeverPanel from "./LeverPanel";
 import LoadChart from "./LoadChart";
 import Outcome from "./Outcome";
+import { useDataStatus } from "./useDataStatus";
 import { useLiveScenario } from "./useLiveScenario";
+import { usePresentation } from "./usePresentation";
 
 type ArbeitsplatzRoute = Extract<Route, { page: "arbeitsplatz" }>;
 
@@ -28,16 +31,21 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
     };
   }, [route.projekt]);
   const s = useLiveScenario(project);
+  const status = useDataStatus(project);
+  const { presenting, setPresenting } = usePresentation();
   const changed =
     !!s.levers &&
     !!s.todayLevers &&
     (s.levers.gridLimitKw !== s.todayLevers.gridLimitKw ||
       s.levers.batteryKwh !== s.todayLevers.batteryKwh ||
       s.levers.pvFactor !== s.todayLevers.pvFactor ||
-      (s.levers.extraVehicles ?? 0) > 0);
+      (s.levers.extraVehicles ?? 0) > 0 ||
+      !!s.levers.crisis);
+
+  const ready = !!(s.today && s.levers && s.todayLevers && s.result && s.todayResult);
 
   return (
-    <div className="ap">
+    <div className="ap" data-presenting={presenting || undefined}>
       <header className="ap-head">
         <Link to={{ page: "start" }} className="ap-head__back" label="Zurück zu allen Projekten">
           Projekte
@@ -47,7 +55,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
           to={{ page: "projekt", projekt: route.projekt, frage: "daten" }}
           className="ap-head__link"
         >
-          Daten ergänzen
+          Daten: {status ? `${status.real} von ${status.total} belegt` : "…"}
         </Link>
         <Link
           to={{ page: "projekt", projekt: route.projekt, frage: "lage" }}
@@ -55,6 +63,28 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
         >
           Bisherige Ansicht
         </Link>
+        <button
+          type="button"
+          className="ap-tool"
+          onClick={() => setPresenting(!presenting)}
+          aria-pressed={presenting}
+          title="Taste P"
+        >
+          {presenting ? "Präsentation beenden" : "Präsentieren"}
+        </button>
+        <button
+          type="button"
+          className="ap-tool"
+          onClick={() => window.print()}
+          disabled={!ready || (!s.sample && s.accuracy === "naeherung")}
+          title={
+            !s.sample && s.accuracy === "naeherung"
+              ? "Erst wenn die genaue Rechnung fertig ist"
+              : "Als PDF sichern: im Druckdialog „Als PDF speichern“ wählen"
+          }
+        >
+          Als PDF sichern
+        </button>
       </header>
 
       {s.accuracy === "fehler" && !s.today ? (
@@ -67,11 +97,13 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
         </p>
       ) : (
         <div className="ap-body">
+          <HandoutHead project={project?.name ?? ""} result={s.result} changed={changed} />
           <LeverPanel
             levers={s.levers}
             today={s.todayLevers}
             onChange={s.setLevers}
             onReset={s.reset}
+            crisisEnabled={!s.sample}
           />
           <div className="ap-main">
             <LoadChart
@@ -95,6 +127,7 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
               </p>
             ) : null}
           </div>
+          <HandoutFoot status={status} sample={s.sample} accuracy={s.accuracy} />
         </div>
       )}
     </div>

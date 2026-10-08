@@ -3,7 +3,7 @@ import { distributeFleet } from "../model/dataStatus";
 import type { LiveBasis, Levers } from "../model/livePower";
 import type { Project } from "../types";
 import { request } from "./http";
-import { enc, isObj, num } from "./parse";
+import { enc, isObj, num, str } from "./parse";
 
 export type DepartureBin = { startMin: number; count: number; delayed: number };
 
@@ -15,6 +15,8 @@ export type Preview = {
   /** Anteil der Wartezeit, die am Strom lag (Rest: kein freies Fahrzeug). */
   energyWaitSharePct: number | null;
   computeMs: number | null;
+  /** Krisenfall, unter dem gerechnet wurde, samt Annahme (Wortlaut vom Backend). */
+  crisis: { id: string; name: string; assumption: string } | null;
 };
 
 const nums = (v: unknown) => (Array.isArray(v) ? v.map((x) => num(x)) : []);
@@ -67,6 +69,10 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
     energyWaitSharePct:
       typeof kpis.energy_wait_share_pct === "number" ? kpis.energy_wait_share_pct : null,
     computeMs: typeof raw.compute_ms === "number" ? raw.compute_ms : null,
+    crisis:
+      isObj(raw.crisis) && typeof raw.crisis.id === "string"
+        ? { id: raw.crisis.id, name: str(raw.crisis.name), assumption: str(raw.crisis.assumption) }
+        : null,
   };
 }
 
@@ -92,7 +98,7 @@ export function extraVehiclesFor(levers: Levers): Record<string, number> | undef
 
 export async function getPreview(
   project: Project,
-  changes: Record<string, number | Record<string, number>>,
+  changes: Record<string, number | string | Record<string, number>>,
   signal?: AbortSignal,
 ): Promise<Preview> {
   const raw = await request<unknown>(

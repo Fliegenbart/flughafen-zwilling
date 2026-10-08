@@ -46,6 +46,8 @@ export type Levers = {
   pvFactor: number;
   /** Zusaetzliche Fahrzeuge; die Naeherung rechnet sie nicht, nur die genaue Vorschau. */
   extraVehicles?: number;
+  /** Krisenfall der Bibliothek (scenarioId); wirkt nur in der genauen Rechnung. */
+  crisis?: string;
 };
 
 export type LiveResult = {

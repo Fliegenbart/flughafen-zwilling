@@ -1,5 +1,6 @@
 /** Die drei Stellschrauben, die ein Energieversorger anbieten kann. */
 import type { Levers } from "../model/livePower";
+import { caseByScenarioId, SCENARIO_CASES } from "../scenarios";
 import { dec1, int, powerText } from "../model/format";
 
 type Lever = {
@@ -54,14 +55,18 @@ export default function LeverPanel({
   today,
   onChange,
   onReset,
+  crisisEnabled,
 }: {
   levers: Levers;
   today: Levers;
   onChange: (next: Levers) => void;
   onReset: () => void;
+  /** Ohne Server (Beispielprojekt) laesst sich kein Krisenfall genau rechnen. */
+  crisisEnabled: boolean;
 }) {
   const val = (lv: Levers, key: Lever["key"]) => lv[key] ?? 0;
-  const changed = LEVERS.some((l) => val(levers, l.key) !== val(today, l.key));
+  const changed = LEVERS.some((l) => val(levers, l.key) !== val(today, l.key)) || !!levers.crisis;
+  const crisis = caseByScenarioId(levers.crisis);
   return (
     <form className="ap-levers" aria-label="Stellschrauben" onSubmit={(e) => e.preventDefault()}>
       {LEVERS.map((l) => {
@@ -103,6 +108,28 @@ export default function LeverPanel({
           </label>
         );
       })}
+      <label className="ap-lever ap-crisis" data-changed={crisis ? "" : undefined}>
+        <span className="ap-lever__name">Krisenfall durchspielen</span>
+        <select
+          value={levers.crisis ?? ""}
+          disabled={!crisisEnabled}
+          onChange={(e) => onChange({ ...levers, crisis: e.target.value || undefined })}
+        >
+          <option value="">keiner</option>
+          {SCENARIO_CASES.map((c) => (
+            <option key={c.slug} value={c.scenarioId}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <span className="ap-lever__today">
+          {!crisisEnabled
+            ? "Nur in einem eigenen Projekt, wirkt erst in der genauen Rechnung."
+            : crisis
+              ? `So rechnen wir „${crisis.name}“ (Annahme): ${crisis.energyStress}`
+              : "Wirkt erst in der genauen Rechnung."}
+        </span>
+      </label>
       <button type="button" className="ap-reset" onClick={onReset} disabled={!changed}>
         Auf heute zurücksetzen
       </button>

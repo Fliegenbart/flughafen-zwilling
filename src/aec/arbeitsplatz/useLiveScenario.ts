@@ -107,6 +107,7 @@ export function useLiveScenario(project: Project | null): Scenario {
       const changes = {
         ...changesFor(next, leversFromBasis(today.basis)),
         ...(extra ? { extra_vehicles: extra } : {}),
+        ...(next.crisis ? { crisis: next.crisis } : {}),
       };
       timer.current = setTimeout(() => {
         const controller = new AbortController();

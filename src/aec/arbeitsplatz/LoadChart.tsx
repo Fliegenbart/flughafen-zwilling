@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DepartureBin } from "../api/preview";
 import { clock, powerText } from "../model/format";
+import { shortfallHeadline, worstShortfall } from "../model/headline";
 import type { LiveResult } from "../model/livePower";
 
 const STEP = 5; // Minuten je Kurvenpunkt
@@ -86,11 +87,9 @@ export default function LoadChart({
   };
   const coverTop = (p: Point) => (p.cover > 0.5 ? p.cap + p.cover : p.cap);
   const missTop = (p: Point) => coverTop(p) + (p.miss > 0.5 ? p.miss : 0);
-  const capNow = pts[0]?.cap ?? 0;
-  const worst = result.shortfalls.reduce<LiveResult["shortfalls"][number] | null>(
-    (a, s) => (!a || s.maxMissingKw > a.maxMissingKw ? s : a),
-    null,
-  );
+  // Nennwert des Anschlusses; Stoerungen druecken die Linie nur zeitweise darunter.
+  const capNow = Math.max(0, ...pts.map((p) => p.cap).filter(Number.isFinite));
+  const worst = worstShortfall(result);
   const ticks = Array.from({ length: Math.floor(top / 1000) + 1 }, (_, i) => i * 1000);
   const hours = [0, 3, 6, 9, 12, 15, 18, 21, 24];
   const maxDep = Math.max(1, ...departures.map((d) => d.count));
@@ -101,15 +100,15 @@ export default function LoadChart({
       <svg
         width={width}
         height={H + DEP_H}
+        viewBox={`0 0 ${width} ${H + DEP_H}`}
+        style={{ maxWidth: "100%", height: "auto" }}
         role="img"
-        aria-label={
-          worst
-            ? `Von ${clock(worst.start)} bis ${clock(worst.end)} Uhr fehlen bis zu ${powerText(worst.maxMissingKw)}.`
-            : "Der Anschluss reicht den ganzen Tag."
-        }
+        aria-label={shortfallHeadline(result)}
         onPointerMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
-          const m = ((e.clientX - rect.left - PAD.left) / w) * dayMin;
+          // Die Grafik kann kleiner dargestellt werden als gezeichnet (Druck, schmale Fenster).
+          const px = (e.clientX - rect.left) * (width / rect.width);
+          const m = ((px - PAD.left) / w) * dayMin;
           setHover(m >= 0 && m <= dayMin ? m : null);
         }}
         onPointerLeave={() => setHover(null)}

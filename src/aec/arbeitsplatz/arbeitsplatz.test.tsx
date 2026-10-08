@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import AirportEnergyCheck from "../AirportEnergyCheck";
 import { changesFor, extraVehiclesFor } from "../api/preview";
 import { parseRoute, toSearch } from "../routes";
@@ -37,5 +37,47 @@ describe("Arbeitsplatz", () => {
     expect(screen.getByText(/Beispieltag: Die Kurve folgt den Reglern/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Auf heute zurücksetzen" }));
     expect(await screen.findByRole("img", { name: /fehlen bis zu/ })).toBeInTheDocument();
+  });
+
+  it("schaltet den Praesentationsmodus mit Knopf und Taste P und beendet ihn mit Esc", async () => {
+    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}&ansicht=neu`);
+    const { container } = render(<AirportEnergyCheck basePath="/" />);
+    await screen.findByRole("table");
+    const root = () => container.querySelector(".ap")!;
+    expect(root()).not.toHaveAttribute("data-presenting");
+    fireEvent.click(screen.getByRole("button", { name: "Präsentieren" }));
+    expect(root()).toHaveAttribute("data-presenting");
+    expect(screen.getByRole("button", { name: "Präsentation beenden" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(root()).not.toHaveAttribute("data-presenting");
+    fireEvent.keyDown(window, { key: "p" });
+    expect(root()).toHaveAttribute("data-presenting");
+    // Beim Tippen in einem Feld darf P nichts umschalten.
+    fireEvent.keyDown(screen.getAllByRole("combobox")[0]!, { key: "p" });
+    expect(root()).toHaveAttribute("data-presenting");
+  });
+
+  it("druckt die Seite zum Hinterlassen mit Hinweis zur Sicherheit der Zahlen", async () => {
+    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}&ansicht=neu`);
+    const print = vi.spyOn(window, "print").mockImplementation(() => undefined);
+    render(<AirportEnergyCheck basePath="/" />);
+    await screen.findByRole("table");
+    expect(screen.getByText(/Beispieltag mit erfundenen Werten/)).toBeInTheDocument();
+    expect(screen.getByText(/nicht an Messungen kalibriert/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Als PDF sichern" }));
+    expect(print).toHaveBeenCalledTimes(1);
+    print.mockRestore();
+  });
+
+  it("bietet Krisenfaelle nur mit eigenem Projekt an", async () => {
+    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}&ansicht=neu`);
+    render(<AirportEnergyCheck basePath="/" />);
+    await screen.findByRole("table");
+    const crisis = screen.getByRole("combobox", { name: /Krisenfall durchspielen/ });
+    expect(crisis).toBeDisabled();
+    expect(within(crisis).getAllByRole("option")).toHaveLength(9);
   });
 });

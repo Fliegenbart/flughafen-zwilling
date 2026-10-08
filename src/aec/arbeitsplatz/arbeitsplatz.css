@@ -129,6 +129,18 @@
   font-size: 13px;
   color: var(--ap-muted);
 }
+.ap-crisis select {
+  font: inherit;
+  font-size: 16px;
+  padding: 8px 10px;
+  border: 1px solid var(--ap-faint);
+  border-radius: 6px;
+  background: var(--ap-bg);
+  color: var(--ap-ink);
+}
+.ap-crisis[data-changed] select {
+  border-color: var(--ap-stop);
+}
 .ap-reset {
   justify-self: start;
   font: inherit;
@@ -299,5 +311,174 @@
 @media (prefers-reduced-motion: reduce) {
   .ap * {
     transition: none !important;
+  }
+}
+
+/* ------------------------------------------------------- Werkzeug-Knoepfe */
+.ap-tool {
+  font: inherit;
+  font-size: 15px;
+  padding: 6px 12px;
+  border: 1px solid var(--ap-faint);
+  border-radius: 6px;
+  background: var(--ap-bg);
+  color: var(--ap-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ap-tool:hover:not(:disabled) {
+  border-color: var(--ap-ink);
+}
+.ap-tool[aria-pressed="true"] {
+  background: var(--ap-ink);
+  color: var(--ap-bg);
+  border-color: var(--ap-ink);
+}
+.ap-tool:disabled {
+  color: var(--ap-faint);
+  cursor: default;
+}
+
+/* Die Seite zum Hinterlassen ist nur im Druck sichtbar. */
+.ap-handout {
+  display: none;
+}
+
+/* ------------------------------------------------------ Praesentationsmodus */
+/* Beamer: groessere Schrift, nur das Noetige. Kopfzeile bleibt, Links zu anderen Seiten gehen. */
+.ap[data-presenting] {
+  font-size: 20px;
+}
+.ap[data-presenting] .ap-head {
+  padding: 14px 40px;
+}
+.ap[data-presenting] .ap-head__link,
+.ap[data-presenting] .ap-head__back,
+.ap[data-presenting] .ap-lever__today {
+  display: none;
+}
+.ap[data-presenting] .ap-head__title {
+  font-size: 28px;
+}
+.ap[data-presenting] .ap-body {
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 48px;
+  max-width: none;
+  padding: 24px 40px 40px;
+}
+.ap[data-presenting] .ap-lever__name {
+  font-size: 18px;
+}
+.ap[data-presenting] .ap-lever__value {
+  font-size: 40px;
+}
+.ap[data-presenting] .ap-lever input[type="range"] {
+  height: 28px;
+}
+.ap[data-presenting] .ap-chart__grid text,
+.ap[data-presenting] .ap-chart__hour,
+.ap[data-presenting] .ap-chart__deplabel {
+  font-size: 16px;
+}
+.ap[data-presenting] .ap-chart__limitlabel {
+  font-size: 18px;
+}
+.ap[data-presenting] .ap-chart__note text,
+.ap[data-presenting] .ap-chart__ok {
+  font-size: 22px;
+}
+.ap[data-presenting] .ap-chart__readout {
+  font-size: 18px;
+}
+.ap[data-presenting] .ap-outcome {
+  max-width: none;
+}
+.ap[data-presenting] .ap-outcome table {
+  font-size: 20px;
+}
+.ap[data-presenting] .ap-outcome__title {
+  font-size: 20px;
+}
+.ap[data-presenting] .ap-accuracy {
+  font-size: 16px;
+}
+
+/* -------------------------------------------------------------------- Druck */
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+@media print {
+  .ap {
+    min-height: 0;
+    font-size: 12px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .ap-head,
+  .ap-reset,
+  .ap-lever__track,
+  .ap-chart__readout,
+  .ap-accuracy,
+  .ap-loading {
+    display: none !important;
+  }
+  .ap-body {
+    display: block;
+    padding: 0;
+    max-width: none;
+  }
+  .ap-handout {
+    display: block;
+    margin: 0;
+  }
+  .ap-handout__meta {
+    margin: 0 0 2px;
+    font-size: 12px;
+    color: var(--ap-muted);
+  }
+  .ap-handout__title {
+    margin: 0 0 4px;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .ap-handout__lead {
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .ap-handout--foot {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid var(--ap-faint);
+    font-size: 11px;
+    color: var(--ap-muted);
+  }
+  .ap-levers {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .ap-lever__value {
+    font-size: 18px;
+  }
+  .ap-lever__today {
+    font-size: 11px;
+  }
+  .ap-chart svg {
+    width: 100%;
+  }
+  .ap-outcome {
+    margin-top: 10px;
+    max-width: none;
+    break-inside: avoid;
+  }
+  .ap-outcome table {
+    font-size: 12px;
+  }
+  .ap-outcome th,
+  .ap-outcome td {
+    padding: 5px 0 5px 12px;
   }
 }
