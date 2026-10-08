@@ -26,6 +26,16 @@ export function leverRanges(today: Levers): Record<RangeKey, Range> {
   };
 }
 
+/** Ist die Reglerstellung anders als heute? Eine Definition fuer Vergleich, Linie, Handout und Gedaechtnis. */
+export function isChanged(levers: Levers, today: Levers): boolean {
+  const keys: RangeKey[] = ["gridLimitKw", "batteryKwh", "pvFactor", "extraVehicles"];
+  return (
+    keys.some((k) => (levers[k] ?? 0) !== (today[k] ?? 0)) ||
+    !!levers.crisis ||
+    (levers.policy ?? today.policy) !== today.policy
+  );
+}
+
 /** Einzelne benannte Aenderungen gegenueber heute, als Chips zum Ausprobieren. */
 export type Preset = {
   id: string;
