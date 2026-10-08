@@ -30,3 +30,20 @@ def test_seeded_project_starts_from_the_calibrated_day(client, tmp_path):  # noq
     assert today["kpis"]["minutes_at_limit"] == 184
     board = client.get(f"/api/v1/projects/{seeded['project_id']}/variants").json()
     assert board["base"]["source"] == "coupled_run"
+
+
+def test_committed_browser_files_match_the_model():
+    """beispieltag.json und livePowerReference.json entstehen aus dem Backend-Modell.
+
+    Aendert sich eine Regel im Modell (Einsatzvergabe, Ladereihenfolge, Leistungsbilanz), stimmen
+    die eingecheckten Dateien nicht mehr, und die Naeherung im Browser (liveFleet.ts) rechnet
+    nach alten Regeln. Dann `python scripts/make_live_power_fixture.py` ausfuehren und
+    liveFleet.ts anpassen.
+    """
+    import json
+
+    import make_live_power_fixture as generator
+
+    day, reference = generator.build()
+    assert json.loads(generator.DAY_OUT.read_text()) == day
+    assert json.loads(generator.REFERENCE_OUT.read_text()) == reference

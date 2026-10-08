@@ -209,7 +209,11 @@ Naeherung nach rund 280 ms durch diese Antwort. Koerper, alles optional (leer = 
 (Krisenfall der Bibliothek, Energie-Abbild wie beim Stresstest). Unbekannte Felder → 422, ebenso
 Werte, die die Variantenpruefung ablehnt. Antwort: Minutenreihen als Spalten (`requested_kw`,
 `delivered_kw`, `background_kw`, `pv_kw`, `chp_kw`, `grid_cap_kw`, `grid_import_kw`, `battery_kw`,
-Batterie + gibt ab), `power`, `policy`, `changes`, `crisis`, `departures` je halbe Stunde und
+Batterie + gibt ab), `power` (inkl. `apron_limit_kw` und `parking_limit_kw`, die Trafogrenzen je
+Sektor), `fleet` (Weltdaten fuer die Naeherung im Browser: je Fahrzeugklasse Fahrzeuge, Ladepunkte,
+Ladeleistung, Akku, Ladeziel, Einsatzenergie und -dauer, sortierte Freigabeminuten, ausgefallene
+Ladepunkte; dazu die Parkhaus-Ladeauftraege und der Ladewirkungsgrad), `policy`, `changes`,
+`crisis`, `departures` je halbe Stunde und
 `kpis` (`departures_total`, `delayed_departures`, `on_time_pct`, `minutes_at_limit` im
 Verkehrstag, `background_unserved_kwh`, `energy_wait_share_pct`, `bottleneck`). Die Antwort ist
 als `preview: true`, `evidence_level: synthetic` markiert; verbindlich sind nur versiegelte Laeufe

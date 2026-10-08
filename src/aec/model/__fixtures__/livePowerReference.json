@@ -8,12 +8,39 @@
   },
   "cases": [
     {
+      "lever": { "grid_import_limit_kw": 1500 },
+      "exact": {
+        "minutes_at_limit": 1440,
+        "peak_import_kw": 1500.0,
+        "max_missing_kw": 3444.0,
+        "missing_kwh": 60683.896
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 1900 },
+      "exact": {
+        "minutes_at_limit": 1440,
+        "peak_import_kw": 1900.0,
+        "max_missing_kw": 3444.0,
+        "missing_kwh": 49907.762
+      }
+    },
+    {
       "lever": { "grid_import_limit_kw": 2200 },
       "exact": {
         "minutes_at_limit": 1268,
         "peak_import_kw": 2200.0,
         "max_missing_kw": 3444.0,
         "missing_kwh": 36270.893
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 2450 },
+      "exact": {
+        "minutes_at_limit": 968,
+        "peak_import_kw": 2450.0,
+        "max_missing_kw": 3433.0,
+        "missing_kwh": 25534.308
       }
     },
     {
@@ -26,6 +53,15 @@
       }
     },
     {
+      "lever": { "grid_import_limit_kw": 2800 },
+      "exact": {
+        "minutes_at_limit": 635,
+        "peak_import_kw": 2800.0,
+        "max_missing_kw": 2417.333,
+        "missing_kwh": 10172.405
+      }
+    },
+    {
       "lever": { "grid_import_limit_kw": 3000 },
       "exact": {
         "minutes_at_limit": 422,
@@ -35,99 +71,12 @@
       }
     },
     {
-      "lever": { "grid_import_limit_kw": 4000 },
+      "lever": { "grid_import_limit_kw": 3150 },
       "exact": {
-        "minutes_at_limit": 41,
-        "peak_import_kw": 4000.0,
-        "max_missing_kw": 644.638,
-        "missing_kwh": 151.386
-      }
-    },
-    {
-      "lever": { "grid_import_limit_kw": 4500 },
-      "exact": {
-        "minutes_at_limit": 2,
-        "peak_import_kw": 4500.0,
-        "max_missing_kw": 153.965,
-        "missing_kwh": 2.877
-      }
-    },
-    {
-      "lever": { "grid_import_limit_kw": 5500 },
-      "exact": {
-        "minutes_at_limit": 0,
-        "peak_import_kw": 4657.107,
-        "max_missing_kw": 0.0,
-        "missing_kwh": 0.0
-      }
-    },
-    {
-      "lever": { "battery_capacity_kwh": 1000, "battery_power_kw": 500 },
-      "exact": {
-        "minutes_at_limit": 136,
-        "peak_import_kw": 3500.0,
-        "max_missing_kw": 644.638,
-        "missing_kwh": 151.386
-      }
-    },
-    {
-      "lever": { "battery_capacity_kwh": 2000, "battery_power_kw": 1000 },
-      "exact": {
-        "minutes_at_limit": 133,
-        "peak_import_kw": 3500.0,
-        "max_missing_kw": 153.965,
-        "missing_kwh": 2.877
-      }
-    },
-    {
-      "lever": { "battery_capacity_kwh": 4000, "battery_power_kw": 2000 },
-      "exact": {
-        "minutes_at_limit": 133,
-        "peak_import_kw": 3500.0,
-        "max_missing_kw": 0.0,
-        "missing_kwh": 0.0
-      }
-    },
-    {
-      "lever": { "pv_factor": 0.5 },
-      "exact": {
-        "minutes_at_limit": 558,
-        "peak_import_kw": 3500.0,
-        "max_missing_kw": 1578.766,
-        "missing_kwh": 3886.979
-      }
-    },
-    {
-      "lever": { "pv_factor": 2.0 },
-      "exact": {
-        "minutes_at_limit": 131,
-        "peak_import_kw": 3500.0,
-        "max_missing_kw": 1082.534,
-        "missing_kwh": 988.124
-      }
-    },
-    {
-      "lever": {
-        "grid_import_limit_kw": 4000,
-        "battery_capacity_kwh": 2000,
-        "battery_power_kw": 1000
-      },
-      "exact": {
-        "minutes_at_limit": 35,
-        "peak_import_kw": 4000.0,
-        "max_missing_kw": 0.0,
-        "missing_kwh": 0.0
-      }
-    }
-  ],
-  "holdout": [
-    {
-      "lever": { "grid_import_limit_kw": 2800 },
-      "exact": {
-        "minutes_at_limit": 635,
-        "peak_import_kw": 2800.0,
-        "max_missing_kw": 2417.333,
-        "missing_kwh": 10172.405
+        "minutes_at_limit": 337,
+        "peak_import_kw": 3150.0,
+        "max_missing_kw": 1662.725,
+        "missing_kwh": 4171.762
       }
     },
     {
@@ -140,12 +89,66 @@
       }
     },
     {
+      "lever": { "grid_import_limit_kw": 3430 },
+      "exact": {
+        "minutes_at_limit": 221,
+        "peak_import_kw": 3430.0,
+        "max_missing_kw": 1126.833,
+        "missing_kwh": 1659.23
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 3490 },
+      "exact": {
+        "minutes_at_limit": 186,
+        "peak_import_kw": 3490.0,
+        "max_missing_kw": 1098.707,
+        "missing_kwh": 1342.458
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 3580 },
+      "exact": {
+        "minutes_at_limit": 144,
+        "peak_import_kw": 3580.0,
+        "max_missing_kw": 969.978,
+        "missing_kwh": 995.124
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 3650 },
+      "exact": {
+        "minutes_at_limit": 120,
+        "peak_import_kw": 3650.0,
+        "max_missing_kw": 1051.66,
+        "missing_kwh": 824.898
+      }
+    },
+    {
       "lever": { "grid_import_limit_kw": 3800 },
       "exact": {
         "minutes_at_limit": 84,
         "peak_import_kw": 3800.0,
         "max_missing_kw": 821.18,
         "missing_kwh": 437.814
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 3950 },
+      "exact": {
+        "minutes_at_limit": 51,
+        "peak_import_kw": 3950.0,
+        "max_missing_kw": 693.994,
+        "missing_kwh": 187.009
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 4000 },
+      "exact": {
+        "minutes_at_limit": 41,
+        "peak_import_kw": 4000.0,
+        "max_missing_kw": 644.638,
+        "missing_kwh": 151.386
       }
     },
     {
@@ -158,7 +161,43 @@
       }
     },
     {
+      "lever": { "grid_import_limit_kw": 4350 },
+      "exact": {
+        "minutes_at_limit": 4,
+        "peak_import_kw": 4350.0,
+        "max_missing_kw": 300.965,
+        "missing_kwh": 10.398
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 4500 },
+      "exact": {
+        "minutes_at_limit": 2,
+        "peak_import_kw": 4500.0,
+        "max_missing_kw": 153.965,
+        "missing_kwh": 2.877
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 4800 },
+      "exact": {
+        "minutes_at_limit": 0,
+        "peak_import_kw": 4657.107,
+        "max_missing_kw": 0.0,
+        "missing_kwh": 0.0
+      }
+    },
+    {
       "lever": { "grid_import_limit_kw": 5000 },
+      "exact": {
+        "minutes_at_limit": 0,
+        "peak_import_kw": 4657.107,
+        "max_missing_kw": 0.0,
+        "missing_kwh": 0.0
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 5500 },
       "exact": {
         "minutes_at_limit": 0,
         "peak_import_kw": 4657.107,
@@ -176,12 +215,48 @@
       }
     },
     {
+      "lever": { "grid_import_limit_kw": 8000 },
+      "exact": {
+        "minutes_at_limit": 0,
+        "peak_import_kw": 4657.107,
+        "max_missing_kw": 0.0,
+        "missing_kwh": 0.0
+      }
+    },
+    {
       "lever": { "battery_capacity_kwh": 500, "battery_power_kw": 250 },
       "exact": {
         "minutes_at_limit": 146,
         "peak_import_kw": 3500.0,
         "max_missing_kw": 911.475,
         "missing_kwh": 574.151
+      }
+    },
+    {
+      "lever": { "battery_capacity_kwh": 900, "battery_power_kw": 300 },
+      "exact": {
+        "minutes_at_limit": 145,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 821.18,
+        "missing_kwh": 437.814
+      }
+    },
+    {
+      "lever": { "battery_capacity_kwh": 1000, "battery_power_kw": 500 },
+      "exact": {
+        "minutes_at_limit": 136,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 644.638,
+        "missing_kwh": 151.386
+      }
+    },
+    {
+      "lever": { "battery_capacity_kwh": 1200, "battery_power_kw": 600 },
+      "exact": {
+        "minutes_at_limit": 135,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 546.043,
+        "missing_kwh": 82.553
       }
     },
     {
@@ -194,7 +269,52 @@
       }
     },
     {
+      "lever": { "battery_capacity_kwh": 2000, "battery_power_kw": 500 },
+      "exact": {
+        "minutes_at_limit": 136,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 644.638,
+        "missing_kwh": 151.386
+      }
+    },
+    {
+      "lever": { "battery_capacity_kwh": 2000, "battery_power_kw": 1000 },
+      "exact": {
+        "minutes_at_limit": 133,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 153.965,
+        "missing_kwh": 2.877
+      }
+    },
+    {
+      "lever": { "battery_capacity_kwh": 2500, "battery_power_kw": 625 },
+      "exact": {
+        "minutes_at_limit": 135,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 521.505,
+        "missing_kwh": 69.317
+      }
+    },
+    {
       "lever": { "battery_capacity_kwh": 3000, "battery_power_kw": 1500 },
+      "exact": {
+        "minutes_at_limit": 133,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 0.0,
+        "missing_kwh": 0.0
+      }
+    },
+    {
+      "lever": { "battery_capacity_kwh": 4000, "battery_power_kw": 2000 },
+      "exact": {
+        "minutes_at_limit": 133,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 0.0,
+        "missing_kwh": 0.0
+      }
+    },
+    {
+      "lever": { "battery_capacity_kwh": 5000, "battery_power_kw": 2500 },
       "exact": {
         "minutes_at_limit": 133,
         "peak_import_kw": 3500.0,
@@ -212,15 +332,6 @@
       }
     },
     {
-      "lever": { "battery_capacity_kwh": 2000, "battery_power_kw": 500 },
-      "exact": {
-        "minutes_at_limit": 136,
-        "peak_import_kw": 3500.0,
-        "max_missing_kw": 644.638,
-        "missing_kwh": 151.386
-      }
-    },
-    {
       "lever": { "pv_factor": 0.0 },
       "exact": {
         "minutes_at_limit": 897,
@@ -230,12 +341,120 @@
       }
     },
     {
+      "lever": { "pv_factor": 0.25 },
+      "exact": {
+        "minutes_at_limit": 864,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 2344.0,
+        "missing_kwh": 22740.07
+      }
+    },
+    {
+      "lever": { "pv_factor": 0.5 },
+      "exact": {
+        "minutes_at_limit": 558,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 1578.766,
+        "missing_kwh": 3886.979
+      }
+    },
+    {
+      "lever": { "pv_factor": 0.75 },
+      "exact": {
+        "minutes_at_limit": 239,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 1123.651,
+        "missing_kwh": 1888.753
+      }
+    },
+    {
+      "lever": { "pv_factor": 0.97 },
+      "exact": {
+        "minutes_at_limit": 189,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 1096.426,
+        "missing_kwh": 1318.096
+      }
+    },
+    {
       "lever": { "pv_factor": 1.5 },
       "exact": {
         "minutes_at_limit": 139,
         "peak_import_kw": 3500.0,
         "max_missing_kw": 1054.276,
         "missing_kwh": 1066.698
+      }
+    },
+    {
+      "lever": { "pv_factor": 2.0 },
+      "exact": {
+        "minutes_at_limit": 131,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 1082.534,
+        "missing_kwh": 988.124
+      }
+    },
+    {
+      "lever": { "pv_factor": 3.0 },
+      "exact": {
+        "minutes_at_limit": 121,
+        "peak_import_kw": 3500.0,
+        "max_missing_kw": 1112.954,
+        "missing_kwh": 919.274
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 2600, "pv_factor": 2.0 },
+      "exact": {
+        "minutes_at_limit": 678,
+        "peak_import_kw": 2600.0,
+        "max_missing_kw": 3212.33,
+        "missing_kwh": 14509.119
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 3200, "pv_factor": 0.75 },
+      "exact": {
+        "minutes_at_limit": 376,
+        "peak_import_kw": 3200.0,
+        "max_missing_kw": 1652.283,
+        "missing_kwh": 4843.701
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 3400, "pv_factor": 0.25 },
+      "exact": {
+        "minutes_at_limit": 909,
+        "peak_import_kw": 3400.0,
+        "max_missing_kw": 2344.0,
+        "missing_kwh": 26408.134
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 3800, "pv_factor": 0.5 },
+      "exact": {
+        "minutes_at_limit": 194,
+        "peak_import_kw": 3800.0,
+        "max_missing_kw": 1006.235,
+        "missing_kwh": 1273.804
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 4600, "pv_factor": 0.0 },
+      "exact": {
+        "minutes_at_limit": 552,
+        "peak_import_kw": 4600.0,
+        "max_missing_kw": 2343.59,
+        "missing_kwh": 9856.737
+      }
+    },
+    {
+      "lever": { "grid_import_limit_kw": 2700, "pv_factor": 2.5 },
+      "exact": {
+        "minutes_at_limit": 598,
+        "peak_import_kw": 2700.0,
+        "max_missing_kw": 2799.604,
+        "missing_kwh": 9552.501
       }
     },
     {
@@ -265,12 +484,81 @@
       }
     },
     {
-      "lever": { "grid_import_limit_kw": 2600, "pv_factor": 2.0 },
+      "lever": {
+        "grid_import_limit_kw": 2900,
+        "battery_capacity_kwh": 1800,
+        "battery_power_kw": 900
+      },
       "exact": {
-        "minutes_at_limit": 678,
-        "peak_import_kw": 2600.0,
-        "max_missing_kw": 3212.33,
-        "missing_kwh": 14509.119
+        "minutes_at_limit": 436,
+        "peak_import_kw": 2900.0,
+        "max_missing_kw": 2119.159,
+        "missing_kwh": 4613.109
+      }
+    },
+    {
+      "lever": {
+        "grid_import_limit_kw": 3250,
+        "battery_capacity_kwh": 600,
+        "battery_power_kw": 300
+      },
+      "exact": {
+        "minutes_at_limit": 254,
+        "peak_import_kw": 3250.0,
+        "max_missing_kw": 1005.135,
+        "missing_kwh": 1394.417
+      }
+    },
+    {
+      "lever": {
+        "grid_import_limit_kw": 4000,
+        "battery_capacity_kwh": 2000,
+        "battery_power_kw": 1000
+      },
+      "exact": {
+        "minutes_at_limit": 35,
+        "peak_import_kw": 4000.0,
+        "max_missing_kw": 0.0,
+        "missing_kwh": 0.0
+      }
+    },
+    {
+      "lever": {
+        "grid_import_limit_kw": 5000,
+        "battery_capacity_kwh": 4000,
+        "battery_power_kw": 2000
+      },
+      "exact": {
+        "minutes_at_limit": 0,
+        "peak_import_kw": 4657.107,
+        "max_missing_kw": 0.0,
+        "missing_kwh": 0.0
+      }
+    },
+    {
+      "lever": {
+        "grid_import_limit_kw": 1500,
+        "battery_capacity_kwh": 6000,
+        "battery_power_kw": 3000
+      },
+      "exact": {
+        "minutes_at_limit": 1440,
+        "peak_import_kw": 1500.0,
+        "max_missing_kw": 3444.0,
+        "missing_kwh": 55943.511
+      }
+    },
+    {
+      "lever": {
+        "grid_import_limit_kw": 8000,
+        "battery_capacity_kwh": 6000,
+        "battery_power_kw": 3000
+      },
+      "exact": {
+        "minutes_at_limit": 0,
+        "peak_import_kw": 4657.107,
+        "max_missing_kw": 0.0,
+        "missing_kwh": 0.0
       }
     },
     {
@@ -289,15 +577,72 @@
     },
     {
       "lever": {
-        "grid_import_limit_kw": 5000,
-        "battery_capacity_kwh": 4000,
-        "battery_power_kw": 2000
+        "grid_import_limit_kw": 3700,
+        "battery_capacity_kwh": 750,
+        "battery_power_kw": 375,
+        "pv_factor": 0.6
       },
       "exact": {
-        "minutes_at_limit": 0,
-        "peak_import_kw": 4657.107,
-        "max_missing_kw": 0.0,
-        "missing_kwh": 0.0
+        "minutes_at_limit": 141,
+        "peak_import_kw": 3700.0,
+        "max_missing_kw": 605.587,
+        "missing_kwh": 201.082
+      }
+    },
+    {
+      "lever": {
+        "grid_import_limit_kw": 2400,
+        "battery_capacity_kwh": 2200,
+        "battery_power_kw": 1100,
+        "pv_factor": 1.25
+      },
+      "exact": {
+        "minutes_at_limit": 830,
+        "peak_import_kw": 2400.0,
+        "max_missing_kw": 3422.0,
+        "missing_kwh": 16766.11
+      }
+    },
+    {
+      "lever": {
+        "grid_import_limit_kw": 3300,
+        "battery_capacity_kwh": 3500,
+        "battery_power_kw": 1750,
+        "pv_factor": 0.4
+      },
+      "exact": {
+        "minutes_at_limit": 875,
+        "peak_import_kw": 3300.0,
+        "max_missing_kw": 1763.764,
+        "missing_kwh": 10233.844
+      }
+    },
+    {
+      "lever": {
+        "grid_import_limit_kw": 3100,
+        "battery_capacity_kwh": 400,
+        "battery_power_kw": 400,
+        "pv_factor": 1.5
+      },
+      "exact": {
+        "minutes_at_limit": 251,
+        "peak_import_kw": 3100.0,
+        "max_missing_kw": 1551.764,
+        "missing_kwh": 2588.598
+      }
+    },
+    {
+      "lever": {
+        "grid_import_limit_kw": 3550,
+        "battery_capacity_kwh": 1000,
+        "battery_power_kw": 250,
+        "pv_factor": 0.8
+      },
+      "exact": {
+        "minutes_at_limit": 171,
+        "peak_import_kw": 3550.0,
+        "max_missing_kw": 847.23,
+        "missing_kwh": 531.966
       }
     }
   ]

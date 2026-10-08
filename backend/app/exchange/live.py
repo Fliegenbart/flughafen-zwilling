@@ -1,6 +1,8 @@
 """Vorschau fuer die Live-Regler im Arbeitsbildschirm.
 
-Beim Ziehen eines Reglers naehert der Browser die Netzseite (src/aec/model/livePower.ts). Nach
+Beim Ziehen eines Reglers rechnet der Browser die Netzseite nach (src/aec/model/livePower.ts, die
+Ladenachfrage der Flotte nach den Regeln des Simulators in liveFleet.ts; dafuer liefert die Basis
+die Weltdaten der Flotte, siehe fleet_block). Nach
 einer kurzen Pause rechnet diese Vorschau den Tag genau: dieselbe Basis und dieselben Aenderungen
 wie bei Loesungen (variants.apply_changes), aber ohne Warteschlange, ohne Speichern und ohne
 Versiegelung. Deshalb gilt sie als Vorschau; verbindlich sind nur versiegelte Laeufe.
@@ -14,7 +16,7 @@ from time import perf_counter
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..munich.coupled_models import CoupledConfig, CoupledPolicy, FleetKind
+from ..munich.coupled_models import CoupledConfig, CoupledPolicy, CoupledWorld, FleetKind
 from ..munich.coupled_simulator import simulate_coupled
 from ..munich.coupled_world import build_world
 from .crisis import crisis_config, crisis_stress
@@ -23,8 +25,43 @@ from .situation import minutes_at_limit
 ROUND = 3
 
 
-def basis_from_series(series: list[dict], config: CoupledConfig, *, day_minutes: int,
-                      start_min: int, day_start_utc: str, policy: str | None,
+def fleet_block(world: CoupledWorld) -> dict:
+    """Weltdaten der Flotte fuer das Abbild der Ladenachfrage im Browser (liveFleet.ts).
+
+    Nur was nicht von den Reglern abhaengt: Fahrzeugklassen, Freigabeminuten der Auftraege,
+    Parkhaus-Ladeauftraege, ausgefallene Ladepunkte. Alle Auftraege einer Klasse sind im Modell
+    gleich (Energie, Dauer, Rueckfahrt aus der FleetSpec, siehe coupled_world.build_world).
+    """
+    config = world.config
+    classes = []
+    for spec in config.fleets:
+        missions = [m for m in world.missions if m.kind == spec.kind]
+        shapes = {(m.energy_kwh, m.duration_min + m.return_min) for m in missions}
+        if len(shapes) > 1:
+            raise ValueError("Auftraege einer Fahrzeugklasse sind nicht gleich")
+        mission_kwh, mission_min = next(iter(shapes), (0, 0))
+        classes.append({
+            "kind": spec.kind, "vehicles": spec.vehicles, "chargers": spec.chargers,
+            "charger_kw": spec.charger_kw, "capacity_kwh": spec.battery_capacity_kwh,
+            "initial_soc_pct": spec.initial_soc_pct, "target_soc_pct": spec.charge_target_soc_pct,
+            "reserve_soc_pct": spec.reserve_soc_pct,
+            "mission_kwh": mission_kwh, "mission_min": mission_min,
+            "release_min": sorted(m.release_min for m in missions),
+            "offline": [{"start_min": e.start_min, "end_min": e.end_min,
+                         "chargers": e.offline_chargers}
+                        for e in config.stress_events
+                        if e.fleet_kind == spec.kind and e.offline_chargers],
+        })
+    return {
+        "charging_efficiency": config.power.charging_efficiency,
+        "classes": classes,
+        "parking": [{"release_min": j.release_min, "deadline_min": j.deadline_min,
+                     "kwh": j.energy_kwh, "kw": j.charger_kw} for j in world.parking_jobs],
+    }
+
+
+def basis_from_series(series: list[dict], config: CoupledConfig, *, world: CoupledWorld,
+                      day_minutes: int, start_min: int, day_start_utc: str, policy: str | None,
                       run_id: str | None) -> dict:
     """Spalten statt Zeilen, gerundet: kompakt fuer den Browser (rund 1.800 Minuten)."""
     p = config.power
@@ -50,6 +87,7 @@ def basis_from_series(series: list[dict], config: CoupledConfig, *, day_minutes:
         "grid_import_kw": col(lambda r: r["grid_import_kw"]),
         # Positiv = Batterie gibt ab, negativ = Batterie laedt.
         "battery_kw": col(lambda r: r["battery_discharge_kw"] - r["battery_charge_kw"]),
+        "fleet": fleet_block(world),
         "power": {
             "grid_import_limit_kw": p.grid_import_limit_kw,
             "pv_capacity_kwp": p.pv_capacity_kwp,
@@ -63,6 +101,9 @@ def basis_from_series(series: list[dict], config: CoupledConfig, *, day_minutes:
             "charging_efficiency": p.charging_efficiency,
             "charging_limit_kw": round(
                 (p.apron_transformer_kva + p.parking_transformer_kva) * p.power_factor, ROUND),
+            # Jeder Sektor hat seine eigene Trafogrenze (coupled_power.PowerBalance.step).
+            "apron_limit_kw": round(p.apron_transformer_kva * p.power_factor, ROUND),
+            "parking_limit_kw": round(p.parking_transformer_kva * p.power_factor, ROUND),
         },
     }
 
@@ -140,7 +181,7 @@ def preview(variants, project_id: str, request: PreviewRequest) -> dict:
     kpis = result.kpis
     waits = float(kpis.energy_wait_total_min) + float(kpis.resource_wait_total_min)
     return {
-        **basis_from_series(result.series, config, day_minutes=world.day_minutes,
+        **basis_from_series(result.series, config, world=world, day_minutes=world.day_minutes,
                             start_min=world.start_min, day_start_utc=world.day_start_utc,
                             policy=policy, run_id=None),
         "preview": True,

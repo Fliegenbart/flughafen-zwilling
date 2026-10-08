@@ -2,6 +2,7 @@
 import { distributeFleet } from "../model/dataStatus";
 import type { LiveBasis, Levers } from "../model/livePower";
 import type { Project, VariantChanges } from "../types";
+import { fleetFromApi } from "./fleet";
 import { request } from "./http";
 import { enc, isObj, num, str } from "./parse";
 
@@ -31,6 +32,8 @@ const nums = (v: unknown) => (Array.isArray(v) ? v.map((x) => num(x)) : []);
 export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview | null {
   if (!isObj(raw) || !Array.isArray(raw.requested_kw) || !isObj(raw.power)) return null;
   const p = raw.power;
+  const fleet = fleetFromApi(raw.fleet);
+  if (!fleet) return null;
   const kpis = isObj(raw.kpis) ? raw.kpis : {};
   const deps = Array.isArray(raw.departures)
     ? raw.departures
@@ -49,6 +52,7 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
       gridCapKw: nums(raw.grid_cap_kw),
       gridImportKw: nums(raw.grid_import_kw),
       batteryKw: nums(raw.battery_kw),
+      fleet,
       power: {
         gridImportLimitKw: num(p.grid_import_limit_kw),
         pvCapacityKwp: num(p.pv_capacity_kwp),
@@ -62,7 +66,8 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
             ? p.battery_grid_charge_below_kw
             : null,
         transformerEfficiency: num(p.transformer_efficiency, 0.98),
-        chargingLimitKw: num(p.charging_limit_kw, 1e9),
+        apronLimitKw: num(p.apron_limit_kw, 1e9),
+        parkingLimitKw: num(p.parking_limit_kw, 1e9),
       },
     },
     departures: deps.filter(isObj).map((d) => ({

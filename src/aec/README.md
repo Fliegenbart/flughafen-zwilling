@@ -30,9 +30,13 @@ reale Last und zeigt, wo es kritisch wird und was hilft. Texte nach
 - **Antwortsätze an einer Stelle.** Der Satz zu den festgehaltenen Lösungen kommt aus dem
   Backend (`backend/app/exchange/variants.py`), der Satz zur Tageskurve aus
   `model/headline.ts`.
-- **Zwei Rechnungen, eine Aussage.** Beim Ziehen rechnet `model/livePower.ts` eine Näherung,
-  nach einer kurzen Pause ersetzt die genaue Vorschau vom Backend sie
+- **Zwei Rechnungen, eine Aussage.** Beim Ziehen rechnet `model/livePower.ts` Minute für Minute
+  wie das Backend (Leistungsbilanz) auf der Ladenachfrage aus `model/liveFleet.ts` (dieselben
+  Regeln wie `coupled_simulator.py`, Laderegel „uncontrolled“, keine abgestimmten Konstanten).
+  Nach einer kurzen Pause ersetzt die genaue Vorschau vom Backend die Kurve
   (`backend/app/exchange/live.py`). Beide zählen „Minuten voll ausgelastet“ nur im Verkehrstag.
+  Ändert sich eine Regel im Modell, schlägt `test_committed_browser_files_match_the_model` an;
+  dann `backend/scripts/make_live_power_fixture.py` laufen lassen und `liveFleet.ts` anpassen.
 - **Ein Beispieltag.** `beispieltag.json` entsteht aus `backend/app/exchange/demo_day.py`
   (`backend/scripts/make_live_power_fixture.py`) und speist Startseite und Beispielprojekt.
   Dieselben Werte hat das Vorführ-Projekt auf dem Server (`backend/scripts/seed_demo_project.py`).

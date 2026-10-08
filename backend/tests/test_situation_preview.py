@@ -89,3 +89,26 @@ def test_preview_reports_limit_minutes_unserved_load_and_charging_rule(client, t
     assert rule["policy"] == "mission_priority"
     assert rule["changes"] == {"charging_policy": "mission_priority"}
     assert client.post(url, json={"charging_policy": "egal"}).status_code == 422
+
+
+def test_preview_basis_carries_the_fleet_for_the_browser(client, tmp_path):  # noqa: F811
+    """Der Browser rechnet die Ladenachfrage mit diesen Weltdaten nach (liveFleet.ts)."""
+    pid = _busy_project(client, tmp_path)
+    base = client.post(f"/api/v1/projects/{pid}/situation/preview", json={}).json()
+    fleet = base["fleet"]
+    assert fleet["charging_efficiency"] == base["power"]["charging_efficiency"]
+    kinds = {"bus", "baggage_tractor", "pushback_tug", "gpu"}
+    assert {c["kind"] for c in fleet["classes"]} == kinds
+    for cls in fleet["classes"]:
+        assert cls["release_min"] == sorted(cls["release_min"])
+        assert cls["mission_min"] > 0 and cls["mission_kwh"] > 0
+    assert len(fleet["parking"]) == 200
+    # Trafogrenzen je Sektor (kVA x Leistungsfaktor), nicht nur die Summe.
+    power = base["power"]
+    assert power["apron_limit_kw"] + power["parking_limit_kw"] == power["charging_limit_kw"]
+    # Eine Variante liefert die Flotte ihrer eigenen Welt (hier: zusaetzliche Fahrzeuge).
+    more = client.post(f"/api/v1/projects/{pid}/situation/preview",
+                       json={"extra_vehicles": {"gpu": 3}}).json()
+    gpu = next(c for c in more["fleet"]["classes"] if c["kind"] == "gpu")
+    gpu_before = next(c for c in fleet["classes"] if c["kind"] == "gpu")
+    assert gpu["vehicles"] == gpu_before["vehicles"] + 3
