@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { EvidenceBadge } from "../ui/EvidenceBadge";
-import { listExchange, proposeTest } from "./api";
-import { whoseTurn } from "./analysis";
-import { Section } from "./parts";
-import type { ExchangeItem, Project } from "./types";
+import { EvidenceBadge } from "../../ui/EvidenceBadge";
+import { listExchange, proposeTest } from "../api/exchange";
+import { whoseTurn } from "../model/exchange";
+import { Section } from "../parts";
+import type { ExchangeItem, Project } from "../types";
 
 /** Was der Kunde von einem Pruefpunkt sieht: Zustand in einem Wort, kein Lab-Inneres. */
 function customerState(item: ExchangeItem): "geprüft" | "in Prüfung" | "abgelehnt" {

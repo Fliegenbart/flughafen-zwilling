@@ -134,7 +134,7 @@ describe("Pilot Decision Studio", () => {
     expect(screen.getByRole("button", { name: "Messdaten prüfen" })).toBeDisabled();
   });
   it("explains not-evaluable reasons in plain German", async () => {
-    const { issueLabel } = await import("./issues");
+    const { issueLabel } = await import("../shared/issues");
     for (const code of [
       "tolerances_not_frozen",
       "role_not_holdout",

@@ -5,8 +5,9 @@
  * sagt getrennt die Evidenzstufe. Abgewiesene Importe (schlechte Datenqualitaet) zaehlen
  * nie als echt; "empirisch bestanden" gibt es nur ueber eine Holdout-Bewertung mit PASS.
  */
-import type { EvidenceLevel } from "../ui/EvidenceBadge";
-import { issueLabel } from "../pilot/issues";
+import type { EvidenceLevel } from "../../ui/EvidenceBadge";
+import { issueLabel } from "../../shared/issues";
+import { FLEET_LABEL } from "./fleet";
 
 export type DataState = "echt" | "annahme" | "fehlt";
 export type DataItemId = "flugplan" | "flotte" | "messdaten" | "lab";
@@ -411,10 +412,10 @@ export function isExampleFile(name: string): boolean {
  * `default_fleets`): 100 Fahrzeuge. Eine Gesamtzahl wird nach diesen Anteilen verteilt.
  */
 const DEFAULT_FLEET = [
-  { kind: "bus", label: "Busse", vehicles: 20, chargers: 8 },
-  { kind: "baggage_tractor", label: "Gepäckschlepper", vehicles: 35, chargers: 12 },
-  { kind: "pushback_tug", label: "Pushback-Schlepper", vehicles: 10, chargers: 4 },
-  { kind: "gpu", label: "Bodenstromgeräte", vehicles: 35, chargers: 10 },
+  { kind: "bus", label: FLEET_LABEL.bus, vehicles: 20, chargers: 8 },
+  { kind: "baggage_tractor", label: FLEET_LABEL.baggage_tractor, vehicles: 35, chargers: 12 },
+  { kind: "pushback_tug", label: FLEET_LABEL.pushback_tug, vehicles: 10, chargers: 4 },
+  { kind: "gpu", label: FLEET_LABEL.gpu, vehicles: 35, chargers: 10 },
 ] as const;
 export const MAX_FLEET = 300;
 

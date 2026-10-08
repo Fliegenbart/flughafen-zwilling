@@ -8,14 +8,14 @@ import {
   isExampleFile,
   needsDataStep,
   type DataInputs,
-} from "./dataStatus";
-import { assetsFromApi, importFromApi } from "./dataApi";
+} from "./model/dataStatus";
+import { assetsFromApi, importFromApi } from "./api/data";
 import { parseRoute, toSearch } from "./routes";
 import { SAMPLE_PROJECT } from "./sample";
-import { flightPlanError } from "./views/DatenView";
-import { distributeFleet } from "./dataStatus";
+import { flightPlanError } from "./views/daten/FlightPlanForm";
+import { distributeFleet } from "./model/dataStatus";
 import { recomputeState } from "./ProjectPage";
-import { sampleBoard } from "./api";
+import { sampleBoard } from "./api/variants";
 
 afterEach(() => {
   vi.unstubAllGlobals();

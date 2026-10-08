@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getProject, getSituation, getVariantBoard, runVariants } from "./api";
+import { getProject } from "./api/projects";
+import { getSituation } from "./api/situation";
+import { getVariantBoard, runVariants } from "./api/variants";
 import { useNav } from "./context";
 import Link from "./Link";
 import { SourceTag } from "./parts";
@@ -9,8 +11,8 @@ import {
   needsDataStep,
   type DataInputs,
   type DataStatus,
-} from "./dataStatus";
-import { loadDataInputs } from "./dataApi";
+} from "./model/dataStatus";
+import { loadDataInputs } from "./api/data";
 import { DATA_STEP, QUESTIONS, STEPS, type Route, type Step } from "./routes";
 import DatenView from "./views/DatenView";
 import type { Project, Situation, Variant, VariantBoard } from "./types";

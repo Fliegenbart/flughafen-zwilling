@@ -56,7 +56,7 @@ export type CoupledConfig = {
   stress_events: StressEvent[];
 };
 export type CoupledEngineVersion = "airport_coupled_v1" | "airport_coupled_v2";
-export const CURRENT_COUPLED_ENGINE = "airport_coupled_v2";
+export { CURRENT_COUPLED_ENGINE } from "../shared/engine";
 export type CoupledComparison = Comparison & { engine_version: CoupledEngineVersion };
 export type TaskReadiness = {
   kind: FleetKind;

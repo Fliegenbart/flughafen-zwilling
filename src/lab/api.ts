@@ -1,6 +1,6 @@
-export function apiBase(): string {
-  return (globalThis.__TWIN_CONFIG__?.apiBaseUrl || "").replace(/\/$/, "");
-}
+import { apiBase } from "../shared/runtimeConfig";
+
+export { apiBase };
 
 export function labUrl(path: string): string {
   return `${apiBase()}/api/v1/lab${path}`;

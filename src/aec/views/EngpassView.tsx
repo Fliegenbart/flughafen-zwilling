@@ -1,13 +1,6 @@
 import { useMemo } from "react";
-import {
-  bottleneckAnswer,
-  clock,
-  departuresInWindows,
-  int,
-  power,
-  powerText,
-  situationKpis,
-} from "../analysis";
+import { clock, int, power, powerText } from "../model/format";
+import { bottleneckAnswer, departuresInWindows, situationKpis } from "../model/situation";
 import DayLandscape from "../DayLandscape";
 import Link from "../Link";
 import { AnswerHead, Details, Section } from "../parts";

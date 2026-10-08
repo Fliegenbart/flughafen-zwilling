@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { clock, int, power, powerText, situationAnswer, situationKpis } from "../analysis";
+import { clock, int, power, powerText } from "../model/format";
+import { situationAnswer, situationKpis } from "../model/situation";
 import DayLandscape from "../DayLandscape";
 import { AnswerHead, Details, Section } from "../parts";
 import type { ViewProps } from "../ProjectPage";

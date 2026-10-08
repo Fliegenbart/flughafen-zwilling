@@ -1,104 +1,19 @@
 import { useEffect, useState } from "react";
-import { EvidenceBadge } from "../ui/EvidenceBadge";
-import {
-  advanceExchange,
-  getProject,
-  listExchange,
-  listProjects,
-  storedRole,
-  storeRole,
-  type Role,
-} from "./api";
-import {
-  ACTION_LABEL,
-  EXCHANGE_FLOW,
-  exchangeAnswer,
-  nextStatus,
-  PARTY_LABEL,
-  STATUS_LABEL,
-  whoseTurn,
-} from "./analysis";
-import Link from "./Link";
-import { loadDataInputs } from "./dataApi";
-import { EMPTY_INPUTS, type DataInputs } from "./dataStatus";
-import { AnswerHead, Details, Section } from "./parts";
-import { useNav } from "./context";
-import type { Route } from "./routes";
-import type { ExchangeItem, Party, Project } from "./types";
-import { WerkstattFrame, WerkstattLinks } from "./Werkstatt";
-
-const KIND_LABEL: Record<ExchangeItem["kind"], string> = {
-  szenario: "Krisenfall",
-  testanfrage: "Prüfanfrage",
-  ergebnis: "Lab-Ergebnis",
-  auswertung: "FlexLab-Auswertung",
-};
-
-const when = (iso: string) => {
-  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/.exec(iso);
-  return m ? `${m[3]}.${m[2]}. ${m[4]}` : iso;
-};
-
-function Flow({ item }: { item: ExchangeItem }) {
-  if (item.status === "uebergeben" || item.status === "abgelehnt")
-    return <span className="aec-flow aec-flow--single">{STATUS_LABEL[item.status]}</span>;
-  const at = EXCHANGE_FLOW.indexOf(item.status);
-  return (
-    <ol className="aec-flow" aria-label={`Status: ${STATUS_LABEL[item.status]}`}>
-      {EXCHANGE_FLOW.map((s, i) => (
-        <li
-          key={s}
-          data-done={i <= at ? "" : undefined}
-          aria-current={i === at ? "step" : undefined}
-        >
-          <span>{STATUS_LABEL[s]}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-const canAct = (role: Role, party: Party) =>
-  role === "admin" || (role === "airport" ? party === "flughafen" : party === "lab");
-
-/** Drei Teilfragen zu „Stimmt das?“: was wird geprüft, was gemessen, hält das Modell. */
-const isQuestion = (i: ExchangeItem) => i.kind === "testanfrage" || i.kind === "szenario";
-const isMeasured = (i: ExchangeItem) => i.kind === "ergebnis" || i.kind === "auswertung";
-
-/**
- * Modellabgleich ehrlich benennen: nur PASS auf Holdout-Messdaten mit vorab
- * gesperrten Kriterien zaehlt. Alles andere bleibt offen.
- */
-function modelAnswer(inp: DataInputs): { answer: string; detail: string } {
-  const holdout = inp.imports.filter((i) => i.role === "holdout" && i.valid);
-  if (inp.holdoutPass)
-    return {
-      answer: "Holdout bestanden.",
-      detail:
-        "Das Modell hält die vorab gesperrten Toleranzen gegen die zurückgehaltene Messreihe ein, gültig für den gemessenen Zeitraum.",
-    };
-  if (!inp.available)
-    return {
-      answer: "Noch nicht geprüft.",
-      detail: "Das Beispielprojekt hat keine Messreihe, das Modell bleibt hier unkalibriert.",
-    };
-  if (!holdout.length)
-    return {
-      answer: "Noch kein Holdout vorhanden.",
-      detail:
-        "Eine Messreihe unter „Daten“ als Holdout einlesen. Sie wird nicht zur Kalibrierung verwendet.",
-    };
-  if (!inp.tolerances?.locked)
-    return {
-      answer: "Toleranzen noch nicht gesperrt.",
-      detail: `${holdout.length === 1 ? "Ein Holdout liegt" : `${holdout.length} Holdouts liegen`} vor. Bewertet wird erst gegen gesperrte Toleranzen.`,
-    };
-  return {
-    answer: "Holdout noch nicht bestanden.",
-    detail:
-      "Holdout und gesperrte Toleranzen liegen vor, eine bestandene Bewertung fehlt. Bewerten unter „Modell gegen Messung“.",
-  };
-}
+import { EvidenceBadge } from "../../ui/EvidenceBadge";
+import { advanceExchange, listExchange } from "../api/exchange";
+import { getProject, listProjects } from "../api/projects";
+import { storedRole, storeRole, type Role } from "../api/role";
+import { exchangeAnswer, nextStatus, STATUS_LABEL, whoseTurn } from "../model/exchange";
+import Link from "../Link";
+import { loadDataInputs } from "../api/data";
+import { EMPTY_INPUTS, type DataInputs } from "../model/dataStatus";
+import { AnswerHead, Details, Section } from "../parts";
+import { useNav } from "../context";
+import type { Route } from "../routes";
+import type { ExchangeItem, Project } from "../types";
+import { WerkstattFrame, WerkstattLinks } from "../Werkstatt";
+import { canAct, isMeasured, isQuestion, modelAnswer } from "./modelStatus";
+import ThreadItem from "./Thread";
 
 type LabRoute = Extract<Route, { page: "lab" }>;
 
@@ -307,62 +222,5 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
         </Details>
       </div>
     </div>
-  );
-}
-
-function ThreadItem({
-  item,
-  canAdvance,
-  advance,
-}: {
-  item: ExchangeItem;
-  canAdvance: (turn: Party) => boolean;
-  advance: (item: ExchangeItem) => Promise<void>;
-}) {
-  const turn = whoseTurn(item);
-  const to = nextStatus(item.status);
-  return (
-    <li data-from={item.from} data-turn={turn ?? "none"}>
-      <article className="aec-msg" aria-labelledby={`x-${item.id}`}>
-        <header>
-          <span className="aec-msg__who">{PARTY_LABEL[item.from]}</span>
-          <span className="aec-msg__kind">{KIND_LABEL[item.kind]}</span>
-          <time dateTime={item.history[0]?.at}>{when(item.history[0]?.at ?? "")}</time>
-        </header>
-        <h3 id={`x-${item.id}`}>{item.title}</h3>
-        {item.summary ? <p>{item.summary}</p> : null}
-        <Flow item={item} />
-        {item.history.length > 1 ? (
-          <ul className="aec-msg__log">
-            {item.history.slice(1).map((h, i) => (
-              <li key={i}>
-                <time dateTime={h.at}>{when(h.at)}</time> {PARTY_LABEL[h.by]}:{" "}
-                {STATUS_LABEL[h.status]}
-                {h.note ? ` – ${h.note}` : ""}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        <footer>
-          <EvidenceBadge level={item.evidence} />
-          {turn ? (
-            <span className="aec-turn">
-              Am Zug: <b>{PARTY_LABEL[turn]}</b>
-            </span>
-          ) : (
-            <span className="aec-turn aec-turn--done">abgeschlossen</span>
-          )}
-          {turn && to && canAdvance(turn) ? (
-            <button
-              type="button"
-              className="aec-button aec-button--small"
-              onClick={() => void advance(item)}
-            >
-              {ACTION_LABEL[to]}
-            </button>
-          ) : null}
-        </footer>
-      </article>
-    </li>
   );
 }

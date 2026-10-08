@@ -5,21 +5,20 @@ import {
   EvidenceBadge,
   type EvidenceLevel,
 } from "../../ui/EvidenceBadge";
-import { CURRENT_COUPLED_ENGINE } from "../../munich/coupledTypes";
-import { getOverview, type Overview } from "../api";
+import { CURRENT_COUPLED_ENGINE } from "../../shared/engine";
+import { getOverview, type Overview } from "../api/overview";
 import { REPORT_STYLES } from "../../ui/reportStyles";
-import { bottleneckAnswer, powerText, variantsAnswer } from "../analysis";
+import { powerText } from "../model/format";
+import { bottleneckAnswer } from "../model/situation";
+import { variantsAnswer } from "../model/variants";
 import { AnswerHead, Details, Section } from "../parts";
 import type { ViewProps } from "../ProjectPage";
-import Pruefstatus from "../Pruefstatus";
+import Pruefstatus from "./Pruefstatus";
 import { WerkstattLinks } from "../Werkstatt";
 
 type Claim = { level: EvidenceLevel; title: string; text: string };
 
-function claimsFor(
-  { project }: Pick<ViewProps, "project">,
-  overview: Overview | null,
-): Claim[] {
+function claimsFor({ project }: Pick<ViewProps, "project">, overview: Overview | null): Claim[] {
   const passed = (overview?.summary.empirical_passed ?? 0) > 0;
   return [
     {

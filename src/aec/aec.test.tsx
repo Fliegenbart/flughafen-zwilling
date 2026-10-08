@@ -1,16 +1,12 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import AirportEnergyCheck from "./AirportEnergyCheck";
-import { boardFromApi, exchangeFromApi, situationFromApi } from "./api";
-import {
-  bottleneckAnswer,
-  exchangeAnswer,
-  nextStatus,
-  situationAnswer,
-  situationKpis,
-  variantsAnswer,
-  whoseTurn,
-} from "./analysis";
+import { exchangeFromApi } from "./api/exchange";
+import { situationFromApi } from "./api/situation";
+import { boardFromApi } from "./api/variants";
+import { exchangeAnswer, nextStatus, whoseTurn } from "./model/exchange";
+import { bottleneckAnswer, situationAnswer, situationKpis } from "./model/situation";
+import { variantsAnswer } from "./model/variants";
 import { legacyRedirect, parseRoute, toSearch } from "./routes";
 import { SAMPLE_PROJECT, sampleExchange, sampleSituation, sampleVariants } from "./sample";
 import DayLandscape from "./DayLandscape";
