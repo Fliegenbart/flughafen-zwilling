@@ -14,6 +14,26 @@ DEPARTURE_BIN_MIN = 30
 LIMIT_TOLERANCE_KW = 0.5
 
 
+def day_rows(series, day_minutes: int) -> list[dict]:
+    """Zeilen des Verkehrstags (Intervall [minute-1, minute) liegt in 0..day_minutes).
+
+    Vorlauf vor Mitternacht (Fahrzeuge laden sich auf) und Nachlauf liegen ausserhalb der
+    Tageskurve, die Kunden sehen. Alles, was den Tag beschreibt, geht durch diese Funktion.
+    """
+    return [r for r in series if 0 <= int(r["minute"]) - 1 < day_minutes]
+
+
+def limit_rows(series, day_minutes: int) -> list[dict]:
+    """Zeilen des Verkehrstags, in denen der Netzbezug an der Grenze des Anschlusses liegt."""
+    return [r for r in day_rows(series, day_minutes)
+            if r["effective_grid_cap_kw"] > 0
+            and r["grid_import_kw"] >= r["effective_grid_cap_kw"] - LIMIT_TOLERANCE_KW]
+
+
+def minutes_at_limit(series, day_minutes: int) -> int:
+    return len(limit_rows(series, day_minutes))
+
+
 def _utc(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -53,9 +73,8 @@ def build_situation(base_dir, record) -> dict:
     except HTTPException as exc:
         return empty_situation(f"run_not_verified: {exc.detail}")
     origin = datetime.fromisoformat(evidence["day_start_utc"].replace("Z", "+00:00"))
+    day_minutes = int(evidence.get("day_minutes") or 1440)
     bins: dict[int, dict[str, list[float]]] = {}
-    at_limit: list[tuple[int, float]] = []
-    peak = 0.0
     for row in evidence["series"]:
         minute = int(row["minute"])  # Intervallende, Intervall [minute-1, minute)
         start = minute - 1
@@ -67,9 +86,6 @@ def build_situation(base_dir, record) -> dict:
         bucket["cap"].append(cap)
         bucket["pv"].append(float(row["pv_kw"]))
         bucket["charging"].append(float(row["ground_charging_kw"]) + float(row["parking_kw"]))
-        peak = max(peak, grid)
-        if cap > 0 and grid >= cap - LIMIT_TOLERANCE_KW:
-            at_limit.append((start, grid))
     series = [
         {
             "start_utc": _utc(origin + timedelta(minutes=index * SERIES_BIN_MIN)),
@@ -81,8 +97,14 @@ def build_situation(base_dir, record) -> dict:
         }
         for index, values in sorted(bins.items())
     ]
+    # Fenster, Minutenzahl und Spitze beschreiben nur den Verkehrstag (day_rows), die Summe der
+    # Fenster ist deshalb immer answer.minutes_at_limit.
+    peak = max((float(r["grid_import_kw"]) for r in day_rows(evidence["series"], day_minutes)),
+               default=0.0)
+    at_limit = limit_rows(evidence["series"], day_minutes)
     windows: list[dict] = []
-    for start, grid in at_limit:
+    for row in at_limit:
+        start, grid = int(row["minute"]) - 1, float(row["grid_import_kw"])
         if windows and windows[-1]["_end"] == start:
             windows[-1]["_end"] = start + 1
             windows[-1]["peak_kw"] = max(windows[-1]["peak_kw"], round(grid, 3))

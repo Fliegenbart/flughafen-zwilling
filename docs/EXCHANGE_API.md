@@ -34,6 +34,9 @@ UUID). Die neuen Endpunkte haengen unter `/api/v1/projects/{project_id}`.
 - Bei aktivem Login duerfen `airport`/`lab` ohne Basisrolle `operator` nur unter
   `/api/v1/projects/*` und `/api/v1/library/*` schreiben (Middleware, CSRF wie bisher).
   `/api/v1/auth/session` bleibt unveraendert; die Fachrolle liefert `whoami`.
+- Ausnahme: `POST /api/v1/projects/{id}/situation/preview` rechnet nur und speichert nichts. Es
+  gilt wie ein Lesezugriff: Anmeldung und Origin-Pruefung ja, Schreibrolle nein (auch `viewer`
+  darf), und die Middleware schreibt dafuer keine Zeile `mutation_completed` ins Pruefprotokoll.
 
 `GET /api/v1/exchange/whoami` →
 ```json
@@ -189,7 +192,11 @@ Pilot-Hashkette (`actor`, `role`, `created_at`, `action`, `entity_id`, `entry_ha
 ```
 Run = neuester abgeschlossener gekoppelter Run unter den Projekt-Verknuepfungen
 (`coupled_run`, sonst Runs aus Szenario-Paketen). Mittelwerte je 15 min (Leistung,
-kW); „am Limit“ = `grid_import_kw >= effective_grid_cap_kw - 0.5 kW`. Ohne Run:
+kW); „am Limit“ = `grid_import_kw >= effective_grid_cap_kw - 0.5 kW`, gezaehlt nur im
+Verkehrstag (nicht im Vorlauf vor Mitternacht und nicht im Nachlauf). Dieselbe Tagesgrenze gilt
+fuer `bottleneck_windows` (die Summe ihrer `minutes` ist `answer.minutes_at_limit`; ein Fenster
+beginnt fruehestens zu Tagesbeginn) und fuer `answer.peak_kw`. Die Reihe `series` zeigt den
+Vorlauf und den Nachlauf weiter, der Browser schneidet sie auf den Tag. Ohne Run:
 ```json
 {"available": false, "run_id": null, "series": [], "departures": [],
  "bottleneck_windows": [], "answer": {"bottleneck": null, "minutes_at_limit": null,
@@ -197,13 +204,41 @@ kW); „am Limit“ = `grid_import_kw >= effective_grid_cap_kw - 0.5 kW`. Ohne R
  "cause_shares_pct": null}, "evidence_level": null, "reason": "no_completed_coupled_run"}
 ```
 
+## Vorschau fuer die Regler (Durchrechnen)
+
+`POST /api/v1/projects/{id}/situation/preview` rechnet den Tag fuer eine Reglerstellung genau
+(dieselbe Basis und dieselben Aenderungen wie bei Loesungen), ohne Warteschlange, ohne Speichern,
+ohne Versiegelung. Der Browser naehert dieselbe Stellung beim Ziehen selbst und ersetzt die
+Naeherung nach rund 280 ms durch diese Antwort. Koerper, alles optional (leer = heutiger Stand):
+`grid_import_limit_kw`, `storage_kwh` mit `storage_kw` (setzt die Batterie; `0` oder fehlend laesst
+die Batterie des Projekts unveraendert, die Vorschau entfernt keine Batterie), `pv_factor` (0 bis 3),
+`extra_vehicles {klasse: anzahl}`, `charging_policy` (`uncontrolled|mission_priority`) und `crisis`
+(Krisenfall der Bibliothek, Energie-Abbild wie beim Stresstest). Unbekannte Felder → 422, ebenso
+Werte, die die Variantenpruefung ablehnt (`detail`: `invalid_variant: <ein Satz>`, zum Beispiel
+„Das Modell rechnet höchstens 300 Fahrzeuge, die Flotte käme auf 340.“, ohne Pydantic-Text; dasselbe
+gilt fuer `POST …/variants` und `POST …/variants/run`). Antwort: Minutenreihen als Spalten (`requested_kw`,
+`delivered_kw`, `background_kw`, `pv_kw`, `chp_kw`, `grid_cap_kw`, `grid_import_kw`, `battery_kw`,
+Batterie + gibt ab), `power` (inkl. `apron_limit_kw` und `parking_limit_kw`, die Trafogrenzen je
+Sektor), `fleet` (Weltdaten fuer die Naeherung im Browser: je Fahrzeugklasse Fahrzeuge, Ladepunkte,
+Ladeleistung, Akku, Ladeziel, Einsatzenergie und -dauer, sortierte Freigabeminuten, ausgefallene
+Ladepunkte; dazu die Parkhaus-Ladeauftraege und der Ladewirkungsgrad), `policy`, `changes`,
+`crisis`, `departures` je halbe Stunde und
+`kpis` (`departures_total`, `delayed_departures`, `on_time_pct`, `minutes_at_limit` im
+Verkehrstag, `background_unserved_kwh`, `energy_wait_share_pct`, `bottleneck`). Die Antwort ist
+als `preview: true`, `evidence_level: synthetic` markiert; verbindlich sind nur versiegelte Laeufe
+(Varianten). Parallele Anfragen warten bis zu 8 s auf den Rechenplatz (sonst 429).
+
 ## Varianten („Was hilft?“)
 
 Modul `backend/app/exchange/variants.py`, Tests `backend/tests/test_variants.py`.
 
 **Basis** = Konfiguration, Seed, Laderegel und Flugplan des neuesten abgeschlossenen gekoppelten
 Projektlaufs; ohne Lauf der zuletzt verknuepfte Flugplan mit Standardannahmen (Seed 42,
-Laderegel `uncontrolled`). Ohne beides → `409 no_base: …`.
+Laderegel `uncontrolled`). Ohne beides → `409 no_base: …`. Passen die Projektwerte (Schritt
+„Daten“) nicht zu dieser Basis, antwortet jede Rechnung (Vorschau, Variante, Lauf) mit `409
+invalid_assets: Projektwerte passen nicht zur Basis: <ein deutscher Satz>`, zum Beispiel „Das
+Modell rechnet höchstens 300 Fahrzeuge, die Flotte käme auf 305.“. Auch hier steht kein
+Pydantic-Text im `detail`.
 
 `POST /api/v1/projects/{id}/variants` (airport|admin; lab/viewer → 403), max. 8 je Projekt,
 Name eindeutig (409):
@@ -237,11 +272,16 @@ Basis/Variante mit `world_hash`, `run_id`, `status`, `fleet`, `kpis`, `delta_to_
 (`grid_minus_20|crisis|null`) und `latest_run.crisis` (`id`, `name`, `assumption`) nennen den Stresstest.
 
 `kpis`: `on_time_pct` (Anteil Abfluege, deren modellierte Auftraege fristgerecht fertig sind),
-`delayed_departures`, `departures_total`, `minutes_at_limit` (wie Lagebild, ganzer Horizont),
-`peak_kw`, `missing_kw_peak` (UI: „ungedeckter Ladebedarf in der Spitze“; Maximum je Minute von angefragter
-minus gelieferter Ladeleistung, kW, keine Summe; Feldname bleibt aus Kompatibilitaetsgruenden; `null` bei
-Laeufen ohne Spalte `charging_requested_kw`), `grid_energy_mwh_day` (Netzbezug nur
-Verkehrstag), `background_unserved_kwh`, `bottleneck`, `cause_shares_pct`, Wartezeiten.
+`delayed_departures`, `departures_total`, `minutes_at_limit` (wie Lagebild, nur Verkehrstag),
+`peak_kw` (hoechster Netzbezug, nur Verkehrstag, derselbe Wert wie `answer.peak_kw` im Lagebild),
+`missing_kw_peak` (UI: „ungedeckter Ladebedarf in der Spitze“; Maximum je Minute von angefragter
+minus gelieferter Ladeleistung, kW, keine Summe, nur Verkehrstag; Feldname bleibt aus
+Kompatibilitaetsgruenden; `null` bei Laeufen ohne Spalte `charging_requested_kw`),
+`grid_energy_mwh_day` (Netzbezug nur Verkehrstag), `background_unserved_kwh`, `bottleneck`,
+`cause_shares_pct`, Wartezeiten. Vorlauf vor Mitternacht und Nachlauf der Simulation zaehlen in
+keiner dieser Kennzahlen; die Regel steht einmal in `situation.day_rows`. Prozentzahlen in
+`answer.headline` und `answer.details` rundet das Backend halb auf (85,85 → 85,9) wie der Browser
+in der Tabelle, damit Satz und Tabelle dieselbe Zahl zeigen.
 
 `evidence_level`: `model_checked` nur wenn Artefakt versiegelt/geprueft, gleiche
 Nachfragewelt, Flotten- und Speicherbilanz ≤ 1e-6 kWh und Grundlast voll versorgt; sonst
@@ -280,11 +320,15 @@ Modul `backend/app/exchange/assets.py`, Tests `backend/tests/test_project_assets
 "source": "Netzvertrag", "source_date": "2025-11-01"}]}` ersetzt den Satz (neue Version, Audit
 `exchange_assets_set`). `POST …/assets/import?filename=…` mit CSV (`key,value,unit,source,source_date`,
 `#`-Kommentare) oder JSON (`{"entries": […]}`), max. 256 KiB; das Original wird mit SHA256 gespeichert.
-Rollen airport|admin (lab → 403). Fehler → `422 invalid_assets: <deutscher Satz>`.
+Rollen airport|admin (lab → 403). Fehler → `422 invalid_assets: <deutscher Satz>`, auch bei
+Verstoss gegen die Flottengrenzen des Modells (200 Fahrzeuge je Art, 300 gesamt; der Satz nennt die
+Zahlen). Das Speichern prueft die Werte gegen die Standardflotte (100 Fahrzeuge); die Basis des
+Projekts kann eine andere Flotte haben, dann meldet erst die Rechnung den Widerspruch (`409`, siehe
+Varianten).
 Einheiten kW/MW, kWh/MWh, kWp/MWp, Stück; Umrechnung in die kanonische Einheit, Original bleibt.
 Ohne Quelle bleibt ein Wert `annahme`; `echt` = Netzanschluss + Fahrzeugzahl, alle mit Quelle.
 
 Wirkung: Die Werte überschreiben in der Varianten-Basis (gekoppelter Lauf oder Flugplan-Standard)
 die passenden Felder (`base.project_assets`, im Batch eingefroren). Der Basislauf jeder
-Variantenrechnung zählt für Lagebild/Engpass als Projektlauf; bestehende Läufe ändern sich nicht.
+Variantenrechnung zählt für Lagebild und Zusage als Projektlauf; bestehende Läufe ändern sich nicht.
 Frontend: Runtime-Flag `sharedDemoNotice` (Default an) blendet den Hinweis „geteilte Demo“ aus.

@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from decimal import ROUND_HALF_UP, Decimal
 from threading import Lock
 from typing import Any, Callable
 from uuid import uuid4
@@ -29,9 +30,9 @@ from ..munich.coupled_models import (
 )
 from ..munich.coupled_world import CoupledWorld, build_world
 from ..pilot.router import _verified_coupled_series
-from .assets import base_assets
+from .assets import base_assets, check_fleet_limits, plain_message
 from .crisis import crisis_config, crisis_stress
-from .situation import LIMIT_TOLERANCE_KW
+from .situation import day_rows, minutes_at_limit
 
 MAX_VARIANTS = 8
 # Varianten-Batches duerfen die Queue ueber das Vergleichslimit (10) hinaus fuellen;
@@ -131,6 +132,11 @@ def fleet_summary(config: CoupledConfig | None, source: str | None) -> dict:
     }
 
 
+def invalid_variant_detail(exc: ValueError) -> str:
+    """422-Text fuer eine unzulaessige Aenderung; der Kunde liest ihn (api/http.ts explain)."""
+    return f"invalid_variant: {plain_message(exc)}"
+
+
 def apply_changes(
     base: CoupledConfig, base_policy: CoupledPolicy, changes: VariantChanges, day_minutes: int,
 ) -> tuple[CoupledConfig, CoupledPolicy, dict[str, Any]]:
@@ -162,6 +168,7 @@ def apply_changes(
             raise ValueError(f"Fahrzeugklasse {kind} ist in der Basis nicht modelliert")
         fleets[kind]["vehicles"] += count
         varied[f"fleets.{kind}.vehicles"] = fleets[kind]["vehicles"]
+    check_fleet_limits(values["fleets"])
     for kind, count in sorted(changes.chargers_offline.items()):
         if kind not in fleets:
             raise ValueError(f"Fahrzeugklasse {kind} ist in der Basis nicht modelliert")
@@ -197,15 +204,12 @@ def run_kpis(base_dir, record) -> dict:
     _, _, frozen = _verified_coupled_series(base_dir, record.status.run_id, "grid_import_kw")
     evidence = json.loads(frozen["coupled-evidence.json"])
     day_minutes = int(evidence.get("day_minutes") or 1440)
-    peak, at_limit, missing = 0.0, 0, None
-    grid_day: list[float] = []
-    for row in evidence["series"]:
-        grid, cap = float(row["grid_import_kw"]), float(row["effective_grid_cap_kw"])
-        peak = max(peak, grid)
-        if cap > 0 and grid >= cap - LIMIT_TOLERANCE_KW:
-            at_limit += 1
-        if 0 <= int(row["minute"]) - 1 < day_minutes:
-            grid_day.append(grid)
+    # Spitze, fehlende Leistung und Energie beschreiben nur den Verkehrstag (wie das Lagebild);
+    # Vorlauf und Nachlauf der Simulation zaehlen nicht.
+    day = day_rows(evidence["series"], day_minutes)
+    grid_day = [float(row["grid_import_kw"]) for row in day]
+    peak, missing = max(grid_day, default=0.0), None
+    for row in day:
         if "charging_requested_kw" in row:
             short = float(row["charging_requested_kw"]) - float(row["ground_charging_kw"]) - float(
                 row["parking_kw"])
@@ -224,7 +228,7 @@ def run_kpis(base_dir, record) -> dict:
         "departures_total": len(departures),
         "departures_on_time": on_time,
         "delayed_departures": len(departures) - on_time,
-        "minutes_at_limit": at_limit,
+        "minutes_at_limit": minutes_at_limit(evidence["series"], day_minutes),
         "peak_kw": _round(peak),
         "missing_kw_peak": _round(missing),
         "grid_energy_mwh_day": _round(math.fsum(grid_day) / 60 / 1000, 3),
@@ -260,8 +264,13 @@ def _better(a: dict, b: dict) -> bool:
 
 
 def _num(value: float, digits: int = 1) -> str:
-    text = f"{value:,.{digits}f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return text
+    """Deutsche Zahl; ab ,5 wird aufgerundet wie im Browser (Intl, Math.round).
+
+    f"{85.85:.1f}" ergibt "85.8" (der Binaerwert liegt knapp unter 85,85), die Tabelle zeigt
+    85,9. Deshalb rundet der Dezimaltext, nach den 3 Stellen der Kennzahlen im Payload.
+    """
+    exact = Decimal(str(round(value, 3))).quantize(Decimal(1).scaleb(-digits), ROUND_HALF_UP)
+    return f"{exact:,.{digits}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def _gain(e: dict, base: dict) -> float:
@@ -466,7 +475,7 @@ class VariantService:
                 base["config"], base["policy"], request.changes, world.day_minutes)
             build_world(plan, config, base["seed"])
         except ValueError as exc:
-            raise HTTPException(status_code=422, detail=f"invalid_variant: {exc}") from exc
+            raise HTTPException(status_code=422, detail=invalid_variant_detail(exc)) from exc
         if not varied:
             raise HTTPException(status_code=422,
                                 detail="invalid_variant: aendert nichts gegenueber der Basis")
@@ -564,10 +573,15 @@ class VariantService:
                              "policy": base["policy"], "config": base["config"],
                              "world": base_world}]
                 for variant in variants:
-                    config, policy, varied = apply_changes(
-                        base["config"], base["policy"],
-                        VariantChanges.model_validate(variant["changes"]),
-                        base_world.day_minutes)
+                    try:
+                        config, policy, varied = apply_changes(
+                            base["config"], base["policy"],
+                            VariantChanges.model_validate(variant["changes"]),
+                            base_world.day_minutes)
+                    except ValueError as exc:
+                        # Nach geaenderten Projektwerten kann eine alte Loesung nicht mehr passen.
+                        raise ValueError(f"„{variant['name']}“ passt nicht mehr zu Ihren "
+                                         f"Projektwerten. {plain_message(exc)}") from exc
                     prepared.append({"key": variant["id"], "name": variant["name"],
                                      "changes": variant["changes"], "varied": varied,
                                      "policy": policy, "config": config,
@@ -583,7 +597,7 @@ class VariantService:
                     entry["stress_world"] = (build_world(plan, stressed, base["seed"])
                                              if request.stress else None)
             except ValueError as exc:
-                raise HTTPException(status_code=422, detail=f"invalid_variant: {exc}") from exc
+                raise HTTPException(status_code=422, detail=invalid_variant_detail(exc)) from exc
             except RuntimeError as exc:
                 raise HTTPException(status_code=500, detail=str(exc)) from exc
             batch_id = uuid4().hex

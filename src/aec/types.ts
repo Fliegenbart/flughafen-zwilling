@@ -3,6 +3,7 @@
  * Jede Zahl traegt ihre Herkunft: `source` = "api" (aus dem Backend) oder
  * "beispiel" (klar markierte Beispieldaten zur Gestaltung/Vorfuehrung).
  */
+import type { ChargingPolicy } from "./model/policy";
 import type { EvidenceLevel } from "../ui/EvidenceBadge";
 
 export type DataSource = "api" | "beispiel";
@@ -14,7 +15,8 @@ export type Project = {
   site: string;
   dayLabel: string;
   fleetSize: number;
-  gridLimitKw: number;
+  /** Anschlussleistung; null, solange das Projekt sie nicht kennt (Serverprojekt in der Liste). */
+  gridLimitKw: number | null;
   decision?: string;
   source: DataSource;
 };
@@ -32,16 +34,14 @@ export type Situation = {
   stepMinutes: number;
   load: LoadPoint[];
   departures: DepartureSlot[];
-  /** Engpassfenster, falls die API sie liefert; sonst aus dem Verlauf abgeleitet. */
-  windows?: Window[];
-  /** Abfluege mit verspaeteter Abfertigung und Anteil fahrzeugbedingt (0..1). */
-  delayedDepartures: number;
-  vehicleShare: number;
+  /** Knappe Phasen im Verkehrstag, zusammengefasst wie in Durchrechnen (model/situation.ts). */
+  windows: Window[];
   /** Modellierte Flotte des Laufs (nur API). */
   fleet?: Fleet;
 };
 
-export type Window = { start: number; end: number; peakKw: number; deficitKw: number };
+/** Eine knappe Phase in Minuten ab Mitternacht; `deficitKw` 0 heisst: nur "Anschluss voll" bekannt. */
+export type Window = { start: number; end: number; deficitKw: number };
 
 export type Variant = {
   id: string;
@@ -57,13 +57,11 @@ export type Variant = {
   delayedDepartures?: number;
   departuresTotal?: number;
   missingKw?: number | null;
-  backgroundUnservedKwh?: number;
   bottleneck?: string | null;
-  energyShare?: number;
-  fleetTotal?: number | null;
   deltaOnTimePct?: number | null;
-  deltaMinutes?: number | null;
   stressOnTimePct?: number | null;
+  /** Wie sicher die Zahl unter Stress ist; der Stresslauf wird eigens eingestuft. */
+  stressEvidence?: EvidenceLevel | null;
   status?: string;
 };
 
@@ -80,7 +78,7 @@ export type VariantChanges = {
   storage_kwh?: number;
   storage_kw?: number;
   extra_vehicles?: Partial<Record<FleetKind, number>>;
-  charging_policy?: "uncontrolled" | "mission_priority";
+  charging_policy?: ChargingPolicy;
   chargers_offline?: Partial<Record<FleetKind, number>>;
   pv_factor?: number;
 };

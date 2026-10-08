@@ -4,12 +4,12 @@ import { saveAssets } from "./api/data";
 import { distributeFleet, MAX_FLEET } from "./model/dataStatus";
 import { FOCUS_KEY } from "./views/DatenView";
 import { clock, powerText } from "./model/format";
-import { limitWindows } from "./model/situation";
+import { worstWindow } from "./model/situation";
 import { useNav } from "./context";
 import DayLandscape from "./DayLandscape";
 import Link from "./Link";
 import { SourceTag } from "./parts";
-import { QUESTIONS } from "./routes";
+import { STEPS } from "./routes";
 import { SAMPLE_PROJECT, sampleSituation } from "./sample";
 import { SCENARIO_CASES } from "./scenarios";
 import ScenarioViz from "./ScenarioViz";
@@ -18,7 +18,7 @@ import type { Project } from "./types";
 export default function Home() {
   const nav = useNav();
   const situation = useMemo(() => sampleSituation(), []);
-  const window0 = limitWindows(situation)[0];
+  const worst = worstWindow(situation);
   const [projects, setProjects] = useState<Project[]>([SAMPLE_PROJECT]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
@@ -132,10 +132,12 @@ export default function Home() {
               <i className="aec-legend__dep" aria-hidden="true" />
               Abflugwellen
             </li>
-            <li>
-              <i className="aec-legend__signal" aria-hidden="true" />
-              Zu knapp {window0 ? `${clock(window0.start)}–${clock(window0.end)} Uhr` : ""}
-            </li>
+            {worst ? (
+              <li>
+                <i className="aec-legend__signal" aria-hidden="true" />
+                Am knappsten {clock(worst.start)}–{clock(worst.end)} Uhr
+              </li>
+            ) : null}
           </ul>
         </div>
       </section>
@@ -143,10 +145,10 @@ export default function Home() {
       <section className="aec-band" aria-labelledby="aec-how">
         <div className="aec-band__head">
           <span className="aec-eyebrow">Ablauf</span>
-          <h2 id="aec-how">In vier Schritten zur Zusage an den Flughafen.</h2>
+          <h2 id="aec-how">In drei Schritten zur Zusage an den Flughafen.</h2>
         </div>
         <ol className="aec-route">
-          {QUESTIONS.map((q, i) => (
+          {STEPS.map((q, i) => (
             <li key={q.id} style={{ "--i": i } as React.CSSProperties}>
               <span className="aec-route__no">{String.fromCharCode(65 + i)}</span>
               <strong>{q.label}</strong>
@@ -166,7 +168,7 @@ export default function Home() {
             {projects.map((p) => (
               <li key={p.id}>
                 <Link
-                  to={{ page: "projekt", projekt: p.id, frage: "lage", auto: true }}
+                  to={{ page: "arbeitsplatz", projekt: p.id, auto: true }}
                   className="aec-project"
                 >
                   <span className="aec-project__name">{p.name}</span>

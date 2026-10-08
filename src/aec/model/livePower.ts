@@ -1,15 +1,25 @@
 /**
  * Schnelle Naeherung der Netzseite fuer die Live-Regler (Anschluss, Batterie, PV).
  *
- * Grundlage sind die Minutenreihen des letzten genauen Laufs (backend/app/exchange/live.py).
- * Je Minute wird die Leistungsbilanz des Backends (coupled_power.py) nachgerechnet. Was ein
- * Fahrzeug in einer Minute nicht laden kann, fragt es in der naechsten erneut an (Rueckstau).
+ * Je Minute wird gerechnet wie im Backend: erst die Ladenachfrage der Flotte (liveFleet.ts, gleiche
+ * Regeln wie coupled_simulator.py, Regel "uncontrolled"), darauf die Leistungsbilanz
+ * (coupled_power.py PowerBalance.step: Grundlast, PV, BHKW, Netzgrenze, Batterie, Trafogrenzen).
+ * Was nicht geliefert wird, bleibt im Energiestand der Fahrzeuge und wird spaeter erneut angefragt.
+ * Die Minutenreihen des Basislaufs liefern nur Grundlast, PV, BHKW und Netzgrenze (sowie die
+ * genauen Kennzahlen fuer resultFromExact); es gibt keine abgestimmten Konstanten.
+ *
  * Nicht genaehert wird die Fahrzeugseite: Auftraege, Wartezeiten, Puenktlichkeit. Die kommen
- * erst aus der genauen Rechnung nach dem Loslassen des Reglers.
+ * erst aus der genauen Rechnung nach dem Loslassen des Reglers. Ebenfalls nicht abgebildet:
+ * zusaetzliche Fahrzeuge, Krisenfall und die Laderegel "mission_priority"; dann weicht die
+ * Naeherung ab (bei mission_priority im Beispieltag um bis zu rund 25 %).
  *
  * Abweichung gegen die genaue Rechnung: livePower.test.ts mit Referenz aus
  * backend/scripts/make_live_power_fixture.py.
  */
+
+import type { FleetKind } from "../types";
+import type { ChargingPolicy } from "./policy";
+import { FleetState, type LiveFleet } from "./liveFleet";
 
 export type LiveBasis = {
   dayMinutes: number;
@@ -24,6 +34,8 @@ export type LiveBasis = {
   /** Nur aus einer genauen Rechnung: tatsaechlicher Netzbezug und Batterie (+ gibt ab). */
   gridImportKw?: number[];
   batteryKw?: number[];
+  /** Weltdaten der Flotte fuer die Ladenachfrage (siehe liveFleet.ts). */
+  fleet: LiveFleet;
   power: {
     gridImportLimitKw: number;
     pvCapacityKwp: number;
@@ -34,7 +46,9 @@ export type LiveBasis = {
     batteryEfficiency: number;
     batteryGridChargeBelowKw: number | null;
     transformerEfficiency: number;
-    chargingLimitKw: number;
+    /** Trafogrenzen Vorfeld und Parkhaus (kW, Wirkleistung): jeder Sektor hat seine eigene. */
+    apronLimitKw: number;
+    parkingLimitKw: number;
   };
 };
 
@@ -46,6 +60,12 @@ export type Levers = {
   pvFactor: number;
   /** Zusaetzliche Fahrzeuge; die Naeherung rechnet sie nicht, nur die genaue Vorschau. */
   extraVehicles?: number;
+  /** Art der zusaetzlichen Fahrzeuge; ohne Angabe im Verhaeltnis der Standardflotte. */
+  extraKind?: FleetKind;
+  /** Laderegel; wirkt nur in der genauen Rechnung. */
+  policy?: ChargingPolicy;
+  /** Krisenfall der Bibliothek (scenarioId); wirkt nur in der genauen Rechnung. */
+  crisis?: string;
 };
 
 export type LiveResult = {
@@ -66,8 +86,8 @@ const DT_H = 1 / 60;
 const LIMIT_TOLERANCE_KW = 0.5;
 /** Wie backend/app/exchange/variants.py: Speicher laedt aus dem Netz unter 80 % der Grenze. */
 const STORAGE_GRID_CHARGE_SHARE = 0.8;
-const EPS = 1e-6;
-const CARRY_DECAY = 0.8;
+/** Netzgrenze des Basislaufs gilt als gestoert, wenn sie mehr als das unter dem Anschluss liegt (kW). */
+const CAP_EPS_KW = 1e-6;
 
 export function leversFromBasis(b: LiveBasis): Levers {
   return {
@@ -94,21 +114,20 @@ export function simulateLive(b: LiveBasis, levers: Levers): LiveResult {
       : p.batteryGridChargeBelowKw;
   const reserve = (capacity * p.batteryReservePct) / 100;
   let stored = (capacity * socPct) / 100;
-  // Hoechste angefragte Leistung als Ersatz fuer die Zahl der Ladepunkte.
-  const requestCap = b.requestedKw.reduce((m, v) => Math.max(m, v), 0);
+
+  const fleet = new FleetState(b.fleet);
 
   const out = emptyResult();
-  let carryBase = 0;
-  let carry = 0;
   for (let i = 0; i < n; i++) {
-    const fresh = Math.max(0, b.requestedKw[i]! - carryBase * CARRY_DECAY);
-    carryBase = Math.max(0, b.requestedKw[i]! - b.deliveredKw[i]!);
-    const request = Math.min(fresh + carry, Math.max(requestCap, fresh));
+    const minute = b.startMin + i;
+    // Rueckkehr, neue Auftraege, Einsatzvergabe; dann fragen die ladebereiten Fahrzeuge an.
+    fleet.request(minute);
+    const request = fleet.apronKw + fleet.parkingKw;
 
     const baseCap = b.gridCapKw[i]!;
     // Stoerungen im Basislauf (Grenze unter dem Anschluss) bleiben erhalten.
     const cap =
-      baseCap < p.gridImportLimitKw - EPS
+      baseCap < p.gridImportLimitKw - CAP_EPS_KW
         ? Math.min(baseCap, levers.gridLimitKw)
         : levers.gridLimitKw;
     const pv = b.pvKw[i]! * levers.pvFactor;
@@ -122,8 +141,15 @@ export function simulateLive(b: LiveBasis, levers: Levers): LiveResult {
     const supply = pv + chp + cap + dischargeAvail;
     const served = Math.min(background, supply);
     const available = Math.max(0, supply - served);
-    const upstream = Math.min(request / eta, p.chargingLimitKw, available);
-    const delivered = upstream * eta;
+    // Zuteilung wie PowerBalance.step (Regel "uncontrolled"): erst begrenzt der Trafo jeden
+    // Sektor, dann kuerzt die verfuegbare Leistung alle Anfragen um denselben Anteil.
+    const apronFactor = sectorFactor(fleet.apronKw, p.apronLimitKw, eta);
+    const parkingFactor = sectorFactor(fleet.parkingKw, p.parkingLimitKw, eta);
+    const granted = fleet.apronKw * apronFactor + fleet.parkingKw * parkingFactor;
+    const wanted = granted / eta;
+    const scale = wanted > 0 ? Math.min(1, available / wanted) : 1;
+    const upstream = wanted * scale;
+    const delivered = granted * scale;
     const demand = served + upstream;
     const deficit = Math.max(0, demand - pv - chp);
     let imported = Math.min(cap, deficit);
@@ -147,14 +173,25 @@ export function simulateLive(b: LiveBasis, levers: Levers): LiveResult {
     stored += (charge * p.batteryEfficiency - discharge / p.batteryEfficiency) * DT_H;
     stored = Math.min(capacity, Math.max(reserve, stored));
 
-    const missing = Math.max(0, request - delivered);
-    // Der Rueckstau klingt pro Minute auf 80 % ab: Ein Teil der wartenden Fahrzeuge faehrt
-    // ohnehin los oder ist voll. Gegen die genaue Rechnung gemessen (2,2 bis 3 MW) am besten.
-    carry = missing * CARRY_DECAY;
+    // Was geliefert wurde, laedt die Fahrzeuge; der Rest bleibt als Rueckstau in ihrem Energiestand.
+    fleet.deliver(apronFactor * scale, parkingFactor * scale, minute);
 
-    record(out, b.startMin + i, b.dayMinutes, imported, cap, missing, discharge - charge);
+    record(
+      out,
+      minute,
+      b.dayMinutes,
+      imported,
+      cap,
+      Math.max(0, request - delivered),
+      discharge - charge,
+    );
   }
   return out;
+}
+
+/** Anteil der Anfrage eines Sektors, den dessen Trafo durchlaesst (1 = ohne Kuerzung). */
+function sectorFactor(requestKw: number, limitKw: number, efficiency: number): number {
+  return requestKw > 0 ? Math.min(1, (limitKw * efficiency) / requestKw) : 1;
 }
 
 function emptyResult(): LiveResult {

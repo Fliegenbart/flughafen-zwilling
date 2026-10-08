@@ -1,4 +1,5 @@
 /** Lagebild des Verkehrstags aus dem Backend, sonst Beispieldaten. */
+import { mergeWindows } from "../model/situation";
 import { sampleSituation } from "../sample";
 import type { Fleet, FleetKind, Project, Situation } from "../types";
 import { request as call } from "./http";
@@ -32,17 +33,18 @@ export function situationFromApi(project: Project, data: unknown): Situation | n
   if (!Number.isFinite(dayStart)) return null;
   const step = num(data.interval_min, 15);
   const limit =
-    series.reduce((m, p) => Math.max(m, num(p.grid_limit_kw)), 0) || project.gridLimitKw;
-  const answer = isObj(data.answer) ? data.answer : {};
-  const shares = isObj(answer.cause_shares_pct) ? answer.cause_shares_pct : {};
-  const windows = Array.isArray(data.bottleneck_windows)
-    ? data.bottleneck_windows.filter(isObj).map((w) => ({
-        start: minuteOf(str(w.start_utc), dayStart),
-        end: minuteOf(str(w.end_utc), dayStart),
-        peakKw: num(w.peak_kw),
+    series.reduce((m, p) => Math.max(m, num(p.grid_limit_kw)), 0) || (project.gridLimitKw ?? 0);
+  // Vor- und Nachlauf der Rechnung gehoeren nicht zum Verkehrstag; Fenster werden auf ihn gekuerzt.
+  const windows = mergeWindows(
+    (Array.isArray(data.bottleneck_windows) ? data.bottleneck_windows : [])
+      .filter(isObj)
+      .map((w) => ({
+        start: Math.max(0, minuteOf(str(w.start_utc), dayStart)),
+        end: Math.min(1440, minuteOf(str(w.end_utc), dayStart)),
         deficitKw: 0,
       }))
-    : [];
+      .filter((w) => w.end > w.start),
+  );
   return {
     projectId: project.id,
     source: "api",
@@ -65,8 +67,6 @@ export function situationFromApi(project: Project, data: unknown): Situation | n
           .filter(inDay)
       : [],
     windows,
-    delayedDepartures: num(answer.delayed_departures),
-    vehicleShare: num(shares.resource) / 100,
     fleet: fleetFromApi(data.fleet),
   };
 }

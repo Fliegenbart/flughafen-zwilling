@@ -1,18 +1,21 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import AirportEnergyCheck from "./AirportEnergyCheck";
 import { exchangeFromApi } from "./api/exchange";
 import { situationFromApi } from "./api/situation";
 import { boardFromApi } from "./api/variants";
 import { exchangeAnswer, nextStatus, whoseTurn } from "./model/exchange";
-import { bottleneckAnswer, situationAnswer, situationKpis } from "./model/situation";
-import { variantsAnswer } from "./model/variants";
+import { clock } from "./model/format";
+import { shortfallHeadline, shortfallPhases, worstShortfall } from "./model/headline";
+import { resultFromExact } from "./model/livePower";
+import { bottleneckAnswer, worstWindow } from "./model/situation";
 import { legacyRedirect, parseRoute, toSearch } from "./routes";
-import { SAMPLE_PROJECT, sampleExchange, sampleSituation, sampleVariants } from "./sample";
+import { SAMPLE_PROJECT, sampleExchange, samplePreview, sampleSituation } from "./sample";
 import DayLandscape from "./DayLandscape";
 import { SCENARIO_CASES } from "./scenarios";
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   window.history.replaceState(null, "", "/");
   sessionStorage.clear();
 });
@@ -24,13 +27,13 @@ function openApp(search = "") {
 
 describe("Adressen und Weiterleitungen", () => {
   it("liest und schreibt Projekt, Frage und Werkstatt", () => {
-    const r = { page: "projekt", projekt: "p1", frage: "engpass", werkstatt: "betrieb" } as const;
-    expect(toSearch(r)).toBe("?projekt=p1&frage=engpass&werkstatt=betrieb&schritt=betrieb");
+    const r = { page: "projekt", projekt: "p1", frage: "nachweis", werkstatt: "betrieb" } as const;
+    expect(toSearch(r)).toBe("?projekt=p1&frage=nachweis&werkstatt=betrieb&schritt=betrieb");
     expect(parseRoute(toSearch(r))).toEqual(r);
+    // Durchrechnen ist die Hauptseite des Projekts; Unbekanntes landet dort.
     expect(parseRoute("?projekt=p1&frage=quatsch")).toEqual({
-      page: "projekt",
+      page: "arbeitsplatz",
       projekt: "p1",
-      frage: "lage",
     });
     expect(parseRoute("")).toEqual({ page: "start" });
   });
@@ -40,39 +43,64 @@ describe("Adressen und Weiterleitungen", () => {
     expect(legacyRedirect("?workspace=airport")).toBe("?seite=bibliothek&werkstatt=simulation");
     expect(legacyRedirect("?workspace=flexlab")).toContain("seite=lab&projekt=");
     expect(legacyRedirect("?workspace=flexlab")).toContain("werkstatt=flexlab");
-    expect(legacyRedirect("?workspace=munich")).toContain("frage=lage&werkstatt=system");
+    expect(legacyRedirect("?workspace=munich")).toContain("frage=daten&werkstatt=system");
     expect(legacyRedirect("?workspace=munich&schritt=pilot")).toContain("seite=lab");
     expect(legacyRedirect("?workspace=munich&schritt=nachweise")).toContain("frage=nachweis");
   });
+
+  it("führt die Adressen der früheren Seiten Tag, Engpass und Lösungen zu Durchrechnen", () => {
+    expect(legacyRedirect("?projekt=p1&frage=lage")).toBe("?projekt=p1");
+    expect(legacyRedirect("?projekt=p1&ansicht=neu")).toBe("?projekt=p1");
+    expect(legacyRedirect("?projekt=p1&frage=varianten&krise=enteisung")).toBe(
+      "?projekt=p1&krise=enteisung",
+    );
+    // Detailwerkzeuge ziehen auf die Seite um, zu der sie jetzt gehören.
+    expect(legacyRedirect("?projekt=p1&frage=engpass&werkstatt=betrieb&schritt=betrieb")).toBe(
+      "?projekt=p1&frage=nachweis&werkstatt=betrieb&schritt=betrieb",
+    );
+    expect(
+      legacyRedirect("?projekt=p1&frage=varianten&werkstatt=robustheit&schritt=robustheit"),
+    ).toBe("?projekt=p1&frage=nachweis&werkstatt=robustheit&schritt=robustheit");
+    // Aktuelle Adressen bleiben unberührt.
+    expect(legacyRedirect("?projekt=p1")).toBeNull();
+    expect(legacyRedirect("?projekt=p1&frage=daten")).toBeNull();
+    expect(legacyRedirect("?projekt=p1&frage=nachweis")).toBeNull();
+  });
 });
 
-describe("Antwortsätze", () => {
+describe("Antwortsatz zur knappsten Phase", () => {
   const s = sampleSituation();
-  it("nennt das Engpassfenster und die fehlende Leistung aus den Daten", () => {
-    const w = situationKpis(s).worst!;
+  const exact = resultFromExact(samplePreview().basis);
+  it("nennt die knappste Phase und die fehlende Leistung aus den Daten", () => {
+    const w = worstWindow(s)!;
     expect(w.deficitKw).toBeGreaterThan(0);
-    expect(bottleneckAnswer(s)).toMatch(/^Von 06:\d\d bis 07:\d\d Uhr fehlen bis zu \d+\skW\./);
-    expect(situationAnswer(s)).toMatch(/^Von 06:\d\d bis 07:\d\d Uhr reicht der Anschluss nicht\./);
+    expect(bottleneckAnswer(s)).toMatch(
+      /^Von \d\d:\d\d bis \d\d:\d\d Uhr fehlen bis zu [\d,]+\sMW\./,
+    );
+  });
+  it("sagt auf dem Beispieltag dasselbe wie Durchrechnen", () => {
+    expect(bottleneckAnswer(s)).toBe(shortfallHeadline(exact));
+    expect(s.windows).toEqual(
+      shortfallPhases(exact).map((p) => ({
+        start: p.start,
+        end: p.end,
+        deficitKw: p.maxMissingKw,
+      })),
+    );
   });
   it("sagt ehrlich, wenn nichts eng wird", () => {
-    const calm = { ...s, gridLimitKw: 10000 };
-    expect(bottleneckAnswer(calm)).toBe("Es wird an keinem Punkt des Tages eng.");
-    expect(situationAnswer(calm)).toMatch(/reicht den ganzen Tag/);
+    expect(bottleneckAnswer({ ...s, windows: [] })).toBe("Der Anschluss reicht den ganzen Tag.");
   });
-  it("benennt die beste Variante und die wirkungslosen", () => {
-    const a = variantsAnswer(sampleVariants());
-    expect(a).toMatch(
-      /^„5 Schlepper mehr“ hilft am meisten, mit 18,0 Prozentpunkten mehr pünktlichen Abflügen\./,
+  it("wählt bei gleichem Defizit die längste Phase, nicht die erste", () => {
+    const w = (start: number, end: number, deficitKw = 0) => ({ start, end, deficitKw });
+    const api = { ...s, windows: [w(310, 320), w(1060, 1153), w(400, 430)] };
+    expect(worstWindow(api)).toEqual(w(1060, 1153));
+    expect(bottleneckAnswer(api)).toBe(
+      "Von 17:40 bis 19:13 Uhr ist der Anschluss voll ausgelastet.",
     );
-    expect(a).toMatch(/Dafür ist der Anschluss 19 Minuten länger am Limit\./);
-    expect(a).toMatch(
-      /„Batteriespeicher 2 MWh“ entlastet den Anschluss am stärksten, um 52 Minuten am Limit\./,
-    );
-  });
-  it("sagt ausdrücklich, wenn keine Variante die Pünktlichkeit verbessert", () => {
-    const vs = sampleVariants().map((v) => (v.kind === "basis" ? v : { ...v, onTimePct: 78.2 }));
-    expect(variantsAnswer(vs)).toMatch(
-      /^Keine Lösung bringt mehr als einen halben Prozentpunkt mehr pünktliche Abflüge\. „Batteriespeicher 2 MWh“ entlastet den Anschluss am stärksten, um 52 Minuten am Limit\./,
+    // Mehr fehlende Leistung geht vor Länge.
+    expect(worstWindow({ ...s, windows: [w(310, 320, 900), w(1060, 1153, 100)] })).toEqual(
+      w(310, 320, 900),
     );
   });
 });
@@ -133,7 +161,6 @@ describe("Varianten aus der API", () => {
     expect(board.base?.fleet.total).toBe(100);
     expect(board.variants.map((v) => v.kind)).toEqual(["basis", "fahrzeuge"]);
     expect(board.variants[1]!.deltaOnTimePct).toBe(12);
-    expect(board.variants[1]!.fleetTotal).toBe(105);
     expect(board.answer?.bestId).toBe("v1");
     expect(board.run?.done).toBe(2);
   });
@@ -219,35 +246,59 @@ describe("Austausch-Status", () => {
       evidence_level: "model_checked",
     })!;
     expect(s.kind).toBe("bezug");
-    expect(s.windows).toEqual([{ start: 360, end: 390, peakKw: 3500, deficitKw: 0 }]);
+    expect(s.windows).toEqual([{ start: 360, end: 390, deficitKw: 0 }]);
     expect(bottleneckAnswer(s)).toBe("Von 06:00 bis 06:30 Uhr ist der Anschluss voll ausgelastet.");
     expect(situationFromApi(SAMPLE_PROJECT, { available: false, series: [] })).toBeNull();
+  });
+  it("nennt als knappste Phase die längste im Verkehrstag, nicht den Vorlauf", () => {
+    // Ortstag 04.10.2026 beginnt um 22:00 UTC; die Rechnung läuft 120 Minuten davor an.
+    const dayStart = Date.parse("2026-10-03T22:00:00Z");
+    const at = (minute: number) => new Date(dayStart + minute * 60000).toISOString();
+    const win = (a: number, b: number) => ({ start_utc: at(a), end_utc: at(b), peak_kw: 3500 });
+    const s = situationFromApi(SAMPLE_PROJECT, {
+      available: true,
+      day_start_utc: at(0),
+      interval_min: 15,
+      series: [{ start_utc: at(0), grid_import_kw: 800, grid_limit_kw: 3500, pv_kw: 0 }],
+      bottleneck_windows: [
+        win(-120, -90),
+        win(-89, -60),
+        win(310, 316),
+        win(1060, 1147),
+        win(1148, 1153),
+        win(1430, 1500),
+      ],
+    })!;
+    expect(s.windows).toEqual([
+      { start: 310, end: 316, deficitKw: 0 },
+      { start: 1060, end: 1153, deficitKw: 0 },
+      { start: 1430, end: 1440, deficitKw: 0 },
+    ]);
+    expect(bottleneckAnswer(s)).toBe("Von 17:40 bis 19:13 Uhr ist der Anschluss voll ausgelastet.");
   });
 });
 
 describe("Oberfläche", () => {
-  it("navigiert über die vier Fragen und beginnt jede mit dem Antwortsatz", async () => {
-    openApp(`?projekt=${SAMPLE_PROJECT.id}&frage=lage`);
+  it("führt in drei Schritten durch das Projekt, jeder beginnt mit dem Antwortsatz", async () => {
+    openApp(`?projekt=${SAMPLE_PROJECT.id}&frage=daten`);
     expect(
-      await screen.findByRole("heading", { level: 1, name: /reicht der Anschluss nicht/ }),
+      await screen.findByRole("heading", { level: 1, name: /Noch ist keine der 4 Datenquellen/ }),
     ).toBeVisible();
-    const nav = screen.getByRole("navigation", { name: "Vier Fragen des Projekts" });
-    expect(within(nav).getAllByRole("link")).toHaveLength(4);
+    const nav = screen.getByRole("navigation", { name: "Drei Schritte des Projekts" });
+    expect(within(nav).getAllByRole("link")).toHaveLength(3);
     // Kein Schritt "Abgleich" mehr in der Kundensicht.
     expect(within(nav).queryByRole("link", { name: /Abgleich/ })).toBeNull();
-    fireEvent.click(within(nav).getByRole("link", { name: /Engpass/ }));
-    expect(await screen.findByRole("heading", { level: 1, name: /fehlen bis zu/ })).toBeVisible();
-    expect(window.location.search).toContain("frage=engpass");
-    expect(within(nav).getByRole("link", { name: /Engpass/ })).toHaveAttribute(
+    fireEvent.click(within(nav).getByRole("link", { name: /Durchrechnen/ }));
+    expect(await screen.findByRole("table")).toBeVisible();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(SAMPLE_PROJECT.name);
+    expect(window.location.search).toBe(`?projekt=${SAMPLE_PROJECT.id}`);
+    expect(document.title).toBe("Durchrechnen · Airport Energy Check");
+    const steps = screen.getByRole("navigation", { name: "Drei Schritte des Projekts" });
+    expect(within(steps).getByRole("link", { name: /Durchrechnen/ })).toHaveAttribute(
       "aria-current",
       "page",
     );
-    expect(screen.getAllByText("Beispielwerte").length).toBeGreaterThan(0);
-    fireEvent.click(within(nav).getByRole("link", { name: /Lösungen/ }));
-    expect(
-      await screen.findByRole("heading", { level: 1, name: /hilft am meisten/ }),
-    ).toBeVisible();
-    fireEvent.click(within(nav).getByRole("link", { name: /Zusage/ }));
+    fireEvent.click(within(steps).getByRole("link", { name: /Zusage/ }));
     expect(
       await screen.findByRole("heading", { level: 1, name: /erst nach einer Messung/ }),
     ).toBeVisible();
@@ -271,7 +322,7 @@ describe("Oberfläche", () => {
 
   it("leitet den alten Schritt Abgleich in den Lab-Raum um", () => {
     expect(parseRoute(`?projekt=p1&frage=abgleich`)).toEqual({ page: "lab", projekt: "p1" });
-    expect(parseRoute(`?projekt=p1&frage=lage&werkstatt=pilot`)).toEqual({
+    expect(parseRoute(`?projekt=p1&frage=nachweis&werkstatt=pilot`)).toEqual({
       page: "lab",
       projekt: "p1",
       werkstatt: "pilot",
@@ -307,7 +358,7 @@ describe("Oberfläche", () => {
     );
   });
 
-  it("zeigt alle acht Fälle in der Bibliothek und übernimmt einen ins Projekt", async () => {
+  it("zeigt alle acht Fälle in der Bibliothek und übernimmt einen ins Beispielprojekt", async () => {
     openApp("?seite=bibliothek");
     const cases = await screen.findAllByRole("article");
     expect(cases).toHaveLength(8);
@@ -318,16 +369,105 @@ describe("Oberfläche", () => {
     expect(
       await screen.findByText(/„Enteisung“ gehört jetzt zu MUC · Vorfeld Süd \(Beispiel\)/),
     ).toBeVisible();
+    // Das Beispielprojekt rechnet keinen Krisenfall: kein Link, der das verspricht.
+    expect(
+      screen.getByText(/Durchrechnen können Sie den Fall nur in einem eigenen Projekt/),
+    ).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Jetzt durchrechnen" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Was das Lab prüft" })).toBeVisible();
     expect(screen.getByText(/Kälte nimmt allen Akkus 20 % Kapazität/)).toBeVisible();
+  });
+
+  it("führt aus der Bibliothek mit dem Krisenfall in ein eigenes Projekt", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const body = url.endsWith("/pilot/projects")
+          ? [{ id: "p-ham", name: "HAM · Vorfeld Nord", scope: "Hamburg", decision: "?" }]
+          : {};
+        return new Response(JSON.stringify(body), { status: 200 });
+      }),
+    );
+    openApp("?seite=bibliothek");
+    const target = await screen.findByRole("combobox", { name: "In welches Projekt?" });
+    await screen.findByRole("option", { name: "HAM · Vorfeld Nord" });
+    fireEvent.change(target, { target: { value: "p-ham" } });
+    fireEvent.click(screen.getByRole("button", { name: "Enteisung ins Projekt holen" }));
+    expect(
+      await screen.findByText(/„Enteisung“ gehört jetzt zu HAM · Vorfeld Nord\./),
+    ).toBeVisible();
     fireEvent.click(screen.getByRole("link", { name: "Jetzt durchrechnen" }));
-    await waitFor(() => expect(window.location.search).toMatch(/frage=varianten&krise=enteisung/));
+    await waitFor(() => expect(window.location.search).toBe("?projekt=p-ham&krise=enteisung"));
+  });
+
+  it("nennt das Übernehmen beim Namen, wenn es scheitert", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url.endsWith("/pilot/projects")
+          ? new Response(JSON.stringify([{ id: "p-ham", name: "HAM", scope: "Hamburg" }]))
+          : new Response(JSON.stringify({ detail: "Projekt gesperrt" }), { status: 409 }),
+      ),
+    );
+    openApp("?seite=bibliothek");
+    await screen.findByRole("option", { name: "HAM" });
+    fireEvent.change(screen.getByRole("combobox", { name: "In welches Projekt?" }), {
+      target: { value: "p-ham" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Wetter ins Projekt holen" }));
+    expect(
+      await screen.findByText("„Wetter“ ließ sich nicht ins Projekt holen (Projekt gesperrt)."),
+    ).toBeVisible();
   });
 
   it("liest den Krisenfall aus der Adresse und verwirft unbekannte", () => {
-    const route = parseRoute("?projekt=p1&frage=varianten&krise=schwarzstart");
-    expect(route).toMatchObject({ page: "projekt", frage: "varianten", krise: "schwarzstart" });
-    expect(toSearch(route)).toBe("?projekt=p1&frage=varianten&krise=schwarzstart");
-    expect(parseRoute("?projekt=p1&frage=varianten&krise=gibtsnicht")).not.toHaveProperty("krise");
+    const route = parseRoute("?projekt=p1&krise=schwarzstart");
+    expect(route).toEqual({
+      page: "arbeitsplatz",
+      projekt: "p1",
+      krise: "schwarzstart",
+      auto: true,
+    });
+    expect(toSearch(route)).toBe("?projekt=p1&krise=schwarzstart");
+    // Die frühere Adresse der Lösungen-Seite meint dasselbe, nur ohne Flugplan-Prüfung.
+    expect(parseRoute("?projekt=p1&frage=varianten&krise=schwarzstart")).toEqual({
+      page: "arbeitsplatz",
+      projekt: "p1",
+      krise: "schwarzstart",
+    });
+    expect(parseRoute("?projekt=p1&krise=gibtsnicht")).not.toHaveProperty("krise");
+  });
+
+  it("nennt auf der Startseite dieselben knappen Phasen wie Durchrechnen", () => {
+    openApp();
+    const exact = resultFromExact(samplePreview().basis);
+    const worst = worstShortfall(exact)!;
+    expect(
+      screen.getByText(`Am knappsten ${clock(worst.start)}–${clock(worst.end)} Uhr`),
+    ).toBeVisible();
+    const phases = shortfallPhases(exact).map((p) => `${clock(p.start)}–${clock(p.end)} Uhr`);
+    expect(document.querySelector(".aec-land__caption")!.textContent).toContain(
+      `Knapp wird es ${phases.join(", ")}.`,
+    );
+  });
+
+  it("nennt für Serverprojekte keinen Anschluss, den die Liste nicht kennt", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const body = url.endsWith("/pilot/projects")
+          ? [{ id: "p-ham", name: "HAM · Vorfeld Nord", scope: "Hamburg", decision: "?" }]
+          : {};
+        return new Response(JSON.stringify(body), { status: 200 });
+      }),
+    );
+    openApp();
+    const card = await screen.findByRole("link", { name: /HAM · Vorfeld Nord/ });
+    expect(card).toHaveTextContent("Hamburg");
+    expect(card).not.toHaveTextContent("Anschluss");
+    expect(screen.getByRole("link", { name: /MUC · Vorfeld Süd/ })).toHaveTextContent(
+      "Anschluss 3,50 MW",
+    );
   });
 
   it("lässt sich auf der Startseite ein Projekt anlegen", async () => {

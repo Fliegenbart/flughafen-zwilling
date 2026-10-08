@@ -4,14 +4,19 @@
  * Beim Ziehen rechnet der Browser sofort eine Naeherung (model/livePower). Nach einer kurzen
  * Pause holt er die genaue Vorschau vom Backend und ersetzt die Naeherung. Beispielprojekte ohne
  * Server bleiben bei der Naeherung auf einem synthetischen Referenztag.
+ *
+ * Es laeuft nie mehr als eine genaue Anfrage zugleich: Der Server rechnet eine begonnene Vorschau
+ * zu Ende, auch wenn der Browser sie laengst abgebrochen hat. Wer weiterzieht, wartet also auf
+ * die laufende und schickt dann nur die neueste Stellung.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  changesFor,
-  extraVehiclesFor,
   getPreview,
-  previewFromApi,
+  isDataProblem,
+  isRetryable,
+  previewBodyFor,
   type Preview,
+  type PreviewBody,
 } from "../api/preview";
 import {
   leversFromBasis,
@@ -20,7 +25,9 @@ import {
   type Levers,
   type LiveResult,
 } from "../model/livePower";
+import { samplePreview } from "../sample";
 import type { Project } from "../types";
+import { clampToRanges } from "./levers";
 
 export type Accuracy = "laedt" | "naeherung" | "genau" | "fehler";
 
@@ -34,35 +41,138 @@ export type Scenario = {
   exact: Preview | null;
   accuracy: Accuracy;
   error: string;
+  /** Der Fehler liegt an den Daten des Projekts (Flugplan fehlt, Werte widersprechen sich). */
+  errorInData: boolean;
   /** Beispielprojekt ohne Server: nur Naeherung auf einem Referenztag. */
   sample: boolean;
   setLevers: (next: Levers) => void;
   reset: () => void;
+  /** Die gescheiterte genaue Anfrage lohnt einen zweiten Versuch (Verbindung, Rechner belegt). */
+  canRetry: boolean;
+  /** Schickt die gescheiterte genaue Anfrage noch einmal. */
+  retry: () => void;
 };
 
 const SETTLE_MS = 280;
 
+/** Regler-Stellung von heute, inklusive der Laderegel, mit der gerechnet wurde. */
+export const startLevers = (p: Preview): Levers => ({
+  ...leversFromBasis(p.basis),
+  ...(p.policy ? { policy: p.policy } : {}),
+});
+
+/** Ohne Server rechnet nur die Naeherung: Laderegel, Fahrzeuge und Krisenfall gehen nicht. */
+const approximable = ({ gridLimitKw, batteryKwh, batteryKw, pvFactor }: Partial<Levers>) =>
+  Object.fromEntries(
+    Object.entries({ gridLimitKw, batteryKwh, batteryKw, pvFactor }).filter(
+      ([, v]) => v !== undefined,
+    ),
+  ) as Partial<Levers>;
+
+/** Woran sich die Regler halten muessen: Fahrzeuge der Flotte je Art und die Photovoltaik heute. */
+const limitsOf = (p: Preview) => ({
+  fleet: p.vehiclesByKind,
+  pvKwp: p.basis.power.pvCapacityKwp,
+});
+
+const problemOf = (e: unknown, fallback: string) => ({
+  message: e instanceof Error ? e.message : fallback,
+  inData: isDataProblem(e),
+  retryable: isRetryable(e),
+});
+
 async function loadToday(project: Project): Promise<{ preview: Preview; sample: boolean }> {
   if (project.source === "api") return { preview: await getPreview(project, {}), sample: false };
-  const ref = await import("../model/__fixtures__/livePowerReference.json");
-  const preview = previewFromApi(
-    { ...ref.default.basis, kpis: ref.default.kpis },
-    ref.default.departures,
-  );
-  if (!preview) throw new Error("Beispieltag fehlt.");
-  return { preview, sample: true };
+  return { preview: samplePreview(), sample: true };
 }
 
-export function useLiveScenario(project: Project | null): Scenario {
+/**
+ * `initial`: Stellung, mit der der Bildschirm nach dem Laden gleich startet (zuletzt benutzte
+ * Regler oder ein Krisenfall aus der Adresse). Muss stabil sein, sonst laedt der Tag neu.
+ */
+export function useLiveScenario(project: Project | null, initial?: Partial<Levers>): Scenario {
   const [today, setToday] = useState<Preview | null>(null);
   const [sample, setSample] = useState(false);
   const [levers, setLeversState] = useState<Levers | null>(null);
   const [result, setResult] = useState<LiveResult | null>(null);
   const [exact, setExact] = useState<Preview | null>(null);
   const [accuracy, setAccuracy] = useState<Accuracy>("laedt");
-  const [error, setError] = useState("");
+  const [problem, setProblem] = useState<ReturnType<typeof problemOf> | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const inflight = useRef<AbortController | null>(null);
+  /** Neueste gewuenschte Anfrage; sie wartet, solange eine andere laeuft. */
+  const queued = useRef<{ at: number; project: Project; body: PreviewBody } | null>(null);
+  const busy = useRef(false);
+  /** Die Anfrage, die zur aktuellen Stellung gescheitert ist; `retry` schickt sie noch einmal. */
+  const failed = useRef<{ at: number; project: Project; body: PreviewBody } | null>(null);
+  /** Zaehlt jede neue Absicht (Regler, Zuruecksetzen, Wechsel); Antworten auf aeltere gelten nicht. */
+  const epoch = useRef(0);
+
+  const invalidate = useCallback(() => {
+    epoch.current++;
+    queued.current = null;
+    failed.current = null;
+    clearTimeout(timer.current);
+  }, []);
+
+  /** Schickt die neueste Anfrage nach kurzer Pause, sobald keine andere mehr laeuft. */
+  const pump = useCallback(function pump() {
+    clearTimeout(timer.current);
+    const w = queued.current;
+    if (!w || busy.current) return;
+    timer.current = setTimeout(
+      () => {
+        queued.current = null;
+        busy.current = true;
+        const mine = epoch.current;
+        getPreview(w.project, w.body)
+          .then((p) => {
+            if (mine !== epoch.current) return;
+            setExact(p);
+            setResult(resultFromExact(p.basis));
+            setAccuracy("genau");
+            setProblem(null);
+          })
+          .catch((e: unknown) => {
+            if (mine !== epoch.current) return;
+            const problem = problemOf(e, "Die Rechnung ist fehlgeschlagen.");
+            if (problem.retryable) failed.current = w;
+            setProblem(problem);
+          })
+          .finally(() => {
+            busy.current = false;
+            pump();
+          });
+      },
+      // Hat die Pause waehrend einer laufenden Anfrage schon verstrichen, geht es sofort los.
+      Math.min(SETTLE_MS, Math.max(0, w.at + SETTLE_MS - Date.now())),
+    );
+  }, []);
+
+  /** Genaue Rechnung nach kurzer Pause; die neueste Stellung ersetzt aeltere. */
+  const requestExact = useCallback(
+    (proj: Project, base: Preview, next: Levers) => {
+      epoch.current++;
+      queued.current = {
+        at: Date.now(),
+        project: proj,
+        body: previewBodyFor(next, startLevers(base)),
+      };
+      failed.current = null;
+      setProblem(null);
+      pump();
+    },
+    [pump],
+  );
+
+  const retry = useCallback(() => {
+    const w = failed.current;
+    if (!w) return;
+    epoch.current++;
+    queued.current = { ...w, at: Date.now() };
+    failed.current = null;
+    setProblem(null);
+    pump();
+  }, [pump]);
 
   useEffect(() => {
     if (!project) return;
@@ -70,73 +180,71 @@ export function useLiveScenario(project: Project | null): Scenario {
     loadToday(project)
       .then(({ preview, sample: isSample }) => {
         if (!alive) return;
-        const todayLevers = leversFromBasis(preview.basis);
+        const todayLevers = startLevers(preview);
         setToday(preview);
         setSample(isSample);
-        setLeversState(todayLevers);
-        setResult(resultFromExact(preview.basis));
-        setExact(preview);
-        setAccuracy("genau");
+        setProblem(null);
+        const wanted = clampToRanges(
+          isSample ? approximable(initial ?? {}) : (initial ?? {}),
+          todayLevers,
+          limitsOf(preview),
+        );
+        const start: Levers = { ...todayLevers, ...wanted };
+        if (JSON.stringify(start) === JSON.stringify(todayLevers)) {
+          setLeversState(todayLevers);
+          setResult(resultFromExact(preview.basis));
+          setExact(preview);
+          setAccuracy("genau");
+          return;
+        }
+        // Gleich mit der gemerkten oder aus der Adresse gelesenen Stellung starten.
+        setLeversState(start);
+        setResult(simulateLive(preview.basis, start));
+        setExact(null);
+        setAccuracy("naeherung");
+        if (!isSample) requestExact(project, preview, start);
       })
       .catch((e: unknown) => {
         if (!alive) return;
-        setError(e instanceof Error ? e.message : "Der Tag ließ sich nicht rechnen.");
+        // Ein Neuversuch gilt nur der genauen Rechnung zu einer Stellung, nicht dem ersten Tag.
+        setProblem({ ...problemOf(e, "Der Tag ließ sich nicht rechnen."), retryable: false });
         setAccuracy("fehler");
       });
     return () => {
       alive = false;
-      clearTimeout(timer.current);
-      inflight.current?.abort();
+      invalidate();
     };
-  }, [project]);
+  }, [project, initial, requestExact, invalidate]);
 
-  const todayLevers = today ? leversFromBasis(today.basis) : null;
-  const todayResult = today ? resultFromExact(today.basis) : null;
+  const todayLevers = useMemo(() => (today ? startLevers(today) : null), [today]);
+  const todayResult = useMemo(() => (today ? resultFromExact(today.basis) : null), [today]);
 
   const setLevers = useCallback(
-    (next: Levers) => {
-      if (!today || !project) return;
+    (wanted: Levers) => {
+      if (!today || !todayLevers || !project) return;
+      // Was das Modell nicht mehr rechnet (etwa mehr Busse, als je Art erlaubt), wird gekappt.
+      const next = {
+        ...wanted,
+        ...clampToRanges(wanted, todayLevers, { fleet: today.vehiclesByKind }),
+      };
       setLeversState(next);
       setResult(simulateLive(today.basis, next));
       setExact(null);
       setAccuracy("naeherung");
-      clearTimeout(timer.current);
-      inflight.current?.abort();
-      if (sample) return;
-      const extra = extraVehiclesFor(next);
-      const changes = {
-        ...changesFor(next, leversFromBasis(today.basis)),
-        ...(extra ? { extra_vehicles: extra } : {}),
-      };
-      timer.current = setTimeout(() => {
-        const controller = new AbortController();
-        inflight.current = controller;
-        getPreview(project, changes, controller.signal)
-          .then((p) => {
-            if (controller.signal.aborted) return;
-            setExact(p);
-            setResult(resultFromExact(p.basis));
-            setAccuracy("genau");
-            setError("");
-          })
-          .catch((e: unknown) => {
-            if (controller.signal.aborted) return;
-            setError(e instanceof Error ? e.message : "Die genaue Rechnung ist fehlgeschlagen.");
-          });
-      }, SETTLE_MS);
+      if (!sample) requestExact(project, today, next);
     },
-    [today, project, sample],
+    [today, todayLevers, project, sample, requestExact],
   );
 
   const reset = useCallback(() => {
-    if (!today) return;
-    clearTimeout(timer.current);
-    inflight.current?.abort();
-    setLeversState(leversFromBasis(today.basis));
+    if (!today || !todayLevers) return;
+    invalidate();
+    setLeversState(todayLevers);
     setResult(resultFromExact(today.basis));
     setExact(today);
     setAccuracy("genau");
-  }, [today]);
+    setProblem(null);
+  }, [today, todayLevers, invalidate]);
 
   return {
     today,
@@ -146,9 +254,12 @@ export function useLiveScenario(project: Project | null): Scenario {
     result,
     exact,
     accuracy,
-    error,
+    error: problem?.message ?? "",
+    errorInData: problem?.inData ?? false,
+    canRetry: !!problem?.retryable,
     sample,
     setLevers,
     reset,
+    retry,
   };
 }

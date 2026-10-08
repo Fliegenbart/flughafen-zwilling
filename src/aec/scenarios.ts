@@ -113,5 +113,8 @@ export const SCENARIO_CASES: ScenarioCase[] = [
   },
 ];
 
+export const caseByScenarioId = (id: string | null | undefined) =>
+  SCENARIO_CASES.find((c) => c.scenarioId === id) ?? null;
+
 export const caseBySlug = (slug: string | null | undefined) =>
   SCENARIO_CASES.find((c) => c.slug === slug) ?? null;

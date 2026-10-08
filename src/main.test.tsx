@@ -63,7 +63,7 @@ describe("Workspace entry point", () => {
     expect(window.location.search).toContain("seite=lab");
     expect(window.location.search).toContain("werkstatt=flexlab");
     expect(screen.getByRole("link", { name: "Testing-Lab" })).toHaveAttribute("aria-current", "page");
-    expect(screen.queryByRole("navigation", { name: "Vier Fragen des Projekts" })).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Drei Schritte des Projekts" })).toBeNull();
   });
 
   it("defaults unknown workspace IDs to the airport simulation, not FlexLab", async () => {
@@ -72,17 +72,17 @@ describe("Workspace entry point", () => {
     expect(screen.queryByRole("heading", { name: "FlexLab Workbench" })).toBeNull();
   });
 
-  it("redirects Munich steps to the matching question", async () => {
+  it("redirects Munich steps to the matching project step", async () => {
     await open("?workspace=munich&schritt=robustheit");
     expect(await screen.findByRole("heading", { name: "Flughafen München" })).toBeVisible();
-    expect(window.location.search).toContain("frage=varianten");
+    expect(window.location.search).toContain("frage=nachweis");
     expect(window.location.search).toContain("schritt=robustheit");
   });
 
-  it("opens Munich without a step in Lage with the system map", async () => {
+  it("opens Munich without a step in Daten with the system map", async () => {
     await open("?workspace=munich");
     expect(await screen.findByRole("heading", { name: "Flughafen München" })).toBeVisible();
-    expect(window.location.search).toContain("frage=lage");
+    expect(window.location.search).toContain("frage=daten");
     expect(document.querySelector("[data-studio]")).not.toBeNull();
   });
 
@@ -102,7 +102,7 @@ describe("Workspace entry point", () => {
       "/airport/?seite=bibliothek",
     );
     expect(
-      within(screen.getByRole("navigation", { name: "Vier Fragen des Projekts" })).getByRole("link", {
+      within(screen.getByRole("navigation", { name: "Drei Schritte des Projekts" })).getByRole("link", {
         name: /Zusage/,
       }),
     ).toHaveAttribute(

@@ -6,15 +6,16 @@ import {
   EMPTY_INPUTS,
   importError,
   isExampleFile,
-  needsDataStep,
+  needsFlightPlan,
+  splitAnswer,
   type DataInputs,
 } from "./model/dataStatus";
 import { assetsFromApi, importFromApi } from "./api/data";
 import { parseRoute, toSearch } from "./routes";
 import { SAMPLE_PROJECT } from "./sample";
-import { flightPlanError } from "./views/daten/FlightPlanForm";
+import FlightPlanForm, { flightPlanError } from "./views/daten/FlightPlanForm";
 import { distributeFleet } from "./model/dataStatus";
-import { recomputeState } from "./ProjectPage";
+import { recomputeState } from "./RecomputeBanner";
 import { sampleBoard } from "./api/variants";
 
 afterEach(() => {
@@ -62,10 +63,31 @@ describe("Datenstand", () => {
     const s = computeDataStatus(input({}));
     expect(s.real).toBe(0);
     expect(s.items.map((i) => i.state)).toEqual(["fehlt", "fehlt", "fehlt", "fehlt"]);
+    // Ein Serverprojekt rechnet ohne Flugplan nicht, also sagt die Antwort auch nichts von Annahmen.
     expect(s.answer).toBe(
-      "Noch ist keine der 4 Datenquellen belegt, gerechnet wird mit Annahmen. Es fehlen der offizielle Flugplan, Angaben zu Fahrzeugen und Anlagen sowie Messungen vom Flughafen und aus dem Testing-Lab.",
+      "Noch ist keine der 4 Datenquellen belegt. Es fehlen der offizielle Flugplan, Angaben zu Fahrzeugen und Anlagen sowie Messungen vom Flughafen und aus dem Testing-Lab.",
     );
-    expect(needsDataStep(s)).toBe(true);
+    expect(s.items[0]!.detail).toBe("Ohne Flugplan können wir den Tag nicht durchrechnen.");
+    expect(needsFlightPlan(s)).toBe(true);
+  });
+
+  it("Beispielprojekt ohne Server: gerechnet wird mit dem erfundenen Beispieltag", () => {
+    const s = computeDataStatus(EMPTY_INPUTS);
+    expect(s.answer).toMatch(
+      /^Noch ist keine der 4 Datenquellen belegt, gerechnet wird mit Annahmen\./,
+    );
+    expect(s.items[0]!.detail).toBe("Der Beispieltag rechnet mit erfundenen Abflügen.");
+  });
+
+  it("teilt die Antwort in Überschrift und Rest", () => {
+    expect(splitAnswer("Alle 4 Datenquellen sind belegt.")).toEqual({
+      headline: "Alle 4 Datenquellen sind belegt.",
+      detail: "",
+    });
+    expect(splitAnswer("2 von 4 Datenquellen sind belegt. Es fehlen X.")).toEqual({
+      headline: "2 von 4 Datenquellen sind belegt.",
+      detail: "Es fehlen X.",
+    });
   });
 
   it("teilweise: Flugplan und Flotte echt, Messdaten fehlen", () => {
@@ -79,7 +101,7 @@ describe("Datenstand", () => {
     expect(s.answer).toBe(
       "2 von 4 Datenquellen sind belegt. Es fehlen Messungen vom Flughafen und aus dem Testing-Lab.",
     );
-    expect(needsDataStep(s)).toBe(false);
+    expect(needsFlightPlan(s)).toBe(false);
   });
 
   it("Werte ohne Quelle bleiben Annahme; Mehrfachgruppen warnen", () => {
@@ -91,10 +113,15 @@ describe("Datenstand", () => {
     );
     const [fp, fl] = s.items;
     expect(fp!.state).toBe("echt");
-    expect(fp!.warnings[0]).toMatch(/3 Flüge stehen eventuell doppelt drin/);
+    expect(fp!.warnings[0]).toMatch(/^3 Flüge könnten doppelt im Plan stehen \(Codeshares\)\./);
+    const single = computeDataStatus(input({ plans: [{ ...plan, sharedGroups: 1 }] }));
+    expect(single.items[0]!.warnings[0]).toMatch(
+      /^Ein Flug könnte doppelt im Plan stehen \(Codeshare\)\. Wir rechnen erst, wenn Sie/,
+    );
     expect(fl!.state).toBe("annahme");
     expect(s.answer).toMatch(/Für Fahrzeuge und Anlagen gelten noch Annahmen\./);
-    expect(needsDataStep(s)).toBe(true);
+    // Der Flugplan ist da: Durchrechnen startet, auch wenn die Flotte noch Annahme ist.
+    expect(needsFlightPlan(s)).toBe(false);
   });
 
   it("abgewiesene Importe zählen nie, PASS nur über Holdout-Bewertung", () => {
@@ -170,6 +197,7 @@ describe("Datenstand", () => {
     );
     expect(importError("timestamp_timezone_required")).toBe("Zeitstempel benötigen eine Zeitzone.");
     expect(importError("Failed to fetch")).toMatch(/Keine Verbindung/);
+    expect(importError("csv_text exceeds 5 MiB")).toBe("Die Datei ist größer als 5\u00a0MB.");
     expect(flightPlanError("PDF als application/pdf hochladen")).toBe("Das ist kein PDF.");
     expect(isExampleFile("lastgang-BEISPIEL-erfundene-werte.csv")).toBe(true);
     expect(
@@ -182,9 +210,8 @@ describe("Datenstand", () => {
 describe("Navigation zum Daten-Schritt", () => {
   it("Adresse ohne Frage startet automatisch, Weiterleitungen bleiben", () => {
     expect(parseRoute("?projekt=p1")).toEqual({
-      page: "projekt",
+      page: "arbeitsplatz",
       projekt: "p1",
-      frage: "lage",
       auto: true,
     });
     expect(toSearch(parseRoute("?projekt=p1"))).toBe("?projekt=p1");
@@ -195,14 +222,20 @@ describe("Navigation zum Daten-Schritt", () => {
     });
   });
 
-  it("zeigt Datenstand im Kopf, Schild 0 und Warnhinweis im Daten-Schritt", async () => {
-    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}&frage=lage`);
+  it("zeigt Datenstand im Kopf, Schild A und Warnhinweis im Daten-Schritt", async () => {
+    window.history.replaceState(null, "", `/?projekt=${SAMPLE_PROJECT.id}`);
     render(<AirportEnergyCheck basePath="/" />);
-    const meter = await screen.findByRole("link", { name: /^0 von 4 Datenquellen belegt/ });
-    fireEvent.click(meter);
+    expect(await screen.findByText("Daten: 0 von 4 belegt")).toBeVisible();
+    const steps = screen.getByRole("navigation", { name: "Drei Schritte des Projekts" });
+    fireEvent.click(within(steps).getByRole("link", { name: /Daten/ }));
     expect(
       await screen.findByRole("heading", { level: 1, name: /Noch ist keine der 4 Datenquellen/ }),
     ).toBeVisible();
+    // Der Name des Datenstand-Links beginnt mit dem sichtbaren Text und nennt die Zahl nur einmal.
+    const meter = await screen.findByRole("link", { name: /^Belegt: 0 von 4\. Es fehlen/ });
+    expect(meter).toHaveAccessibleName(/ Zu Ihren Daten\.$/);
+    expect(meter).not.toHaveAccessibleName(/Datenquellen (sind |ist )?belegt/);
+    expect(meter.querySelector("i")).toHaveAttribute("title", "Flugplan: fehlt");
     expect(window.location.search).toContain("frage=daten");
     expect(screen.getByRole("note", { name: "Hinweis zur Demo-Instanz" })).toHaveTextContent(
       /Keine echten Kundendaten/,
@@ -243,7 +276,45 @@ describe("Navigation zum Daten-Schritt", () => {
     window.history.replaceState(null, "", `/?projekt=${id}`);
     render(<AirportEnergyCheck basePath="/" />);
     await waitFor(() => expect(window.location.search).toContain("frage=daten"));
-    expect(await screen.findByRole("heading", { level: 1, name: /Noch ist keine/ })).toBeVisible();
+    const head = await screen.findByRole("heading", { level: 1, name: /Noch ist keine/ });
+    expect(head).toBeVisible();
+    // Die Weiterleitung tauscht den Seitenbaum aus; der Fokus bleibt nicht im Leeren.
+    await waitFor(() => expect(document.getElementById("aec-main")).toHaveFocus());
+    // Ein Serverprojekt rechnet ohne Flugplan nicht, und die Seite verspricht auch nichts anderes.
+    expect(head).not.toHaveTextContent("Annahmen");
+    expect(screen.getByText("Ohne Flugplan können wir den Tag nicht durchrechnen.")).toBeVisible();
+  });
+});
+
+describe("Flugplan-Formular", () => {
+  const info = {
+    snapshot_id: "b".repeat(64),
+    service_date: "2026-10-03",
+    source_data_date: "2026-10-02",
+    departure_entry_count: 412,
+    possible_shared_flight_groups: 1,
+  };
+  it("verlangt einen eingelesenen Plan und nennt eine einzelne Codeshare in der Einzahl", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const body = url.includes("/munich/flight-plans") ? [info] : {};
+        return new Response(JSON.stringify(body), { status: 200 });
+      }),
+    );
+    render(
+      <FlightPlanForm project={SAMPLE_PROJECT} reload={async () => undefined} disabled={false} />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Verwenden" }));
+    expect(await screen.findByText("Wählen Sie einen eingelesenen Flugplan aus.")).toBeVisible();
+    expect(screen.getByRole("option", { name: /· 1 möglicher Codeshare$/ })).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: info.snapshot_id } });
+    fireEvent.click(screen.getByRole("button", { name: "Verwenden" }));
+    expect(
+      await screen.findByText(
+        /Ein Flug könnte doppelt im Plan stehen \(Codeshare\)\. Das klären Sie unten im Detailwerkzeug/,
+      ),
+    ).toBeVisible();
   });
 });
 

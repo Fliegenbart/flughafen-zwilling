@@ -23,7 +23,7 @@ function fromPilot(p: Record<string, unknown>): Project {
     site: str(p.scope, ""),
     dayLabel: "Ihr gerechneter Tag",
     fleetSize: 0,
-    gridLimitKw: 3500,
+    gridLimitKw: null,
     decision: str(p.decision),
     source: "api",
   };

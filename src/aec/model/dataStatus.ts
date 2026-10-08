@@ -8,6 +8,7 @@
 import type { EvidenceLevel } from "../../ui/EvidenceBadge";
 import { issueLabel } from "../../shared/issues";
 import { FLEET_LABEL } from "./fleet";
+import { unit } from "./format";
 
 export type DataState = "echt" | "annahme" | "fehlt";
 export type DataItemId = "flugplan" | "flotte" | "messdaten" | "lab";
@@ -120,6 +121,13 @@ export const STATE_LABEL: Record<DataState, string> = {
   fehlt: "fehlt",
 };
 
+/** Warnung zu moeglichen Codeshares; der Satz steht auf der Karte und im Formular. */
+export function sharedFlightsText(groups: number): string {
+  return groups === 1
+    ? "Ein Flug könnte doppelt im Plan stehen (Codeshare)."
+    : `${groups} Flüge könnten doppelt im Plan stehen (Codeshares).`;
+}
+
 /** "2026-10-03" bzw. ISO-Zeitpunkt -> "03.10.2026". */
 export function deDate(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -144,13 +152,16 @@ function flugplan(inp: DataInputs): DataItem {
       source: null,
       date: null,
       evidence: "assumption",
-      detail: "Ohne Flugplan wird mit erfundenen Abflugwellen gerechnet.",
+      // Nur das Beispielprojekt rechnet ohne Flugplan, mit seinem erfundenen Tag.
+      detail: inp.available
+        ? "Ohne Flugplan können wir den Tag nicht durchrechnen."
+        : "Der Beispieltag rechnet mit erfundenen Abflügen.",
       warnings: [],
     };
   const warnings =
     plan.sharedGroups > 0
       ? [
-          `${plan.sharedGroups} Flüge stehen eventuell doppelt drin (Codeshares). Gerechnet wird erst, wenn jemand bestätigt, dass es eigene Flüge sind.`,
+          `${sharedFlightsText(plan.sharedGroups)} Wir rechnen erst, wenn Sie bestätigt haben, dass es eigene Flüge sind.`,
         ]
       : [];
   return {
@@ -334,13 +345,14 @@ const join = (parts: string[]) =>
     ? (parts[0] ?? "")
     : `${parts.slice(0, -1).join(", ")} ${parts.some((p) => p.includes(" und ")) ? "sowie" : "und"} ${parts[parts.length - 1]}`;
 
-function dataAnswer(items: DataItem[]): string {
+function dataAnswer(items: DataItem[], available: boolean): string {
   const real = items.filter((i) => i.state === "echt").length;
   const head =
     real === items.length
       ? `Alle ${items.length} Datenquellen sind belegt.`
       : real === 0
-        ? `Noch ist keine der ${items.length} Datenquellen belegt, gerechnet wird mit Annahmen.`
+        ? // Ein Serverprojekt rechnet ohne Flugplan gar nicht; nur das Beispiel nimmt Annahmen.
+          `Noch ist keine der ${items.length} Datenquellen belegt${available ? "." : ", gerechnet wird mit Annahmen."}`
         : `${real} von ${items.length} Datenquellen ${real === 1 ? "ist" : "sind"} belegt.`;
   const missing = items.filter((i) => i.state === "fehlt").map((i) => i.id);
   const assumed = items.filter((i) => i.state === "annahme").map((i) => i.id);
@@ -369,14 +381,21 @@ export function computeDataStatus(inp: DataInputs): DataStatus {
     items,
     real: items.filter((i) => i.state === "echt").length,
     total: 4,
-    answer: dataAnswer(items),
+    answer: dataAnswer(items, inp.available),
   };
 }
 
-/** Startschritt: Daten, solange Flugplan und Flotte nicht beide echt sind. */
-export function needsDataStep(status: DataStatus): boolean {
-  const s = (id: DataItemId) => status.items.find((i) => i.id === id)?.state;
-  return !(s("flugplan") === "echt" && s("flotte") === "echt");
+/** Erster Satz der Antwort (die Ueberschrift) und der Rest (was fehlt, was Annahme ist). */
+export function splitAnswer(answer: string): { headline: string; detail: string } {
+  const cut = answer.indexOf(". ");
+  return cut < 0
+    ? { headline: answer, detail: "" }
+    : { headline: answer.slice(0, cut + 1), detail: answer.slice(cut + 2) };
+}
+
+/** Ohne echten Flugplan gibt es nichts durchzurechnen: dann zuerst zu den Daten. */
+export function needsFlightPlan(status: DataStatus | null): boolean {
+  return !!status && status.items.find((i) => i.id === "flugplan")?.state !== "echt";
 }
 
 /**
@@ -388,7 +407,7 @@ export function importError(detail: string): string {
   if (d.startsWith("invalid_assets: ")) return d.slice("invalid_assets: ".length);
   if (d.startsWith("role_forbidden"))
     return "Aus dieser Ansicht lassen sich keine Daten eintragen. Wechseln Sie zur Flughafen-Ansicht.";
-  if (/csv_text exceeds|5 MiB/.test(d)) return "Die Datei ist größer als 5 MB.";
+  if (/csv_text exceeds|5 MiB/.test(d)) return `Die Datei ist größer als ${unit(5, "MB")}.`;
   if (/filename must not contain a path/.test(d))
     return "Der Dateiname darf keinen Ordnerpfad enthalten.";
   if (/measurement_boundary|source_note/.test(d) && /blank|empty|at least/.test(d))

@@ -14,6 +14,8 @@ LEGACY_ENGINE_VERSIONS = ("airport_coupled_v1",)
 EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2"]
 FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu"]
 CoupledPolicy = Literal["uncontrolled", "mission_priority"]
+MAX_FLEET_VEHICLES = 300
+MAX_VEHICLES_PER_KIND = 200
 
 
 class StrictModel(BaseModel):
@@ -22,7 +24,7 @@ class StrictModel(BaseModel):
 
 class FleetSpec(StrictModel):
     kind: FleetKind
-    vehicles: int = Field(default=20, ge=0, le=200)
+    vehicles: int = Field(default=20, ge=0, le=MAX_VEHICLES_PER_KIND)
     chargers: int = Field(default=8, ge=0, le=200)
     battery_capacity_kwh: float = Field(default=300, gt=0, le=1000)
     initial_soc_pct: float = Field(default=50, ge=0, le=100)
@@ -143,8 +145,8 @@ class CoupledConfig(StrictModel):
     def unique_fleets(self) -> CoupledConfig:
         if len({f.kind for f in self.fleets}) != len(self.fleets):
             raise ValueError("Fahrzeugklasse mehrfach definiert")
-        if sum(f.vehicles for f in self.fleets) > 300:
-            raise ValueError("Maximal 300 modellierte Fahrzeuge")
+        if sum(f.vehicles for f in self.fleets) > MAX_FLEET_VEHICLES:
+            raise ValueError(f"Maximal {MAX_FLEET_VEHICLES} modellierte Fahrzeuge")
         return self
 
 

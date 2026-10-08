@@ -1,7 +1,14 @@
 import { useEffect, type ReactNode } from "react";
 import type { EvidenceLevel } from "../../ui/EvidenceBadge";
-import type { DataInputs, DataItem, DataItemId, DataStatus } from "../model/dataStatus";
-import { AnswerHead } from "../parts";
+import {
+  splitAnswer,
+  type DataInputs,
+  type DataItem,
+  type DataItemId,
+  type DataStatus,
+} from "../model/dataStatus";
+import { AnswerHead, Details } from "../parts";
+import { WerkstattLinks } from "../Werkstatt";
 import type { Route } from "../routes";
 import type { Project } from "../types";
 import AssetsForm from "./daten/AssetsForm";
@@ -62,9 +69,7 @@ export default function DatenView({ project, inputs, status, reload, route }: Da
     lab: <LabForm project={project} reload={reload} disabled={disabled} />,
   };
   // Ueberschrift = erster Satz; der Rest (was fehlt, was Annahme ist) steht darunter.
-  const cut = status.answer.indexOf(". ");
-  const headline = cut >= 0 ? status.answer.slice(0, cut + 1) : status.answer;
-  const detail = cut >= 0 ? status.answer.slice(cut + 2) : "";
+  const { headline, detail } = splitAnswer(status.answer);
   return (
     <>
       <AnswerHead
@@ -104,6 +109,9 @@ export default function DatenView({ project, inputs, status, reload, route }: Da
           </DataCard>
         ))}
       </ol>
+      <Details summary="Anlagenplan und Flugplan im Detail (für Fachleute)">
+        <WerkstattLinks items={["system"]} base={route} />
+      </Details>
     </>
   );
 }

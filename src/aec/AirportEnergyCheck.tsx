@@ -6,7 +6,7 @@ import "@fontsource/jetbrains-mono/500.css";
 import "../ui/designSystem.css";
 import "../ui/aecTokens.css";
 import "./aec.css";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NavContext, type Nav } from "./context";
 import { parseRoute, STEPS, toSearch, type Route } from "./routes";
 import Link from "./Link";
@@ -35,10 +35,10 @@ function storedTheme(): Theme {
 function titleFor(route: Route): string {
   if (route.page === "bibliothek") return "Szenario-Bibliothek · Airport Energy Check";
   if (route.page === "lab") return "Testing-Lab · Airport Energy Check";
-  if (route.page === "arbeitsplatz") return "Arbeitsplatz · Airport Energy Check";
+  if (route.page === "arbeitsplatz") return `${STEPS[1].label} · Airport Energy Check`;
   if (route.page === "projekt") {
-    const q = STEPS.find((x) => x.id === route.frage)!;
-    return `${q.label} · Airport Energy Check`;
+    const step = STEPS.find((x) => x.id === route.frage)!;
+    return `${step.label} · Airport Energy Check`;
   }
   return "Airport Energy Check";
 }
@@ -56,7 +56,7 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
     }
   }, [theme]);
 
-  // Alte Adressen (Schritt D "Abgleich", Lab-Werkstatt im Projekt) zeigen den Lab-Raum;
+  // Alte Adressen (frueherer Schritt "Abgleich", Lab-Werkstatt im Projekt) zeigen den Lab-Raum;
   // die Adresszeile auf die neue Form bringen, damit Lesezeichen danach stimmen.
   useEffect(() => {
     const canonical = toSearch(parseRoute(window.location.search));
@@ -79,6 +79,15 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
     document.title = titleFor(route);
   }, [route]);
 
+  // Fokus auf den Hauptbereich, damit Screenreader den Ortswechsel hoeren. Erst nach dem
+  // Rendern, denn auch bei einer Weiterleitung (replace) tauscht sich der Seitenbaum aus.
+  const focusMain = useRef(false);
+  useEffect(() => {
+    if (!focusMain.current) return;
+    focusMain.current = false;
+    document.getElementById("aec-main")?.focus({ preventScroll: true });
+  }, [route]);
+
   const navigate = useCallback(
     (next: Route, options?: { replace?: boolean }) => {
       const url = `${basePath}${toSearch(next)}`;
@@ -89,13 +98,8 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
         /* ohne Verlauf: nur Zustand */
       }
       setRoute(next);
-      if (!options?.replace) {
-        window.scrollTo?.({ top: 0 });
-        // Fokus auf den Hauptbereich, damit Screenreader den Ortswechsel hoeren.
-        requestAnimationFrame(() =>
-          document.getElementById("aec-main")?.focus({ preventScroll: true }),
-        );
-      }
+      focusMain.current = true;
+      if (!options?.replace) window.scrollTo?.({ top: 0 });
     },
     [basePath],
   );

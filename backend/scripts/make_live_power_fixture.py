@@ -1,132 +1,126 @@
-"""Referenz fuer die Live-Regler: genaue Backend-Rechnung gegen die Browser-Naeherung.
+"""Beispieltag und Referenz fuer die Live-Regler: genaue Backend-Rechnung gegen die Naeherung.
 
-Baut einen vollen, synthetischen Verkehrstag (drei Abflugwellen), rechnet ihn genau fuer
-mehrere Regler-Stellungen und schreibt Basis-Minutenreihen plus die genauen Kennzahlen nach
-src/aec/model/__fixtures__/livePowerReference.json. Der Test livePower.test.ts vergleicht die
-Naeherung damit. Neu erzeugen, wenn sich das Leistungsmodell aendert:
+Rechnet den Beispieltag (backend/app/exchange/demo_day.py) und schreibt zwei Dateien:
+
+- src/aec/beispieltag.json: der heutige Stand als Minutenreihen, Abflugbloecke und Kennzahlen.
+  Das Beispielprojekt ohne Server zeigt genau diesen Tag.
+- src/aec/model/__fixtures__/livePowerReference.json: die genauen Kennzahlen fuer viele
+  Regler-Stellungen (`cases`: Anschluss, Batterie, PV, Kombinationen, Randwerte, nahe heute).
+  Die Naeherung hat keine abgestimmten Konstanten (liveFleet.ts bildet die Regeln des Backends
+  nach); die Faelle sind reine Pruefstellungen. livePower.test.ts vergleicht sie.
+
+Neu erzeugen, wenn sich Modell oder Beispieltag aendern:
 
     cd backend && python scripts/make_live_power_fixture.py
+
+Die Regler gehen ueber dieselbe Funktion wie die Vorschau (variants.apply_changes).
 """
 
 from __future__ import annotations
 
 import json
-import random
 import sys
-from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from app.exchange.demo_day import SEED, TITLE, busy_day, heute_config  # noqa: E402
 from app.exchange.live import basis_from_series, departures_by_half_hour  # noqa: E402
-from app.exchange.variants import STORAGE_GRID_CHARGE_SHARE  # noqa: E402
-from app.munich.coupled_models import CoupledConfig, PowerConfig  # noqa: E402
+from app.exchange.situation import day_rows, minutes_at_limit  # noqa: E402
+from app.exchange.variants import VariantChanges, apply_changes  # noqa: E402
 from app.munich.coupled_simulator import simulate_coupled  # noqa: E402
 from app.munich.coupled_world import build_world  # noqa: E402
-from app.munich.flightplan import parse_pages  # noqa: E402
 
-HEADER = """Flugplan Muenchen
-L/S Flug-Nr - Ziel ab MUC + Ziel an Tag Ziel Stop von bis Term. Airlinename
-Datenstand: 02.10.2026
-Alle Zeiten im Flugplan sind Ortszeiten. 1 ... 7 = Montag ... Sonntag
-"""
-LIMIT_TOLERANCE_KW = 0.5
-OUT = ROOT.parent / "src" / "aec" / "model" / "__fixtures__" / "livePowerReference.json"
+SRC = ROOT.parent / "src" / "aec"
+DAY_OUT = SRC / "beispieltag.json"
+REFERENCE_OUT = SRC / "model" / "__fixtures__" / "livePowerReference.json"
 
-
-def code(n: int) -> str:
-    letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    return letters[n // 676 % 26] + letters[n // 26 % 26] + letters[n % 26]
-
-
-def busy_day():
-    """~330 Umlaeufe in drei Wellen; deterministisch (Seed 7)."""
-    rng = random.Random(7)
-    rows = []
-    waves = [(6 * 60, 75, 120), (11 * 60 + 30, 60, 80), (17 * 60, 70, 110)]
-    n = 0
-    for center, spread, count in waves:
-        for _ in range(count):
-            dep = int(rng.gauss(center, spread / 2))
-            dep = max(5 * 60, min(23 * 60, dep))
-            arr = dep - rng.choice([45, 50, 55, 60, 70])
-            n += 1
-            rows.append(
-                f"S XY {1000 + n} {arr // 60:02d}:{arr % 60:02d} {dep // 60:02d}:{dep % 60:02d} "
-                f"1234567 {code(n)} 03.10.26 27.03.27 1 Test Air")
-    return parse_pages([HEADER + "\n".join(rows)], date(2026, 10, 3), "b" * 64)
+G, BC, BP, PV = "grid_import_limit_kw", "battery_capacity_kwh", "battery_power_kw", "pv_factor"
+# Pruefstellungen: Anschluss, Batterie (schwach/stark), PV, Kombinationen, Randwerte, nahe heute.
+CASES = [
+    {G: 1500}, {G: 1900}, {G: 2200}, {G: 2450}, {G: 2600}, {G: 2800}, {G: 3000}, {G: 3150},
+    {G: 3300}, {G: 3430}, {G: 3490}, {G: 3580}, {G: 3650}, {G: 3800}, {G: 3950}, {G: 4000},
+    {G: 4200}, {G: 4350}, {G: 4500}, {G: 4800}, {G: 5000}, {G: 5500}, {G: 7000}, {G: 8000},
+    {BC: 500, BP: 250}, {BC: 900, BP: 300}, {BC: 1000, BP: 500}, {BC: 1200, BP: 600},
+    {BC: 1500, BP: 750}, {BC: 2000, BP: 500}, {BC: 2000, BP: 1000}, {BC: 2500, BP: 625},
+    {BC: 3000, BP: 1500}, {BC: 4000, BP: 2000}, {BC: 5000, BP: 2500}, {BC: 6000, BP: 3000},
+    {PV: 0.0}, {PV: 0.25}, {PV: 0.5}, {PV: 0.75}, {PV: 0.97}, {PV: 1.5}, {PV: 2.0}, {PV: 3.0},
+    {G: 2600, PV: 2.0}, {G: 3200, PV: 0.75}, {G: 3400, PV: 0.25}, {G: 3800, PV: 0.5},
+    {G: 4600, PV: 0.0}, {G: 2700, PV: 2.5},
+    {G: 3000, BC: 1000, BP: 500}, {G: 3000, BC: 3000, BP: 1500}, {G: 2900, BC: 1800, BP: 900},
+    {G: 3250, BC: 600, BP: 300}, {G: 4000, BC: 2000, BP: 1000}, {G: 5000, BC: 4000, BP: 2000},
+    {G: 1500, BC: 6000, BP: 3000}, {G: 8000, BC: 6000, BP: 3000},
+    {G: 4000, BC: 1000, BP: 500, PV: 0.5}, {G: 3700, BC: 750, BP: 375, PV: 0.6},
+    {G: 2400, BC: 2200, BP: 1100, PV: 1.25}, {G: 3300, BC: 3500, BP: 1750, PV: 0.4},
+    {G: 3100, BC: 400, BP: 400, PV: 1.5}, {G: 3550, BC: 1000, BP: 250, PV: 0.8},
+]
 
 
 def metrics(series, day_minutes):
-    day = [r for r in series if 0 <= r["minute"] - 1 < day_minutes]
-    at_limit = sum(1 for r in day if r["effective_grid_cap_kw"] > 0
-                   and r["grid_import_kw"] >= r["effective_grid_cap_kw"] - LIMIT_TOLERANCE_KW)
+    day = day_rows(series, day_minutes)
     missing = [max(0.0, r.get("charging_requested_kw", 0.0)
                    - r["ground_charging_kw"] - r["parking_kw"]) for r in day]
     return {
-        "minutes_at_limit": at_limit,
+        "minutes_at_limit": minutes_at_limit(series, day_minutes),
         "peak_import_kw": round(max(r["grid_import_kw"] for r in day), 3),
         "max_missing_kw": round(max(missing), 3),
         "missing_kwh": round(sum(missing) / 60, 3),
     }
 
 
-def main() -> None:
+def changes_for(lever: dict) -> VariantChanges:
+    out = {}
+    if "grid_import_limit_kw" in lever:
+        out["grid_import_limit_kw"] = lever["grid_import_limit_kw"]
+    if "battery_capacity_kwh" in lever:
+        out["storage_kwh"] = lever["battery_capacity_kwh"]
+        out["storage_kw"] = lever["battery_power_kw"]
+    if "pv_factor" in lever:
+        out["pv_factor"] = lever["pv_factor"]
+    return VariantChanges.model_validate(out)
+
+
+def run(plan, base_cfg, policy, lever, day_minutes):
+    cfg, pol, _ = apply_changes(base_cfg, policy, changes_for(lever), day_minutes)
+    result = simulate_coupled(build_world(plan, cfg, SEED), plan, pol)
+    return {"lever": lever, "exact": metrics(result.series, day_minutes)}
+
+
+def build() -> tuple[dict, dict]:
+    """Beispieltag und Referenzstellungen als JSON-faehige Daten (nichts wird geschrieben)."""
     plan = busy_day()
-    base_power = PowerConfig(grid_import_limit_kw=3500)
-    base_cfg = CoupledConfig(power=base_power)
+    base_cfg = heute_config()
     policy = "uncontrolled"
-    world = build_world(plan, base_cfg, 42)
+    world = build_world(plan, base_cfg, SEED)
     base = simulate_coupled(world, plan, policy)
-    cases = []
-    levers = [
-        {"grid_import_limit_kw": 2200}, {"grid_import_limit_kw": 2600},
-        {"grid_import_limit_kw": 3000}, {"grid_import_limit_kw": 4000},
-        {"grid_import_limit_kw": 4500}, {"grid_import_limit_kw": 5500},
-        {"battery_capacity_kwh": 1000, "battery_power_kw": 500},
-        {"battery_capacity_kwh": 2000, "battery_power_kw": 1000},
-        {"battery_capacity_kwh": 4000, "battery_power_kw": 2000},
-        {"pv_factor": 0.5}, {"pv_factor": 2.0},
-        {"grid_import_limit_kw": 4000, "battery_capacity_kwh": 2000, "battery_power_kw": 1000},
-    ]
-    for lever in levers:
-        values = base_power.model_dump(mode="json")
-        values.pop("battery_grid_charge_below_kw", None)
-        if "grid_import_limit_kw" in lever:
-            values["grid_import_limit_kw"] = lever["grid_import_limit_kw"]
-        if "battery_capacity_kwh" in lever:
-            values.update(
-                battery_capacity_kwh=lever["battery_capacity_kwh"],
-                battery_power_kw=lever["battery_power_kw"],
-                battery_initial_soc_pct=max(values["battery_reserve_pct"], 50.0),
-                battery_grid_charge_below_kw=round(
-                    values["grid_import_limit_kw"] * STORAGE_GRID_CHARGE_SHARE, 3),
-            )
-        if "pv_factor" in lever:
-            values["pv_capacity_kwp"] = values["pv_capacity_kwp"] * lever["pv_factor"]
-        cfg = CoupledConfig(power=PowerConfig(**values))
-        exact = simulate_coupled(build_world(plan, cfg, 42), plan, policy)
-        cases.append({"lever": lever, "exact": metrics(exact.series, world.day_minutes)})
-    payload = {
-        "note": "Synthetischer Verkehrstag; erzeugt von backend/scripts/make_live_power_fixture.py",
-        "basis": basis_from_series(base.series, base_cfg, day_minutes=world.day_minutes,
+    cases = [run(plan, base_cfg, policy, lever, world.day_minutes) for lever in CASES]
+    departures, delayed = departures_by_half_hour(base)
+    note = f"{TITLE}; erzeugt von backend/scripts/make_live_power_fixture.py"
+    day = {
+        "note": note,
+        "basis": basis_from_series(base.series, base_cfg, world=world,
+                                   day_minutes=world.day_minutes,
                                    start_min=world.start_min, day_start_utc=world.day_start_utc,
                                    policy=policy, run_id=None),
-        "departures": departures_by_half_hour(base)[0],
-        "kpis": {
-            "departures_total": len(base.departures),
-            "delayed_departures": departures_by_half_hour(base)[1],
-        },
-        "base_exact": metrics(base.series, world.day_minutes),
-        "cases": cases,
+        "departures": departures,
+        "kpis": {"departures_total": len(base.departures), "delayed_departures": delayed},
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")
-    print(f"{OUT.relative_to(ROOT.parent)}: {len(cases)} Faelle, "
-          f"Basis {payload['base_exact']}, {OUT.stat().st_size // 1024} KB")
-    for c in cases:
-        print(c["lever"], c["exact"])
+    reference = {"note": note, "base_exact": metrics(base.series, world.day_minutes),
+                 "cases": cases}
+    return day, reference
+
+
+def main() -> None:
+    day, reference = build()
+    REFERENCE_OUT.parent.mkdir(parents=True, exist_ok=True)
+    for out, payload in ((DAY_OUT, day), (REFERENCE_OUT, reference)):
+        out.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")
+    kpis = day["kpis"]
+    print(f"{DAY_OUT.relative_to(ROOT.parent)} ({DAY_OUT.stat().st_size // 1024} KB), "
+          f"{REFERENCE_OUT.relative_to(ROOT.parent)}: {len(reference['cases'])} Faelle, "
+          f"{kpis['departures_total']} Abfluege ({kpis['delayed_departures']} nicht rechtzeitig), "
+          f"Basis {reference['base_exact']}")
 
 
 if __name__ == "__main__":

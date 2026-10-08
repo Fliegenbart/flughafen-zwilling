@@ -8,10 +8,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from make_live_power_fixture import busy_day  # noqa: E402
 from test_pilot_evidence import project  # noqa: E402
 from test_variants import AIRPORT, client  # noqa: E402,F401
 
+from app.exchange.demo_day import busy_day  # noqa: E402
 from app.munich.flightplan_store import FlightPlanStore  # noqa: E402
 
 
@@ -31,7 +31,7 @@ def test_preview_is_exact_fast_and_stores_nothing(client, tmp_path):  # noqa: F8
     elapsed = time.perf_counter() - started
     assert base["preview"] is True and base["changes"] == {}
     assert base["day_minutes"] == 1440 and len(base["requested_kw"]) > 1440
-    assert base["kpis"]["departures_total"] > 300
+    assert base["kpis"]["departures_total"] == 205
     assert elapsed < 2.5, f"Vorschau zu langsam: {elapsed:.2f} s"
     # Mehr Anschluss: nichts fehlt mehr; weniger Anschluss: mehr Verspaetungen.
     more = client.post(f"/api/v1/projects/{pid}/situation/preview",
@@ -53,3 +53,93 @@ def test_preview_rejects_nonsense(client, tmp_path):  # noqa: F811
     assert client.post(url, json={"pv_factor": 9}).status_code == 422
     assert client.post(url, json={"storage_kw": 500}).status_code == 422
     assert client.post(url, json={"unbekannt": 1}).status_code == 422
+
+
+def test_preview_under_crisis_shows_the_assumption_and_hurts(client, tmp_path):  # noqa: F811
+    pid = _busy_project(client, tmp_path)
+    url = f"/api/v1/projects/{pid}/situation/preview"
+    base = client.post(url, json={}).json()
+    assert base["crisis"] is None
+    crisis = client.post(url, json={"crisis": "airport_case_07_enteisungsfenster_v1"}).json()
+    assert crisis["crisis"]["name"] == "Enteisung"
+    assert crisis["crisis"]["assumption"].startswith("Kälte")
+    # Die Stoerung senkt den Anschluss zwischen 05 und 09 Uhr: mindestens so viel Rueckstau.
+    cap = crisis["grid_cap_kw"]
+    start = crisis["start_min"]
+    assert min(cap) < base["power"]["grid_import_limit_kw"]
+    assert cap[5 * 60 - start] < base["power"]["grid_import_limit_kw"]
+    assert client.post(url, json={"crisis": "quatsch"}).status_code == 422
+    # Mit Aenderung kombinierbar: gleicher Krisenfall, mehr Anschluss.
+    fixed = client.post(url, json={"crisis": "airport_case_07_enteisungsfenster_v1",
+                                   "grid_import_limit_kw": 5500}).json()
+    assert fixed["power"]["grid_import_limit_kw"] == 5500
+
+
+def test_preview_reports_limit_minutes_unserved_load_and_charging_rule(client, tmp_path):  # noqa: F811
+    pid = _busy_project(client, tmp_path)
+    url = f"/api/v1/projects/{pid}/situation/preview"
+    base = client.post(url, json={}).json()
+    k = base["kpis"]
+    at_limit = sum(1 for cap, imp in zip(base["grid_cap_kw"], base["grid_import_kw"])
+                   if cap > 0 and imp >= cap - 0.5)
+    assert k["minutes_at_limit"] == at_limit and at_limit > 0
+    assert k["background_unserved_kwh"] >= 0
+    assert base["policy"] == "uncontrolled"
+    rule = client.post(url, json={"charging_policy": "mission_priority"}).json()
+    assert rule["policy"] == "mission_priority"
+    assert rule["changes"] == {"charging_policy": "mission_priority"}
+    assert client.post(url, json={"charging_policy": "egal"}).status_code == 422
+
+
+def test_preview_basis_carries_the_fleet_for_the_browser(client, tmp_path):  # noqa: F811
+    """Der Browser rechnet die Ladenachfrage mit diesen Weltdaten nach (liveFleet.ts)."""
+    pid = _busy_project(client, tmp_path)
+    base = client.post(f"/api/v1/projects/{pid}/situation/preview", json={}).json()
+    fleet = base["fleet"]
+    assert fleet["charging_efficiency"] == base["power"]["charging_efficiency"]
+    kinds = {"bus", "baggage_tractor", "pushback_tug", "gpu"}
+    assert {c["kind"] for c in fleet["classes"]} == kinds
+    for cls in fleet["classes"]:
+        assert cls["release_min"] == sorted(cls["release_min"])
+        assert cls["mission_min"] > 0 and cls["mission_kwh"] > 0
+    assert len(fleet["parking"]) == 200
+    # Trafogrenzen je Sektor (kVA x Leistungsfaktor), nicht nur die Summe.
+    power = base["power"]
+    assert power["apron_limit_kw"] + power["parking_limit_kw"] == power["charging_limit_kw"]
+    # Eine Variante liefert die Flotte ihrer eigenen Welt (hier: zusaetzliche Fahrzeuge).
+    more = client.post(f"/api/v1/projects/{pid}/situation/preview",
+                       json={"extra_vehicles": {"gpu": 3}}).json()
+    gpu = next(c for c in more["fleet"]["classes"] if c["kind"] == "gpu")
+    gpu_before = next(c for c in fleet["classes"] if c["kind"] == "gpu")
+    assert gpu["vehicles"] == gpu_before["vehicles"] + 3
+
+
+def test_preview_error_is_one_plain_sentence(client, tmp_path):  # noqa: F811
+    """Der Kunde liest den 422-Text im Arbeitsbildschirm: kein Pydantic-Dump, kein Link."""
+    pid = _busy_project(client, tmp_path)
+    url = f"/api/v1/projects/{pid}/situation/preview"
+    base = client.post(url, json={}).json()
+    fleet = sum(c["vehicles"] for c in base["fleet"]["classes"])
+    assert fleet == 100
+    too_many = client.post(url, json={"extra_vehicles": {
+        "bus": 100, "gpu": 100, "pushback_tug": 100}})
+    assert too_many.status_code == 422
+    assert too_many.json()["detail"] == (
+        f"invalid_variant: Das Modell rechnet höchstens 300 Fahrzeuge, die Flotte käme auf "
+        f"{fleet + 300}.")
+    # Bis zur Grenze (300) rechnet die Vorschau.
+    assert client.post(url, json={"extra_vehicles": {"gpu": 100, "bus": 100}}).status_code == 200
+
+
+def test_preview_zero_battery_keeps_the_battery_of_the_project(client, tmp_path):  # noqa: F811
+    """0 kWh entfernt keine Batterie: Vorschau und Heute-Stand zeigen dieselbe Batterie."""
+    pid = _busy_project(client, tmp_path)
+    assert client.put(f"/api/v1/projects/{pid}/assets", headers=AIRPORT, json={"entries": [
+        {"key": "battery_capacity_kwh", "value": 1000, "unit": "kWh"},
+        {"key": "battery_power_kw", "value": 500, "unit": "kW"}]}).status_code == 200
+    url = f"/api/v1/projects/{pid}/situation/preview"
+    today = client.post(url, json={}).json()
+    zero = client.post(url, json={"storage_kwh": 0, "storage_kw": 500}).json()
+    assert today["power"]["battery_capacity_kwh"] == 1000
+    assert zero["power"]["battery_capacity_kwh"] == 1000 and zero["changes"] == {}
+    assert zero["kpis"] == today["kpis"]

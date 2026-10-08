@@ -1,41 +1,23 @@
 /**
  * Die Tageskurve: Was der Flughafen aus dem Netz braucht, gegen die Grenze des Anschlusses.
- * Ueber der Grenze: gruen, was die Batterie deckt; rot, was fehlt. Die heutige Kurve bleibt als
- * graue Linie stehen, sobald eine Stellschraube veraendert ist.
+ * Ueber der Grenze: gruen, was die Batterie deckt; rot und schraffiert, was fehlt. Die heutige
+ * Kurve bleibt als graue Linie stehen, sobald eine Stellschraube veraendert ist. Eine Legende
+ * nennt, was gerade gezeichnet ist.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { DepartureBin } from "../api/preview";
+import { points, STEP, type Point } from "../model/dayCurve";
 import { clock, powerText } from "../model/format";
+import { shortfallHeadline, worstShortfall } from "../model/headline";
 import type { LiveResult } from "../model/livePower";
 
-const STEP = 5; // Minuten je Kurvenpunkt
-const H = 360;
-const DEP_H = 96;
+const SCREEN = { h: 360, depH: 96 };
+// Im Druck steht die Grafik in fester Groesse (A4 hat 703 px Satzbreite). So haengen Schrift und
+// Seitenhoehe der Handreichung nicht von der Fensterbreite ab. Die Hoehe ist knapp gewaehlt: Sie
+// laesst dem Fuss der Handreichung auch bei Krisenannahme und vielen Phasen Platz auf Seite 1.
+const PRINT = { width: 700, h: 206, depH: 54 };
 const PAD = { left: 52, right: 16, top: 44, bottom: 28 };
-
-type Point = { m: number; need: number; cap: number; cover: number; miss: number };
-
-/** Je 5 Minuten: Mittel fuer die Linie, Maximum fuer Fehlendes (nichts darf verschwinden). */
-function points(r: LiveResult): Point[] {
-  const out: Point[] = [];
-  for (let m = 0; m < r.importKw.length; m += STEP) {
-    let need = 0;
-    let cover = 0;
-    let miss = 0;
-    let cap = Infinity;
-    const end = Math.min(r.importKw.length, m + STEP);
-    for (let i = m; i < end; i++) {
-      const discharge = Math.max(0, r.batteryKw[i]!);
-      const n = r.importKw[i]! + discharge + r.missingKw[i]!;
-      need = Math.max(need, n);
-      cover = Math.max(cover, discharge);
-      miss = Math.max(miss, r.missingKw[i]!);
-      cap = Math.min(cap, r.capKw[i]!);
-    }
-    out.push({ m, need, cap, cover, miss });
-  }
-  return out;
-}
 
 function useWidth<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -50,6 +32,28 @@ function useWidth<T extends HTMLElement>() {
   return [ref, width] as const;
 }
 
+/** Wahr, solange gedruckt wird (Druckdialog offen); der Browser meldet es vor dem Layout. */
+function usePrinting() {
+  const [printing, setPrinting] = useState(false);
+  useEffect(() => {
+    // flushSync: Die Grafik muss neu gezeichnet sein, bevor der Browser die Druckseite setzt.
+    const set = (on: boolean) => flushSync(() => setPrinting(on));
+    const media = typeof window.matchMedia === "function" ? window.matchMedia("print") : null;
+    const onBefore = () => set(true);
+    const onAfter = () => set(false);
+    const onMedia = () => set(!!media?.matches);
+    window.addEventListener("beforeprint", onBefore);
+    window.addEventListener("afterprint", onAfter);
+    media?.addEventListener?.("change", onMedia);
+    return () => {
+      window.removeEventListener("beforeprint", onBefore);
+      window.removeEventListener("afterprint", onAfter);
+      media?.removeEventListener?.("change", onMedia);
+    };
+  }, []);
+  return printing;
+}
+
 export default function LoadChart({
   result,
   today,
@@ -61,8 +65,13 @@ export default function LoadChart({
   departures: DepartureBin[];
   changed: boolean;
 }) {
-  const [box, width] = useWidth<HTMLDivElement>();
+  const [box, measured] = useWidth<HTMLDivElement>();
+  const printing = usePrinting();
+  const width = printing ? PRINT.width : measured;
+  const { h: H, depH: DEP_H } = printing ? PRINT : SCREEN;
+  // Zeiger: mit der Maus ueber dem Diagramm, oder mit dem Schieber darunter (Tastatur, Touch).
   const [hover, setHover] = useState<number | null>(null);
+  const [scrub, setScrub] = useState<number | null>(null);
   const pts = useMemo(() => points(result), [result]);
   const base = useMemo(() => points(today), [today]);
   const dayMin = result.importKw.length || 1440;
@@ -86,34 +95,86 @@ export default function LoadChart({
   };
   const coverTop = (p: Point) => (p.cover > 0.5 ? p.cap + p.cover : p.cap);
   const missTop = (p: Point) => coverTop(p) + (p.miss > 0.5 ? p.miss : 0);
-  const capNow = pts[0]?.cap ?? 0;
-  const worst = result.shortfalls.reduce<LiveResult["shortfalls"][number] | null>(
-    (a, s) => (!a || s.maxMissingKw > a.maxMissingKw ? s : a),
-    null,
-  );
+  // Nennwert des Anschlusses; Stoerungen druecken die Linie nur zeitweise darunter.
+  const capNow = Math.max(0, ...pts.map((p) => p.cap).filter(Number.isFinite));
+  // Das Anschluss-Schild steht dort, wo die Kurve am laengsten weit unter der Grenze bleibt.
+  const labelAt = (() => {
+    let best = { len: 0, mid: pts.length / 2 };
+    for (let i = 0, from = -1; i <= pts.length; i++) {
+      const roomy = i < pts.length && pts[i]!.need < pts[i]!.cap - 300;
+      if (roomy && from < 0) from = i;
+      if (!roomy && from >= 0) {
+        if (i - from > best.len) best = { len: i - from, mid: (from + i) / 2 };
+        from = -1;
+      }
+    }
+    return pts[Math.min(pts.length - 1, Math.floor(best.mid))]?.m ?? 0;
+  })();
+  const worst = worstShortfall(result);
+  // Der Satz zur Engstelle steht mittig ueber ihr, aber nie ausserhalb der Grafik.
+  const noteText = worst
+    ? `${clock(worst.start)}–${clock(worst.end)} Uhr: bis zu ${powerText(worst.maxMissingKw)} fehlen`
+    : "";
+  const noteHalf = noteText.length * 4.6;
+  const noteX = worst
+    ? Math.min(
+        width - PAD.right - noteHalf,
+        Math.max(PAD.left + noteHalf, x((worst.start + worst.end) / 2)),
+      )
+    : 0;
   const ticks = Array.from({ length: Math.floor(top / 1000) + 1 }, (_, i) => i * 1000);
   const hours = [0, 3, 6, 9, 12, 15, 18, 21, 24];
   const maxDep = Math.max(1, ...departures.map((d) => d.count));
-  const hp = hover != null ? pts[Math.min(pts.length - 1, Math.round(hover / STEP))] : null;
+  // Die Legende nennt, was gerade gezeichnet ist (gleiche Schwellen wie die Flaechen oben): die
+  // Hauptkurve immer, die heutige erst mit veraenderter Einstellung. Die Grenze traegt ihr Schild.
+  const legend = [
+    { id: "need", text: changed ? "Strombedarf mit Ihrer Einstellung" : "Strombedarf" },
+    ...(changed ? [{ id: "today", text: "Strombedarf heute" }] : []),
+    ...(pts.some((p) => p.cover > 0.5) ? [{ id: "cover", text: "Batterie deckt" }] : []),
+    ...(pts.some((p) => p.miss > 0.5) ? [{ id: "miss", text: "Es fehlt" }] : []),
+  ];
+  const cursor = hover ?? scrub;
+  const hp = cursor != null ? pts[Math.min(pts.length - 1, Math.round(cursor / STEP))] : null;
+  const readout = hp
+    ? `${clock(hp.m)} Uhr: ${powerText(hp.need)} gebraucht${
+        hp.miss > 0.5
+          ? `, ${powerText(hp.miss)} fehlen`
+          : hp.cover > 0.5
+            ? `, Batterie gibt ${powerText(hp.cover)}`
+            : ""
+      }`
+    : "";
 
   return (
     <figure className="ap-chart" ref={box}>
       <svg
         width={width}
         height={H + DEP_H}
+        viewBox={`0 0 ${width} ${H + DEP_H}`}
+        style={{ maxWidth: "100%", height: "auto" }}
         role="img"
-        aria-label={
-          worst
-            ? `Von ${clock(worst.start)} bis ${clock(worst.end)} Uhr fehlen bis zu ${powerText(worst.maxMissingKw)}.`
-            : "Der Anschluss reicht den ganzen Tag."
-        }
+        aria-label={shortfallHeadline(result)}
         onPointerMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
-          const m = ((e.clientX - rect.left - PAD.left) / w) * dayMin;
+          // Die Grafik kann kleiner dargestellt werden als gezeichnet (Druck, schmale Fenster).
+          const px = (e.clientX - rect.left) * (width / rect.width);
+          const m = ((px - PAD.left) / w) * dayMin;
           setHover(m >= 0 && m <= dayMin ? m : null);
         }}
         onPointerLeave={() => setHover(null)}
       >
+        <defs>
+          <pattern
+            id="ap-miss-hatch"
+            className="ap-chart__hatch"
+            width={6}
+            height={6}
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <rect width={4} height={6} />
+          </pattern>
+        </defs>
         {ticks.map((t) => (
           <g key={t} className="ap-chart__grid">
             <line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} />
@@ -127,20 +188,14 @@ export default function LoadChart({
         <path className="ap-chart__miss" d={band(coverTop, missTop)} />
         <path className="ap-chart__need" d={line(pts, (p) => p.need)} />
         <path className="ap-chart__limit" d={line(pts, (p) => p.cap)} />
-        <text
-          className="ap-chart__limitlabel"
-          x={width - PAD.right}
-          y={y(capNow) - 8}
-          textAnchor="end"
-        >
+        <text className="ap-chart__limitlabel" x={x(labelAt)} y={y(capNow) - 8} textAnchor="middle">
           Netzanschluss {powerText(capNow)}
         </text>
         {worst ? (
           <g className="ap-chart__note">
             <line x1={x(worst.start)} x2={x(worst.end)} y1={PAD.top - 14} y2={PAD.top - 14} />
-            <text x={x(worst.start)} y={PAD.top - 22}>
-              {clock(worst.start)}–{clock(worst.end)} Uhr: bis zu {powerText(worst.maxMissingKw)}{" "}
-              fehlen
+            <text x={noteX} y={PAD.top - 22} textAnchor="middle">
+              {noteText}
             </text>
           </g>
         ) : (
@@ -189,17 +244,30 @@ export default function LoadChart({
           </g>
         ) : null}
       </svg>
-      <figcaption className="ap-chart__readout" aria-live="polite">
-        {hp
-          ? `${clock(hp.m)} Uhr: ${powerText(hp.need)} gebraucht${
-              hp.miss > 0.5
-                ? `, ${powerText(hp.miss)} fehlen`
-                : hp.cover > 0.5
-                  ? `, Batterie gibt ${powerText(hp.cover)}`
-                  : ""
-            }`
-          : ""}
-      </figcaption>
+      <div className="ap-chart__keybox">
+        <ul className="ap-chart__key" aria-label="Legende">
+          {legend.map((k) => (
+            <li key={k.id}>
+              <span className={`ap-chart__swatch ap-chart__swatch--${k.id}`} aria-hidden="true" />
+              {k.text}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <input
+        type="range"
+        className="ap-scrub"
+        aria-label="Uhrzeit im Tagesverlauf"
+        aria-valuetext={readout || `${clock(scrub ?? 0)} Uhr`}
+        min={0}
+        max={dayMin - STEP}
+        step={STEP}
+        value={scrub ?? 0}
+        onFocus={() => setScrub((s) => s ?? 0)}
+        onChange={(e) => setScrub(Number(e.target.value))}
+        onBlur={() => setScrub(null)}
+      />
+      <figcaption className="ap-chart__readout">{readout}</figcaption>
     </figure>
   );
 }

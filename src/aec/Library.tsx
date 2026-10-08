@@ -33,14 +33,18 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
     setBusy(scenarioId);
     try {
       const where = await adoptScenario(project, scenarioId, name);
-      setNotice({
-        text: `„${name}“ gehört jetzt zu ${project.name}${where === "beispiel" ? ", bis Sie die Seite schließen" : ""}.`,
-        project: project.id,
-        slug,
-      });
+      // Im Beispielprojekt gilt der Krisenfall nur zum Ansehen; gerechnet wird er nur im eigenen.
+      setNotice(
+        where === "beispiel"
+          ? {
+              text: `„${name}“ gehört jetzt zu ${project.name}, bis Sie die Seite schließen. Durchrechnen können Sie den Fall nur in einem eigenen Projekt.`,
+              project: project.id,
+            }
+          : { text: `„${name}“ gehört jetzt zu ${project.name}.`, project: project.id, slug },
+      );
     } catch (e) {
       setNotice({
-        text: `Übernehmen fehlgeschlagen (${e instanceof Error ? e.message : "unbekannter Fehler"}).`,
+        text: `„${name}“ ließ sich nicht ins Projekt holen (${e instanceof Error ? e.message : "unbekannter Fehler"}).`,
         project: "",
       });
     } finally {
@@ -80,17 +84,16 @@ export default function Library({ theme }: { theme?: "light" | "dark" }) {
             {notice.text}{" "}
             {notice.project ? (
               <>
-                <Link
-                  to={{
-                    page: "projekt",
-                    projekt: notice.project,
-                    frage: "varianten",
-                    ...(notice.slug ? { krise: notice.slug } : {}),
-                  }}
-                >
-                  Jetzt durchrechnen
-                </Link>{" "}
-                ·{" "}
+                {notice.slug ? (
+                  <>
+                    <Link
+                      to={{ page: "arbeitsplatz", projekt: notice.project, krise: notice.slug }}
+                    >
+                      Jetzt durchrechnen
+                    </Link>{" "}
+                    ·{" "}
+                  </>
+                ) : null}
                 <Link to={{ page: "projekt", projekt: notice.project, frage: "nachweis" }}>
                   Was das Lab prüft
                 </Link>

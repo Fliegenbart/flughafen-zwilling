@@ -6,6 +6,17 @@ import { apiBase } from "../../shared/runtimeConfig";
 import { isObj, str } from "./parse";
 import { storedRole } from "./role";
 
+const NO_CONNECTION = "Keine Verbindung zum Server.";
+
+/** So meldet der Browser, dass gar keine Antwort kam: Chrome, Safari, Firefox. */
+const isNetworkFailure = (message: string) =>
+  /Failed to fetch|Load failed|NetworkError/i.test(message);
+
+/** Der Satz des Servers zu den Grenzen des Modells; er ist schon fuer Kunden geschrieben. */
+export function modelLimit(detail: string): string | null {
+  return /^invalid_variant: (Das Modell rechnet .+)$/.exec(detail.trim())?.[1] ?? null;
+}
+
 /** Fachliche Fehlercodes der Austausch-API in Kaeufersprache. */
 export function explain(detail: string): string {
   if (detail.includes("acceptance_criteria_not_locked"))
@@ -15,10 +26,10 @@ export function explain(detail: string): string {
     return "Als erledigt zählt es erst, wenn das Lab ein Ergebnis gemeldet hat.";
   if (detail.startsWith("no_base"))
     return "Um Lösungen zu rechnen, braucht das Projekt einen Flugplan. Hinterlegen Sie ihn unter „Daten“.";
-  if (detail.startsWith("invalid_variant: "))
-    return `Diese Lösung geht so nicht: ${detail.slice("invalid_variant: ".length)}`;
-  if (detail.includes("Run-Queue voll"))
-    return "Der Rechner ist gerade ausgelastet. Bitte warten Sie, bis die laufenden Berechnungen fertig sind.";
+  if (detail.startsWith("invalid_variant"))
+    return modelLimit(detail) ?? "Diese Lösung lässt sich so nicht rechnen.";
+  if (detail.includes("Run-Queue voll")) return "Der Rechner ist gerade belegt.";
+  if (/^API-Fehler 5\d\d/.test(detail)) return "Der Server konnte die Anfrage nicht bearbeiten.";
   return detail;
 }
 
@@ -48,8 +59,17 @@ export async function request<T>(
   init?: RequestInit,
   { timeoutMs = 12000, translate = explain }: Options = {},
 ): Promise<T> {
+  // Zeitgrenze und Abbruch des Aufrufers wirken auf dieselbe Anfrage.
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const caller = init?.signal;
+  const forward = () => controller.abort();
+  if (caller?.aborted) forward();
+  else caller?.addEventListener("abort", forward, { once: true });
   try {
     let response: Response;
     try {
@@ -60,10 +80,13 @@ export async function request<T>(
           "X-Exchange-Role": storedRole(),
           ...init?.headers,
         },
-        signal: init?.signal ?? controller.signal,
+        signal: controller.signal,
       });
     } catch (e) {
-      throw new Error(translate(e instanceof Error ? e.message : "Failed to fetch"));
+      if (timedOut) throw new Error("Der Server antwortet nicht.");
+      const message = e instanceof Error ? e.message : "Failed to fetch";
+      // Ein Satz fuer alle Bereiche, bevor ihre eigenen Uebersetzer den Browsertext sehen.
+      throw new Error(isNetworkFailure(message) ? NO_CONNECTION : translate(message));
     }
     const body = (await response.json().catch(() => null)) as unknown;
     if (!response.ok) {
@@ -74,6 +97,7 @@ export async function request<T>(
     return body as T;
   } finally {
     clearTimeout(timer);
+    caller?.removeEventListener("abort", forward);
   }
 }
 

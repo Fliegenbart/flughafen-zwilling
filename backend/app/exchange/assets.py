@@ -23,9 +23,9 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from ..munich.coupled_models import CoupledConfig
+from ..munich.coupled_models import MAX_FLEET_VEHICLES, MAX_VEHICLES_PER_KIND, CoupledConfig
 
 MAX_IMPORT_BYTES = 256 * 1024
 MAX_ENTRIES = 64
@@ -169,8 +169,35 @@ def normalize(entries: list[AssetEntry]) -> list[dict]:
     return out
 
 
+def plain_message(exc: ValueError) -> str:
+    """Ein Satz fuer den Kunden aus einer Modellpruefung (der Text steht in der Oberflaeche).
+
+    Pydantic liefert mehrzeilige Texte mit Eingabewerten und Link. Davon bleibt nur die Meldung
+    der eigenen Pruefungen (ValueError in einem Validator), sonst ein allgemeiner Satz.
+    """
+    if not isinstance(exc, ValidationError):
+        return str(exc)
+    first = exc.errors(include_url=False, include_input=False)[0]
+    if first["type"] == "value_error":
+        return str(first["ctx"]["error"])
+    return "Die Werte liegen außerhalb dessen, was das Modell rechnet."
+
+
+def check_fleet_limits(fleets: list[dict]) -> None:
+    """Fahrzeuggrenzen des Modells vorab mit Zahlen im Satz; ValueError bei Verstoß."""
+    for fleet in fleets:
+        if fleet["vehicles"] > MAX_VEHICLES_PER_KIND:
+            raise ValueError(
+                f"Das Modell rechnet höchstens {MAX_VEHICLES_PER_KIND} Fahrzeuge je Art, "
+                f"{FLEET_LABELS[fleet['kind']]} kämen auf {fleet['vehicles']}.")
+    total = sum(fleet["vehicles"] for fleet in fleets)
+    if total > MAX_FLEET_VEHICLES:
+        raise ValueError(f"Das Modell rechnet höchstens {MAX_FLEET_VEHICLES} Fahrzeuge, "
+                         f"die Flotte käme auf {total}.")
+
+
 def apply_assets(config: CoupledConfig, entries: list[dict]) -> CoupledConfig:
-    """Projektwerte auf eine Modellkonfiguration legen. ValueError bei Widerspruch."""
+    """Projektwerte auf eine Modellkonfiguration legen. ValueError (ein Satz) bei Widerspruch."""
     values = config.model_dump(mode="json")
     fleets = {f["kind"]: f for f in values["fleets"]}
     for entry in entries:
@@ -192,7 +219,11 @@ def apply_assets(config: CoupledConfig, entries: list[dict]) -> CoupledConfig:
         if fleet["chargers"] > fleet["vehicles"]:
             raise ValueError(f"{FLEET_LABELS[fleet['kind']]}: mehr Ladepunkte "
                              f"({fleet['chargers']}) als Fahrzeuge ({fleet['vehicles']})")
-    return CoupledConfig.model_validate(values)
+    check_fleet_limits(values["fleets"])
+    try:
+        return CoupledConfig.model_validate(values)
+    except ValidationError as exc:
+        raise ValueError(plain_message(exc)) from exc
 
 
 def data_status(entries: list[dict]) -> str:
@@ -357,10 +388,7 @@ class AssetStore:
         try:
             apply_assets(CoupledConfig(), entries)
         except ValueError as exc:
-            message = str(exc).splitlines()[0] if str(exc) else "Werte widersprechen sich"
-            if "Value error, " in str(exc):
-                message = str(exc).split("Value error, ", 1)[1].split("[")[0].strip()
-            raise invalid(message) from exc
+            raise invalid(str(exc)) from exc
         content = {"entries": entries}
         sha = hashlib.sha256(_canonical(content).encode()).hexdigest()
         original_sha = (hashlib.sha256(original_text.encode("utf-8")).hexdigest()
@@ -413,4 +441,4 @@ def base_assets(asset_store: AssetStore | None, project_id: str,
     try:
         return apply_assets(config, latest["entries"]), info
     except ValueError as exc:
-        return config, {**info, "applied": False, "error": str(exc).splitlines()[0]}
+        return config, {**info, "applied": False, "error": str(exc)}

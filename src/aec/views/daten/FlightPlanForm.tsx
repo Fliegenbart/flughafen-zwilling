@@ -2,7 +2,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { FlightPlanInfo } from "../../../munich/flightplanTypes";
 import { importFlightPlan, linkFlightPlan, listFlightPlans } from "../../api/data";
-import { deDate } from "../../model/dataStatus";
+import { deDate, sharedFlightsText } from "../../model/dataStatus";
+import { unit } from "../../model/format";
 import { errorText, Format, Result, type FormProps } from "./shared";
 
 const FLIGHT_PLAN_SOURCE = "https://www.munich-airport.de/saisonflugplan";
@@ -35,7 +36,7 @@ export default function FlightPlanForm({ project, reload, disabled }: FormProps)
     setOk(
       `Flugplan vom ${deDate(plan.service_date)} mit ${plan.departure_entry_count} Abflügen ${imported ? "eingelesen und " : ""}übernommen.${
         groups
-          ? ` ${groups} Flüge stehen eventuell doppelt drin (Codeshares) und müssen unter „Anlagenplan und Flugplan“ auf der Seite Tag geklärt werden.`
+          ? ` ${sharedFlightsText(groups)} Das klären Sie unten im Detailwerkzeug „Anlagenplan und Flugplan“.`
           : ""
       }`,
     );
@@ -48,7 +49,7 @@ export default function FlightPlanForm({ project, reload, disabled }: FormProps)
     setOk("");
     if (!file) return setError("Kein PDF ausgewählt.");
     if (!/\.pdf$/i.test(file.name) || file.size > 6 * 1024 * 1024)
-      return setError("Das PDF darf höchstens 6 MB groß sein.");
+      return setError(`Das PDF darf höchstens ${unit(6, "MB")} groß sein.`);
     if (!date) return setError("Kein Tag ausgewählt.");
     setBusy(true);
     try {
@@ -66,7 +67,7 @@ export default function FlightPlanForm({ project, reload, disabled }: FormProps)
     setError("");
     setOk("");
     const plan = plans.find((p) => p.snapshot_id === pick);
-    if (!plan) return setError("Bitte einen importierten Flugplan wählen.");
+    if (!plan) return setError("Wählen Sie einen eingelesenen Flugplan aus.");
     setBusy(true);
     try {
       await link(plan, false);
@@ -84,8 +85,9 @@ export default function FlightPlanForm({ project, reload, disabled }: FormProps)
         <a href={FLIGHT_PLAN_SOURCE} target="_blank" rel="noreferrer">
           munich-airport.de/saisonflugplan
         </a>
-        ), höchstens 6 MB, dazu ein Tag, für den der Plan gilt. Gelesen werden die Planzeiten.
-        Codeshares, die doppelt drinstehen könnten, werden markiert und nicht zusammengelegt.
+        ), höchstens {unit(6, "MB")}, dazu ein Tag, für den der Plan gilt. Gelesen werden die
+        Planzeiten. Codeshares, die doppelt drinstehen könnten, werden markiert und nicht
+        zusammengelegt.
       </Format>
       <form className="aec-dgrid" onSubmit={upload} aria-label="Flugplan einlesen">
         <label>
@@ -126,7 +128,11 @@ export default function FlightPlanForm({ project, reload, disabled }: FormProps)
                   {deDate(p.service_date)} · Stand {deDate(p.source_data_date)} ·{" "}
                   {p.departure_entry_count} Abflüge
                   {p.possible_shared_flight_groups
-                    ? ` · ${p.possible_shared_flight_groups} mögliche Codeshares`
+                    ? ` · ${
+                        p.possible_shared_flight_groups === 1
+                          ? "1 möglicher Codeshare"
+                          : `${p.possible_shared_flight_groups} mögliche Codeshares`
+                      }`
                     : ""}
                 </option>
               ))}
@@ -152,7 +158,7 @@ export function flightPlanError(detail: string): string {
   if (/laeuft bereits/.test(detail))
     return "Es wird schon ein Flugplan eingelesen, danach geht es weiter.";
   if (/Zeitlimit/.test(detail)) return "Das Hochladen hat zu lange gedauert und wurde abgebrochen.";
-  if (/6 MiB/.test(detail)) return "Das PDF ist größer als 6 MB.";
+  if (/6 MiB/.test(detail)) return `Das PDF ist größer als ${unit(6, "MB")}.`;
   if (/^API-Fehler 422|Layout|layout|unlesbar|Flugzeile/i.test(detail))
     return `Wir konnten das PDF nicht als Saisonflugplan lesen. ${detail.startsWith("API-Fehler") ? "" : detail}`.trim();
   return detail;
