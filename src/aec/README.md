@@ -6,13 +6,13 @@ reale Last und zeigt, wo es kritisch wird und was hilft. Texte nach
 
 ## Aufbau
 
-| Ordner | Was drin ist | Darf importieren |
-| --- | --- | --- |
-| `api/` | Der eine HTTP-Client (`http.ts`) und je Thema ein Modul: Projekte, Lagebild, Lösungen, Übersicht, Austausch, Daten. Kein React. | `model/`, `types`, `sample`, `src/shared` |
-| `model/` | Reine Fachlogik und Formatierung: Lagebild, Antwortsätze, Datenstand, Austausch-Status, Fahrzeugklassen. Kein React, kein Netz. | `types`, `src/shared` |
-| `views/` | Eine Datei je Seite (Daten, Tag, Engpass, Lösungen, Zusage). Größere Seiten haben einen Unterordner mit ihren Bausteinen (`daten/`, `loesungen/`). | alles in `src/aec` |
-| `labraum/` | Der Testing-Lab-Raum (`?seite=lab`) mit Eingang, Verlauf und Modellstatus. | alles in `src/aec` |
-| oben | App-Rahmen und Gemeinsames: `AirportEnergyCheck`, `routes`, `ProjectPage`, `Home`, `Library`, `parts`, `types`, `sample`, `scenarios`. | |
+| Ordner     | Was drin ist                                                                                                                                       | Darf importieren                          |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `api/`     | Der eine HTTP-Client (`http.ts`) und je Thema ein Modul: Projekte, Lagebild, Lösungen, Übersicht, Austausch, Daten. Kein React.                    | `model/`, `types`, `sample`, `src/shared` |
+| `model/`   | Reine Fachlogik und Formatierung: Lagebild, Antwortsätze, Datenstand, Austausch-Status, Fahrzeugklassen. Kein React, kein Netz.                    | `types`, `src/shared`                     |
+| `views/`   | Eine Datei je Seite (Daten, Tag, Engpass, Lösungen, Zusage). Größere Seiten haben einen Unterordner mit ihren Bausteinen (`daten/`, `loesungen/`). | alles in `src/aec`                        |
+| `labraum/` | Der Testing-Lab-Raum (`?seite=lab`) mit Eingang, Verlauf und Modellstatus.                                                                         | alles in `src/aec`                        |
+| oben       | App-Rahmen und Gemeinsames: `AirportEnergyCheck`, `routes`, `ProjectPage`, `Home`, `Library`, `parts`, `types`, `sample`, `scenarios`.             |                                           |
 
 ## Regeln
 

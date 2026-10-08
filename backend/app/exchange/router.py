@@ -23,6 +23,7 @@ from ..pilot.router import EvidenceStore, _normalize_uuid, _verified_coupled_ser
 from . import library
 from .assets import MAX_IMPORT_BYTES as ASSET_IMPORT_LIMIT
 from .assets import AssetsRequest, AssetStore
+from .live import PreviewRequest, preview
 from .situation import build_situation, empty_situation
 from .variants import VariantRequest, VariantRunRequest, VariantService, fleet_summary
 
@@ -900,6 +901,11 @@ def create_router(storage, lab_service, plans, base_dir: Path | None = None,
         variants.delete(pid(project_id), _normalize_uuid(variant_id, "variant_id"),
                         resolve_actor(request, x_exchange_role))
         return Response(status_code=204)
+
+    @router.post("/projects/{project_id}/situation/preview")
+    def situation_preview(project_id: str, body: PreviewRequest | None = None) -> dict:
+        """Genaue Vorschau fuer die Live-Regler; rechnet sofort, speichert nichts."""
+        return preview(variants, pid(project_id), body or PreviewRequest())
 
     @router.post("/projects/{project_id}/variants/run", status_code=202)
     def run_variants(project_id: str, request: Request,

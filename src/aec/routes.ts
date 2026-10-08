@@ -46,6 +46,8 @@ export type Route =
   | { page: "bibliothek"; werkstatt?: "simulation" }
   /** Testing-Lab-Backbone: Pruefauftraege, Messungen, Modellabgleich eines Projekts. */
   | { page: "lab"; projekt: string; werkstatt?: LabWerkstatt }
+  /** Arbeitsbildschirm fuer den Kundentermin (Probe, ?ansicht=neu). */
+  | { page: "arbeitsplatz"; projekt: string }
   | {
       page: "projekt";
       projekt: string;
@@ -82,6 +84,7 @@ export function parseRoute(search: string): Route {
       projekt: projekt ?? SAMPLE_PROJECT.id,
       ...(isLabWerkstatt(werkstatt) ? { werkstatt } : {}),
     };
+  if (projekt && p.get("ansicht") === "neu") return { page: "arbeitsplatz", projekt };
   if (projekt) {
     const frage = p.get("frage");
     // Frueher Schritt D "Abgleich" bzw. Lab-Werkstatt im Projekt: jetzt Testing-Lab.
@@ -104,6 +107,9 @@ export function toSearch(route: Route): string {
   if (route.page === "bibliothek") {
     p.set("seite", "bibliothek");
     if (route.werkstatt) p.set("werkstatt", route.werkstatt);
+  } else if (route.page === "arbeitsplatz") {
+    p.set("projekt", route.projekt);
+    p.set("ansicht", "neu");
   } else if (route.page === "lab") {
     p.set("seite", "lab");
     p.set("projekt", route.projekt);
