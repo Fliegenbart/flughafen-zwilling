@@ -1,6 +1,56 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 13.10.2026 (interaktive Flughafen-Simulation)
+## Aktiver Release vom 13.10.2026 (Messdaten-Abgleich)
+
+Code-Release `7930f0282a367f5affde82e99a0a355fba6448d7`, PR #35 (aufbauend
+auf PR #34), aus `/opt/airport-releases/7930f02` aktiv. Remote-SHA und
+Container-Build-SHA identisch; CI `38396703061` vollstaendig gruen.
+Vorher aktiv: `b1ad776b405f10f7f23eea00b4bad0bfe8b59c8a`.
+
+Der bisherige Pruefbereich ist ein gefuehrter Messdaten-Abgleich:
+gespeicherter gekoppelter Lauf, Prueffrage/Messgrenze und gesperrte Kriterien,
+eigene CSV-Messreihe, serverseitiger Replay und Bewertung. Demo-Vorschauen
+lassen sich ausdruecklich als normaler SIL-Lauf uebergeben. Keine fingierten
+Auftraege oder Session-Erfolgsdaten; API-Fehler werden nicht durch Beispiele ersetzt.
+Nur kW-Reihen, exakte vollstaendige Zeitdeckung ohne Interpolation. Diagnose,
+Holdout-Kriterien und Betriebsfreigabe bleiben getrennt.
+
+Offline-Sicherung nach Stoppen ausschliesslich des Airport-Backends:
+
+- `/opt/airport-backups/pre-7930f02-20261013.tar.gz`
+- 1.807 Dateien, 27.464.106 Bytes, Modus 0600
+- SHA256 `c88d3e5b4c56798d34cbbeeeb3db499da98e26fb1a89a117d1c8f543b4cb6a2f`
+- Wiederherstellung hashgeprueft, temporaere Pruefkopie anschliessend entfernt.
+
+Abnahme:
+
+- 187 Frontend- und 306 Backend-Tests; Lint, Typecheck, Subpath-Build,
+  Archivcheck und CI inklusive Container-/Proxytests bestanden.
+- Neuer HTTPS-Smoke `scripts/smoke_measurement_workflow.py` bestanden:
+  Lauf `6a3d8553979847a99c7c23f028902372`, QA-Projekt
+  `d1caacc0-f77b-4696-943a-72b0347d8a15`, berechneter MAE 17,510605 kW.
+  Daten ausdruecklich aus dem Modell abgeleitet, deshalb `lab_diagnostic` und
+  `NOT_EVALUABLE`, keine empirische Validierung. Ungueltige CSV bleibt invalid.
+- Vier Demo-Stellschrauben, alle Airport-Cases, beide Planner-Referenzen und
+  FlexLab-Smoke ueber HTTPS bestanden.
+- Lokal im Browser: Auswahl, Speichern der Frage/Grenzen, Wiederaufnahme,
+  Sperre bei ungueltiger Messreihe sowie direkter Simulations-Handoff geprueft.
+  390-px-Ansicht ohne Inhaltsueberlauf. Live-Ansicht und gespeicherte Diagnose
+  sichtbar, keine Browserfehler. Der automatisierte native Dateidialog blockierte;
+  dessen vollstaendige manuelle Browserabnahme wird nicht behauptet. CSV-Import
+  ist per Frontend-Test und echtem HTTP-End-to-End geprueft.
+- Alle vorherigen fuenf Projekte, zwei Snapshots und 250 Laeufe erhalten.
+  QA ergaenzt synthetische Daten. UI/Health/Readiness HTTP 200.
+- Ein Backend-Prozess, healthy, keine Neustarts oder Fehler/Tracebacks im
+  kontrollierten Start-/Abnahmefenster. Bestehende Airport-Subnetze konfliktfrei.
+  Oeffentlicher Proxy unveraendert; andere Stacks nicht angefasst.
+
+Rollback auf `/opt/airport-releases/b1ad776` mit dessen Build-SHA und
+`up --build -d`, ohne Volume-Loeschung. Sicherung nur bei nachgewiesenem
+Datenschaden zurueckspielen. Oeffentliche Demo unveraendert, keine privaten
+Messdaten hochladen.
+
+## Release vom 13.10.2026 (interaktive Flughafen-Simulation)
 
 Aktiv ist `b1ad776b405f10f7f23eea00b4bad0bfe8b59c8a` aus
 `codex/airport-simulation-entry` (PR #34), gebaut aus dem unveraenderten
