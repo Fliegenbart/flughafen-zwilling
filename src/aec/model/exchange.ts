@@ -1,4 +1,4 @@
-/** Austausch Flughafen und Testing-Lab: Statusfluss, wer am Zug ist, Beschriftungen. */
+/** Austausch Flughafen und Pruefbereich: Statusfluss, wer am Zug ist, Beschriftungen. */
 import type { ExchangeItem, ExchangeStatus, Party } from "../types";
 
 export const EXCHANGE_FLOW: ExchangeStatus[] = [
@@ -7,10 +7,10 @@ export const EXCHANGE_FLOW: ExchangeStatus[] = [
   "geplant",
   "erledigt",
 ];
-export const PARTY_LABEL: Record<Party, string> = { flughafen: "Flughafen", lab: "Testing-Lab" };
+export const PARTY_LABEL: Record<Party, string> = { flughafen: "Flughafen", lab: "Prüfbereich" };
 const other = (p: Party): Party => (p === "lab" ? "flughafen" : "lab");
 
-/** Wer ist am Zug? Vorschlag: Empfaenger nimmt an. Danach plant und liefert das Lab. */
+/** Wer ist am Zug? Vorschlag: Empfaenger nimmt an. Danach plant und liefert der Pruefbereich. */
 export function whoseTurn(item: ExchangeItem): Party | null {
   if (item.status === "erledigt" || item.status === "abgelehnt" || item.status === "uebergeben")
     return null;
@@ -46,10 +46,10 @@ export function exchangeAnswer(items: ExchangeItem[]): string {
   const open = items.filter((i) => whoseTurn(i) !== null);
   const lab = open.filter((i) => whoseTurn(i) === "lab").length;
   const airport = open.filter((i) => whoseTurn(i) === "flughafen").length;
-  if (!open.length) return "Nichts offen. Flughafen und Lab sind auf dem gleichen Stand.";
+  if (!open.length) return "Nichts offen. Flughafen und Prüfbereich sind auf dem gleichen Stand.";
   const waiting = (n: number, who: string) =>
     `${n === 1 ? "Ein Punkt wartet" : `${n} Punkte warten`} auf ${who}.`;
-  if (!airport) return waiting(lab, "das Lab");
+  if (!airport) return waiting(lab, "den Prüfbereich");
   if (!lab) return waiting(airport, "den Flughafen");
-  return `${open.length} Punkte offen: ${lab} beim Lab, ${airport} beim Flughafen.`;
+  return `${open.length} Punkte offen: ${lab} beim Prüfbereich, ${airport} beim Flughafen.`;
 }

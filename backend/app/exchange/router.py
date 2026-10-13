@@ -23,6 +23,7 @@ from ..pilot.router import EvidenceStore, _normalize_uuid, _verified_coupled_ser
 from . import library
 from .assets import MAX_IMPORT_BYTES as ASSET_IMPORT_LIMIT
 from .assets import AssetsRequest, AssetStore
+from .demo import DemoSimulationRequest, simulate_demo
 from .live import PreviewRequest, preview
 from .situation import build_situation, empty_situation
 from .variants import VariantRequest, VariantRunRequest, VariantService, fleet_summary
@@ -844,6 +845,11 @@ def create_router(storage, lab_service, plans, base_dir: Path | None = None,
         return {"role": actor.role, "user": actor.user, "source": actor.source,
                 "auth_enabled": bool(access and access.config.enabled),
                 "can_write": actor.role in EXCHANGE_ROLES}
+
+    @router.post("/demo/simulation")
+    def demo_simulation(body: DemoSimulationRequest | None = None) -> dict:
+        """Public stateless synthetic preview; it neither reads nor writes a project."""
+        return simulate_demo(body or DemoSimulationRequest())
 
     @router.get("/projects/{project_id}/links")
     def list_links(project_id: str) -> list[dict]:

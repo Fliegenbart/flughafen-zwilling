@@ -34,7 +34,7 @@ function storedTheme(): Theme {
 
 function titleFor(route: Route): string {
   if (route.page === "bibliothek") return "Szenario-Bibliothek · Airport Energy Check";
-  if (route.page === "lab") return "Testing-Lab · Airport Energy Check";
+  if (route.page === "lab") return "Prüfbereich · Airport Energy Check";
   if (route.page === "arbeitsplatz") return "Arbeitsplatz · Airport Energy Check";
   if (route.page === "projekt") {
     const q = STEPS.find((x) => x.id === route.frage)!;
@@ -56,7 +56,7 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
     }
   }, [theme]);
 
-  // Alte Adressen (Schritt D "Abgleich", Lab-Werkstatt im Projekt) zeigen den Lab-Raum;
+  // Alte Adressen (Schritt D "Abgleich", Lab-Werkstatt im Projekt) zeigen den Pruefbereich;
   // die Adresszeile auf die neue Form bringen, damit Lesezeichen danach stimmen.
   useEffect(() => {
     const canonical = toSearch(parseRoute(window.location.search));
@@ -149,7 +149,7 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
               current={route.page === "lab" ? "page" : undefined}
               className="aec-top__lab"
             >
-              Testing-Lab
+              Prüfbereich
             </Link>
           </nav>
           <button

@@ -1,35 +1,49 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { EvidenceBadge } from "../../ui/EvidenceBadge";
 import { listExchange, proposeTest } from "../api/exchange";
-import { whoseTurn } from "../model/exchange";
 import { Section } from "../parts";
-import type { ExchangeItem, Project } from "../types";
+import type { ExchangeItem, ExchangeStatus, Project } from "../types";
 
-/** Was der Kunde von einem Pruefpunkt sieht: Zustand in einem Wort, kein Lab-Inneres. */
-function customerState(item: ExchangeItem): "geprüft" | "in Prüfung" | "abgelehnt" {
-  if (item.status === "abgelehnt") return "abgelehnt";
-  return whoseTurn(item) === null ? "geprüft" : "in Prüfung";
+const PRUEFSTATE_LABEL: Record<ExchangeStatus, string> = {
+  vorgeschlagen: "angefragt",
+  angenommen: "angenommen",
+  geplant: "in Prüfung",
+  erledigt: "abgeschlossen",
+  abgelehnt: "abgelehnt",
+  uebergeben: "übergeben",
+};
+
+/** Sichtbarer Status folgt dem gespeicherten Arbeitsstand, nicht der internen Rolle. */
+export function pruefState(item: ExchangeItem): string {
+  return PRUEFSTATE_LABEL[item.status];
 }
 
 function pruefAnswer(items: ExchangeItem[]): string {
-  if (!items.length) return "Beim Testing-Lab liegt nichts zur Prüfung.";
-  const running = items.filter((i) => customerState(i) === "in Prüfung").length;
-  const checked = items.filter((i) => customerState(i) === "geprüft").length;
-  if (!running)
-    return `Das Testing-Lab hat alles geprüft, ${checked === 1 ? "einen Punkt" : `${checked} Punkte`}.`;
-  return `Das Testing-Lab prüft gerade ${running === 1 ? "einen Punkt" : `${running} Punkte`}${checked ? `, ${checked === 1 ? "einen" : checked} hat es abgeschlossen` : ""}.`;
+  if (!items.length) return "Im Prüfplan liegen noch keine Anfragen.";
+  const count = (status: ExchangeStatus) => items.filter((item) => item.status === status).length;
+  const summary = (status: ExchangeStatus, label: string) => {
+    const n = count(status);
+    return n ? `${n} ${n === 1 ? "Anfrage" : "Anfragen"} ${label}` : null;
+  };
+  const states = [
+    summary("vorgeschlagen", "angefragt"),
+    summary("angenommen", "angenommen"),
+    summary("geplant", "in Prüfung"),
+    summary("erledigt", "abgeschlossen"),
+    summary("abgelehnt", "abgelehnt"),
+    summary("uebergeben", "übergeben"),
+  ].filter((state): state is string => state !== null);
+  return `Im Prüfplan: ${states.join(", ")}.`;
 }
 
-/**
- * Pruefstatus fuer Flughafen und E.ON Drive. Das Testing-Lab selbst (Messungen,
- * Modellabgleich, Freigaben) liegt im eigenen Raum `?seite=lab`.
- */
+/** Pruefstatus fuer Flughafen-Simulationen; Details liegen im eigenen Pruefbereich. */
 export default function Pruefstatus({ project }: { project: Project }) {
   const [items, setItems] = useState<ExchangeItem[] | null>(null);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (project.source === "beispiel") return;
     let alive = true;
     void listExchange(project).then((list) => alive && setItems(list));
     return () => {
@@ -43,12 +57,12 @@ export default function Pruefstatus({ project }: { project: Project }) {
     const f = new FormData(form);
     const question = String(f.get("question") ?? "").trim();
     const component = String(f.get("component") ?? "").trim();
-    if (!question) return setError("Was soll das Lab klären?");
+    if (!question) return setError("Welche Frage soll geprüft werden?");
     setError("");
     try {
       const item = await proposeTest(project, question, component);
       setItems((prev) => [item, ...(prev ?? [])]);
-      setMsg("Anfrage gesendet. Das Ergebnis erscheint hier.");
+      setMsg("Anfrage gesendet. Sie erscheint im Prüfplan.");
       form.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Anfrage fehlgeschlagen");
@@ -56,13 +70,16 @@ export default function Pruefstatus({ project }: { project: Project }) {
   }
 
   const list = items ?? [];
+  const isExample = project.source === "beispiel";
   return (
-    <Section title="Was das Testing-Lab gerade prüft" kicker="Prüfstand" id="pruefstatus">
-      <p className="aec-pruef__answer">{items ? pruefAnswer(list) : "Wird geladen …"}</p>
-      {list.length ? (
+    <Section title="Prüfplan" kicker="Prüfung" id="pruefstatus">
+      <p className="aec-pruef__answer">
+        {isExample ? "Beispiel-Prüfplan · nicht beauftragt." : items ? pruefAnswer(list) : "Wird geladen …"}
+      </p>
+      {!isExample && list.length ? (
         <ul className="aec-pruef">
           {list.map((item) => {
-            const state = customerState(item);
+            const state = pruefState(item);
             return (
               <li key={item.id} data-state={state}>
                 <span className="aec-pruef__state">{state}</span>
@@ -81,25 +98,29 @@ export default function Pruefstatus({ project }: { project: Project }) {
           {error}
         </p>
       ) : null}
-      <form className="aec-ask" onSubmit={ask} aria-labelledby="ask-title">
-        <h3 id="ask-title">Etwas prüfen lassen</h3>
-        <label>
-          Was soll das Lab klären?
-          <input
-            name="question"
-            placeholder="Hält der Ladepark die Abflugwelle 06–08 Uhr?"
-            autoComplete="off"
-          />
-        </label>
-        <label>
-          Um welches Gerät geht es?
-          <input name="component" placeholder="Bus-Ladepunkt 150 kW" autoComplete="off" />
-        </label>
-        <button type="submit" className="aec-button">
-          Anfrage senden
-        </button>
-        <p className="aec-fine">Das Lab plant den Versuch und meldet das Ergebnis hier.</p>
-      </form>
+      {isExample ? (
+        <p className="aec-fine">Der Beispiel-Prüfplan ist ein Entwurf und enthält keine beauftragte Prüfung.</p>
+      ) : (
+        <form className="aec-ask" onSubmit={ask} aria-labelledby="ask-title">
+          <h3 id="ask-title">Etwas prüfen lassen</h3>
+          <label>
+            Welche Frage soll geprüft werden?
+            <input
+              name="question"
+              placeholder="Hält der Ladepark die Abflugwelle 06–08 Uhr?"
+              autoComplete="off"
+            />
+          </label>
+          <label>
+            Um welches Gerät geht es?
+            <input name="component" placeholder="Bus-Ladepunkt 150 kW" autoComplete="off" />
+          </label>
+          <button type="submit" className="aec-button">
+            Anfrage senden
+          </button>
+          <p className="aec-fine">Messdaten werden hier nur ausgewiesen, wenn sie vorliegen.</p>
+        </form>
+      )}
     </Section>
   );
 }

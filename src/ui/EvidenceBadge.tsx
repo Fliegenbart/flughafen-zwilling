@@ -18,7 +18,7 @@ export const EVIDENCE_LEVELS: Record<EvidenceLevel, { label: string; hint: strin
     hint: "Eingesetzter Wert ohne Beleg.",
   },
   synthetic: {
-    label: "ausgedacht",
+    label: "synthetisch",
     hint: "Erfundene oder vom Modell erzeugte Werte, nur zum Ausprobieren.",
   },
   model_checked: {

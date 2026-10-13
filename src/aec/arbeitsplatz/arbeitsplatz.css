@@ -101,7 +101,7 @@
   line-height: 1.1;
 }
 .ap-lever[data-changed] .ap-lever__value {
-  color: var(--ap-go);
+  color: var(--ap-focus);
 }
 .ap-lever__track {
   position: relative;
@@ -299,5 +299,48 @@
 @media (prefers-reduced-motion: reduce) {
   .ap * {
     transition: none !important;
+  }
+}
+
+.ap-intro {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 32px;
+  line-height: 1.65;
+}
+.ap-intro h2 {
+  font-size: clamp(1.3rem, 2vw, 1.9rem);
+  line-height: 1.25;
+  max-width: 850px;
+}
+.ap-intro p {
+  max-width: 980px;
+}
+.ap-step {
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+.ap-intro textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 850px;
+  min-height: 80px;
+  padding: 12px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+}
+.ap-accuracy code {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .ap-intro {
+    padding: 16px;
+  }
+  .ap-head {
+    flex-wrap: wrap;
   }
 }

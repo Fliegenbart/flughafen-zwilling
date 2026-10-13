@@ -1,5 +1,5 @@
 /**
- * Antwortsatz der Seite Loesungen fuer Beispieldaten. Gerechnete Projekte bekommen ihren
+ * Antwortsatz der Seite Varianten fuer Beispieldaten. Gerechnete Projekte bekommen ihren
  * Satz aus dem Backend (build_answer); Schwellen und Formulierungen sind dort gleich.
  */
 import type { Variant } from "../types";
@@ -17,10 +17,10 @@ export function bestVariant(variants: Variant[]): Variant | null {
   );
 }
 
-/** Antwortsatz: Pünktlichkeit und Netzentlastung getrennt (Schwellen wie im Backend). */
+/** Antwortsatz: Einsatzbereitschaft und Netzentlastung getrennt (Schwellen wie im Backend). */
 export function variantsAnswer(variants: Variant[]): string {
   const base = variants.find((v) => v.kind === "basis") ?? variants[0];
-  if (!base) return "Noch keine Lösung gerechnet.";
+  if (!base) return "Noch keine Variante simuliert.";
   const others = variants.filter((v) => v.id !== base.id);
   const gain = (v: Variant) => v.onTimePct - base.onTimePct;
   const relief = (v: Variant) => base.minutesAtLimit - v.minutesAtLimit;
@@ -29,20 +29,20 @@ export function variantsAnswer(variants: Variant[]): string {
     .filter((v) => relief(v) > 1)
     .reduce<Variant | null>((a, v) => (!a || relief(v) > relief(a) ? v : a), null);
   const gridSentence = gridBest
-    ? `„${gridBest.name}“ entlastet den Anschluss am stärksten, um ${int(relief(gridBest))} Minuten am Limit.`
-    : "Keine Lösung verkürzt die Zeit am Limit um mehr als eine Minute.";
+    ? `„${gridBest.name}“ verkürzt in dieser Simulation die Zeit am Anschlusslimit am stärksten, um ${int(relief(gridBest))} Minuten.`
+    : "Keine Variante verkürzt in dieser Simulation die Zeit am Anschlusslimit um mehr als eine Minute.";
   const noEffect = others.filter((v) => Math.abs(gain(v)) < 0.5 && Math.abs(relief(v)) <= 1);
   const tail = noEffect.length
-    ? ` Mit ${noEffect.map((v) => `„${v.name}“`).join(" und ")} ändert sich weniger als ein halber Prozentpunkt.`
+    ? ` Mit ${noEffect.map((v) => `„${v.name}“`).join(" und ")} ändert sich in dieser Simulation weniger als ein halber Prozentpunkt.`
     : "";
   if (!punctual.length)
-    return `Keine Lösung bringt mehr als einen halben Prozentpunkt mehr pünktliche Abflüge. ${gridSentence}${tail}`;
+    return `Keine Variante steigert in dieser Simulation die Einsatzbereitschaft um mehr als einen halben Prozentpunkt. ${gridSentence}${tail}`;
   const best = punctual.reduce((a, v) => (gain(v) > gain(a) ? v : a));
   let grid: string;
   if (-relief(best) > 1)
-    grid = `Dafür ist der Anschluss ${int(-relief(best))} Minuten länger am Limit.${gridBest ? ` ${gridSentence}` : ""}`;
+    grid = `Dafür liegt der Anschluss in dieser Simulation ${int(-relief(best))} Minuten länger am Limit.${gridBest ? ` ${gridSentence}` : ""}`;
   else if (gridBest === best)
-    grid = `Den Anschluss entlastet sie ebenfalls am stärksten, um ${int(relief(best))} Minuten am Limit.`;
+    grid = `Sie verkürzt in dieser Simulation auch die Zeit am Anschlusslimit am stärksten, um ${int(relief(best))} Minuten.`;
   else grid = gridSentence;
-  return `„${best.name}“ hilft am meisten, mit ${dec1(gain(best))} Prozentpunkten mehr pünktlichen Abflügen. ${grid}${tail}`;
+  return `In dieser Simulation erreicht „${best.name}“ die höchste Einsatzbereitschaft, ${dec1(gain(best))} Prozentpunkte über der Ausgangslage. ${grid}${tail}`;
 }

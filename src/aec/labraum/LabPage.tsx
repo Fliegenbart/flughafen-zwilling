@@ -17,10 +17,7 @@ import ThreadItem from "./Thread";
 
 type LabRoute = Extract<Route, { page: "lab" }>;
 
-/**
- * Testing-Lab-Backbone: interner Pruefraum. Eingang der Pruefauftraege eines Projekts,
- * Messungen und Modellabgleich. Kunden sehen davon nur den Pruefstatus (Schritt Nachweis).
- */
+/** Interner Pruefbereich fuer Pruefauftraege, Messdaten und Modellabgleich. */
 export default function LabPage({ route, theme }: { route: LabRoute; theme?: "light" | "dark" }) {
   const nav = useNav();
   const [project, setProject] = useState<Project | null>(null);
@@ -102,7 +99,7 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
     <div className="aec-lab">
       <div className="aec-labbar">
         <div className="aec-labbar__id">
-          <span className="aec-labbar__space">Testing-Lab · interner Prüfraum</span>
+          <span className="aec-labbar__space">Prüfbereich · interne Ansicht</span>
           <label className="aec-labbar__pick">
             Projekt
             <select
@@ -131,15 +128,15 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
       <div className="aec-page">
         <AnswerHead
           id="aec-view-title"
-          question="Testing-Lab · Was liegt an?"
+          question="Prüfbereich · Was liegt an?"
           answer={items ? exchangeAnswer(list) : "Wird geladen …"}
-          lead="Flughafen und E.ON Drive sehen von diesem Raum nur den Prüfstatus an ihren Zahlen."
+          lead="Diese Ansicht bündelt Prüfungen, Messdaten und den Modellabgleich."
           evidence="empirical_open"
           source={list.some((i) => i.source === "api") ? "api" : "beispiel"}
           kpis={[
             {
               value: String(atLab),
-              label: "am Zug: Testing-Lab",
+              label: "am Zug: Prüfbereich",
               tone: atLab ? "signal" : undefined,
             },
             {
@@ -165,9 +162,9 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
           {thread(questions, "Keine offene Anfrage.")}
         </Section>
 
-        <Section title="Ergebnisse aus dem Lab" kicker="2 · Messungen" id="lab-messung">
+        <Section title="Messdaten und Ergebnisse" kicker="2 · Messdaten" id="lab-messung">
           {thread(measured, "Noch keine Messung zurückgemeldet.")}
-          <Details summary="Messdaten echter Komponenten (FlexLab-Werkbank)">
+          <Details summary="Messdaten technischer Komponenten">
             <WerkstattLinks items={["flexlab"]} base={route} />
           </Details>
         </Section>
@@ -197,7 +194,7 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
             {(
               [
                 ["airport", "Flughafen"],
-                ["lab", "Testing-Lab"],
+                ["lab", "Prüfbereich"],
                 ["admin", "beide"],
               ] as const
             ).map(([r, l]) => (
@@ -216,7 +213,7 @@ export default function LabPage({ route, theme }: { route: LabRoute; theme?: "li
             ))}
           </div>
           <p className="aec-fine">
-            Schaltet um, welche Schritte Flughafen und Lab jeweils erledigen dürfen. Kein
+            Schaltet um, welche Schritte Flughafen und Prüfbereich jeweils erledigen dürfen. Kein
             Zugriffsschutz.
           </p>
         </Details>

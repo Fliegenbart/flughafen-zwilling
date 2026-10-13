@@ -84,8 +84,7 @@ class PreviewRequest(BaseModel):
 
     def changes(self) -> dict:
         out = self.model_dump(exclude_none=True, exclude_defaults=True)
-        if out.get("storage_kwh") == 0:  # 0 kWh = keine Batterie
-            out.pop("storage_kwh")
+        if out.get("storage_kwh") == 0:  # 0 kWh deactivates an existing baseline battery.
             out.pop("storage_kw", None)
         return out
 
@@ -100,6 +99,21 @@ def departures_by_half_hour(result) -> tuple[list[dict], int]:
     delayed = sum(b[1] for b in bins.values())
     return [{"start_min": i * DEPARTURE_BIN_MIN, "count": c[0], "delayed": c[1]}
             for i, c in sorted(bins.items())], delayed
+
+
+def preview_kpis(result, departures: list[dict], delayed: int) -> dict:
+    """Compact live-preview KPIs, derived from the actual coupled result."""
+    total = len(result.departures)
+    kpis = result.kpis
+    waits = float(kpis.energy_wait_total_min) + float(kpis.resource_wait_total_min)
+    return {
+        "departures_total": total,
+        "delayed_departures": delayed,
+        "on_time_pct": round((total - delayed) / total * 100, 2) if total else None,
+        "energy_wait_share_pct": round(float(kpis.energy_wait_total_min) / waits * 100, 1)
+        if waits else 0.0,
+        "bottleneck": kpis.bottleneck,
+    }
 
 
 def preview(variants, project_id: str, request: PreviewRequest) -> dict:
@@ -126,9 +140,6 @@ def preview(variants, project_id: str, request: PreviewRequest) -> dict:
     finally:
         _PREVIEW_LOCK.release()
     departures, delayed = departures_by_half_hour(result)
-    total = len(result.departures)
-    kpis = result.kpis
-    waits = float(kpis.energy_wait_total_min) + float(kpis.resource_wait_total_min)
     return {
         **basis_from_series(result.series, config, day_minutes=world.day_minutes,
                             start_min=world.start_min, day_start_utc=world.day_start_utc,
@@ -138,13 +149,6 @@ def preview(variants, project_id: str, request: PreviewRequest) -> dict:
         "changes": changes,
         "base_source": base["source"],
         "departures": departures,
-        "kpis": {
-            "departures_total": total,
-            "delayed_departures": delayed,
-            "on_time_pct": round((total - delayed) / total * 100, 2) if total else None,
-            "energy_wait_share_pct": round(float(kpis.energy_wait_total_min) / waits * 100, 1)
-            if waits else 0.0,
-            "bottleneck": kpis.bottleneck,
-        },
+        "kpis": preview_kpis(result, departures, delayed),
         "compute_ms": round(elapsed * 1000),
     }
