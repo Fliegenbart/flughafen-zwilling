@@ -15,6 +15,15 @@ type Lever = {
 
 const LEVERS: Lever[] = [
   {
+    key: "extraVehicles",
+    label: "Zusätzliche Elektrofahrzeuge",
+    min: 0,
+    max: 60,
+    step: 2,
+    show: (v) => (v ? `${int(v)} mehr` : "keine"),
+    exactOnly: true,
+  },
+  {
     key: "gridLimitKw",
     label: "Netzanschluss",
     min: 1500,
@@ -38,15 +47,6 @@ const LEVERS: Lever[] = [
     step: 0.1,
     show: (v) => `${int(v * 100)} % von heute`,
   },
-  {
-    key: "extraVehicles",
-    label: "Zusätzliche Elektrofahrzeuge",
-    min: 0,
-    max: 60,
-    step: 2,
-    show: (v) => (v ? `${int(v)} mehr` : "keine"),
-    exactOnly: true,
-  },
 ];
 
 export default function LeverPanel({
@@ -64,10 +64,15 @@ export default function LeverPanel({
   const changed = LEVERS.some((l) => val(levers, l.key) !== val(today, l.key));
   return (
     <form className="ap-levers" aria-label="Stellschrauben" onSubmit={(e) => e.preventDefault()}>
+      <div className="ap-control-heading">
+        <span className="ap-kicker">1 · Ihre Variante</span>
+        <h2>Was soll sich ändern?</h2>
+        <p>Regler bewegen. Der gleiche Flughafentag wird automatisch neu berechnet.</p>
+      </div>
       {LEVERS.map((l) => {
         const value = val(levers, l.key);
         const pct = ((val(today, l.key) - l.min) / (l.max - l.min)) * 100;
-        return (
+        const control = (
           <label
             key={l.key}
             className="ap-lever"
@@ -98,10 +103,18 @@ export default function LeverPanel({
               />
             </span>
             <span className="ap-lever__today">
-              heute {l.show(val(today, l.key))}
-              {l.exactOnly ? ", wirkt erst in der genauen Rechnung" : ""}
+              Ausgangslage: {l.show(val(today, l.key))}
+              {l.exactOnly ? " · Fahrzeugwirkung nach Berechnung" : ""}
             </span>
           </label>
+        );
+        return l.key === "pvFactor" ? (
+          <details key={l.key} className="ap-extra">
+            <summary>Auch Photovoltaik verändern</summary>
+            {control}
+          </details>
+        ) : (
+          control
         );
       })}
       <button type="button" className="ap-reset" onClick={onReset} disabled={!changed}>

@@ -400,6 +400,7 @@ describe("Oberfläche", () => {
 
   it("lässt sich auf der Startseite ein Projekt anlegen", async () => {
     openApp();
+    fireEvent.click(screen.getByText("Eigene Projekte und weitere Untersuchungen"));
     expect(
       screen.getByRole("heading", {
         level: 1,

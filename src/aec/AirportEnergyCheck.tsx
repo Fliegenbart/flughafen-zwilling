@@ -104,10 +104,15 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
   const dataTheme = theme === "system" ? undefined : theme;
 
   // Arbeitsbildschirm: eigener, schlanker Rahmen ohne die bisherige Kopfzeile.
-  if (route.page === "arbeitsplatz")
+  if (route.page === "arbeitsplatz" || route.page === "start")
     return (
       <NavContext.Provider value={nav}>
-        <Arbeitsplatz key={route.projekt} route={route} />
+        <a className="aec-skip" href="#aec-main">
+          Zum Inhalt
+        </a>
+        <main id="aec-main" tabIndex={-1}>
+          {route.page === "start" ? <Home /> : <Arbeitsplatz key={route.projekt} route={route} />}
+        </main>
       </NavContext.Provider>
     );
 
@@ -129,9 +134,7 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
             </span>
           </Link>
           <nav className="aec-top__nav" aria-label="Hauptbereiche">
-            <Link to={{ page: "start" }} current={route.page === "start" ? "page" : undefined}>
-              Projekte
-            </Link>
+            <Link to={{ page: "start" }}>Simulation</Link>
             <Link
               to={{ page: "bibliothek" }}
               current={route.page === "bibliothek" ? "page" : undefined}
@@ -166,9 +169,7 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
           </button>
         </header>
         <main id="aec-main" tabIndex={-1} className="aec-main">
-          {route.page === "start" ? (
-            <Home />
-          ) : route.page === "bibliothek" ? (
+          {route.page === "bibliothek" ? (
             <Library theme={dataTheme} />
           ) : route.page === "lab" ? (
             <LabPage key={route.projekt} route={route} theme={dataTheme} />
