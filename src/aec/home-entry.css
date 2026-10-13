@@ -21,8 +21,8 @@
 .aec-entry-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-2); }
 .aec-entry-button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; padding: 11px 18px; border: 1px solid var(--night-signal); border-radius: var(--r-pill); font-weight: 650; text-decoration: none; transition: transform var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out); }
 .aec-entry-button:hover { transform: translateY(-2px); }
-.aec-entry-button--primary { color: #101923; background: var(--night-signal); }
-.aec-entry-button--quiet { color: var(--night-ink); background: color-mix(in srgb, var(--night-ink) 7%, transparent); }
+.aec .aec-entry-button--primary { color: #101923; background: var(--night-signal); }
+.aec .aec-entry-button--quiet { color: var(--night-ink); background: color-mix(in srgb, var(--night-ink) 7%, transparent); }
 
 .aec-entry-chart { justify-self: start; display: grid; gap: var(--sp-3); padding: var(--sp-4); border: 1px solid color-mix(in srgb, var(--night-ink) 18%, transparent); border-radius: var(--r-3); background: color-mix(in srgb, #152844 72%, transparent); box-shadow: 0 24px 80px #0007; }
 .aec-entry-chart figcaption, .aec-entry-chart > p { display: flex; justify-content: space-between; gap: var(--sp-3); color: var(--night-muted); font: 500 var(--step--1) / 1.35 var(--font-data); }
