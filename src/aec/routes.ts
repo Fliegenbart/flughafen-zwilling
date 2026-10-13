@@ -9,7 +9,11 @@ import { caseBySlug } from "./scenarios";
 export const QUESTIONS = [
   { id: "lage", label: "Flughafentag", question: "Wie viel Strom braucht der Flughafentag?" },
   { id: "engpass", label: "Engpass", question: "Wann reicht der Anschluss nicht?" },
-  { id: "varianten", label: "Varianten", question: "Wie unterscheiden sich die Varianten in der Simulation?" },
+  {
+    id: "varianten",
+    label: "Varianten",
+    question: "Wie unterscheiden sich die Varianten in der Simulation?",
+  },
   { id: "nachweis", label: "Nachweise & Prüfplan", question: "Was ist belegt?" },
 ] as const;
 export type Question = (typeof QUESTIONS)[number]["id"];
@@ -45,7 +49,7 @@ export type Route =
   | { page: "start" }
   | { page: "bibliothek"; werkstatt?: "simulation" }
   /** Pruefbereich: Pruefauftraege, Messdaten und Modellabgleich eines Projekts. */
-  | { page: "lab"; projekt: string; werkstatt?: LabWerkstatt }
+  | { page: "lab"; projekt: string; werkstatt?: LabWerkstatt; run?: string }
   /** Arbeitsbildschirm fuer den Kundentermin (Probe, ?ansicht=neu). */
   | { page: "arbeitsplatz"; projekt: string }
   | {
@@ -83,6 +87,7 @@ export function parseRoute(search: string): Route {
       page: "lab",
       projekt: projekt ?? SAMPLE_PROJECT.id,
       ...(isLabWerkstatt(werkstatt) ? { werkstatt } : {}),
+      ...(p.get("run") ? { run: p.get("run")! } : {}),
     };
   if (projekt && p.get("ansicht") === "neu") return { page: "arbeitsplatz", projekt };
   if (projekt) {
@@ -113,6 +118,7 @@ export function toSearch(route: Route): string {
   } else if (route.page === "lab") {
     p.set("seite", "lab");
     p.set("projekt", route.projekt);
+    if (route.run) p.set("run", route.run);
     if (route.werkstatt) {
       p.set("werkstatt", route.werkstatt);
       if (route.werkstatt === "pilot") p.set("schritt", "pilot");

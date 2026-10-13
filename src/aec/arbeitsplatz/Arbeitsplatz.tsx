@@ -13,6 +13,7 @@ import type { Route } from "../routes";
 import type { Project } from "../types";
 import LeverPanel from "./LeverPanel";
 import LoadChart from "./LoadChart";
+import MeasurementHandoff from "./MeasurementHandoff";
 import Outcome from "./Outcome";
 import { useLiveScenario } from "./useLiveScenario";
 import { SAMPLE_PROJECT } from "../sample";
@@ -207,6 +208,14 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
           >
             Berechnungsdaten als JSON
           </button>
+          <MeasurementHandoff
+            demo={demo}
+            projectId={route.projekt}
+            exact={s.exact}
+            levers={s.levers}
+            exactCurrent={s.accuracy === "genau" && !!s.exact}
+            question={question}
+          />
           <p>
             Lesbare HTML-Zusammenfassung zum Weitergeben und Drucken; JSON für die Detailprüfung.
             Die Vorschau wird nicht als dauerhafter Projektlauf gespeichert.

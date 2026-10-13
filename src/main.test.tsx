@@ -62,15 +62,16 @@ describe("Workspace entry point", () => {
     expect(document.querySelector("[data-studio]")).not.toBeNull();
   });
 
-  it("redirects FlexLab into the Prüfbereich space and keeps the full workbench", async () => {
+  it("redirects FlexLab into the Messdaten-Abgleich and keeps the full workbench", async () => {
     await open("?workspace=flexlab");
     expect(await screen.findByRole("heading", { name: "FlexLab Workbench" })).toBeVisible();
     expect(window.location.search).toContain("seite=lab");
     expect(window.location.search).toContain("werkstatt=flexlab");
-    expect(screen.getByRole("link", { name: "Prüfbereich" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Messdaten-Abgleich" })).toHaveAttribute(
       "aria-current",
       "page",
     );
+    await waitFor(() => expect(document.title).toBe("Messdaten-Abgleich · Airport Energy Check"));
     expect(screen.queryByRole("navigation", { name: "Vier Fragen des Projekts" })).toBeNull();
   });
 

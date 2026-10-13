@@ -34,7 +34,7 @@ function storedTheme(): Theme {
 
 function titleFor(route: Route): string {
   if (route.page === "bibliothek") return "Szenario-Bibliothek · Airport Energy Check";
-  if (route.page === "lab") return "Prüfbereich · Airport Energy Check";
+  if (route.page === "lab") return "Messdaten-Abgleich · Airport Energy Check";
   if (route.page === "arbeitsplatz") return "Arbeitsplatz · Airport Energy Check";
   if (route.page === "projekt") {
     const q = STEPS.find((x) => x.id === route.frage)!;
@@ -149,7 +149,7 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
               current={route.page === "lab" ? "page" : undefined}
               className="aec-top__lab"
             >
-              Prüfbereich
+              Messdaten-Abgleich
             </Link>
           </nav>
           <button

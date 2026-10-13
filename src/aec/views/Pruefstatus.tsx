@@ -7,8 +7,8 @@ import type { ExchangeItem, ExchangeStatus, Project } from "../types";
 const PRUEFSTATE_LABEL: Record<ExchangeStatus, string> = {
   vorgeschlagen: "angefragt",
   angenommen: "angenommen",
-  geplant: "in Prüfung",
-  erledigt: "abgeschlossen",
+  geplant: "Messung geplant",
+  erledigt: "Messdaten ausgewertet",
   abgelehnt: "abgelehnt",
   uebergeben: "übergeben",
 };
@@ -19,7 +19,7 @@ export function pruefState(item: ExchangeItem): string {
 }
 
 function pruefAnswer(items: ExchangeItem[]): string {
-  if (!items.length) return "Im Prüfplan liegen noch keine Anfragen.";
+  if (!items.length) return "Noch kein Messdaten-Abgleich beauftragt.";
   const count = (status: ExchangeStatus) => items.filter((item) => item.status === status).length;
   const summary = (status: ExchangeStatus, label: string) => {
     const n = count(status);
@@ -28,24 +28,29 @@ function pruefAnswer(items: ExchangeItem[]): string {
   const states = [
     summary("vorgeschlagen", "angefragt"),
     summary("angenommen", "angenommen"),
-    summary("geplant", "in Prüfung"),
-    summary("erledigt", "abgeschlossen"),
+    summary("geplant", "mit Messung geplant"),
+    summary("erledigt", "mit Messdaten ausgewertet"),
     summary("abgelehnt", "abgelehnt"),
     summary("uebergeben", "übergeben"),
   ].filter((state): state is string => state !== null);
-  return `Im Prüfplan: ${states.join(", ")}.`;
+  return `Im Messdaten-Abgleich: ${states.join(", ")}.`;
 }
 
-/** Pruefstatus fuer Flughafen-Simulationen; Details liegen im eigenen Pruefbereich. */
+/** Status fuer den Vergleich der Simulation mit dokumentierten Messdaten. */
 export default function Pruefstatus({ project }: { project: Project }) {
   const [items, setItems] = useState<ExchangeItem[] | null>(null);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const isExample = project.source === "beispiel";
 
   useEffect(() => {
     if (project.source === "beispiel") return;
     let alive = true;
-    void listExchange(project).then((list) => alive && setItems(list));
+    void listExchange(project)
+      .then((list) => alive && setItems(list))
+      .catch((err: unknown) => {
+        if (alive) setError(err instanceof Error ? err.message : "Messdaten-Abgleich konnte nicht geladen werden.");
+      });
     return () => {
       alive = false;
     };
@@ -53,6 +58,10 @@ export default function Pruefstatus({ project }: { project: Project }) {
 
   async function ask(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (isExample) {
+      setError("Für das Beispielprojekt kann kein Messdaten-Abgleich beauftragt werden.");
+      return;
+    }
     const form = e.currentTarget;
     const f = new FormData(form);
     const question = String(f.get("question") ?? "").trim();
@@ -62,7 +71,7 @@ export default function Pruefstatus({ project }: { project: Project }) {
     try {
       const item = await proposeTest(project, question, component);
       setItems((prev) => [item, ...(prev ?? [])]);
-      setMsg("Anfrage gesendet. Sie erscheint im Prüfplan.");
+      setMsg("Anfrage gesendet. Sie erscheint im Messdaten-Abgleich.");
       form.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Anfrage fehlgeschlagen");
@@ -70,11 +79,14 @@ export default function Pruefstatus({ project }: { project: Project }) {
   }
 
   const list = items ?? [];
-  const isExample = project.source === "beispiel";
   return (
-    <Section title="Prüfplan" kicker="Prüfung" id="pruefstatus">
+    <Section title="Messdaten-Abgleich" kicker="Messdaten" id="pruefstatus">
       <p className="aec-pruef__answer">
-        {isExample ? "Beispiel-Prüfplan · nicht beauftragt." : items ? pruefAnswer(list) : "Wird geladen …"}
+        {isExample
+          ? "Für das Beispielprojekt ist kein Messdaten-Abgleich beauftragt."
+          : items
+            ? pruefAnswer(list)
+            : "Wird geladen …"}
       </p>
       {!isExample && list.length ? (
         <ul className="aec-pruef">
@@ -99,12 +111,14 @@ export default function Pruefstatus({ project }: { project: Project }) {
         </p>
       ) : null}
       {isExample ? (
-        <p className="aec-fine">Der Beispiel-Prüfplan ist ein Entwurf und enthält keine beauftragte Prüfung.</p>
+        <p className="aec-fine">
+          Ein Abgleich benötigt dokumentierte Messdaten mit Messort, Zeitraum und Herkunft.
+        </p>
       ) : (
         <form className="aec-ask" onSubmit={ask} aria-labelledby="ask-title">
-          <h3 id="ask-title">Etwas prüfen lassen</h3>
+          <h3 id="ask-title">Messdaten-Abgleich anfragen</h3>
           <label>
-            Welche Frage soll geprüft werden?
+            Welche Simulationsfrage soll mit Messdaten verglichen werden?
             <input
               name="question"
               placeholder="Hält der Ladepark die Abflugwelle 06–08 Uhr?"
@@ -112,13 +126,15 @@ export default function Pruefstatus({ project }: { project: Project }) {
             />
           </label>
           <label>
-            Um welches Gerät geht es?
-            <input name="component" placeholder="Bus-Ladepunkt 150 kW" autoComplete="off" />
+            Welche Messgrenze oder Komponente betrifft sie?
+            <input name="component" placeholder="Abgang Ladepark" autoComplete="off" />
           </label>
           <button type="submit" className="aec-button">
-            Anfrage senden
+            Messdaten-Abgleich anfragen
           </button>
-          <p className="aec-fine">Messdaten werden hier nur ausgewiesen, wenn sie vorliegen.</p>
+          <p className="aec-fine">
+            Der Vergleich wird erst mit Messdaten, dokumentierter Messgrenze und festgelegten Kriterien durchgeführt.
+          </p>
         </form>
       )}
     </Section>
