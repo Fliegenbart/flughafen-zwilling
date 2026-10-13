@@ -1,4 +1,18 @@
-# Geschuetzte Hetzner-Demo
+# Hetzner-Demo
+
+## Oeffentliche Demo seit 13.10.2026
+
+Auf ausdruecklichen Betreiberwunsch ist `/airport/` einschliesslich API und
+Bedienung ohne Passwort erreichbar. `deploy/hetzner/airport-route.inc` setzt
+dafuer `auth_basic off`. Alle Besucher teilen den Demo-Datenbereich und koennen
+die angebotenen Aktionen ausfuehren. Keine privaten Kunden- oder Labordaten
+hochladen. HTTPS, Anfrage-Limits, Upload-Limit und noindex bleiben erhalten;
+noindex ist kein Zugriffsschutz. Andere Host-Routen bleiben unveraendert.
+
+Die folgenden historischen Release-Abnahmen mit HTTP 401 dokumentieren den
+damaligen geschuetzten Zustand, nicht den aktuellen oeffentlichen Betrieb.
+Zur Ruecknahme die privat gesicherte Airport-Proxydatei wiederherstellen,
+`nginx -t` pruefen und den Proxy graceful neu laden.
 
 ## Fuer Timo
 
@@ -6,9 +20,8 @@
 - [Muenchen-Referenzpilot](https://labpulse.ai/airport/?workspace=munich)
 - [Separate FlexLab Workbench](https://labpulse.ai/airport/?workspace=flexlab)
 
-Der Browser fragt nach Benutzername und Passwort (HTTP Basic Auth ueber HTTPS).
-Zugangsdaten separat erhalten; nicht in einen Link, Git oder Reports schreiben.
-Im Pilot teilen alle berechtigten Nutzer denselben Demo-Datenbereich. Das ist
+Der Browser benoetigt fuer diese oeffentliche Demo kein Passwort.
+Im Pilot teilen alle Besucher denselben Demo-Datenbereich. Das ist
 **keine Mandantentrennung**. Nur synthetische Testdaten und oeffentliche
 Flugplan-Snapshots verwenden, keine privaten FMG-/Lab-Messdaten hochladen.
 Modellgrenzen gelten unveraendert. Im [gekoppelten Systemtest](MUNICH_COUPLED.md)
