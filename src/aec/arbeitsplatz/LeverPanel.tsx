@@ -81,6 +81,7 @@ export default function LeverPanel({
             >
               <input
                 type="range"
+                aria-label={l.label}
                 min={l.min}
                 max={l.max}
                 step={l.step}

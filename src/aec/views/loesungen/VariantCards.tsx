@@ -30,7 +30,7 @@ export default function VariantCards({
           <li key={v.id} data-best={v.id === bestId ? "" : undefined}>
             <span className="aec-variants__tag">
               {v.id === bestId
-                ? "hilft am meisten"
+                ? "höchste modellierte Bereitschaft"
                 : v.kind === "basis"
                   ? "heutiger Stand"
                   : "Lösung"}
@@ -38,7 +38,7 @@ export default function VariantCards({
             <h3>{v.name}</h3>
             <dl>
               <div>
-                <dt>pünktlich fertig</dt>
+                <dt>modellierte Abfertigungen rechtzeitig bereit</dt>
                 <dd>
                   {dec1(v.onTimePct)} %
                   {v.deltaOnTimePct != null && v.kind !== "basis" ? (

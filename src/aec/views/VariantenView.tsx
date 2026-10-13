@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { dec1, int, powerText } from "../model/format";
-import { bestVariant, variantsAnswer } from "../model/variants";
 import { sampleVariants } from "../sample";
 import { AnswerHead, Details, Section, SourceTag } from "../parts";
 import type { ViewProps } from "../ProjectPage";
@@ -24,14 +23,14 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
   const sample = !computed;
   const base = variants.find((v) => v.kind === "basis") ?? variants[0];
   const showResults = Boolean(base) && !running;
-  const bestId = computed ? (board.answer?.bestId ?? null) : (bestVariant(variants)?.id ?? null);
+  const bestId = computed ? (board.answer?.bestId ?? null) : null;
   const best = variants.find((v) => v.id === bestId) ?? base;
 
   // Antwortsatz: aus der API (Backend entscheidet inkl. Epsilon), sonst Beispiel.
   let answer: string;
   let lead: string;
   if (computed && board.answer && !running) {
-    answer = board.answer.headline;
+    answer = "Berechnete Varianten: Einsatzbereitschaft und Netzbelastung gemeinsam vergleichen.";
     lead = board.answer.details.join(" ");
   } else if (api && running) {
     answer = "Die Lösungen werden gerade gerechnet.";
@@ -42,10 +41,9 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
       : "Noch ist keine Lösung ausgewählt.";
     lead = "Vorschläge antippen oder eine eigene Lösung zusammenstellen, dann durchrechnen.";
   } else {
-    const full = variantsAnswer(variants);
-    const cut = full.indexOf(". ") >= 0 ? full.indexOf(". ") + 1 : full.length;
-    answer = full.slice(0, cut);
-    lead = full.slice(cut).trim();
+    answer = "Mehr Fahrzeuge oder weniger Netzbelastung? Ein illustrativer Zielkonflikt.";
+    lead =
+      "Diese hinterlegten Zahlen erklären den Vergleich und stammen nicht aus einer Simulation. Für selbst berechnete Ergebnisse öffnen Sie die interaktive Flughafen-Simulation.";
   }
   if (computed)
     lead = `${lead} Alle Lösungen wurden am selben Tag mit denselben Annahmen gerechnet.`;
@@ -60,8 +58,8 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
             unit: "%",
             label:
               best.id === base.id
-                ? "der Abflüge pünktlich, heute"
-                : `der Abflüge pünktlich mit „${best.name}“`,
+                ? "modellierte Abfertigungen rechtzeitig bereit, Ausgangslage"
+                : `modellierte Abfertigungen rechtzeitig bereit mit „${best.name}“`,
             tone: "signal" as const,
           },
           {
@@ -83,7 +81,7 @@ export default function VariantenView({ project, board, reloadBoard, route }: Vi
     <>
       <AnswerHead
         id="aec-view-title"
-        question="Lösungen · Was hilft am meisten?"
+        question="Varianten · Was verändert sich?"
         answer={answer}
         lead={lead}
         evidence={

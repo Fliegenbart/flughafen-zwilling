@@ -7,10 +7,10 @@ import { SAMPLE_PROJECT } from "./sample";
 import { caseBySlug } from "./scenarios";
 
 export const QUESTIONS = [
-  { id: "lage", label: "Tag", question: "Wie viel Strom braucht der Tag?" },
+  { id: "lage", label: "Flughafentag", question: "Wie viel Strom braucht der Flughafentag?" },
   { id: "engpass", label: "Engpass", question: "Wann reicht der Anschluss nicht?" },
-  { id: "varianten", label: "Lösungen", question: "Was hilft am meisten?" },
-  { id: "nachweis", label: "Zusage", question: "Was können wir versprechen?" },
+  { id: "varianten", label: "Varianten", question: "Wie unterscheiden sich die Varianten in der Simulation?" },
+  { id: "nachweis", label: "Nachweise & Prüfplan", question: "Was ist belegt?" },
 ] as const;
 export type Question = (typeof QUESTIONS)[number]["id"];
 
@@ -37,14 +37,14 @@ export type Werkstatt =
   | "simulation";
 const MUNICH_STEPS = ["system", "betrieb", "robustheit", "pilot", "nachweise"] as const;
 const WERKSTATT: Werkstatt[] = [...MUNICH_STEPS, "flexlab", "simulation"];
-/** Werkstaetten des Testing-Lab-Backbones; sie oeffnen nie in der Kundensicht. */
+/** Werkstaetten des Pruefbereichs; sie oeffnen nie in der Kundensicht. */
 export type LabWerkstatt = "pilot" | "flexlab";
 const isLabWerkstatt = (v: string | null): v is LabWerkstatt => v === "pilot" || v === "flexlab";
 
 export type Route =
   | { page: "start" }
   | { page: "bibliothek"; werkstatt?: "simulation" }
-  /** Testing-Lab-Backbone: Pruefauftraege, Messungen, Modellabgleich eines Projekts. */
+  /** Pruefbereich: Pruefauftraege, Messdaten und Modellabgleich eines Projekts. */
   | { page: "lab"; projekt: string; werkstatt?: LabWerkstatt }
   /** Arbeitsbildschirm fuer den Kundentermin (Probe, ?ansicht=neu). */
   | { page: "arbeitsplatz"; projekt: string }
@@ -87,7 +87,7 @@ export function parseRoute(search: string): Route {
   if (projekt && p.get("ansicht") === "neu") return { page: "arbeitsplatz", projekt };
   if (projekt) {
     const frage = p.get("frage");
-    // Frueher Schritt D "Abgleich" bzw. Lab-Werkstatt im Projekt: jetzt Testing-Lab.
+    // Frueher Schritt D "Abgleich" bzw. Lab-Werkstatt im Projekt: jetzt Pruefbereich.
     if (frage === "abgleich" || isLabWerkstatt(werkstatt))
       return { page: "lab", projekt, ...(isLabWerkstatt(werkstatt) ? { werkstatt } : {}) };
     return {

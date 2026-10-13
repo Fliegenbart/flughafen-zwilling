@@ -7,10 +7,12 @@ import { boardFromApi } from "./api/variants";
 import { exchangeAnswer, nextStatus, whoseTurn } from "./model/exchange";
 import { bottleneckAnswer, situationAnswer, situationKpis } from "./model/situation";
 import { variantsAnswer } from "./model/variants";
-import { legacyRedirect, parseRoute, toSearch } from "./routes";
+import { QUESTIONS, legacyRedirect, parseRoute, toSearch } from "./routes";
 import { SAMPLE_PROJECT, sampleExchange, sampleSituation, sampleVariants } from "./sample";
 import DayLandscape from "./DayLandscape";
 import { SCENARIO_CASES } from "./scenarios";
+import { claimsFor } from "./views/NachweisView";
+import { pruefState } from "./views/Pruefstatus";
 
 afterEach(() => {
   window.history.replaceState(null, "", "/");
@@ -23,6 +25,15 @@ function openApp(search = "") {
 }
 
 describe("Adressen und Weiterleitungen", () => {
+  it("benennt die Fragen neutral fuer die Flughafen-Simulation", () => {
+    expect(QUESTIONS.map((question) => question.label)).toEqual([
+      "Flughafentag",
+      "Engpass",
+      "Varianten",
+      "Nachweise & Prüfplan",
+    ]);
+  });
+
   it("liest und schreibt Projekt, Frage und Werkstatt", () => {
     const r = { page: "projekt", projekt: "p1", frage: "engpass", werkstatt: "betrieb" } as const;
     expect(toSearch(r)).toBe("?projekt=p1&frage=engpass&werkstatt=betrieb&schritt=betrieb");
@@ -59,21 +70,42 @@ describe("Antwortsätze", () => {
     expect(bottleneckAnswer(calm)).toBe("Es wird an keinem Punkt des Tages eng.");
     expect(situationAnswer(calm)).toMatch(/reicht den ganzen Tag/);
   });
-  it("benennt die beste Variante und die wirkungslosen", () => {
+  it("ordnet Varianten als Ergebnisse dieser Simulation ein", () => {
     const a = variantsAnswer(sampleVariants());
     expect(a).toMatch(
-      /^„5 Schlepper mehr“ hilft am meisten, mit 18,0 Prozentpunkten mehr pünktlichen Abflügen\./,
+      /^In dieser Simulation erreicht „5 Schlepper mehr“ die höchste Einsatzbereitschaft, 18,0 Prozentpunkte über der Ausgangslage\./,
     );
-    expect(a).toMatch(/Dafür ist der Anschluss 19 Minuten länger am Limit\./);
+    expect(a).toMatch(/Dafür liegt der Anschluss in dieser Simulation 21 Minuten länger am Limit\./);
     expect(a).toMatch(
-      /„Batteriespeicher 2 MWh“ entlastet den Anschluss am stärksten, um 52 Minuten am Limit\./,
+      /„Batteriespeicher 2 MWh“ verkürzt in dieser Simulation die Zeit am Anschlusslimit am stärksten, um 50 Minuten\./,
     );
   });
-  it("sagt ausdrücklich, wenn keine Variante die Pünktlichkeit verbessert", () => {
+  it("sagt ausdrücklich, wenn keine Variante die Einsatzbereitschaft verbessert", () => {
     const vs = sampleVariants().map((v) => (v.kind === "basis" ? v : { ...v, onTimePct: 78.2 }));
     expect(variantsAnswer(vs)).toMatch(
-      /^Keine Lösung bringt mehr als einen halben Prozentpunkt mehr pünktliche Abflüge\. „Batteriespeicher 2 MWh“ entlastet den Anschluss am stärksten, um 52 Minuten am Limit\./,
+      /^Keine Variante steigert in dieser Simulation die Einsatzbereitschaft um mehr als einen halben Prozentpunkt\. „Batteriespeicher 2 MWh“ verkürzt in dieser Simulation die Zeit am Anschlusslimit am stärksten, um 50 Minuten\./,
     );
+  });
+});
+
+describe("Nachweise", () => {
+  it("grenzt einen empirischen Nachweis auf den einzelnen Prüffall ein", () => {
+    const claims = claimsFor(
+      { project: SAMPLE_PROJECT },
+      {
+        source: "api",
+        locked: true,
+        sha256: "abc",
+        elements: [],
+        summary: { empirical_passed: 1 },
+      },
+    );
+
+    expect(claims[claims.length - 1]).toMatchObject({
+      level: "empirical_passed",
+      title: "Was Messdaten belegen",
+      text: expect.stringMatching(/abgegrenzten Prüffall.*nicht die gesamte Simulation/),
+    });
   });
 });
 
@@ -143,6 +175,14 @@ describe("Varianten aus der API", () => {
 });
 
 describe("Austausch-Status", () => {
+  it("leitet sichtbare Prüfzustände direkt aus dem realen Status ab", () => {
+    const item = sampleExchange(SAMPLE_PROJECT.id)[0]!;
+    expect(pruefState({ ...item, status: "vorgeschlagen" })).toBe("angefragt");
+    expect(pruefState({ ...item, status: "angenommen" })).toBe("angenommen");
+    expect(pruefState({ ...item, status: "geplant" })).toBe("in Prüfung");
+    expect(pruefState({ ...item, status: "erledigt" })).toBe("abgeschlossen");
+  });
+
   const items = sampleExchange("p");
   it("folgt vorgeschlagen → angenommen → geplant → erledigt", () => {
     expect(nextStatus("vorgeschlagen")).toBe("angenommen");
@@ -156,7 +196,7 @@ describe("Austausch-Status", () => {
     expect(whoseTurn(vorgeschlagen!)).toBe("lab");
     expect(whoseTurn({ ...vorgeschlagen!, from: "lab" })).toBe("flughafen");
     expect(whoseTurn(erledigt!)).toBeNull();
-    expect(exchangeAnswer(items)).toBe("2 Punkte warten auf das Lab.");
+    expect(exchangeAnswer(items)).toBe("2 Punkte warten auf den Prüfbereich.");
   });
   it("übersetzt API-Items aus dem Vertrag", () => {
     const item = exchangeFromApi({
@@ -242,20 +282,24 @@ describe("Oberfläche", () => {
       "aria-current",
       "page",
     );
-    expect(screen.getAllByText("Beispielwerte").length).toBeGreaterThan(0);
-    fireEvent.click(within(nav).getByRole("link", { name: /Lösungen/ }));
+    expect(screen.getAllByText("Illustrative Beispielwerte").length).toBeGreaterThan(0);
+    fireEvent.click(within(nav).getByRole("link", { name: /Varianten/ }));
     expect(
-      await screen.findByRole("heading", { level: 1, name: /hilft am meisten/ }),
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Mehr Fahrzeuge oder weniger Netzbelastung? Ein illustrativer Zielkonflikt.",
+      }),
     ).toBeVisible();
-    fireEvent.click(within(nav).getByRole("link", { name: /Zusage/ }));
+    fireEvent.click(within(nav).getByRole("link", { name: /Nachweise & Prüfplan/ }));
     expect(
-      await screen.findByRole("heading", { level: 1, name: /erst nach einer Messung/ }),
+      await screen.findByRole("heading", { level: 1, name: /Messdaten für den Abgleich stehen noch aus/ }),
     ).toBeVisible();
-    await waitFor(() => expect(document.title).toBe("Zusage · Airport Energy Check"));
-    // Kunde sieht nur den Pruefstatus, ohne Lab-Aktionen.
+    await waitFor(() => expect(document.title).toBe("Nachweise & Prüfplan · Airport Energy Check"));
+    expect(screen.getByText(/Beispielwerte und Simulationen sind keine Messdaten/)).toBeVisible();
+    // Kunde sieht nur den Pruefplan, ohne Aktionen des Pruefbereichs.
     expect(
       await screen.findByText(
-        "Das Testing-Lab prüft gerade 2 Punkte, einen hat es abgeschlossen.",
+        "Beispiel-Prüfplan · nicht beauftragt.",
         {
           exact: false,
         },
@@ -263,10 +307,10 @@ describe("Oberfläche", () => {
     ).toBeVisible();
     const status = screen.getByRole("heading", {
       level: 2,
-      name: "Was das Testing-Lab gerade prüft",
+      name: "Prüfplan",
     }).parentElement!.parentElement!;
     expect(within(status).queryByRole("button", { name: /erledigt|Annehmen/ })).toBeNull();
-    expect(within(status).getByRole("button", { name: "Anfrage senden" })).toBeVisible();
+    expect(within(status).queryByRole("button", { name: "Anfrage senden" })).toBeNull();
   });
 
   it("leitet den alten Schritt Abgleich in den Lab-Raum um", () => {
@@ -281,17 +325,17 @@ describe("Oberfläche", () => {
     );
   });
 
-  it("zeigt im Testing-Lab den Eingang und schaltet den Status weiter", async () => {
+  it("zeigt im Prüfbereich den Eingang und schaltet den Status weiter", async () => {
     openApp(`?seite=lab&projekt=${SAMPLE_PROJECT.id}`);
-    expect(await screen.findByText("Testing-Lab · interner Prüfraum")).toBeVisible();
-    await waitFor(() => expect(document.title).toBe("Testing-Lab · Airport Energy Check"));
+    expect(await screen.findByText("Prüfbereich · interne Ansicht")).toBeVisible();
+    await waitFor(() => expect(document.title).toBe("Prüfbereich · Airport Energy Check"));
     expect(
-      await screen.findByRole("heading", { level: 1, name: "2 Punkte warten auf das Lab." }),
+      await screen.findByRole("heading", { level: 1, name: "2 Punkte warten auf den Prüfbereich." }),
     ).toBeVisible();
     const msg = screen.getByRole("article", { name: "Ladepunkt 150 kW unter Spitzenwelle prüfen" });
-    expect(within(msg).getByText(/Am Zug:/)).toHaveTextContent("Am Zug: Testing-Lab");
+    expect(within(msg).getByText(/Am Zug:/)).toHaveTextContent("Am Zug: Prüfbereich");
     expect(screen.getByRole("heading", { level: 2, name: "Offene Anfragen" })).toBeVisible();
-    expect(screen.getByRole("heading", { level: 2, name: "Ergebnisse aus dem Lab" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Messdaten und Ergebnisse" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 2, name: "Modell gegen Messung" })).toBeVisible();
     expect(screen.getByText("Noch nicht geprüft.")).toBeVisible();
     // Rollenschalter nur eingeklappt unter „Vorführung“.
@@ -299,11 +343,11 @@ describe("Oberfläche", () => {
     expect(demo).not.toHaveAttribute("open");
     fireEvent.click(within(demo).getByRole("radio", { name: "Flughafen" }));
     expect(within(msg).queryByRole("button")).toBeNull();
-    fireEvent.click(screen.getByRole("radio", { name: "Testing-Lab" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Prüfbereich" }));
     fireEvent.click(within(msg).getByRole("button", { name: "Als erledigt melden" }));
     expect(await within(msg).findByText("abgeschlossen")).toBeVisible();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Ein Punkt wartet auf das Lab.",
+      "Ein Punkt wartet auf den Prüfbereich.",
     );
   });
 
@@ -332,14 +376,19 @@ describe("Oberfläche", () => {
 
   it("lässt sich auf der Startseite ein Projekt anlegen", async () => {
     openApp();
-    expect(screen.getByRole("heading", { level: 1, name: /Reicht der Anschluss/ })).toBeVisible();
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Flughafenbetrieb simulieren. Elektrifizierung gezielt testen.",
+      }),
+    ).toBeVisible();
     fireEvent.change(screen.getByLabelText("Projektname"), {
       target: { value: "HAM · Vorfeld Nord" },
     });
     fireEvent.change(screen.getByLabelText("Flughafen und Anschlusspunkt"), {
       target: { value: "Hamburg" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Projekt anlegen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Untersuchung anlegen" }));
     await waitFor(() => expect(window.location.search).toMatch(/projekt=lokal-.*frage=daten/));
   });
 });

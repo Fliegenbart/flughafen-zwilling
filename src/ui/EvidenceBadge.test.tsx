@@ -7,7 +7,7 @@ import { EVIDENCE_LEVELS, EvidenceBadge, EvidenceLegend } from "./EvidenceBadge"
 it("names the five evidence levels consistently", () => {
   expect(Object.values(EVIDENCE_LEVELS).map((l) => l.label)).toEqual([
     "Annahme",
-    "ausgedacht",
+    "synthetisch",
     "rechnerisch geprüft",
     "noch nicht gemessen",
     "durch Messung bestätigt",

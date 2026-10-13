@@ -3,11 +3,16 @@ import { distributeFleet } from "../model/dataStatus";
 import type { LiveBasis, Levers } from "../model/livePower";
 import type { Project } from "../types";
 import { request } from "./http";
+import { SAMPLE_PROJECT } from "../sample";
 import { enc, isObj, num } from "./parse";
 
 export type DepartureBin = { startMin: number; count: number; delayed: number };
 
 export type Preview = {
+  calculationId?: string;
+  inputHash?: string;
+  engineVersion?: string;
+  metadata?: Record<string, unknown>;
   basis: LiveBasis;
   departures: DepartureBin[];
   delayedDepartures: number | null;
@@ -30,6 +35,10 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
       ? departuresRaw
       : [];
   return {
+    calculationId: typeof raw.calculation_id === "string" ? raw.calculation_id : undefined,
+    inputHash: typeof raw.input_hash === "string" ? raw.input_hash : undefined,
+    engineVersion: typeof raw.engine_version === "string" ? raw.engine_version : undefined,
+    metadata: isObj(raw.metadata) ? raw.metadata : undefined,
     basis: {
       dayMinutes: num(raw.day_minutes, 1440),
       startMin: num(raw.start_min),
@@ -75,9 +84,10 @@ export function changesFor(levers: Levers, today: Levers): Record<string, number
   const out: Record<string, number> = {};
   if (Math.abs(levers.gridLimitKw - today.gridLimitKw) > 0.5)
     out.grid_import_limit_kw = Math.round(levers.gridLimitKw);
-  if (levers.batteryKwh > 0 && levers.batteryKwh !== today.batteryKwh) {
+  if (levers.batteryKwh !== today.batteryKwh) {
     out.storage_kwh = Math.round(levers.batteryKwh);
-    out.storage_kw = Math.round(levers.batteryKw ?? levers.batteryKwh / 2);
+    if (levers.batteryKwh > 0)
+      out.storage_kw = Math.round(levers.batteryKw ?? levers.batteryKwh / 2);
   }
   if (Math.abs(levers.pvFactor - 1) > 1e-3) out.pv_factor = Math.round(levers.pvFactor * 100) / 100;
   return out;
@@ -96,9 +106,11 @@ export async function getPreview(
   signal?: AbortSignal,
 ): Promise<Preview> {
   const raw = await request<unknown>(
-    `/projects/${enc(project.id)}/situation/preview`,
+    project.id === SAMPLE_PROJECT.id
+      ? "/demo/simulation"
+      : `/projects/${enc(project.id)}/situation/preview`,
     { method: "POST", body: JSON.stringify(changes), signal },
-    { timeoutMs: 15000 },
+    { timeoutMs: 60000 },
   );
   const preview = previewFromApi(raw);
   if (!preview) throw new Error("Die Vorschau hat keine Kurve geliefert.");

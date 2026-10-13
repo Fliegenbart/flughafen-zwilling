@@ -40,7 +40,7 @@ export default function Outcome({
   // Rest der Wartezeit: kein freies Fahrzeug. Bleiben Abfluege trotz genug Strom spaet,
   // liegt es an der Flotte, nicht am Anschluss.
   const share = (p: Preview | null) =>
-    p?.energyWaitSharePct != null && p.delayedDepartures ? `${int(p.energyWaitSharePct)} %` : null;
+    p?.energyWaitSharePct != null ? `${int(p.energyWaitSharePct)} %` : null;
   const rows: Row[] = [
     {
       label: "Fehlende Ladeleistung in der Spitze",
@@ -55,16 +55,16 @@ export default function Outcome({
       better: compare(today.missingKwh, result.missingKwh, 1),
     },
     {
-      label: "Abflüge nicht rechtzeitig fertig",
+      label: "Abfertigungen im Modell nicht rechtzeitig bereit",
       today: late(todayPreview) ?? "–",
-      now: late(exact) ?? (sample ? "nur mit eigenem Projekt" : "wird gerechnet …"),
+      now: late(exact) ?? "noch kein berechnetes Ergebnis",
       better:
         exact?.delayedDepartures != null && todayPreview.delayedDepartures != null
           ? compare(todayPreview.delayedDepartures, exact.delayedDepartures, 0.5)
           : null,
     },
     {
-      label: "Verspätungen, weil ein Akku zu leer war",
+      label: "Anteil energiebedingter Wartezeit im Modell",
       today: share(todayPreview) ?? "–",
       now: share(exact) ?? (sample ? "–" : "wird gerechnet …"),
       better: null,
@@ -79,13 +79,13 @@ export default function Outcome({
   return (
     <section className="ap-outcome" aria-labelledby="ap-outcome-title">
       <h2 id="ap-outcome-title" className="ap-outcome__title">
-        Heute und mit Ihrer Einstellung
+        Ausgangslage und Ihre Variante
       </h2>
       <table>
         <thead>
           <tr>
             <th scope="col" />
-            <th scope="col">Heute</th>
+            <th scope="col">Ausgangslage</th>
             <th scope="col">Mit Ihrer Einstellung</th>
           </tr>
         </thead>
@@ -104,13 +104,23 @@ export default function Outcome({
         </tbody>
       </table>
       <p className="ap-accuracy" data-accuracy={accuracy} role="status">
-        {sample
-          ? "Beispieltag: Die Kurve folgt den Reglern als Näherung. Genau gerechnet wird in einem eigenen Projekt."
-          : accuracy === "naeherung"
-            ? "Näherung, die genaue Rechnung läuft."
-            : accuracy === "genau"
-              ? `Genau gerechnet${exact?.computeMs != null ? ` in ${int(exact.computeMs)} ms` : ""}. Vorschau, nicht als Berechnung gespeichert.`
-              : ""}
+        {accuracy === "naeherung"
+          ? "Vorläufige Netz-Näherung. Die gekoppelte Simulation wird berechnet; Fahrzeugergebnisse folgen."
+          : accuracy === "genau"
+            ? `Simulation berechnet${exact?.computeMs != null ? ` in ${int(exact.computeMs)} ms` : ""}. ${sample ? "Synthetischer Verkehrstag, keine Messung am Flughafen München." : "Vorschau auf Basis der Projektannahmen."}`
+            : "Berechnung fehlgeschlagen. Angezeigte Netz-Näherung ist kein fertiges Simulationsergebnis."}
+      </p>
+      {exact?.calculationId ? (
+        <p className="ap-accuracy">
+          Berechnungs-ID: <code>{exact.calculationId}</code>
+          <br />
+          Engine: {exact.engineVersion} · Eingabe-Hash: <code>{exact.inputHash}</code>
+        </p>
+      ) : null}
+      <p className="ap-accuracy">
+        Die Betriebskennzahl beschreibt die Bereitschaft modellierter Abfertigungen, nicht die reale
+        Abflugpünktlichkeit. Das Modell ist nicht an Flughafenmessungen kalibriert und steuert keine
+        Anlagen.
       </p>
     </section>
   );
