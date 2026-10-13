@@ -1,5 +1,62 @@
 # Hetzner-Demo
 
+## Aktiver Release vom 13.10.2026 (interaktive Flughafen-Simulation)
+
+Aktiv ist `b1ad776b405f10f7f23eea00b4bad0bfe8b59c8a` aus
+`codex/airport-simulation-entry` (PR #34), gebaut aus dem unveraenderten
+Remote-Commit in `/opt/airport-releases/b1ad776`. Vorher aktiv war
+`78a6bab5b664b9b08b131fd1d65735db14a3cd50`. Der kanonische Checkout ist nicht
+die Quelle des laufenden Stacks; massgeblich sind Release-Worktree und
+`TWIN_BUILD_GIT_COMMIT` im Container.
+
+Neu: verstaendlicher Einstieg, vier Stellschrauben mit serverseitiger gekoppelter
+Simulation, Ausgangslage/Variante, Berechnungs-ID sowie HTML-/JSON-Pruefskizze.
+Illustrationen und vorlaeufige Netz-Naeherungen sind von fertigen Berechnungen
+getrennt. Die Eingaben des Demonstrationstags sind synthetisch und unkalibriert.
+Keine Hardwarewrites, keine echten Adapter und kein Influx-Token.
+
+Vor dem Wechsel wurde nur das Airport-Backend gestoppt. Offline-Sicherung:
+
+- Archiv: `/opt/airport-backups/pre-b1ad776-20261013.tar.gz`
+- 1.640 Dateien, 24.321.720 Bytes, Modus 0600
+- SHA256: `700f48bc925a0ddc8b77f4228dec69286fed7ec1fe462423afbf49184b37fc6b`
+- Separat hashgeprueft wiederhergestellt; temporaere Pruefkopie danach entfernt.
+
+Abnahme bestanden:
+
+- Lokal 175 Frontend- und 304 Backend-Tests; Lint, Typecheck, Builds und
+  unveraenderte Archivsnapshots. GitHub-CI auf Release-SHA gruen
+  (Run `38374940370`, inklusive Containerbibliothek und Proxykette).
+- Oeffentliche HTTPS-UI, Health, Readiness, Rollen- und Szenariobibliothek: 200.
+  HTTP leitet mit 301 auf HTTPS um. Der ausdruecklich freigegebene oeffentliche
+  Demo-Zugang bleibt bestehen; Proxydatei unveraendert.
+- `smoke_public_simulation.py`: reproduzierbare Baseline und vier neu berechnete
+  Varianten; keine Projektwrites. Gemessene Variantenrechnung rund 1,0 bis 1,5 s
+  in diesem Lauf, kein SLA.
+- `smoke_munich.py`, `smoke_demo.py --planner --all-cases`,
+  `smoke_flexlab.py`: bestanden, einschliesslich erwarteter negativer Prueffaelle.
+- `smoke_coupled.py` auf vorhandenem synthetischen Snapshot: beide Laeufe samt
+  Artefakten geprueft, Vergleich `936d317f96194bed99772c597b619a9e`.
+  Beide Laderegeln erreichen 24,52 % modellierte Abfertigungsbereitschaft;
+  strenge Modellkriterien bleiben false. Kein Optimierungsvorteil belegt.
+- `smoke_pilot.py` lokal im Backend-Container (Skript erlaubt nur localhost):
+  Paket-Hashes geprueft, modellabgeleitete und schlechte Daten bleiben
+  `NOT_EVALUABLE`; keine empirische Validierung.
+- Browser live: Start-CTA, Netzregler, vorlaeufige Anzeige, Serverergebnis,
+  Berechnungs-ID und Zuruecksetzen geprueft; Exporte waehrend Rechnung gesperrt.
+  Fonts geladen, keine Browserfehler. HTML-Download lokal geprueft;
+  responsive Ansicht lokal bei 390 px ohne Inhaltsueberlauf.
+- Bestand: alle zuvor vorhandenen vier Projekte, zwei Flugplan-Snapshots und
+  228 Laeufe weiterhin vorhanden. Smokes ergaenzen synthetische QA-Daten.
+- Ein Backend-Prozess, gesund, keine Neustarts und keine Fehler/Tracebacks in
+  der kontrollierten Start-/Abnahmephase. Beide bestehenden Airport-Subnetze
+  `10.253.250.0/24` und `10.253.251.0/24` konfliktfrei; andere Stacks unberuehrt.
+
+Rollback: Backend stoppen und aus `/opt/airport-releases/78a6bab` mit dessen
+Build-SHA `up --build -d` starten. Keine Volumes loeschen; Daten nur bei
+nachgewiesener Beschaedigung zurueckspielen. Oeffentlichen Proxy unveraendert
+lassen, sofern der Betreiber keinen neuen Zugangsschutz anordnet.
+
 ## Oeffentliche Demo seit 13.10.2026
 
 Auf ausdruecklichen Betreiberwunsch ist `/airport/` einschliesslich API und
