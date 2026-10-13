@@ -1,11 +1,10 @@
 # Include inside the labpulse.ai HTTPS server before its location / redirect.
-# The password file is generated on the server, never committed.
+# Public demo explicitly approved on 2026-10-13; no private data allowed.
 location = /airport {
     return 308 /airport/$is_args$args;
 }
 location ^~ /airport/ {
-    auth_basic "Airport Twin Core - Private Pilot";
-    auth_basic_user_file /etc/nginx/ssl/airport-demo.htpasswd;
+    auth_basic off;
     limit_req zone=api burst=60 nodelay;
     client_max_body_size 6m;
     proxy_pass http://172.17.0.1:18576/;
