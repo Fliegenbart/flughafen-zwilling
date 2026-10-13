@@ -8,15 +8,39 @@ import Link from "./Link";
 import { SAMPLE_PROJECT } from "./sample";
 import type { Project } from "./types";
 import "./home-entry.css";
+import Arbeitsplatz from "./arbeitsplatz/Arbeitsplatz";
 
 const FLOW = ["Flughafentag", "Engpass", "Varianten", "Prüfplan"];
 const QUESTIONS = [
-  ["Wo kollidieren Ladefenster?", "Busse, Schlepper und Bodenstromgeräte im Einsatzplan betrachten."],
-  ["Was begrenzt den Betrieb?", "Netzanschluss, Photovoltaik und Speicher als ein gekoppeltes System prüfen."],
-  ["Welche Variante trägt?", "Maßnahmen gegen gleiche Fahrzeugeinsätze und Zeitfenster vergleichen."],
+  [
+    "Wo kollidieren Ladefenster?",
+    "Busse, Schlepper und Bodenstromgeräte im Einsatzplan betrachten.",
+  ],
+  [
+    "Was begrenzt den Betrieb?",
+    "Netzanschluss, Photovoltaik und Speicher als ein gekoppeltes System prüfen.",
+  ],
+  [
+    "Welche Variante trägt?",
+    "Maßnahmen gegen gleiche Fahrzeugeinsätze und Zeitfenster vergleichen.",
+  ],
 ];
 
 export default function Home() {
+  return (
+    <>
+      <Arbeitsplatz route={{ page: "arbeitsplatz", projekt: SAMPLE_PROJECT.id }} />
+      <details className="ap-projects" id="weitere-projekte">
+        <summary>Eigene Projekte und weitere Untersuchungen</summary>
+        <div className="aec">
+          <AdvancedHome />
+        </div>
+      </details>
+    </>
+  );
+}
+
+export function AdvancedHome() {
   const nav = useNav();
   const [projects, setProjects] = useState<Project[]>([SAMPLE_PROJECT]);
   const [creating, setCreating] = useState(false);
@@ -95,8 +119,8 @@ export default function Home() {
           </h1>
           <p className="aec-entry-hero__lead">
             Wenn Busse, Gepäckschlepper und Bodenstromgeräte elektrisch werden, müssen
-            Fahrzeugeinsatz und Laden zusammenpassen. Verändern Sie Netzleistung, PV, Speicher
-            oder Fahrzeugzahl und vergleichen Sie die berechneten Auswirkungen.
+            Fahrzeugeinsatz und Laden zusammenpassen. Verändern Sie Netzleistung, PV, Speicher oder
+            Fahrzeugzahl und vergleichen Sie die berechneten Auswirkungen.
           </p>
           <div className="aec-entry-actions">
             <Link
@@ -169,8 +193,8 @@ export default function Home() {
         </div>
         <div className="aec-entry-sample__card">
           <p>
-            Ein vorbereiteter Flughafenbetrieb mit Flotte, Anschluss, Photovoltaik und Speicher.
-            Zum Erkunden der interaktiven Simulation.
+            Ein vorbereiteter Flughafenbetrieb mit Flotte, Anschluss, Photovoltaik und Speicher. Zum
+            Erkunden der interaktiven Simulation.
           </p>
           <Link
             to={{ page: "arbeitsplatz", projekt: SAMPLE_PROJECT.id }}
@@ -221,15 +245,36 @@ export default function Home() {
           <div className="aec-new__row">
             <label>
               Netzanschluss (MW)
-              <input name="limit" type="number" inputMode="decimal" min="0.1" step="0.1" defaultValue="3.5" />
+              <input
+                name="limit"
+                type="number"
+                inputMode="decimal"
+                min="0.1"
+                step="0.1"
+                defaultValue="3.5"
+              />
             </label>
             <label>
               Photovoltaik (kWp)
-              <input name="pv" type="number" inputMode="decimal" min="0" step="any" defaultValue="7000" />
+              <input
+                name="pv"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="any"
+                defaultValue="7000"
+              />
             </label>
             <label>
               Batteriespeicher (kWh)
-              <input name="storage" type="number" inputMode="decimal" min="0" step="any" defaultValue="0" />
+              <input
+                name="storage"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="any"
+                defaultValue="0"
+              />
             </label>
             <label>
               Elektrofahrzeuge (Anzahl)
@@ -245,8 +290,11 @@ export default function Home() {
               />
             </label>
             <p className="aec-fine aec-new__split" aria-live="polite">
-              Vorläufig aufgeteilt in {distributeFleet(fleet).map((item) => `${item.vehicles} ${item.label}`).join(", ")};
-              das lässt sich im nächsten Schritt ändern.
+              Vorläufig aufgeteilt in{" "}
+              {distributeFleet(fleet)
+                .map((item) => `${item.vehicles} ${item.label}`)
+                .join(", ")}
+              ; das lässt sich im nächsten Schritt ändern.
             </p>
           </div>
           <label>
@@ -257,12 +305,17 @@ export default function Home() {
               placeholder="Reicht der Netzanschluss für die elektrische Vorfeldflotte?"
             />
           </label>
-          {error ? <p className="aec-error" role="alert">{error}</p> : null}
+          {error ? (
+            <p className="aec-error" role="alert">
+              {error}
+            </p>
+          ) : null}
           <button type="submit" className="aec-button" disabled={creating}>
             {creating ? "Wird angelegt …" : "Untersuchung anlegen"}
           </button>
           <p className="aec-fine">
-            Ohne Quellenangabe zählen die Werte als Annahme. Belege tragen Sie im nächsten Schritt nach.
+            Ohne Quellenangabe zählen die Werte als Annahme. Belege tragen Sie im nächsten Schritt
+            nach.
           </p>
         </form>
       </section>

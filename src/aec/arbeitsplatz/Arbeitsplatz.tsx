@@ -91,42 +91,75 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
   return (
     <div className="ap">
       <header className="ap-head">
-        <Link to={{ page: "start" }} className="ap-head__back" label="Zurück zu allen Projekten">
-          Startseite
-        </Link>
-        <h1 className="ap-head__title">
-          {demo
-            ? "Flughafen-Simulation selbst ausprobieren"
-            : (project?.name ?? "Projekt wird geladen …")}
-        </h1>
         <Link
-          to={{ page: "projekt", projekt: route.projekt, frage: "daten" }}
-          className="ap-head__link"
+          to={{ page: "start" }}
+          className="ap-head__back"
+          label="Airport Energy Check, Startseite"
         >
-          Eingaben & Quellen
+          AIRPORT <strong>ENERGY CHECK</strong>
         </Link>
-        <Link
-          to={{ page: "projekt", projekt: route.projekt, frage: "lage" }}
-          className="ap-head__link"
-        >
-          Weitere Projektansichten
-        </Link>
+        <span className="ap-head__title">Flughafen-Simulation</span>
+        <details className="ap-tools">
+          <summary>Weitere Werkzeuge</summary>
+          <div>
+            <Link
+              to={{ page: "projekt", projekt: route.projekt, frage: "daten" }}
+              className="ap-head__link"
+            >
+              Eingaben & Quellen
+            </Link>
+            <Link
+              to={{ page: "projekt", projekt: route.projekt, frage: "lage" }}
+              className="ap-head__link"
+            >
+              Weitere Projektansichten
+            </Link>
+            <Link to={{ page: "bibliothek" }}>Szenario-Bibliothek</Link>
+            <Link to={{ page: "lab", projekt: route.projekt }}>Messdaten-Abgleich</Link>
+            <a href="?workspace=flexlab">FlexLab</a>
+          </div>
+        </details>
       </header>
       <section className="ap-intro">
-        <p className="ap-step">
-          1 · Flughafentag verstehen → 2 · Engpass erkennen → 3 · Variante berechnen → 4 ·
-          Prüfskizze mitnehmen
-        </p>
-        <h2>Was verändert sich, wenn Fahrzeuge laden müssen, während der Flughafen weiterläuft?</h2>
+        <p className="ap-kicker">Elektrifizierung am Flughafen · Interaktive Studie</p>
+        <h1>
+          Mehr elektrische Fahrzeuge.
+          <br />
+          <em>Reicht die Stromversorgung?</em>
+        </h1>
         <p>
-          Verändern Sie Netzleistung, Batteriespeicher, PV oder Fahrzeugzahl. Nach einer kurzen
-          Pause berechnet der Server den Verkehrstag neu und vergleicht Ihre Variante mit derselben
-          Ausgangslage.
+          Busse, Gepäckschlepper und Bodenstromgeräte müssen laden und rechtzeitig zum nächsten Flug
+          bereitstehen. Spielen Sie durch, was zusätzliche Fahrzeuge, mehr Anschlussleistung oder
+          ein Speicher an einem Flughafentag verändern.
         </p>
-        <p>
-          <strong>{demo ? "Synthetischer Demonstrationstag" : "Projektbasierte Simulation"}</strong>{" "}
-          · Keine Live-Hardwareanbindung · Keine validierte Flughafenplanung
+        <p className="ap-study-note">
+          <strong>
+            {demo ? "München als Referenz · synthetischer Demonstrationstag" : project?.name}
+          </strong>{" "}
+          · Unkalibriertes Modell
         </p>
+        <ol className="ap-system" aria-label="So hängen Flughafenbetrieb und Energie zusammen">
+          <li>
+            <span>01</span>
+            <strong>Flugplan</strong>
+            <small>bestimmt die Einsätze</small>
+          </li>
+          <li>
+            <span>02</span>
+            <strong>Elektrofahrzeuge</strong>
+            <small>brauchen freie Ladefenster</small>
+          </li>
+          <li>
+            <span>03</span>
+            <strong>Stromversorgung</strong>
+            <small>Netz, PV und Speicher</small>
+          </li>
+          <li>
+            <span>04</span>
+            <strong>Nächster Einsatz</strong>
+            <small>ist das Fahrzeug bereit?</small>
+          </li>
+        </ol>
       </section>
 
       {s.accuracy === "fehler" && !s.today ? (
@@ -149,12 +182,6 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
             onReset={s.reset}
           />
           <div className="ap-main">
-            <LoadChart
-              result={s.result}
-              today={s.todayResult}
-              departures={(s.exact ?? s.today).departures}
-              changed={changed}
-            />
             <Outcome
               today={s.todayResult}
               todayPreview={s.today}
@@ -164,6 +191,15 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
               changed={changed}
               sample={s.sample}
             />
+            <details className="ap-extra ap-curve">
+              <summary>Tagesverlauf: Wann wird Strom knapp?</summary>
+              <LoadChart
+                result={s.result}
+                today={s.todayResult}
+                departures={(s.exact ?? s.today).departures}
+                changed={changed}
+              />
+            </details>
             {s.error && s.today ? (
               <p className="ap-error" role="alert">
                 {s.error}
@@ -173,55 +209,64 @@ export default function Arbeitsplatz({ route }: { route: ArbeitsplatzRoute }) {
         </div>
       )}
       {s.today ? (
-        <section className="ap-intro" aria-labelledby="ap-sketch-title">
-          <h2 id="ap-sketch-title">Welche Annahme wollen Sie als Nächstes überprüfen?</h2>
-          <p>
-            Mehr Fahrzeuge können die Einsatzbereitschaft verbessern und gleichzeitig den Anschluss
-            stärker belasten. Vergleichen Sie beide Seiten, statt nur einen Gewinner zu wählen.
-          </p>
-          <label>
-            Ihre Prüffrage
-            <textarea
-              value={question}
-              maxLength={2000}
-              onChange={(e) => setQuestion(e.target.value)}
+        <details className="ap-next">
+          <summary>Mit eigenen Daten weiterprüfen oder Ergebnis mitnehmen</summary>
+          <section className="ap-intro" aria-labelledby="ap-sketch-title">
+            <h2 id="ap-sketch-title">Vom Modell zur eigenen Untersuchung</h2>
+            <p>
+              Mehr Fahrzeuge können die Einsatzbereitschaft verbessern und gleichzeitig den
+              Anschluss stärker belasten. Vergleichen Sie beide Seiten, statt nur einen Gewinner zu
+              wählen.
+            </p>
+            <label>
+              Ihre Prüffrage
+              <textarea
+                value={question}
+                maxLength={2000}
+                onChange={(e) => setQuestion(e.target.value)}
+              />
+            </label>
+            <p>
+              Ein nächster Schritt wäre ein unabhängiger Vergleich mit Ladeleistung, Energiebedarf
+              und Einsatzzeiten. Grenzen und Messbedingungen werden vorher festgelegt. Hier wird
+              kein Versuch beauftragt.
+            </p>
+            <button
+              className="ap-reset"
+              type="button"
+              disabled={s.accuracy !== "genau" || !s.exact}
+              onClick={() => downloadSketch()}
+            >
+              Prüfskizze herunterladen
+            </button>{" "}
+            <button
+              className="ap-reset"
+              type="button"
+              disabled={s.accuracy !== "genau" || !s.exact}
+              onClick={() => downloadSketch("json")}
+            >
+              Berechnungsdaten als JSON
+            </button>
+            <MeasurementHandoff
+              demo={demo}
+              projectId={route.projekt}
+              exact={s.exact}
+              levers={s.levers}
+              exactCurrent={s.accuracy === "genau" && !!s.exact}
+              question={question}
             />
-          </label>
-          <p>
-            Ein nächster Schritt wäre ein unabhängiger Vergleich mit Ladeleistung, Energiebedarf und
-            Einsatzzeiten. Grenzen und Messbedingungen werden vorher festgelegt. Hier wird kein
-            Versuch beauftragt.
-          </p>
-          <button
-            className="ap-reset"
-            type="button"
-            disabled={s.accuracy !== "genau" || !s.exact}
-            onClick={() => downloadSketch()}
-          >
-            Prüfskizze herunterladen
-          </button>{" "}
-          <button
-            className="ap-reset"
-            type="button"
-            disabled={s.accuracy !== "genau" || !s.exact}
-            onClick={() => downloadSketch("json")}
-          >
-            Berechnungsdaten als JSON
-          </button>
-          <MeasurementHandoff
-            demo={demo}
-            projectId={route.projekt}
-            exact={s.exact}
-            levers={s.levers}
-            exactCurrent={s.accuracy === "genau" && !!s.exact}
-            question={question}
-          />
-          <p>
-            Lesbare HTML-Zusammenfassung zum Weitergeben und Drucken; JSON für die Detailprüfung.
-            Die Vorschau wird nicht als dauerhafter Projektlauf gespeichert.
-          </p>
-        </section>
+            <p>
+              Lesbare HTML-Zusammenfassung zum Weitergeben und Drucken; JSON für die Detailprüfung.
+              Die Vorschau wird nicht als dauerhafter Projektlauf gespeichert.
+            </p>
+          </section>
+        </details>
       ) : null}
+      <footer className="ap-footer">
+        Berechnet Fahrzeugbewegungen, Ladebedarf und Stromversorgung zusammen. Annahmen sind
+        veränderbar. Die Ergebnisse gelten für dieses Modell und müssen mit echten Flughafen- und
+        Messdaten überprüft werden.
+      </footer>
     </div>
   );
 }

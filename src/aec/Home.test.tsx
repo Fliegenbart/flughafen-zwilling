@@ -9,7 +9,7 @@ const projectsApi = vi.hoisted(() => ({
 vi.mock("./api/projects", () => projectsApi);
 
 import { NavContext } from "./context";
-import Home from "./Home";
+import { AdvancedHome as Home } from "./Home";
 import { SAMPLE_PROJECT } from "./sample";
 
 afterEach(() => {

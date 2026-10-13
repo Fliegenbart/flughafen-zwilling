@@ -1,6 +1,43 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 13.10.2026 (Messdaten-Abgleich)
+## Aktiver Release vom 13.10.2026 (fokussierte Flughafen-Demo)
+
+Code-Release `546af16880ebc00df0f5add8c2179a0265169897`, PR #36, aus
+`/opt/airport-releases/546af16`. Remote- und Container-SHA stimmen ueberein;
+CI `38423542612` vollstaendig gruen. Vorher: `7930f02`.
+
+Die Startadresse oeffnet direkt die Frage „Mehr elektrische Fahrzeuge.
+Reicht die Stromversorgung?“ Drei sichtbare Regler und drei Vorher-nachher-Karten
+ersetzen die bisherige Auswahl zwischen vielen Einstiegspunkten. PV, Quellen,
+Projekte, Szenarien, Messdaten-Abgleich, FlexLab, Kurven und Exporte bleiben
+aufklappbar erhalten. [Vorfuehrablauf](FOCUSED_AIRPORT_DEMO.md).
+
+Offline-Sicherung, nach Stoppen ausschliesslich des Airport-Backends:
+
+- `/opt/airport-backups/pre-546af16-20261013.tar.gz`
+- 1.908 Dateien, 32.552.287 Bytes, Modus 0600
+- SHA256 `aad0dabe396d3fce58bb8785025dd3f8d4c58abac74e2a28bdca543f8a72f9d0`
+- Wiederherstellung per Dateihashes geprueft, temporaere Pruefkopie entfernt.
+
+Abnahme: 188 Frontend- und 306 Backend-Tests bestanden, Typecheck, Lint,
+Subpath-Build und Archivcheck gruen. Browser lokal und ueber HTTPS: Ausgangslage,
+Regler, echte Neuberechnung, Ruecksetzen, drei sichtbare Regler und erhaltene
+Werkzeuge geprueft. Desktop und 390 px ohne horizontalen Inhaltsueberlauf;
+Live-Browserkonsole ohne Fehler. Der synthetische Test mit 20 weiteren Fahrzeugen
+zeigt 209 statt 234 wartende Abfertigungen und 1.093 statt 193 kWh ungedeckten
+Ladebedarf. Das ist ein Ergebnis des unkalibrierten Modells, kein empirischer
+Nachweis. Oeffentliche Demo-Varianten und FlexLab-Smoke bestanden. Alle acht
+Airport-Cases plus Stabilitaetsfall sowie beide Planner-Referenzfaelle wurden
+nach dem Deployment ueber HTTPS erfolgreich ausgefuehrt. Das belegt den
+technischen Ablauf; fuer die Planner-Referenzen ergab sich kein KPI-Gewinn.
+
+Alle Dateien der vorherigen Sicherung bleiben vorhanden. Ein Backend-Prozess,
+healthy, keine Neustarts; kontrolliertes Startfenster ohne Fehler/Tracebacks.
+Bestehende Airport-Subnetze konfliktfrei, Proxy-Hash unveraendert. Andere Stacks
+unberuehrt. Ruecknahme ueber `/opt/airport-releases/7930f02` mit dessen Build-SHA
+und `up --build -d`, ohne Volume-Loeschung.
+
+## Release vom 13.10.2026 (Messdaten-Abgleich)
 
 Code-Release `7930f0282a367f5affde82e99a0a355fba6448d7`, PR #35 (aufbauend
 auf PR #34), aus `/opt/airport-releases/7930f02` aktiv. Remote-SHA und
