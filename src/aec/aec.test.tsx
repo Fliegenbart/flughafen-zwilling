@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import AirportEnergyCheck from "./AirportEnergyCheck";
-import { exchangeFromApi } from "./api/exchange";
+import { advanceExchange, exchangeFromApi, listExchange, proposeTest } from "./api/exchange";
 import { situationFromApi } from "./api/situation";
 import { boardFromApi } from "./api/variants";
 import { exchangeAnswer, nextStatus, whoseTurn } from "./model/exchange";
@@ -13,6 +13,7 @@ import DayLandscape from "./DayLandscape";
 import { SCENARIO_CASES } from "./scenarios";
 import { claimsFor } from "./views/NachweisView";
 import { pruefState } from "./views/Pruefstatus";
+import type { ExchangeItem, Project } from "./types";
 
 afterEach(() => {
   window.history.replaceState(null, "", "/");
@@ -175,15 +176,49 @@ describe("Varianten aus der API", () => {
 });
 
 describe("Austausch-Status", () => {
-  it("leitet sichtbare Prüfzustände direkt aus dem realen Status ab", () => {
-    const item = sampleExchange(SAMPLE_PROJECT.id)[0]!;
-    expect(pruefState({ ...item, status: "vorgeschlagen" })).toBe("angefragt");
-    expect(pruefState({ ...item, status: "angenommen" })).toBe("angenommen");
-    expect(pruefState({ ...item, status: "geplant" })).toBe("in Prüfung");
-    expect(pruefState({ ...item, status: "erledigt" })).toBe("abgeschlossen");
+  const item = (status: ExchangeItem["status"], from: ExchangeItem["from"] = "flughafen") =>
+    ({
+      id: `x-${status}`,
+      kind: "testanfrage",
+      title: "Lastgang am Vorfeld vergleichen",
+      summary: "Messgrenze: Abgang Ladepark",
+      from,
+      status,
+      evidence: "empirical_open",
+      history: [],
+      source: "api",
+    }) as ExchangeItem;
+
+  it("liefert für Beispielprojekte keine Demo-Aufträge", () => {
+    expect(sampleExchange(SAMPLE_PROJECT.id)).toEqual([]);
   });
 
-  const items = sampleExchange("p");
+  it("lehnt lokale Austauschaktionen für das Beispielprojekt ab", async () => {
+    await expect(proposeTest(SAMPLE_PROJECT, "Lastgang vergleichen", "Abgang Ladepark")).rejects.toThrow(
+      "Für das Beispielprojekt kann kein Messdaten-Abgleich beauftragt werden.",
+    );
+    await expect(advanceExchange(SAMPLE_PROJECT, item("vorgeschlagen"), "angenommen", "lab")).rejects.toThrow(
+      "Für das Beispielprojekt kann kein Messdaten-Abgleich fortgeschrieben werden.",
+    );
+  });
+
+  it("gibt Austausch-API-Fehler weiter statt Beispielaufträge zu erfinden", async () => {
+    const project: Project = { ...SAMPLE_PROJECT, id: "live-p1", source: "api" };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("offline"));
+
+    await expect(listExchange(project)).rejects.toThrow("offline");
+
+    fetchMock.mockRestore();
+  });
+
+  it("leitet sichtbare Prüfzustände direkt aus dem realen Status ab", () => {
+    expect(pruefState(item("vorgeschlagen"))).toBe("angefragt");
+    expect(pruefState(item("angenommen"))).toBe("angenommen");
+    expect(pruefState(item("geplant"))).toBe("Messung geplant");
+    expect(pruefState(item("erledigt"))).toBe("Messdaten ausgewertet");
+  });
+
+  const items = [item("geplant"), item("vorgeschlagen"), item("erledigt")];
   it("folgt vorgeschlagen → angenommen → geplant → erledigt", () => {
     expect(nextStatus("vorgeschlagen")).toBe("angenommen");
     expect(nextStatus("geplant")).toBe("erledigt");
@@ -196,7 +231,7 @@ describe("Austausch-Status", () => {
     expect(whoseTurn(vorgeschlagen!)).toBe("lab");
     expect(whoseTurn({ ...vorgeschlagen!, from: "lab" })).toBe("flughafen");
     expect(whoseTurn(erledigt!)).toBeNull();
-    expect(exchangeAnswer(items)).toBe("2 Punkte warten auf den Prüfbereich.");
+    expect(exchangeAnswer(items)).toBe("2 Punkte warten auf den Messdaten-Abgleich.");
   });
   it("übersetzt API-Items aus dem Vertrag", () => {
     const item = exchangeFromApi({
@@ -296,10 +331,10 @@ describe("Oberfläche", () => {
     ).toBeVisible();
     await waitFor(() => expect(document.title).toBe("Nachweise & Prüfplan · Airport Energy Check"));
     expect(screen.getByText(/Beispielwerte und Simulationen sind keine Messdaten/)).toBeVisible();
-    // Kunde sieht nur den Pruefplan, ohne Aktionen des Pruefbereichs.
+    // Beispielprojekte enthalten keine erfundenen Auftraege oder Aktionen.
     expect(
       await screen.findByText(
-        "Beispiel-Prüfplan · nicht beauftragt.",
+        "Für das Beispielprojekt ist kein Messdaten-Abgleich beauftragt.",
         {
           exact: false,
         },
@@ -307,10 +342,10 @@ describe("Oberfläche", () => {
     ).toBeVisible();
     const status = screen.getByRole("heading", {
       level: 2,
-      name: "Prüfplan",
+      name: "Messdaten-Abgleich",
     }).parentElement!.parentElement!;
     expect(within(status).queryByRole("button", { name: /erledigt|Annehmen/ })).toBeNull();
-    expect(within(status).queryByRole("button", { name: "Anfrage senden" })).toBeNull();
+    expect(within(status).queryByRole("button", { name: "Messdaten-Abgleich anfragen" })).toBeNull();
   });
 
   it("leitet den alten Schritt Abgleich in den Lab-Raum um", () => {
@@ -325,30 +360,19 @@ describe("Oberfläche", () => {
     );
   });
 
-  it("zeigt im Prüfbereich den Eingang und schaltet den Status weiter", async () => {
+  it("zeigt den Messdaten-Abgleich ohne Beispielaufträge oder Rollenschalter", async () => {
     openApp(`?seite=lab&projekt=${SAMPLE_PROJECT.id}`);
-    expect(await screen.findByText("Prüfbereich · interne Ansicht")).toBeVisible();
-    await waitFor(() => expect(document.title).toBe("Prüfbereich · Airport Energy Check"));
     expect(
-      await screen.findByRole("heading", { level: 1, name: "2 Punkte warten auf den Prüfbereich." }),
+      await screen.findByRole("heading", { level: 1, name: "Simulation mit Messdaten überprüfen" }),
     ).toBeVisible();
-    const msg = screen.getByRole("article", { name: "Ladepunkt 150 kW unter Spitzenwelle prüfen" });
-    expect(within(msg).getByText(/Am Zug:/)).toHaveTextContent("Am Zug: Prüfbereich");
-    expect(screen.getByRole("heading", { level: 2, name: "Offene Anfragen" })).toBeVisible();
-    expect(screen.getByRole("heading", { level: 2, name: "Messdaten und Ergebnisse" })).toBeVisible();
-    expect(screen.getByRole("heading", { level: 2, name: "Modell gegen Messung" })).toBeVisible();
-    expect(screen.getByText("Noch nicht geprüft.")).toBeVisible();
-    // Rollenschalter nur eingeklappt unter „Vorführung“.
-    const demo = screen.getByText("Ansicht für Vorführungen wechseln").closest("details")!;
-    expect(demo).not.toHaveAttribute("open");
-    fireEvent.click(within(demo).getByRole("radio", { name: "Flughafen" }));
-    expect(within(msg).queryByRole("button")).toBeNull();
-    fireEvent.click(screen.getByRole("radio", { name: "Prüfbereich" }));
-    fireEvent.click(within(msg).getByRole("button", { name: "Als erledigt melden" }));
-    expect(await within(msg).findByText("abgeschlossen")).toBeVisible();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Ein Punkt wartet auf den Prüfbereich.",
+    await waitFor(() => expect(document.title).toBe("Messdaten-Abgleich · Airport Energy Check"));
+    expect(screen.getByRole("link", { name: "Messdaten-Abgleich" })).toHaveAttribute(
+      "aria-current",
+      "page",
     );
+    expect(screen.queryByRole("article")).toBeNull();
+    expect(screen.queryByText(/Am Zug:/)).toBeNull();
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
   });
 
   it("zeigt alle acht Fälle in der Bibliothek und übernimmt einen ins Projekt", async () => {
