@@ -1,4 +1,84 @@
-# Elektrifizierung: konstante Flotte, drei vergleichbare Loesungen
+# Anschlussvergleich v2: gleicher Betrieb, gepruefte Anschlussleistung
+
+Die aktuelle Startseite zeigt je Ladeloesung die kleinste erfolgreich gerechnete
+Anschlussstufe in 250-kW-Schritten bis 8 MW. Der vorhandene Anschluss wird
+zusaetzlich tatsaechlich simuliert; darunter angezeigte Betriebswerte und der
+Messdaten-Handoff beziehen sich auf diesen vorhandenen Anschluss, nicht auf
+die gesuchte Auslegungsstufe. Gleiche Bereitschaft bei weniger Anschlussleistung
+ist ein moeglicher Nutzen. Ein Vorteil einer Regel oder Batterie wird nicht erzwungen.
+
+## Referenz und Quellen
+
+Abgegrenzter **synthetischer Vorfeldbereich**, nicht der gesamte Flughafen Muenchen.
+180 Ankuenfte und 180 Abfluege je Tag, drei Tage mit kontinuierlichen Fahrzeug-
+und Speicherzustaenden. Drei Wellen von jeweils 60 Abfluegen in drei Stunden,
+55 Minuten angenommene Bodenzeit. Keine Codeshares oder reale Flugzeugumlaeufe.
+Synthetische S-Zeilen tragen die Abflugzeit korrekt in der ersten Zeitspalte.
+
+| Bestandteil | Festlegung | Herkunft |
+| --- | --- | --- |
+| Flotte | 20 Busse, 35 Gepaeckschlepper, 10 Flugzeugschlepper, 35 GPUs | Annahme, insgesamt 100 |
+| Gepaeckschlepper | 7,7 kWh/Auftrag, 50 kWh Batterie | He et al., Tabelle 1, Narrow-body |
+| Flugzeugschlepper | 15,6 kWh/Auftrag, 72 kWh Batterie | He et al., Tabelle 1, Narrow-body |
+| GPU | 50,6 kWh/Auftrag, 160 kWh Batterie | He et al., Tabelle 1, Narrow-body |
+| Bus | 8 kWh/Auftrag, 300 kWh Batterie, 35 % Abdeckung | Annahme, nicht aus He et al. |
+| Ladepunkte | 8 / 12 / 4 / 14; 80 / 22 / 80 / 50 kW | Referenzlayout-Annahme |
+| GPU-Service | 40 Minuten, 5 Minuten Rueckkehr, Start 55 Minuten vor Abflug | Annahme, kein gemessener Umlauf |
+| Grundlast / PV | 250 kW / 500 kWp, angenommener PV-Peakfaktor 0,2 | lokaler Bereich, schwache PV; keine Wetterdaten |
+| Parken | 40 synthetische Vorgange je Tag, je 11 kW | Annahme, konkurrierende Last |
+| BHKW | keines im abgegrenzten Bereich | Systemgrenze, nicht der Muenchner Campus |
+| Speicher | Kapazitaet einstellbar, Leistung C/2, Anfang 50 %, Reserve 10 % | Annahme |
+
+He et al. (2026), https://doi.org/10.1038/s41467-026-71125-4, liefert die
+angegebenen Energie-/Batteriewerte, nicht unser Flottenlayout oder eine
+Muenchner Kalibrierung. Anders als dort werden hier keine Fahrzeuge zum
+Erreichen eines Ergebnisses hinzugefuegt. Leijon et al. (EVS35, 2022) stuetzt
+die minutenweise Leistungsbilanz und die getrennte Betrachtung von PV,
+Laden und Speicher. Miller/Rutledge (2025), WSP (2019) und Siemens (2024)
+liefern System- und Planungsfragen, keine kalibrierten Betriebsparameter.
+Keine fremden Programmteile oder US-Ergebnisdaten wurden uebernommen.
+
+Die historische Ausstattung mit zehn GPU-Ladepunkten kann mit den hoeheren
+literaturbasierten Einsatzenergien nicht alle Fahrzeuge bis Mitternacht
+wieder aufladen. 14 GPU-Punkte sind deshalb eine explizite Annahme des neuen
+Referenzlayouts. Sie sind in allen drei Varianten identisch. Die
+nicht-elektrische Kontrollrechnung muss alle Aufgaben ohne Ressourcenengpass
+erfuellen, sonst wird keine Anschlussleistung empfohlen.
+
+## Erfolgsvertrag
+
+Eine Anschlussstufe besteht nur, wenn gleichzeitig gilt:
+
+- Jeder Fahrzeugauftrag ist bis zu seiner modellierten Frist fertig.
+- Alle Parkauftraege sind vollstaendig geladen, die Grundlast ist versorgt.
+- Jedes elektrische Fahrzeug erreicht am Ende seine individuelle Anfangsenergie
+  (85 % SOC); die Batterie erreicht mindestens ihren Anfangsinhalt (50 %).
+- Die unabhaengigen Fahrzeug- und Speicherbilanzen stimmen.
+
+Die Suche testet aufsteigende Stufen, ohne monotones Verhalten vorauszusetzen.
+Stufen unter einer notwendigen mittleren Energiebilanz werden analytisch
+ausgeschlossen; dieser Grenzwert steht als `energy_lower_bound_kw` im Nachweis.
+Teilweise elektrische Klassen werden dabei konservativ nicht als elektrische
+Pflichtenergie angerechnet. Es gibt kein Guthaben aus Anfangsladung.
+`not_found` bedeutet kein Nachweis bis 8 MW, nicht technisch unmoeglich.
+
+Die neue Referenz vergibt Aufgaben zuerst an das laengste freie geeignete
+Fahrzeug. Dadurch werden elektrische Fahrzeuge nicht wie bei der alten
+SOC-Maximum-Regel systematisch vor nicht-elektrischen eingesetzt. Der
+Antriebsmix und saemtliche Auftraege sind pro Vergleich identisch.
+
+`airport_electrification_v2` fuehrt drei Tage ohne SOC-Reset durch. Das ist ein
+begrenzter Wiederholbarkeitstest, **kein** Jahres-, Saison-, Netzschutz-,
+CO2- oder Wirtschaftlichkeitsnachweis. Endzustaende je Fahrzeug werden im
+gespeicherten `coupled-evidence.json` mitgeliefert. Der Server puffert nur
+deterministische Suchergebnisse im begrenzten Prozessspeicher.
+
+## Historischer Vertrag v1
+
+Die folgenden Angaben dokumentieren die vorherige Demo. Gespeicherte v1-Welten
+bleiben unveraendert nachrechenbar. Auch die separat erreichbare alte
+Flottenerweiterungs-Demo behaelt ihren urspruenglichen Tag samt historischen
+Zeitannahmen; nur der neue Standardeinstieg verwendet die korrigierte Referenz.
 
 Die Startseite untersucht die Elektrifizierung einer bestehenden Flotte von
 100 Fahrzeugen. Der Elektroanteil ersetzt nicht-elektrische Fahrzeuge; er

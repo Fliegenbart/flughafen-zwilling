@@ -17,6 +17,7 @@ from .coupled_models import (
     COUPLED_DOMAIN,
     ELECTRIFICATION_ENGINE_VERSION,
     ENGINE_VERSION,
+    GRID_SIZING_ENGINE_VERSION,
     LEGACY_ENGINE_VERSIONS,
     CoupledWorld,
 )
@@ -39,7 +40,7 @@ def validate_coupled_inputs(
             f"aktuelle Engine {ENGINE_VERSION} rechnet anders. Neuen Vergleich erzeugen.",
         )
     if meta.get("calibrated") is not False or meta.get("engine_version") not in (
-        ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION,
+        ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION,
     ):
         raise ValueError("Engine/Unkalibriert-Metadaten widersprechen dem Kopplungsmodell")
     if meta.get("flight_plan_usage") != "drives_explicit_hypothetical_missions":

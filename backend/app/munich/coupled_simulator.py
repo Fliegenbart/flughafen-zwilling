@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import math
 from bisect import bisect_left
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .coupled_models import (
+    GRID_SIZING_ENGINE_VERSION,
     CoupledKpis,
     CoupledPolicy,
     CoupledWorld,
@@ -40,6 +41,7 @@ class CoupledResult:
     vehicles: list[dict]
     series: list[dict[str, float]]
     parking: list[dict]
+    terminal_vehicles: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -63,6 +65,7 @@ class Vehicle:
 
 def simulate_coupled(
     world: CoupledWorld, plan: FlightPlanSnapshot, policy: CoupledPolicy,
+    *, capture_traces: bool = True,
 ) -> CoupledResult:
     if policy not in {"uncontrolled", "mission_priority"}:
         raise ValueError("Nicht unterstuetzte Regel")
@@ -80,6 +83,7 @@ def simulate_coupled(
               for spec in world.config.fleets}
     evidence = [{
         **m.model_dump(), "flight_number": source[m.source_entry_id].flight_number,
+        **({"service_day": m.service_day} if world.config.repeat_days > 1 else {}),
         "remote_airport_iata": source[m.source_entry_id].counterpart_iata,
         "source_pages": source[m.source_entry_id].source_pages,
         "source_plan_sha256": plan.content_sha256, "vehicle_id": None,
@@ -119,19 +123,26 @@ def simulate_coupled(
                and world.missions[release_idx].release_min <= minute):
             pending.add(release_idx)
             release_idx += 1
+        idle_by_kind = {kind: [v for v in fleet if v.mission is None]
+                        for kind, fleet in fleets.items()}
         # Both policies use this same non-preemptive EDF service dispatcher.
         for i in sorted(pending, key=lambda i: (
             world.missions[i].deadline_min, world.missions[i].release_min,
             world.missions[i].mission_id,
         )):
             mission, row = world.missions[i], evidence[i]
-            idle = [v for v in fleets[mission.kind] if v.mission is None]
+            idle = idle_by_kind[mission.kind]
             capable = [v for v in idle if not v.electric
                        or v.energy + EPS >= mission.energy_kwh + v.reserve]
             if not capable:
                 row["resource_wait_min" if not idle else "energy_wait_min"] += 1
                 continue
-            v = min(capable, key=lambda v: (-v.energy, v.id))
+            # The mixed-fleet reference must not turn "50% electric vehicles" into
+            # electric-first dispatch. Older engines retain their original rule.
+            v = min(capable, key=(lambda v: (v.idle_since, v.id))
+                    if world.engine_version == GRID_SIZING_ENGINE_VERSION
+                    else (lambda v: (-v.energy, v.id)))
+            idle.remove(v)
             v.mission = i
             v.busy_until = minute + mission.duration_min + mission.return_min
             row.update(vehicle_id=v.id, actual_start_min=minute,
@@ -202,7 +213,8 @@ def simulate_coupled(
                                or v.energy > v.spec.battery_capacity_kwh + EPS):
                 violations += 1
                 raise RuntimeError("Fahrzeug-SOC/Reserve verletzt")
-            if (minute + 1 - world.start_min) % 5 == 0 or minute + 1 == world.end_min:
+            if capture_traces and ((minute + 1 - world.start_min) % 5 == 0
+                                   or minute + 1 == world.end_min):
                 traces.append({
                     "minute": minute + 1, "vehicle_id": v.id, "kind": v.spec.kind,
                     "energy_kwh": v.energy if v.electric else None,
@@ -238,13 +250,14 @@ def simulate_coupled(
                              and row["resource_wait_min"] else "energy" if row["energy_wait_min"]
                              else "resource" if row["resource_wait_min"] else "none")
     departures = []
-    by_entry: dict[str, list[dict]] = {}
+    by_entry: dict[tuple[str, int], list[dict]] = {}
     for row in evidence:
-        by_entry.setdefault(row["source_entry_id"], []).append(row)
-    for entry in plan.rows:
+        by_entry.setdefault((row["source_entry_id"], row.get("service_day", 0)), []).append(row)
+    for entry, day in ((entry, day) for day in range(world.config.repeat_days)
+                       for entry in plan.rows):
         if entry.direction != "departure":
             continue
-        tasks = by_entry.get(entry.entry_id, [])
+        tasks = by_entry.get((entry.entry_id, day), [])
         if not tasks:
             continue
         departures.append({
@@ -255,6 +268,7 @@ def simulate_coupled(
             "delay_is_lower_bound": any(m["delay_is_lower_bound"] for m in tasks),
             "mission_ids": [m["mission_id"] for m in tasks],
             "source_plan_sha256": plan.content_sha256,
+            **({"service_day": day} if world.config.repeat_days > 1 else {}),
         })
     completed = [row for row in evidence if row["actual_complete_min"] is not None]
     on_time = sum(row["deadline_met"] for row in evidence)
@@ -335,6 +349,13 @@ def simulate_coupled(
         readiness_by_task=readiness,
         energy_wait_share_pct=share(energy_wait_total, energy_wait_total + resource_wait_total),
         bottleneck=bottleneck, model_warnings=warnings,
+        **({
+            "vehicle_recharge_deficit_kwh": clean(math.fsum(max(
+                0, v.spec.battery_capacity_kwh * v.spec.initial_soc_pct / 100 - v.energy)
+                for v in electric_fleet)),
+            "storage_recharge_deficit_kwh": clean(max(
+                0, supply.kpis.battery_initial_kwh - supply.kpis.battery_final_kwh)),
+        } if world.engine_version == GRID_SIZING_ENGINE_VERSION else {}),
     )
     parking = [{**job.model_dump(), "delivered_kwh": job.energy_kwh - remaining[i],
                 "unmet_kwh": remaining[i], "ready_at_min": ready.get(i), "deadline_met": i in ready}
@@ -350,4 +371,8 @@ def simulate_coupled(
     energy.background_unserved_kwh = clean(energy.background_unserved_kwh)
     return CoupledResult(
         world.world_hash, kpis, energy, evidence, departures, traces, series, parking,
+        [{"vehicle_id": v.id, "kind": v.spec.kind, "electric": v.electric,
+          "initial_kwh": (v.spec.battery_capacity_kwh * v.spec.initial_soc_pct / 100
+                          if v.electric else 0), "final_kwh": v.energy}
+         for v in vehicles],
     )
