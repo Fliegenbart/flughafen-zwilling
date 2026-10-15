@@ -1,34 +1,26 @@
-# Flughafen-Demo: ein Einstieg, eine Frage
+# Flughafen-Demo: bestehende Flotte elektrifizieren
 
-Die Standardadresse startet direkt die serverseitige Simulation:
-**Mehr elektrische Fahrzeuge. Reicht die Stromversorgung?**
+Die Startadresse zeigt drei Loesungen fuer dieselbe Gesamtflotte von 100
+Fahrzeugen: direkt laden, gesteuert laden, gesteuert laden mit Speicher.
 
 ## Vorfuehrung in zwei Minuten
 
-1. Ausgangslage abwarten: synthetischer Demonstrationstag mit Muenchen als Referenz.
-2. Zusaetzliche Elektrofahrzeuge auf 20 stellen. Nach jeder Aenderung die fertige
-   Berechnung abwarten; waehrenddessen stehen die Variantenwerte auf „Berechnet“.
-3. Ungedeckten Ladebedarf, Abfertigungen mit Wartezeit und hoechste Netzlast mit
-   der unveraenderten Ausgangslage vergleichen.
-4. Netzanschluss oder Batteriespeicher veraendern und denselben Tag neu berechnen.
-5. „Auf heute zuruecksetzen“ stellt alle Ausgangswerte wieder her.
+1. Den ersten serverseitigen Vergleich abwarten.
+2. Elektroanteil einstellen. Elektrische Fahrzeuge ersetzen nicht-elektrische;
+   die Gesamtzahl bleibt 100. Der neue Stand wird erst nach Klick auf
+   „Drei Varianten berechnen“ ausgewertet.
+3. Rechtzeitige Abfertigungen, energiebedingte Warteminuten und hoechsten
+   Netzbezug nebeneinander vergleichen.
+4. Anschluss oder Speichergroesse aendern und erneut rechnen. Der Speicher
+   wirkt ausschliesslich in Variante 3.
+5. Eine Variante fuer die optionale Kurve und den Messdaten-Abgleich waehlen.
 
-Mehr Fahrzeuge bedeuten hier eine Erweiterung der angenommenen elektrischen
-Flotte bei gleichen Einsatzauftraegen, keine modellierte Umruestung einer
-Dieselflotte. Mehr Fahrzeuge koennen die Verfuegbarkeit verbessern und zugleich
-mehr Ladeenergie verlangen. Ergebnisse sind keine gemessenen Muenchner Betriebsdaten.
+Kein Verbesserungseffekt wird vorausgesetzt. Wenn Fahrzeuge statt Ladestrom
+fehlen, kann die Bereitschaft trotz anderer Ladestrategie gleich bleiben.
+Die Demo macht diesen Fall sichtbar. Alle Kennzahlen gelten fuer das
+synthetische, unkalibrierte Modell und sind keine reale Flug-OTP.
 
-## Vertiefung bei Bedarf
-
-- „Auch Photovoltaik veraendern“ oeffnet den vierten Regler.
-- „Alle Kennzahlen und Berechnungsnachweis“ zeigt Detailwerte, IDs und Hashes.
-- „Tagesverlauf“ zeigt die Leistungs- und Abfertigungskurve.
-- „Mit eigenen Daten weiterpruefen oder Ergebnis mitnehmen“ oeffnet Export und
-  Uebergabe zum bestehenden Messdaten-Abgleich.
-- „Weitere Werkzeuge“ fuehrt zu Quellen, Projektansichten, Szenarien,
-  Messdaten-Abgleich und der erhaltenen FlexLab Workbench.
-- „Eigene Projekte und weitere Untersuchungen“ erhaelt Projektanlage und Liste.
-
-Das Modell bleibt unkalibriert. Wartezeiten beziehen sich auf modellierte
-Abfertigungen und sind keine Flug-OTP. Strombedarf und Einsatzbereitschaft muessen
-zusammen bewertet werden; geringerer Netzbezug allein ist kein besseres Ergebnis.
+[Vergleichsvertrag, Grenzen und Schnittstellen](ELECTRIFICATION_COMPARISON.md).
+Unter „Weitere Werkzeuge“ bleiben die bisherige Flottenerweiterung, Projekte,
+Szenarien, Quellen und FlexLab erhalten. Der neue Vergleich ersetzt diese
+Funktionen nicht. Keine Hardware wird angesteuert.

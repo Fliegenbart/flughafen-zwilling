@@ -25,6 +25,12 @@ from . import library
 from .assets import MAX_IMPORT_BYTES as ASSET_IMPORT_LIMIT
 from .assets import AssetsRequest, AssetStore
 from .demo import DemoSimulationRequest, materialize_demo_run, simulate_demo
+from .electrification import (
+    ElectrificationRequest,
+    ElectrificationRunRequest,
+    compare_electrification,
+    prepare_electrification,
+)
 from .live import PreviewRequest, preview
 from .situation import build_situation, empty_situation
 from .variants import VariantRequest, VariantRunRequest, VariantService, fleet_summary
@@ -851,6 +857,17 @@ def create_router(storage, lab_service, plans, base_dir: Path | None = None,
     def demo_simulation(body: DemoSimulationRequest | None = None) -> dict:
         """Public stateless synthetic preview; it neither reads nor writes a project."""
         return simulate_demo(body or DemoSimulationRequest())
+
+    @router.post("/demo/electrification")
+    def electrification_comparison(body: ElectrificationRequest) -> dict:
+        return compare_electrification(body)
+
+    @router.post("/demo/electrification/runs", response_model=RunStatus, status_code=202)
+    def materialize_electrification(body: ElectrificationRunRequest) -> RunStatus:
+        if service is None or enqueue is None:
+            raise HTTPException(status_code=503, detail="Run-Service nicht verfuegbar.")
+        return materialize_demo_run(DemoSimulationRequest(), service, enqueue,
+                                   prepared=prepare_electrification(body, body.solution))
 
     @router.post("/demo/simulation/runs", response_model=RunStatus, status_code=202)
     def materialize_demo_simulation(body: DemoSimulationRequest | None = None) -> RunStatus:

@@ -206,6 +206,7 @@ def simulate_demo(request: DemoSimulationRequest) -> dict:
 
 def materialize_demo_run(
     request: DemoSimulationRequest, service: RunService, enqueue: Callable[[str], None],
+    *, prepared: tuple | None = None,
 ) -> RunStatus:
     """Persist one frozen synthetic SIL run without creating a project or adapter binding."""
     with _MATERIALIZATION_LOCK:
@@ -213,14 +214,14 @@ def materialize_demo_run(
         if len(pending) >= DEMO_RUN_QUEUE_LIMIT:
             raise HTTPException(status_code=429, detail="Run-Queue voll. Runs abwarten.")
         try:
-            plan, config, policy, world, changes = _prepare_demo(request)
+            plan, config, policy, world, changes = prepared or _prepare_demo(request)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=f"invalid_demo_input: {exc}") from exc
         materialization_id = uuid4().hex
         scenario_id = f"demo_simulation_{materialization_id}_v1"
         model_id = f"demo_simulation_model_{materialization_id}_v1"
         input_hash = _canonical_hash({
-            "engine_version": ENGINE_VERSION,
+            "engine_version": world.engine_version,
             "source_plan_sha256": plan.content_sha256,
             "world_hash": world.world_hash,
             "config": config.model_dump(mode="json"),
@@ -247,7 +248,7 @@ def materialize_demo_run(
             parameter_set={"policy": policy},
             calibration_meta={
                 "calibrated": False,
-                "engine_version": ENGINE_VERSION,
+                "engine_version": world.engine_version,
                 "coupled_world": world.model_dump(mode="json"),
                 "flight_plan_snapshot": plan.model_dump(mode="json"),
                 "flight_plan_usage": "drives_explicit_hypothetical_missions",

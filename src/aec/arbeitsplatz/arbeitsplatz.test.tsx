@@ -86,36 +86,4 @@ describe("Arbeitsplatz", () => {
     fireEvent.click(screen.getByRole("button", { name: "Auf heute zurücksetzen" }));
     expect(await screen.findByRole("img", { name: /fehlen bis zu/ })).toBeInTheDocument();
   });
-  it("oeffnet die Startseite direkt mit drei Reglern und Ergebnisvergleich", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockImplementation(
-        async () =>
-          new Response(
-            JSON.stringify({
-              ...reference.basis,
-              departures: reference.departures,
-              kpis: reference.kpis,
-              calculation_id: "focused-demo",
-              input_hash: "a".repeat(64),
-              engine_version: "airport_coupled_v2",
-            }),
-          ),
-      ),
-    );
-    window.history.replaceState(null, "", "/");
-    render(<AirportEnergyCheck basePath="/" />);
-    expect(await screen.findByText("Was soll sich ändern?")).toBeVisible();
-    expect(screen.getAllByRole("slider").filter((slider) => !slider.closest("details"))).toHaveLength(3);
-    expect(screen.getByRole("slider", { name: "Photovoltaik" })).not.toBeVisible();
-    expect(screen.getByText("Ungedeckter Ladebedarf")).toBeVisible();
-    expect(screen.getByText("Abfertigungen mit Wartezeit")).toBeVisible();
-    expect(screen.getByText("Höchste Netzlast")).toBeVisible();
-    expect(
-      screen.getByText("Eigene Projekte und weitere Untersuchungen").closest("details"),
-    ).not.toHaveAttribute("open");
-    expect(screen.getByRole("link", { name: "Messdaten-Abgleich" })).not.toBeVisible();
-    fireEvent.click(screen.getByText("Weitere Werkzeuge"));
-    expect(screen.getByRole("link", { name: "Messdaten-Abgleich" })).toBeVisible();
-  });
 });

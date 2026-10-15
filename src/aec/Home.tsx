@@ -8,7 +8,7 @@ import Link from "./Link";
 import { SAMPLE_PROJECT } from "./sample";
 import type { Project } from "./types";
 import "./home-entry.css";
-import Arbeitsplatz from "./arbeitsplatz/Arbeitsplatz";
+import ElectrificationStudy from "./arbeitsplatz/ElectrificationStudy";
 
 const FLOW = ["Flughafentag", "Engpass", "Varianten", "Prüfplan"];
 const QUESTIONS = [
@@ -29,7 +29,7 @@ const QUESTIONS = [
 export default function Home() {
   return (
     <>
-      <Arbeitsplatz route={{ page: "arbeitsplatz", projekt: SAMPLE_PROJECT.id }} />
+      <ElectrificationStudy />
       <details className="ap-projects" id="weitere-projekte">
         <summary>Eigene Projekte und weitere Untersuchungen</summary>
         <div className="aec">

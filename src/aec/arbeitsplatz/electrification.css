@@ -1,0 +1,125 @@
+.es .ap-intro h1 {
+  font-size: clamp(32px, 4vw, 58px);
+}
+.es .ap-intro {
+  padding-top: 30px;
+}
+.es .ap-lever small {
+  color: var(--ap-muted);
+  font-size: 12px;
+}
+.es-primary {
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  background: #08766b;
+  font: inherit;
+  cursor: pointer;
+}
+.es button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.es-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.es-option {
+  min-width: 0;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #cbdada;
+  border-radius: 14px;
+}
+.es-option[data-selected] {
+  border-color: #08766b;
+  box-shadow: inset 0 3px #08766b;
+}
+.es-option h3 {
+  min-height: 54px;
+  margin: 10px 0;
+  font-size: 22px;
+  letter-spacing: -0.025em;
+}
+.es-option > p {
+  font-size: 13px;
+  color: var(--ap-muted);
+  min-height: 57px;
+}
+.es-option dl {
+  margin: 24px 0;
+}
+.es-option dt {
+  color: var(--ap-muted);
+  font-size: 12px;
+}
+.es-option dd {
+  margin: 4px 0 18px;
+  font-size: 27px;
+  font-weight: 500;
+}
+.es-option .es-delta {
+  border-top: 1px solid #dbe5e3;
+  padding-top: 14px;
+  min-height: 72px;
+  color: #07594e;
+}
+.es-status {
+  font-size: 13px;
+  padding: 10px 0;
+  color: #08766b;
+}
+.es-fleet {
+  border-collapse: collapse;
+  width: 100%;
+}
+.es-fleet th,
+.es-fleet td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #cbdada;
+}
+.es-option .es-warning {
+  color: #a72c1d;
+}
+@media (max-width: 1100px) {
+  .es-option h3 { min-height: 0; }
+  .es .ap-body {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 18px;
+  }
+  .es-options {
+    grid-template-columns: 1fr;
+  }
+  .es-option > p,
+  .es-option .es-delta {
+    min-height: 0;
+  }
+  .es-option dl {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 8px;
+  }
+  .es-option dd {
+    margin: 0;
+    text-align: right;
+  }
+}
+@media (max-width: 650px) {
+  .es .ap-body {
+    display: block;
+  }
+  .es-option {
+    padding: 18px;
+  }
+  .es-fleet {
+    font-size: 12px;
+  }
+  .es-fleet th,
+  .es-fleet td {
+    padding: 8px 3px;
+  }
+}
