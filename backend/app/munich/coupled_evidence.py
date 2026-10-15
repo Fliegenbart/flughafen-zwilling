@@ -10,7 +10,7 @@ from pathlib import Path
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-from .coupled_models import CoupledWorld
+from .coupled_models import GRID_SIZING_ENGINE_VERSION, CoupledWorld
 from .coupled_simulator import CoupledResult
 from .flightplan import FlightPlanSnapshot
 
@@ -47,6 +47,9 @@ def build_artifacts(
             "evidence_level": result.kpis.evidence_level,
             "world_hash": result.world_hash, "source_plan_sha256": plan.content_sha256,
             "source_pdf_sha256": plan.source_pdf_sha256, "service_date": str(plan.service_date),
+            **({"source_kind": "synthetic_reference",
+                "generated_input_sha256": plan.generated_input_sha256}
+               if plan.evidence_level == 'synthetic_reference' else {}),
             "source_data_date": str(plan.source_data_date), "day_start_utc": world.day_start_utc,
             "time_axis": "elapsed_minutes_from_local_midnight_UTC_continuous",
             "day_minutes": world.day_minutes, "start_min": world.start_min,
@@ -58,6 +61,8 @@ def build_artifacts(
             "sample_semantics": "power_and_state_for_last_interval_energy_at_interval_end",
             "missions": result.missions, "departures": result.departures,
             "parking": result.parking, "series": result.series,
+            **({"terminal_vehicles": result.terminal_vehicles}
+               if world.engine_version == GRID_SIZING_ENGINE_VERSION else {}),
         }, ensure_ascii=True, separators=(",", ":"), allow_nan=False),
     }
 
@@ -93,7 +98,12 @@ def write_coupled_pdf(path: Path, payload: dict) -> None:
          f"Modellhorizont {world['start_min']}..{world['end_min']} min")
     line("Zeitachse: fortlaufende UTC-Minuten relativ zur lokalen Mitternacht; mit Vor-/Nachlauf.")
     line(f"Welt-Hash: {world['world_hash']}")
-    line(f"Flugplan-Hash: {plan['content_sha256']} / PDF-Hash: {plan['source_pdf_sha256']}")
+    if plan.get('evidence_level') == 'synthetic_reference':
+        line("Synthetischer Referenzplan; kein Flugplan-Upload und keine echten Fluege.")
+        line(f"Generator-Input: {plan['generated_input_sha256']}")
+        line(f"Referenzplan-Hash: {plan['content_sha256']}")
+    else:
+        line(f"Flugplan-Hash: {plan['content_sha256']} / PDF-Hash: {plan['source_pdf_sha256']}")
     line(f"Backend/Execution: {payload['build_meta'].get('backend_git_commit', 'n/a')} / "
          f"{payload['build_meta'].get('execution_backend_git_commit', 'n/a')}")
     line("Modellkriterien " + ("erfuellt" if payload["pass_fail"] else "nicht erfuellt")

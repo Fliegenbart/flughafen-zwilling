@@ -1,6 +1,93 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 15.10.2026 (feste Flotte und Elektroanteil)
+## Aktiver Release vom 15.10.2026 (literaturgestuetzter Anschlussvergleich)
+
+Code-Release `deb3d4335b8440b023ea7b8f40ec20c40f921688`, PR #38, aus
+`/opt/airport-releases/deb3d43`. Remote-Commit, sauberer Release-Worktree und
+Container-Build-SHA stimmen ueberein. CI `38728813709` vollstaendig gruen.
+Vorher aktiv: `55d360430f00f1cc3cdfeba86af15871cdddb93a`. Der separate
+Dokumentationscommit aendert nicht den hier angegebenen laufenden Code.
+
+Die Startseite berechnet je Variante die erste erfolgreiche Anschlussstufe
+im 250-kW-Raster bis 8 MW. Alle Varianten haben dieselben 100 Fahrzeuge und
+dieselben Auftraege. Die neue Engine `airport_electrification_v2` verwendet
+eine ausdruecklich synthetische Vorfeld-Referenz mit 180 Ankuenften und 180
+Abfluegen pro Tag, Literaturwerten fuer drei Fahrzeugklassen und drei
+zusammenhaengenden Tagen ohne SOC-Reset. Jedes elektrische Fahrzeug und der
+Speicher muessen am Ende mindestens ihre Anfangsladung erreichen. Der
+vorhandene Anschluss wird separat simuliert; Messdaten-Handoff und
+Detailkennzahlen beziehen sich auf ihn, nicht auf die gesuchte Stufe.
+[Quellen, Annahmen und Grenzen](ELECTRIFICATION_COMPARISON.md).
+
+Live nachgerechnet, jeweils mit 2 MWh Speicher in Variante 3:
+
+| Elektroanteil | Direkt laden | Gesteuert laden | Gesteuert + Speicher |
+| --- | --- | --- | --- |
+| 0 % | 500 kW | 500 kW | 500 kW |
+| 50 % | 1.000 kW | 1.000 kW | 750 kW |
+| 100 % | 1.500 kW | 1.500 kW | 1.250 kW |
+
+Dies sind erfolgreiche Rasterstufen im unkalibrierten Methodenprototyp,
+keine exakten Minima, realen Muenchner Anschlusswerte oder Investitionszusagen.
+Unveraenderte Ergebnisse werden nicht als Optimierungsgewinn dargestellt.
+
+Offline-Sicherung nach Stoppen ausschliesslich des Airport-Backends:
+
+- `/opt/airport-backups/pre-deb3d43-20261015T114458Z.tar.gz`
+- 2.086 Dateien, 750.529.903 unkomprimierte Bytes; Archiv 32.281.884 Bytes,
+  Modus 0600
+- SHA256 `5eaf96df88093c1d40aba9db93078359028a32d7f77b1a2c396212e78b58155e`
+- Wiederherstellung mit Dateihashes geprueft; temporaere Pruefkopie entfernt.
+- Alle 2.086 gesicherten Dateipfade nach dem Start weiter vorhanden.
+
+Abnahme bestanden:
+
+- 339 Backend- und 190 Frontend-Tests, Lint, Typecheck, beide Builds,
+  unveraenderte Archivsnapshots und GitHub-CI inklusive Container-/Proxytests.
+- `smoke_electrification.py --materialize`: 0/50/100 Prozent, gleiche Flotte
+  und Auftraege, Anschlussstufen und Endladezustaende. Gespeicherter SIL-Lauf
+  `471a5c433d81447a883ff1c3f353734d`, Artefakte und Fahrzeug-Endzustaende geprueft.
+- `smoke_public_simulation.py`, `smoke_demo.py --planner --all-cases`,
+  `smoke_flexlab.py` und `smoke_munich.py` ueber oeffentliches HTTPS bestanden.
+  Beide Planner-Referenzen liefern unveraenderte KPIs; kein Gewinn wird behauptet.
+- `smoke_coupled.py` mit vorhandenem Snapshot
+  `8a4a3241a933eb8e4e94efc54a93638f6c2bded7405bbe0efb4702736b53aed7` bestanden,
+  inklusive Welt-/Artefakthashes und PDF. Die alten Modellkriterien bleiben
+  unerfuellt; technische Fertigstellung ist kein fachlicher PASS.
+- `smoke_pilot.py` mit dem neuen 72-Stunden-Lauf direkt gegen
+  `127.0.0.1:8000` im Backend-Container bestanden. Das Skript erlaubt nur
+  lokale Ziele. Synthetischer CSV-Import, Replay, ungueltige Daten und
+  Paket-Hashes geprueft: `NOT_EVALUABLE`, keine empirische Validierung.
+- Live-Browser: Startseite, 50 Prozent bei 750 kW, echte Neuberechnung,
+  Fehlergruende, Quellen, 72-Stunden-Verlauf und Handoff in den
+  Messdaten-Abgleich geprueft. Browser-Lauf
+  `8f2fe9545cce4278bd34c77b50d5da32` hat 4.320 Minutenwerte. Desktop und
+  390 px ohne horizontalen Ueberlauf, keine Browser-/CSP-Fehler,
+  selbst gehostete Schriftdateien HTTP 200. Kein nativer Datei-Upload
+  in diesem Browser-Smoke; der CSV-Pfad wurde separat ueber HTTP geprueft.
+- Alle vorherigen 288 Laeufe, sechs Projekte und zwei Flugplan-Snapshots
+  erhalten. Alle bisherigen Projekt-Overviews und -Lagebilder HTTP 200,
+  Szenario-Bibliothek weiterhin acht Faelle.
+
+Ein Backend-Prozess mit `--workers 1`, healthy, keine Neustarts, kein
+Influx-Token und keine echten Adapter. Keine Fehler im kontrollierten
+Startfenster. Beide bestehenden Airport-Subnetze konfliktfrei, Proxy-Hash
+unveraendert. Die zuvor oeffentlich freigegebene Demo bleibt oeffentlich;
+HTTP leitet auf HTTPS, UI und API antworten ohne Anmeldung. Andere Stacks
+wurden nicht veraendert.
+
+Ruecknahme: Airport-Backend stoppen, aus `/opt/airport-releases/55d3604` mit
+dessen vollstaendigem Build-SHA `up --build -d`, ohne Volume-Loeschung.
+Der unveraenderte alte Code wurde lokal mit einem neuen abgeschlossenen
+Record gestartet; Listen und Lesen funktionieren. Neue Energiewerte liegen
+im erweiterbaren Energy-Teil, nicht im streng validierten Coupled-Teil.
+Noch nicht abgeschlossene Jobs der neuen Engine benoetigen weiterhin den
+neuen Code. Alte v2-Welt, KPIs und alle Leistungsreihen sind unveraendert;
+gemeinsamer Fingerprint
+`a0be2acfa6eeb1100a23a49f925ddae9385b7307f0429088b3d9eb0ec59f6cb3`.
+Sicherung nur bei nachgewiesenem Datenschaden zurueckspielen.
+
+## Release vom 15.10.2026 (feste Flotte und Elektroanteil)
 
 Code-Release `55d360430f00f1cc3cdfeba86af15871cdddb93a`, PR #37, aus
 `/opt/airport-releases/55d3604`. Remote- und Container-SHA stimmen ueberein.

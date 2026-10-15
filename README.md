@@ -3,6 +3,9 @@
 Der aktuelle Einstieg vergleicht die **Elektrifizierung derselben Gesamtflotte**:
 Elektroanteil, Anschluss und Speicher einstellen; direktes Laden, gesteuertes
 Laden und gesteuertes Laden mit Speicher unter gleichen Bedingungen berechnen.
+Der Vergleich bestimmt je Variante die kleinste erfolgreich gepruefte Anschlussstufe
+im 250-kW-Raster: alle Aufgaben rechtzeitig, Grundlast und Parken versorgt, Ladestaende
+nach drei Tagen wiederhergestellt. Der Vorfeldbereich ist synthetisch, nicht kalibriert.
 [Kurzer Vorfuehrablauf](docs/FOCUSED_AIRPORT_DEMO.md) und
 [Modellannahmen](docs/ELECTRIFICATION_COMPARISON.md).
 

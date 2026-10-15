@@ -16,7 +16,7 @@ import MeasurementHandoff from "./MeasurementHandoff";
 
 const DEFAULTS: ElectrificationInputs = {
   electric_share_pct: 50,
-  grid_import_limit_kw: 3500,
+  grid_import_limit_kw: 1500,
   storage_kwh: 2000,
 };
 const OPTIONS = [
@@ -41,6 +41,14 @@ const FLEET_NAMES: Record<string, string> = {
   baggage_tractor: "Gepäckschlepper",
   pushback_tug: "Flugzeugschlepper",
   gpu: "Bodenstromgeräte",
+};
+const CHECK_REASONS: Record<string, string> = {
+  service_deadlines: "Nicht alle Abfertigungsaufträge rechtzeitig",
+  parking_deadlines: "Parkhaus-Ladeziele nicht vollständig erreicht",
+  background_supply: "Grundlast nicht vollständig versorgt",
+  vehicle_recharge: "Fahrzeugladung am Ende nicht wiederhergestellt",
+  storage_recharge: "Speicherladung am Ende nicht wiederhergestellt",
+  energy_balance: "Energiebilanz nicht erfüllt",
 };
 const same = (a: ElectrificationInputs, b: ElectrificationInputs) =>
   a.electric_share_pct === b.electric_share_pct &&
@@ -123,17 +131,18 @@ export default function ElectrificationStudy() {
       <section className="ap-intro">
         <p className="ap-kicker">Elektrifizierung am Flughafen</p>
         <h1>
-          Gleiche Flotte. Mehr elektrisch.
+          Flughafenflotte elektrifizieren.
           <br />
-          <em>Welche Versorgung passt?</em>
+          <em>Wie viel Anschlussleistung braucht sie?</em>
         </h1>
         <p>
-          Sie elektrifizieren einen Teil von 100 Vorfeldfahrzeugen. Vergleichen Sie direktes Laden,
-          gesteuertes Laden und einen zusätzlichen Speicher. Flugplan, Fahrzeuge und Einsatzaufträge
-          bleiben in allen drei Varianten gleich.
+          Vergleichen Sie drei Ladelösungen für dieselben 100 Fahrzeuge. Wir berechnen, welche
+          Anschlussleistung jeweils ausreicht, um dieselben Abfertigungsaufträge zu erfüllen. Danach
+          prüfen Sie, ob Ihr vorhandener Anschluss genügt.
         </p>
         <p className="ap-study-note">
-          München als Referenz · synthetischer Demonstrationstag · unkalibriertes Modell
+          Synthetischer Vorfeldbereich · drei Betriebstage · literaturgestützte Annahmen, nicht
+          kalibriert
         </p>
         <ol className="ap-system" aria-label="Vergleichsablauf">
           <li>
@@ -148,13 +157,13 @@ export default function ElectrificationStudy() {
           </li>
           <li>
             <span>03</span>
-            <strong>Drei Lösungen rechnen</strong>
-            <small>gleicher Tag, gleiche Einsätze</small>
+            <strong>Anschlussbedarf berechnen</strong>
+            <small>gleiche Flotte, gleiche Einsätze</small>
           </li>
           <li>
             <span>04</span>
-            <strong>Auswirkungen vergleichen</strong>
-            <small>Bereitschaft, Wartezeit und Netzlast</small>
+            <strong>Vorhandenen Anschluss prüfen</strong>
+            <small>Betrieb und Wiederaufladung müssen passen</small>
           </li>
         </ol>
       </section>
@@ -190,20 +199,21 @@ export default function ElectrificationStudy() {
             </small>
           </label>
           <label className="ap-lever">
-            <span>Netzanschluss für alle Varianten</span>
+            <span>Ihr vorhandener Netzanschluss</span>
             <output className="ap-lever__value">{powerText(inputs.grid_import_limit_kw)}</output>
             <input
               aria-label="Netzanschluss"
               type="range"
-              min="1500"
+              min="0"
               max="8000"
-              step="100"
+              step="250"
               disabled={busy}
               value={inputs.grid_import_limit_kw}
               onChange={(e) =>
                 setInputs({ ...inputs, grid_import_limit_kw: Number(e.target.value) })
               }
             />
+            <small>250-kW-Schritte für den abgegrenzten Modellbereich</small>
           </label>
           <label className="ap-lever">
             <span>Speicher in Variante 3</span>
@@ -225,7 +235,7 @@ export default function ElectrificationStudy() {
               ? "Drei Varianten werden berechnet …"
               : error
                 ? "Erneut berechnen"
-                : "Drei Varianten berechnen"}
+                : "Anschlussbedarf vergleichen"}
           </button>
           <button
             className="ap-reset"
@@ -240,14 +250,15 @@ export default function ElectrificationStudy() {
           </button>
         </form>
         <section className="ap-main" aria-labelledby="es-results">
-          <h2 id="es-results">2 · Welche Lösung verändert was?</h2>
+          <h2 id="es-results">2 · Gleicher Betrieb. Welcher Anschluss reicht?</h2>
           <p className="ap-result-lead">
-            100 Fahrzeuge, identische Ladepunkte und derselbe Netzanschluss. Gesteuertes Laden
-            priorisiert anstehende Einsätze; der Speicher ergänzt nur Variante 3.
+            Geprüft werden alle Abfertigungsaufträge, Parkhaus und Grundlast. Nach drei Tagen muss
+            die Anfangsladung wieder erreicht sein. Kein Vorteil durch einen leer gefahrenen
+            Speicher.
           </p>
           <p role="status" className="es-status">
             {busy
-              ? "Der Server simuliert alle drei Varianten."
+              ? "Der Server prüft Anschlussstufen für drei Varianten. Das kann etwa eine Minute dauern."
               : error
                 ? "Vergleich nicht verfügbar."
                 : !current
@@ -264,9 +275,11 @@ export default function ElectrificationStudy() {
               const variant = result?.variants[index];
               const metrics = current ? variant?.metrics : undefined;
               const delta =
-                metrics && baseline
-                  ? metrics.ready_departures - baseline.metrics.ready_departures
-                  : 0;
+                current &&
+                variant?.grid_sizing.required_grid_kw != null &&
+                baseline?.grid_sizing.required_grid_kw != null
+                  ? baseline.grid_sizing.required_grid_kw - variant.grid_sizing.required_grid_kw
+                  : null;
               return (
                 <article
                   className="es-option"
@@ -277,34 +290,51 @@ export default function ElectrificationStudy() {
                   <h3>{option.title}</h3>
                   <p>{option.description}</p>
                   <dl>
+                    <dt>Geprüfter Anschlussbedarf</dt>
+                    <dd className="es-required">
+                      {!current || !variant
+                        ? "–"
+                        : variant.grid_sizing.required_grid_kw != null
+                          ? powerText(variant.grid_sizing.required_grid_kw)
+                          : variant.grid_sizing.status === "resource_infeasible"
+                            ? "Fahrzeugengpass"
+                            : `Nicht nachgewiesen bis ${powerText(variant.grid_sizing.max_kw)}`}
+                    </dd>
+                    <dt>Bei Ihrem Anschluss</dt>
+                    <dd className="es-feasibility" data-ok={current && variant?.checks.feasible}>
+                      {!current || !variant
+                        ? "–"
+                        : variant.checks.feasible
+                          ? "Ausreichend im Modell"
+                          : "Nicht ausreichend"}
+                    </dd>
                     <dt>Abfertigungen rechtzeitig bereit</dt>
                     <dd>
                       {metrics
                         ? `${int(metrics.ready_departures)} / ${int(metrics.departures_total)}`
                         : "–"}
                     </dd>
-                    <dt>Warteminuten durch fehlende Ladung</dt>
-                    <dd>{metrics ? int(metrics.energy_wait_min) : "–"}</dd>
-                    <dt>Lademinuten mit Leistungsengpass</dt>
-                    <dd>{metrics ? int(metrics.restricted_charging_min) : "–"}</dd>
                     <dt>Höchster Netzbezug</dt>
                     <dd>{metrics ? powerText(metrics.peak_grid_kw) : "–"}</dd>
                   </dl>
                   <p className="es-delta">
                     {!metrics
                       ? "Ergebnis nach Berechnung"
-                      : index === 0
-                        ? "Vergleichsbasis: direktes Laden"
-                        : delta === 0
-                          ? "Gleiche Bereitschaft wie direktes Laden"
-                          : `${int(Math.abs(delta))} Abfertigungen ${delta > 0 ? "mehr" : "weniger"} rechtzeitig als bei direktem Laden`}
+                      : delta === null
+                        ? "Kein gesicherter Anschlussvergleich verfügbar"
+                        : index === 0
+                          ? "Vergleichsbasis: direktes Laden"
+                          : delta === 0
+                            ? "Gleiche Anschlussstufe wie direktes Laden"
+                            : `${powerText(Math.abs(delta))} ${delta > 0 ? "weniger" : "mehr"} als direktes Laden`}
                   </p>
-                  {metrics && metrics.background_unserved_kwh > 0.01 && (
-                    <p className="es-warning">
-                      Grundlast nicht vollständig versorgt: {int(metrics.background_unserved_kwh)}{" "}
-                      kWh. Die Anschlussannahme reicht nicht für den ganzen Standort.
-                    </p>
-                  )}
+                  {current &&
+                    variant &&
+                    variant.checks.reasons.map((reason) => (
+                      <p className="es-warning" key={reason}>
+                        {CHECK_REASONS[reason] ?? reason}
+                      </p>
+                    ))}
                   <button
                     type="button"
                     className="ap-reset"
@@ -318,22 +348,21 @@ export default function ElectrificationStudy() {
               );
             })}
           </div>
-          {current && result.variants.every((v) => v.metrics.energy_wait_min === 0) && (
+          {current && result.variants.every((v) => v.checks.feasible) && (
             <p className="ap-takeaway">
-              Hier entstehen keine Warteminuten durch fehlende Ladung. Falls Abfertigungen dennoch
-              nicht rechtzeitig bereit sind, begrenzt die Fahrzeugverfügbarkeit den Modellbetrieb.
-              Zusätzliche Stromversorgung allein löst diesen Engpass nicht.
+              Ihr Anschluss reicht in allen drei Varianten. Gleiche Abfertigungsbereitschaft ist
+              hier das Ziel: Entscheidend ist, welche Lösung dafür weniger Anschlussleistung
+              benötigt.
             </p>
           )}
           <p className="ap-accuracy">
-            Die Bereitschaft beschreibt die angenommenen Abfertigungsaufträge, keine reale
-            Flugpünktlichkeit. Warteminuten werden über alle wartenden Aufträge aufsummiert.
-            Lademinuten mit Leistungsengpass betreffen Vorfeld und Parkhaus im 30-stündigen
-            Modellzeitraum.
+            Anschlussbedarf = kleinste erfolgreich simulierte Stufe im 250-kW-Raster bis 8 MW. Keine
+            exakte Mindestleistung, reale Flugpünktlichkeit oder Anschlusszusage. Die Detailwerte
+            gelten für Ihren vorhandenen Anschluss über 72 Stunden.
           </p>
           {current && chosen && baseline && (
             <details className="ap-extra">
-              <summary>Tagesverlauf der gewählten Variante</summary>
+              <summary>Drei-Tage-Verlauf der gewählten Variante</summary>
               <LoadChart
                 result={resultFromExact(chosen.basis)}
                 today={resultFromExact(baseline.basis)}
@@ -352,7 +381,8 @@ export default function ElectrificationStudy() {
             <>
               <p>
                 100 Fahrzeuge · {result.comparison_contract.mission_count} identische
-                Einsatzaufträge · gleicher Startzustand je Fahrzeug.
+                Einsatzaufträge · 180 Ankünfte und 180 Abflüge pro Tag · gleicher Startzustand je
+                Fahrzeug.
               </p>
               <table className="es-fleet">
                 <thead>
@@ -383,6 +413,16 @@ export default function ElectrificationStudy() {
                   <li key={line}>{line}</li>
                 ))}
               </ul>
+              <h3>Methodische Grundlagen</h3>
+              <ul>
+                {result.sources.map((source) => (
+                  <li key={source.url}>
+                    <a href={source.url} target="_blank" rel="noreferrer">
+                      {source.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
               <p className="ap-accuracy">
                 Vergleichs-ID: <code>{result.comparison_id}</code>
               </p>
@@ -393,6 +433,7 @@ export default function ElectrificationStudy() {
           </button>
           {chosen && (
             <MeasurementHandoff
+              key={chosen.calculationId}
               demo
               projectId={SAMPLE_PROJECT.id}
               exact={chosen}

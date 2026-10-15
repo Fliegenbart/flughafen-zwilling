@@ -11,8 +11,10 @@ COUPLED_DOMAIN = "airport_coupled_v1"
 # Energiebilanz, Grundlast-Warnungen und Bereitschaft je Klasse/Aufgabentyp.
 ENGINE_VERSION = "airport_coupled_v2"
 ELECTRIFICATION_ENGINE_VERSION = "airport_electrification_v1"
+GRID_SIZING_ENGINE_VERSION = "airport_electrification_v2"
 LEGACY_ENGINE_VERSIONS = ("airport_coupled_v1",)
-EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2", "airport_electrification_v1"]
+EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2", "airport_electrification_v1",
+                        "airport_electrification_v2"]
 FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu"]
 CoupledPolicy = Literal["uncontrolled", "mission_priority"]
 
@@ -144,6 +146,7 @@ class CoupledConfig(StrictModel):
         "reject_unresolved"
     )
     stress_events: list[StressEvent] = Field(default_factory=list, max_length=20)
+    repeat_days: int = Field(default=1, ge=1, le=3, exclude_if=lambda value: value == 1)
 
     @model_validator(mode="after")
     def unique_fleets(self) -> CoupledConfig:
@@ -171,6 +174,7 @@ class Mission(StrictModel):
     duration_min: int = Field(gt=0)
     return_min: int = Field(ge=0)
     energy_kwh: float = Field(gt=0)
+    service_day: int = Field(default=0, ge=0, le=2, exclude_if=lambda value: value == 0)
 
 
 class ParkingJob(StrictModel):
@@ -191,7 +195,7 @@ class CoupledWorld(StrictModel):
     start_min: int
     end_min: int
     missions: list[Mission] = Field(min_length=1, max_length=10000)
-    parking_jobs: list[ParkingJob] = Field(max_length=275)
+    parking_jobs: list[ParkingJob] = Field(max_length=825)
     warnings: list[str]
     world_hash: str
 

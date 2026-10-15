@@ -12,6 +12,13 @@ from .models import EnergyKpiSummary
 DT_H = 1 / 60
 
 
+def base_power(clock_min: int, p: PowerConfig) -> tuple[float, float, float]:
+    background = p.background_load_kw * (
+        0.92 + 0.08 * math.sin(2 * math.pi * (clock_min - 360) / 1440))
+    sun = max(0, math.sin(math.pi * (clock_min - 360) / 720)) if 360 < clock_min < 1080 else 0
+    return background, p.pv_capacity_kwp * p.pv_peak_factor * sun, p.chp_output_kw
+
+
 @dataclass
 class ChargeRequest:
     id: str
@@ -47,11 +54,7 @@ class PowerBalance:
     ) -> tuple[dict[str, float], dict[str, float]]:
         p = self.config
         clock_min = self.clock[minute].hour * 60 + self.clock[minute].minute
-        background = p.background_load_kw * (
-            0.92 + 0.08 * math.sin(2 * math.pi * (clock_min - 360) / 1440)
-        )
-        sun = max(0, math.sin(math.pi * (clock_min - 360) / 720)) if 360 < clock_min < 1080 else 0
-        pv, chp = p.pv_capacity_kwp * p.pv_peak_factor * sun, p.chp_output_kw
+        background, pv, chp = base_power(clock_min, p)
         grid_cap = min([p.grid_import_limit_kw] + [
             e.grid_import_limit_kw for e in self.events
             if e.start_min <= minute < e.end_min and e.grid_import_limit_kw is not None
