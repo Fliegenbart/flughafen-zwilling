@@ -180,6 +180,8 @@ def test_saved_run_cannot_pass_by_borrowing_starting_vehicle_energy(client):
     record = _completed(client, created.json()['run_id'])
     assert record['summary']['coupled_kpis']['missions_on_time'] == record['summary']['coupled_kpis']['mission_count']
     assert record['status']['pass_fail'] is False
+    assert record['summary']['energy_kpis']['vehicle_recharge_deficit_kwh'] > 0
+    assert 'vehicle_recharge_deficit_kwh' not in record['summary']['coupled_kpis']
 
 
 from test_variants import client  # noqa: E402,F401

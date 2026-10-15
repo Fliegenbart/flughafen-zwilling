@@ -99,3 +99,8 @@ class EnergyKpiSummary(BaseModel):
     battery_discharge_kwh: float = 0
     battery_loss_kwh: float = 0
     balance_error_max_kw: float = 0
+    # Optional additions here remain readable by older, extra-tolerant energy models.
+    vehicle_recharge_deficit_kwh: float | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None)
+    storage_recharge_deficit_kwh: float | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None)

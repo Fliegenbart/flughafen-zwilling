@@ -164,7 +164,7 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
                     "parking_unmet_kwh": result.energy.charging_unmet_kwh,
                     "horizon_hours": result.kpis.model_horizon_hours,
                     "vehicle_recharge_deficit_kwh": round(
-                        result.kpis.vehicle_recharge_deficit_kwh or 0, 3),
+                        result.energy.vehicle_recharge_deficit_kwh or 0, 3),
                     "storage_recharge_deficit_kwh": round(max(
                         0, result.energy.battery_initial_kwh - result.energy.battery_final_kwh), 3),
                 },

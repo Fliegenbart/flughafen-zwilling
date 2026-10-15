@@ -250,7 +250,3 @@ class CoupledKpis(StrictModel):
     energy_wait_share_pct: float | None = None
     bottleneck: Literal["none", "energy", "resource", "energy_and_resource"] | None = None
     model_warnings: list[str] = Field(default_factory=list)
-    vehicle_recharge_deficit_kwh: float | None = Field(
-        default=None, ge=0, exclude_if=lambda value: value is None)
-    storage_recharge_deficit_kwh: float | None = Field(
-        default=None, ge=0, exclude_if=lambda value: value is None)

@@ -349,18 +349,17 @@ def simulate_coupled(
         readiness_by_task=readiness,
         energy_wait_share_pct=share(energy_wait_total, energy_wait_total + resource_wait_total),
         bottleneck=bottleneck, model_warnings=warnings,
-        **({
-            "vehicle_recharge_deficit_kwh": clean(math.fsum(max(
-                0, v.spec.battery_capacity_kwh * v.spec.initial_soc_pct / 100 - v.energy)
-                for v in electric_fleet)),
-            "storage_recharge_deficit_kwh": clean(max(
-                0, supply.kpis.battery_initial_kwh - supply.kpis.battery_final_kwh)),
-        } if world.engine_version == GRID_SIZING_ENGINE_VERSION else {}),
     )
     parking = [{**job.model_dump(), "delivered_kwh": job.energy_kwh - remaining[i],
                 "unmet_kwh": remaining[i], "ready_at_min": ready.get(i), "deadline_met": i in ready}
                for i, job in enumerate(world.parking_jobs)]
     energy = supply.kpis
+    if world.engine_version == GRID_SIZING_ENGINE_VERSION:
+        energy.vehicle_recharge_deficit_kwh = clean(math.fsum(max(
+            0, v.spec.battery_capacity_kwh * v.spec.initial_soc_pct / 100 - v.energy)
+            for v in electric_fleet))
+        energy.storage_recharge_deficit_kwh = clean(max(
+            0, energy.battery_initial_kwh - energy.battery_final_kwh))
     # These legacy charging-demand fields refer only to the fixed parking jobs.
     # Fleet demand is endogenous and reported separately in coupled_kpis.
     energy.charging_requested_kwh = sum(job.energy_kwh for job in world.parking_jobs)
