@@ -4,11 +4,11 @@ from math import ceil
 from typing import Callable
 from zoneinfo import ZoneInfo
 
-from ..munich.coupled_models import CoupledWorld
+from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION, CoupledWorld
 from ..munich.coupled_power import base_power
 from ..munich.coupled_simulator import CoupledResult
 
-GRID_STEP_KW = 250
+GRID_STEP_KW = 25
 GRID_MAX_KW = 8000
 ENERGY_TOLERANCE_KWH = 1e-5
 
@@ -16,8 +16,9 @@ ENERGY_TOLERANCE_KWH = 1e-5
 def minimum_energy_bound(world: CoupledWorld) -> float:
     """Necessary average import, ignoring peaks/losses in storage and partial EV fleets.
 
-    End-SOC gates rule out borrowing initial battery energy. Fully electric classes
-    must receive all mission energy; for mixed classes we conservatively count zero.
+    End-SOC gates rule out borrowing initial battery energy. Legacy models count
+    only fully electric classes. v3 counts exact fixed electric duties, including
+    mixed classes; unlike legacy dispatch it cannot substitute diesel vehicles.
     Surplus generation is optimistically all usable, so this can only be a lower bound.
     """
     p = world.config.power
@@ -31,6 +32,13 @@ def minimum_energy_bound(world: CoupledWorld) -> float:
     electric_kinds = {f.kind for f in world.config.fleets
                       if f.electric_vehicles == f.vehicles and f.vehicles > 0}
     battery_energy = sum(m.energy_kwh for m in world.missions if m.kind in electric_kinds)
+    if world.engine_version == PREDICTIVE_ENGINE_VERSION:
+        from ..munich.charging_plan import duty_roster
+        electric_ids = {f'{f.kind}-{i + 1:03d}' for f in world.config.fleets
+                        for i in range(f.vehicles if f.electric_vehicles is None
+                                       else f.electric_vehicles)}
+        battery_energy = sum(d.energy_kwh for d in duty_roster(world)
+                             if d.vehicle_id in electric_ids)
     battery_energy += sum(job.energy_kwh for job in world.parking_jobs)
     net_kwh += battery_energy / p.charging_efficiency / p.transformer_efficiency
     return max(0, net_kwh / ((world.end_min - world.start_min) / 60))

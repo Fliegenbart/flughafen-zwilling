@@ -1,6 +1,75 @@
-# Anschlussvergleich v2: gleicher Betrieb, gepruefte Anschlussleistung
+# Anschlussvergleich v3: vorausschauend laden, fair vergleichen
 
-Die aktuelle Startseite zeigt je Ladeloesung die kleinste erfolgreich gerechnete
+Die aktuelle Startseite nutzt `airport_electrification_v3`. Sie prueft die
+kleinste erfolgreiche Anschlussstufe in **25-kW-Schritten**. Der vorhandene
+Anschluss wird weiterhin separat simuliert. Die Suche setzt keine Monotonie
+voraus und unterschlaegt keine fehlgeschlagenen Stufen. Das Ergebnis ist ein
+Nachweis fuer diese Modellregel, kein kontinuierliches oder globales Optimum.
+
+## Was sich fachlich aendert
+
+- Alle Varianten teilen dieselben 100 Fahrzeuge, elektrischen Fahrzeug-IDs,
+  Einsatzauftraege, Ladepunkte, Anfangsladungen, Lasten und PV-Annahmen.
+- Zusaetzlich ist jetzt **jeder Auftrag einem festen Fahrzeug zugeordnet**.
+  Die Zuordnung entsteht ohne Kenntnis der Laderegel oder Anschlussleistung.
+  Bei Energiemangel wird gewartet; kein Diesel-Ersatz versteckt einen Engpass.
+  `duty_roster_hash` bindet diese Zuordnung im Vergleich und in den Artefakten.
+- Direktes Laden bedeutet sofortiges Laden freier Fahrzeuge bis zum Ladeziel,
+  mit proportionaler Begrenzung am Anschluss und Transformator.
+- Vorausschauendes Laden berechnet aus allen bekannten kuenftigen Einsaetzen
+  den Energiebedarf vor jedem Einsatz und am Horizontende. Dieser Bedarf wird
+  auf die erwarteten freien Lademinuten verteilt. Ladepunktteilung, Anschluss,
+  Transformator, Grundlast, PV und unveraenderte Parkhauslast gehen in die
+  Prognose der Lademoeglichkeiten ein. Die engste Energiebilanz bestimmt den
+  aktuellen Bedarf; bei knappen Ladepunkten werden die dringendsten Fahrzeuge
+  zuerst angeschlossen. Eine vollstaendige minutenweise Ladepunktrotation
+  wird vor den Fristen als Planungsreserve beruecksichtigt.
+- Der Minuten-Simulator erzwingt danach die wirklichen Ladepunktzahlen,
+  Leistungen, Fahrzeugbelegung, Reserven und Energiefluesse. Eine guenstige
+  Prognose allein fuehrt niemals zu PASS. Jede Anschlussstufe wird ausgespielt.
+- Parkhaus-Laderegel und proportionale Netzbegrenzung sind in beiden Varianten
+  identisch. Ohne elektrische Vorfeldfahrzeuge und ohne stationaeren Speicher
+  muessen die Leistungsreihen exakt gleich sein.
+- Die dritte Variante ergaenzt denselben Planer um den gewaehlten Speicher.
+  Die bestehende Peak-Shaving-Regel und Speicher-Endladung bleiben explizit;
+  dem Planer wird keine fiktive kostenlose Anfangsenergie gutgeschrieben.
+
+## Aussagegrenzen
+
+`known_duty_energy_envelope_v1` ist eine deterministische vorausschauende
+**Heuristik mit vollstaendig bekanntem Einsatzplan**, kein optimaler Solver,
+keine reale Verspaetungsprognose und kein produktiver Anlagenregler. Sie kann
+keinen Vorteil oder auch schlechtere Werte liefern. Einsparungen werden weder
+vorgegeben noch durch geaenderte Flotte, schwache Ladeziele oder versteckte
+Ersatzfahrzeuge erzeugt. Die bekannte Flotte ist keine FMG-Kalibrierung.
+
+Der Erfolgskontrakt bleibt unveraendert: alle Auftraege rechtzeitig, Parken und
+Grundlast versorgt, jedes elektrische Fahrzeug und der Speicher mindestens auf
+Anfangsladung, unabhaengige Bilanzen korrekt. Drei bekannte wiederholte Tage
+sind kein Jahresnachweis; Wetter, Defekte, Ladepunktwechselzeiten, Ladeleistung
+bei hohem SOC und reale Betriebsabweichungen brauchen spaetere Kalibrierung.
+
+Die notwendige mittlere Energieuntergrenze verwendet in v3 die exakt zugeordneten
+elektrischen Auftraege auch bei gemischten Flotten. Unterhalb dieser Untergrenze
+kann der unveraenderte Erfolgskontrakt nicht erfuellt werden. Die Grenze nimmt
+optimistisch vollstaendige Nutzung der Erzeugung an und ist keine Empfehlung.
+
+## Reproduzierbarkeit und Oberflaeche
+
+Neue Laeufe speichern Engine v3, Policy `lookahead`, Welt-Hash, feste
+Fahrzeugzuordnung und Planungsmethode. Historische Engines und ihre gespeicherten
+Werte werden nicht umgeschrieben. Bestehende REST-Endpunkte bleiben erhalten;
+Policy und Engine sind additive Erweiterungen fuer neue Runs. Alte Releases
+koennen neue abgeschlossene Records lesen, aber keine neuen v3-Jobs ausfuehren.
+
+Die Startseite behaelt drei Regler und drei Loesungen. Leistungsbalken verwenden
+eine gemeinsame Skala; weniger, gleich viel und mehr Anschlussleistung werden
+gleichermassen sichtbar. Annahmen, Kurven, Nachweise und Messdaten-Handoff bleiben
+erreichbar. Schlechte oder veraltete Ergebnisse werden nicht als Vorteil gezeigt.
+
+## Historischer Anschlussvergleich v2
+
+Die damalige Startseite zeigte je Ladeloesung die kleinste erfolgreich gerechnete
 Anschlussstufe in 250-kW-Schritten bis 8 MW. Der vorhandene Anschluss wird
 zusaetzlich tatsaechlich simuliert; darunter angezeigte Betriebswerte und der
 Messdaten-Handoff beziehen sich auf diesen vorhandenen Anschluss, nicht auf

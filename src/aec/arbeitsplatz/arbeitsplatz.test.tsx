@@ -1,7 +1,13 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AirportEnergyCheck from "../AirportEnergyCheck";
-import { changesFor, extraVehiclesFor, previewFromApi } from "../api/preview";
+import {
+  chargingPolicyLabel,
+  changesFor,
+  extraVehiclesFor,
+  isChargingPolicy,
+  previewFromApi,
+} from "../api/preview";
 import { resultFromExact } from "../model/livePower";
 import Outcome from "./Outcome";
 import { parseRoute, toSearch } from "../routes";
@@ -51,6 +57,48 @@ describe("Arbeitsplatz", () => {
     });
     const extra = extraVehiclesFor({ ...today, extraVehicles: 10 })!;
     expect(Object.values(extra).reduce((a, b) => a + b, 0)).toBe(10);
+  });
+
+  it("preserves planning provenance while accepting predictive and immediate policies", () => {
+    const preview = previewFromApi({
+      ...reference.basis,
+      metadata: {
+        policy: "lookahead",
+        planning: {
+          method: "known_duty_energy_envelope_v1",
+          perfect_foresight: true,
+          optimality_guaranteed: false,
+          fixed_vehicle_assignments: true,
+          duty_roster_hash: "roster-123",
+          horizon_minutes: 4320,
+          end_soc_enforced_by_replay: true,
+        },
+      },
+    })!;
+
+    expect(isChargingPolicy("uncontrolled")).toBe(true);
+    expect(isChargingPolicy("mission_priority")).toBe(true);
+    expect(isChargingPolicy("lookahead")).toBe(true);
+    expect(isChargingPolicy("optimizer")).toBe(false);
+    expect(chargingPolicyLabel(preview.metadata?.policy)).toBe("Vorausschauend");
+    expect(preview.metadata?.planning).toMatchObject({
+      method: "known_duty_energy_envelope_v1",
+      perfectForesight: true,
+      optimalityGuaranteed: false,
+      fixedVehicleAssignments: true,
+      duty_roster_hash: "roster-123",
+      end_soc_enforced_by_replay: true,
+    });
+    expect(JSON.parse(JSON.stringify(preview.metadata?.planning))).toMatchObject({
+      duty_roster_hash: "roster-123",
+      end_soc_enforced_by_replay: true,
+    });
+
+    const direct = previewFromApi({
+      ...reference.basis,
+      metadata: { planning: { method: "immediate_grid_limited_v1" } },
+    })!;
+    expect(direct.metadata?.planning?.method).toBe("immediate_grid_limited_v1");
   });
 
   it("zeigt den Beispieltag, reagiert auf den Regler und kann zuruecksetzen", async () => {

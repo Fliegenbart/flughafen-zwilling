@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import AirportEnergyCheck from "../AirportEnergyCheck";
 import reference from "../model/__fixtures__/livePowerReference.json";
+import FreeForm from "../views/loesungen/FreeForm";
 
 function payload(share = 50) {
   return {
@@ -15,7 +16,7 @@ function payload(share = 50) {
       fleet: [],
     },
     limitations: ["Synthetischer Tag"],
-    reference: { days: 3, resource_baseline_feasible: true, grid_step_kw: 250 },
+    reference: { days: 3, resource_baseline_feasible: true, grid_step_kw: 25 },
     sources: [{ title: "He et al. (2026)", url: "https://doi.org/10.1038/s41467-026-71125-4" }],
     compute_ms: 100,
     variants: ["direct", "managed", "managed_storage"].map((solution, i) => ({
@@ -29,7 +30,7 @@ function payload(share = 50) {
       grid_sizing: {
         status: "feasible",
         required_grid_kw: 1500 - i * 250,
-        step_kw: 250,
+        step_kw: 25,
         max_kw: 8000,
         evaluations: [],
       },
@@ -74,16 +75,42 @@ it("compares three solutions with a fixed fleet, suppresses stale results and re
     ),
   ).toBeVisible();
   expect(screen.getAllByRole("slider")).toHaveLength(3);
+  expect(
+    screen.getByRole("heading", {
+      name: "Flughafenflotte elektrifizieren.Den Anschlussbedarf vergleichen.",
+    }),
+  ).toBeVisible();
+  expect(screen.getByText("100 Fahrzeuge")).toBeVisible();
+  expect(screen.getByText("Identische Einsätze")).toBeVisible();
+  expect(screen.getByText("Am Ende wieder geladen")).toBeVisible();
   expect(screen.getByRole("heading", { name: "Direkt laden" })).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Gesteuert laden" })).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Gesteuert + Speicher" })).toBeVisible();
+  expect(screen.getByText("Sofort laden, am Anschluss begrenzt.")).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Vorausschauend laden" })).toBeVisible();
+  expect(screen.getByText("Plant Ladezeiten passend zu den nächsten Einsätzen.")).toBeVisible();
+  expect(screen.getByText(/Fahrzeugzuweisung, Anfangsladung und Einsatzplan/)).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Geplant + Speicher" })).toBeVisible();
+  expect(screen.getByRole("slider", { name: "Netzanschluss" })).toHaveAttribute("step", "25");
+  expect(screen.getByText("25-kW-Schritte für den abgegrenzten Modellbereich")).toBeVisible();
+  expect(screen.getAllByRole("meter")).toHaveLength(3);
+  expect(screen.getByText("Skala bis 1.500 kW")).toBeVisible();
+  expect(screen.getByText("1.250 kW")).toBeVisible();
+  expect(screen.getAllByRole("button", { name: "Lastverlauf anzeigen" })).toHaveLength(3);
+  expect(screen.getAllByRole("button", { name: "Lastverlauf anzeigen" })[0]).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
   expect(screen.getAllByText("100 / 100")).toHaveLength(3);
   expect(screen.getByText("500 kW weniger als direktes Laden")).toBeVisible();
   expect(screen.getAllByText("Geprüfter Anschlussbedarf")).toHaveLength(3);
+  expect(screen.queryByRole("heading", { name: "Lastverlauf: Vorausschauend laden" })).toBeNull();
+  fireEvent.click(screen.getAllByRole("button", { name: "Lastverlauf anzeigen" })[1]!);
+  expect(screen.getByRole("heading", { name: "Lastverlauf: Vorausschauend laden" })).toBeVisible();
   fireEvent.change(screen.getByRole("slider", { name: "Elektroanteil" }), {
     target: { value: "70" },
   });
   expect(screen.queryByText("100 / 100")).toBeNull();
+  expect(screen.queryByRole("heading", { name: "Lastverlauf: Vorausschauend laden" })).toBeNull();
+  expect(screen.getAllByRole("meter")[0]).not.toHaveAttribute("aria-valuenow");
   expect(screen.getByText(/Einstellungen geändert/)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Anschlussbedarf vergleichen" }));
   await screen.findByText(
@@ -95,6 +122,16 @@ it("compares three solutions with a fixed fleet, suppresses stale results and re
     grid_import_limit_kw: 1500,
     storage_kwh: 2000,
   });
+});
+
+it("does not offer predictive charging in the legacy variant form", () => {
+  render(<FreeForm busy={false} onAdd={vi.fn()} />);
+  fireEvent.change(screen.getByRole("combobox", { name: "Was ändern Sie?" }), {
+    target: { value: "laderegel" },
+  });
+  expect(screen.queryByRole("option", { name: /Vorausschauend/ })).toBeNull();
+  expect(screen.getByRole("option", { name: /Wer zuerst los muss/ })).toBeVisible();
+  expect(screen.getByRole("option", { name: /Jedes Fahrzeug lädt/ })).toBeVisible();
 });
 
 it("shows a retryable error instead of invented comparison results", async () => {
@@ -111,7 +148,7 @@ it("never presents a failed capacity search as a working solution", async () => 
     grid_sizing: {
       status: "not_found",
       required_grid_kw: null,
-      step_kw: 250,
+      step_kw: 25,
       max_kw: 8000,
       evaluations: [],
     },
@@ -122,6 +159,7 @@ it("never presents a failed capacity search as a working solution", async () => 
     vi.fn(async () => new Response(JSON.stringify(data))),
   );
   render(<AirportEnergyCheck basePath="/" />);
-  expect(await screen.findByText(/Nicht nachgewiesen bis 8,00/)).toBeVisible();
+  expect(await screen.findByText("Nicht nachgewiesen bis 8.000 kW")).toBeVisible();
+  fireEvent.click(screen.getAllByText("Prüfwerte")[2]!);
   expect(screen.getByText("Fahrzeugladung am Ende nicht wiederhergestellt")).toBeVisible();
 });

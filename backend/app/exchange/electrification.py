@@ -9,7 +9,8 @@ from typing import Literal
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..munich.coupled_models import GRID_SIZING_ENGINE_VERSION
+from ..munich.charging_plan import duty_hash
+from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION
 from ..munich.coupled_simulator import simulate_coupled
 from ..munich.coupled_world import build_world
 from .demo import (
@@ -62,8 +63,8 @@ def prepare_electrification(request: ElectrificationRequest, solution: Solution)
     config.power.battery_grid_charge_below_kw = (
         request.grid_import_limit_kw * 0.8 if config.power.battery_capacity_kwh else None
     )
-    policy = "uncontrolled" if solution == "direct" else "mission_priority"
-    world = build_world(plan, config, DEFAULT_SEED, GRID_SIZING_ENGINE_VERSION)
+    policy = "uncontrolled" if solution == "direct" else "lookahead"
+    world = build_world(plan, config, DEFAULT_SEED, PREDICTIVE_ENGINE_VERSION)
     changes = {**request.model_dump(exclude={"solution"}), "solution": solution}
     return plan, config, policy, world, changes
 
@@ -82,6 +83,8 @@ def _contract(plan, config, world) -> dict:
         "non_electric_vehicles": sum(f["non_electric"] for f in fleet),
         "initial_fleet_hash": _canonical_hash(initial),
         "missions_hash": _canonical_hash([m.model_dump() for m in world.missions]),
+        "duty_roster_hash": duty_hash(world),
+        "fixed_vehicle_assignments": True,
         "mission_count": len(world.missions),
         "parking_jobs_hash": _canonical_hash([p.model_dump() for p in world.parking_jobs]),
         "source_plan_sha256": plan.content_sha256,
@@ -169,7 +172,8 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
                         0, result.energy.battery_initial_kwh - result.energy.battery_final_kwh), 3),
                 },
                 "metadata": {"config": config.model_dump(mode="json"), "policy": policy,
-                             "stateless": True, "engine_version": world.engine_version},
+                             "stateless": True, "engine_version": world.engine_version,
+                             "planning": result.planning_meta},
             })
     finally:
         _SIMULATION_LOCK.release()
@@ -177,7 +181,7 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
         "inputs": request.model_dump(), "comparison_contract": contract, "variants": variants,
         "comparison_id": _canonical_hash({"contract": contract, "inputs": request.model_dump(),
             "variants": [v["input_hash"] for v in variants]}),
-        "engine_version": GRID_SIZING_ENGINE_VERSION,
+        "engine_version": PREDICTIVE_ENGINE_VERSION,
         "build_commit": os.environ.get("TWIN_BUILD_GIT_COMMIT", "local-unversioned"),
         "compute_ms": round((perf_counter() - started) * 1000),
         "evidence_level": "synthetic_uncalibrated",
@@ -197,12 +201,16 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
             "und Bodenstromgeraete: He et al. (2026), Tabelle 1, Narrow-body.",
             "Gleiche Einsatzzeiten fuer elektrische und nicht-elektrische Fahrzeuge.",
             "Keine Betankung, Kraftstoffkosten oder Emissionen nicht-elektrischer Fahrzeuge.",
-            "Anschlussbedarf = erste erfolgreiche Stufe im 250-kW-Raster, "
+            "Anschlussbedarf = erste erfolgreiche Stufe im 25-kW-Raster, "
             "keine exakte Mindestleistung oder Anschlusszusage.",
             "Erfolg: alle Aufgaben rechtzeitig, Grundlast und Parken versorgt, "
             "Anfangsladung jedes Fahrzeugs und des Speichers am Ende wiederhergestellt.",
             "Speicher startet mit 50 %, Fahrzeuge mit 85 %; keine geliehene Anfangsenergie, "
             "aber kein saisonaler oder zyklischer Jahresnachweis.",
             "Kein Kosten-, ROI-, Netzschutz- oder Lastflussnachweis.",
+            "Gleiche Fahrzeugzuordnung je Auftrag, kein Ausweichen auf Dieselfahrzeuge.",
+            "Vorausschauende Energieplanung mit vollstaendig bekanntem Einsatzplan; "
+            "Heuristik, keine optimale Loesung oder Prognose realer Verspaetungen.",
+            "Direktes Laden ist ebenfalls am vorhandenen Netzanschluss begrenzt.",
         ],
     }

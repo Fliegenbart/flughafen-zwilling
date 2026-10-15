@@ -1,5 +1,6 @@
 /** Eigene Loesung zusammenstellen: ein Hebel je Loesung. */
 import { useState } from "react";
+import type { ChargingPolicy } from "../../api/preview";
 import { FLEET_LABEL } from "../../model/fleet";
 import type { FleetKind, VariantChanges } from "../../types";
 import { describeChanges } from "./levers";
@@ -18,7 +19,7 @@ export default function FreeForm({
   const [value, setValue] = useState("3");
   const [value2, setValue2] = useState("");
   const [kind, setKind] = useState<FleetKind>("pushback_tug");
-  const [policy, setPolicy] = useState<"mission_priority" | "uncontrolled">("mission_priority");
+  const [policy, setPolicy] = useState<Exclude<ChargingPolicy, "lookahead">>("mission_priority");
 
   const build = (): VariantChanges | null => {
     const n = Number(value.replace(",", "."));

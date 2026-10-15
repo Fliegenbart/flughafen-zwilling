@@ -10,7 +10,7 @@ from pathlib import Path
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-from .coupled_models import GRID_SIZING_ENGINE_VERSION, CoupledWorld
+from .coupled_models import GRID_SIZING_ENGINE_VERSION, PREDICTIVE_ENGINE_VERSION, CoupledWorld
 from .coupled_simulator import CoupledResult
 from .flightplan import FlightPlanSnapshot
 
@@ -62,7 +62,9 @@ def build_artifacts(
             "missions": result.missions, "departures": result.departures,
             "parking": result.parking, "series": result.series,
             **({"terminal_vehicles": result.terminal_vehicles}
-               if world.engine_version == GRID_SIZING_ENGINE_VERSION else {}),
+               if world.engine_version in (GRID_SIZING_ENGINE_VERSION, PREDICTIVE_ENGINE_VERSION)
+               else {}),
+            **({'planning': result.planning_meta} if result.planning_meta else {}),
         }, ensure_ascii=True, separators=(",", ":"), allow_nan=False),
     }
 

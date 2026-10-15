@@ -7,12 +7,54 @@ import { SAMPLE_PROJECT } from "../sample";
 import { enc, isObj, num } from "./parse";
 
 export type DepartureBin = { startMin: number; count: number; delayed: number };
+export const CHARGING_POLICIES = ["uncontrolled", "mission_priority", "lookahead"] as const;
+export type ChargingPolicy = (typeof CHARGING_POLICIES)[number];
+
+export const isChargingPolicy = (value: unknown): value is ChargingPolicy =>
+  typeof value === "string" && (CHARGING_POLICIES as readonly string[]).includes(value);
+
+const CHARGING_POLICY_LABELS: Record<ChargingPolicy, string> = {
+  uncontrolled: "Direkt laden",
+  mission_priority: "Fristenpriorität",
+  lookahead: "Vorausschauend",
+};
+
+export const chargingPolicyLabel = (policy: ChargingPolicy | undefined) =>
+  policy ? CHARGING_POLICY_LABELS[policy] : "Unbekannte Laderegel";
+
+export const PLANNING_METHODS = [
+  "known_duty_energy_envelope_v1",
+  "immediate_grid_limited_v1",
+] as const;
+export type PlanningMethod = (typeof PLANNING_METHODS)[number];
+
+export const isPlanningMethod = (value: unknown): value is PlanningMethod =>
+  typeof value === "string" && (PLANNING_METHODS as readonly string[]).includes(value);
+
+/** Rohmetadaten bleiben für Export und Nachweis erhalten; camelCase ist nur eine Lesehilfe. */
+export type PlanningMetadata = Record<string, unknown> & {
+  method?: PlanningMethod;
+  perfect_foresight?: boolean;
+  optimality_guaranteed?: boolean;
+  fixed_vehicle_assignments?: boolean;
+  duty_roster_hash?: string;
+  horizon_minutes?: number;
+  end_soc_enforced_by_replay?: boolean;
+  perfectForesight?: boolean;
+  optimalityGuaranteed?: boolean;
+  fixedVehicleAssignments?: boolean;
+};
+
+export type PreviewMetadata = Record<string, unknown> & {
+  policy?: ChargingPolicy;
+  planning?: PlanningMetadata;
+};
 
 export type Preview = {
   calculationId?: string;
   inputHash?: string;
   engineVersion?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: PreviewMetadata;
   basis: LiveBasis;
   departures: DepartureBin[];
   delayedDepartures: number | null;
@@ -23,6 +65,31 @@ export type Preview = {
 };
 
 const nums = (v: unknown) => (Array.isArray(v) ? v.map((x) => num(x)) : []);
+
+function metadataFromApi(value: unknown): PreviewMetadata | undefined {
+  if (!isObj(value)) return undefined;
+  const planningRaw = isObj(value.planning) ? value.planning : null;
+  const planning: PlanningMetadata | undefined = planningRaw
+    ? {
+        ...planningRaw,
+        ...(isPlanningMethod(planningRaw.method) ? { method: planningRaw.method } : {}),
+        ...(typeof planningRaw.perfect_foresight === "boolean"
+          ? { perfectForesight: planningRaw.perfect_foresight }
+          : {}),
+        ...(typeof planningRaw.optimality_guaranteed === "boolean"
+          ? { optimalityGuaranteed: planningRaw.optimality_guaranteed }
+          : {}),
+        ...(typeof planningRaw.fixed_vehicle_assignments === "boolean"
+          ? { fixedVehicleAssignments: planningRaw.fixed_vehicle_assignments }
+          : {}),
+      }
+    : undefined;
+  return {
+    ...value,
+    policy: isChargingPolicy(value.policy) ? value.policy : undefined,
+    planning,
+  };
+}
 
 /** Antwort der Vorschau (oder der Beispiel-Referenz) in die Browser-Form bringen. */
 export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview | null {
@@ -38,7 +105,7 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
     calculationId: typeof raw.calculation_id === "string" ? raw.calculation_id : undefined,
     inputHash: typeof raw.input_hash === "string" ? raw.input_hash : undefined,
     engineVersion: typeof raw.engine_version === "string" ? raw.engine_version : undefined,
-    metadata: isObj(raw.metadata) ? raw.metadata : undefined,
+    metadata: metadataFromApi(raw.metadata),
     basis: {
       dayMinutes: num(raw.day_minutes, 1440),
       startMin: num(raw.start_min),

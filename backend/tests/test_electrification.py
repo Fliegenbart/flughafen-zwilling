@@ -4,7 +4,7 @@ from test_demo_materialization import _completed
 from test_variants import client  # noqa: F401
 
 from app.exchange.electrification import ElectrificationRequest, prepare_electrification
-from app.munich.coupled_models import ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION
+from app.munich.coupled_models import ELECTRIFICATION_ENGINE_VERSION, PREDICTIVE_ENGINE_VERSION
 from app.munich.coupled_simulator import simulate_coupled
 from app.munich.coupled_world import build_world
 
@@ -64,7 +64,7 @@ def test_comparison_is_reproducible_and_freezes_three_fair_variants(client):  # 
     assert direct["world_hash"] == managed["world_hash"]
     assert direct["metadata"]["config"]["fleets"] == storage["metadata"]["config"]["fleets"]
     assert [v["policy"] for v in data["variants"]] == [
-        "uncontrolled", "mission_priority", "mission_priority"]
+        "uncontrolled", "lookahead", "lookahead"]
     assert [v["power"]["battery_capacity_kwh"] for v in data["variants"]] == [0, 0, 2000]
     for variant in data["variants"]:
         assert variant["coupled_kpis"]["fleet_energy_balance_error_kwh"] < 1e-6
@@ -83,7 +83,7 @@ def test_selected_variant_is_preserved_in_normal_sil_run(client):  # noqa: F811
     assert record["summary"]["coupled_kpis"] == preview["coupled_kpis"]
     assert record["summary"]["energy_world_hash"] == preview["world_hash"]
     assert record["model_pack_snapshot"]["calibration_meta"]["engine_version"] == (
-        GRID_SIZING_ENGINE_VERSION)
+        PREDICTIVE_ENGINE_VERSION)
 
 
 @pytest.mark.parametrize("payload", [

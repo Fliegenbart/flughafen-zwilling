@@ -23,17 +23,17 @@ const OPTIONS = [
   {
     id: "direct",
     title: "Direkt laden",
-    description: "Freie Fahrzeuge laden ohne Einsatzpriorität.",
+    description: "Sofort laden, am Anschluss begrenzt.",
   },
   {
     id: "managed",
-    title: "Gesteuert laden",
-    description: "Ladeleistung wird nach anstehenden Einsatzfristen verteilt.",
+    title: "Vorausschauend laden",
+    description: "Plant Ladezeiten passend zu den nächsten Einsätzen.",
   },
   {
     id: "managed_storage",
-    title: "Gesteuert + Speicher",
-    description: "Gleiche Laderegel, ergänzt um den gewählten Batteriespeicher.",
+    title: "Geplant + Speicher",
+    description: "Vorausschauend laden, ergänzt um den gewählten Speicher.",
   },
 ] as const;
 const FLEET_NAMES: Record<string, string> = {
@@ -54,15 +54,20 @@ const same = (a: ElectrificationInputs, b: ElectrificationInputs) =>
   a.electric_share_pct === b.electric_share_pct &&
   a.grid_import_limit_kw === b.grid_import_limit_kw &&
   a.storage_kwh === b.storage_kwh;
+const sizingPowerText = (kw: number) => `${int(kw)}\u00a0kW`;
 
 export default function ElectrificationStudy() {
   const [inputs, setInputs] = useState(DEFAULTS);
   const [result, setResult] = useState<ElectrificationComparison | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState<Solution>("managed");
+  const [selected, setSelected] = useState<Solution | null>(null);
   const active = useRef<AbortController | null>(null);
+  const curve = useRef<HTMLElement | null>(null);
   const current = !!result && same(inputs, result.inputs) && !busy && !error;
+  useEffect(() => {
+    if (selected && current) curve.current?.scrollIntoView?.({ block: "start" });
+  }, [selected, current]);
 
   async function calculate(values: ElectrificationInputs) {
     active.current?.abort();
@@ -89,7 +94,17 @@ export default function ElectrificationStudy() {
   }, []);
 
   const baseline = result?.variants[0];
-  const chosen = result?.variants.find((v) => v.solution === selected);
+  const chosen = selected ? result?.variants.find((v) => v.solution === selected) : undefined;
+  const capacityMax = current
+    ? Math.max(
+        inputs.grid_import_limit_kw,
+        ...result.variants.flatMap((variant) =>
+          variant.grid_sizing.required_grid_kw === null
+            ? []
+            : [variant.grid_sizing.required_grid_kw],
+        ),
+      )
+    : 0;
   function download() {
     if (!current) return;
     const url = URL.createObjectURL(
@@ -128,44 +143,31 @@ export default function ElectrificationStudy() {
           </div>
         </details>
       </header>
-      <section className="ap-intro">
-        <p className="ap-kicker">Elektrifizierung am Flughafen</p>
+      <section className="ap-intro es-hero">
+        <p className="ap-kicker">Airport Energy Check</p>
         <h1>
           Flughafenflotte elektrifizieren.
           <br />
-          <em>Wie viel Anschlussleistung braucht sie?</em>
+          <em>Den Anschlussbedarf vergleichen.</em>
         </h1>
         <p>
-          Vergleichen Sie drei Ladelösungen für dieselben 100 Fahrzeuge. Wir berechnen, welche
-          Anschlussleistung jeweils ausreicht, um dieselben Abfertigungsaufträge zu erfüllen. Danach
-          prüfen Sie, ob Ihr vorhandener Anschluss genügt.
+          Drei Ladestrategien, eine feste Flotte und dieselben Einsätze. Der Vergleich zeigt die
+          kleinste im Modell nachgewiesene Anschlussstufe und prüft Ihren gewählten Anschluss.
         </p>
+        <div className="es-conditions" aria-label="Gemeinsame Vergleichsbedingungen">
+          <span>
+            <strong>100 Fahrzeuge</strong> gleiche Gesamtflotte
+          </span>
+          <span>
+            <strong>Identische Einsätze</strong> gleicher Plan
+          </span>
+          <span>
+            <strong>Am Ende wieder geladen</strong> Fahrzeuge und Speicher
+          </span>
+        </div>
         <p className="ap-study-note">
-          Synthetischer Vorfeldbereich · drei Betriebstage · literaturgestützte Annahmen, nicht
-          kalibriert
+          Synthetischer Vorfeldbereich · literaturgestützte Annahmen · nicht kalibriert
         </p>
-        <ol className="ap-system" aria-label="Vergleichsablauf">
-          <li>
-            <span>01</span>
-            <strong>100 Fahrzeuge</strong>
-            <small>Gesamtflotte bleibt konstant</small>
-          </li>
-          <li>
-            <span>02</span>
-            <strong>Elektroanteil wählen</strong>
-            <small>ersetzt nicht-elektrische Fahrzeuge</small>
-          </li>
-          <li>
-            <span>03</span>
-            <strong>Anschlussbedarf berechnen</strong>
-            <small>gleiche Flotte, gleiche Einsätze</small>
-          </li>
-          <li>
-            <span>04</span>
-            <strong>Vorhandenen Anschluss prüfen</strong>
-            <small>Betrieb und Wiederaufladung müssen passen</small>
-          </li>
-        </ol>
       </section>
       <div className="ap-body">
         <form
@@ -200,20 +202,22 @@ export default function ElectrificationStudy() {
           </label>
           <label className="ap-lever">
             <span>Ihr vorhandener Netzanschluss</span>
-            <output className="ap-lever__value">{powerText(inputs.grid_import_limit_kw)}</output>
+            <output className="ap-lever__value">
+              {sizingPowerText(inputs.grid_import_limit_kw)}
+            </output>
             <input
               aria-label="Netzanschluss"
               type="range"
               min="0"
               max="8000"
-              step="250"
+              step="25"
               disabled={busy}
               value={inputs.grid_import_limit_kw}
               onChange={(e) =>
                 setInputs({ ...inputs, grid_import_limit_kw: Number(e.target.value) })
               }
             />
-            <small>250-kW-Schritte für den abgegrenzten Modellbereich</small>
+            <small>25-kW-Schritte für den abgegrenzten Modellbereich</small>
           </label>
           <label className="ap-lever">
             <span>Speicher in Variante 3</span>
@@ -250,11 +254,10 @@ export default function ElectrificationStudy() {
           </button>
         </form>
         <section className="ap-main" aria-labelledby="es-results">
-          <h2 id="es-results">2 · Gleicher Betrieb. Welcher Anschluss reicht?</h2>
+          <h2 id="es-results">Gleiche Bedingungen. Drei Ladewege.</h2>
           <p className="ap-result-lead">
-            Geprüft werden alle Abfertigungsaufträge, Parkhaus und Grundlast. Nach drei Tagen muss
-            die Anfangsladung wieder erreicht sein. Kein Vorteil durch einen leer gefahrenen
-            Speicher.
+            Alle Varianten teilen Flotte, Fahrzeugzuweisung, Anfangsladung und Einsatzplan. Nach 72
+            Stunden werden Fahrzeug- und Speicherladung wiederhergestellt.
           </p>
           <p role="status" className="es-status">
             {busy
@@ -270,83 +273,111 @@ export default function ElectrificationStudy() {
               {error}
             </p>
           )}
-          <div className="es-options">
-            {OPTIONS.map((option, index) => {
-              const variant = result?.variants[index];
-              const metrics = current ? variant?.metrics : undefined;
-              const delta =
-                current &&
-                variant?.grid_sizing.required_grid_kw != null &&
-                baseline?.grid_sizing.required_grid_kw != null
-                  ? baseline.grid_sizing.required_grid_kw - variant.grid_sizing.required_grid_kw
-                  : null;
-              return (
-                <article
-                  className="es-option"
-                  data-selected={selected === option.id || undefined}
-                  key={option.id}
-                >
-                  <span className="ap-kicker">Variante {index + 1}</span>
-                  <h3>{option.title}</h3>
-                  <p>{option.description}</p>
-                  <dl>
-                    <dt>Geprüfter Anschlussbedarf</dt>
-                    <dd className="es-required">
+          <div className="es-comparison">
+            <div className="es-comparison__head">
+              <div>
+                <p className="ap-kicker">Anschlussbedarf im Modell</p>
+                <p>
+                  Eine gemeinsame Skala macht die geprüften Anschlussstufen direkt vergleichbar.
+                </p>
+              </div>
+              {current && <strong>Skala bis {sizingPowerText(capacityMax)}</strong>}
+            </div>
+            <div className="es-options">
+              {OPTIONS.map((option, index) => {
+                const variant = result?.variants[index];
+                const metrics = current ? variant?.metrics : undefined;
+                const requiredGrid = variant?.grid_sizing.required_grid_kw;
+                const delta =
+                  current && requiredGrid != null && baseline?.grid_sizing.required_grid_kw != null
+                    ? baseline.grid_sizing.required_grid_kw - requiredGrid
+                    : null;
+                return (
+                  <article className="es-option" key={option.id}>
+                    <span className="ap-kicker">Variante {index + 1}</span>
+                    <h3>{option.title}</h3>
+                    <p>{option.description}</p>
+                    <div className="es-capacity">
+                      <span>Geprüfter Anschlussbedarf</span>
+                      <strong className="es-required">
+                        {!current || !variant
+                          ? "–"
+                          : requiredGrid != null
+                            ? sizingPowerText(requiredGrid)
+                            : variant.grid_sizing.status === "resource_infeasible"
+                              ? "Fahrzeugengpass"
+                              : `Nicht nachgewiesen bis ${sizingPowerText(variant.grid_sizing.max_kw)}`}
+                      </strong>
+                      <div
+                        aria-label={`Anschlussbedarf ${option.title}`}
+                        aria-valuemax={current ? capacityMax || undefined : undefined}
+                        aria-valuemin={0}
+                        aria-valuenow={current && requiredGrid != null ? requiredGrid : undefined}
+                        className="es-capacity__bar"
+                        role="meter"
+                        style={
+                          {
+                            "--es-capacity": `${
+                              current && requiredGrid != null && capacityMax > 0
+                                ? (requiredGrid / capacityMax) * 100
+                                : 0
+                            }%`,
+                          } as React.CSSProperties
+                        }
+                      />
+                    </div>
+                    <p className="es-feasibility" data-ok={current && variant?.checks.feasible}>
                       {!current || !variant
-                        ? "–"
-                        : variant.grid_sizing.required_grid_kw != null
-                          ? powerText(variant.grid_sizing.required_grid_kw)
-                          : variant.grid_sizing.status === "resource_infeasible"
-                            ? "Fahrzeugengpass"
-                            : `Nicht nachgewiesen bis ${powerText(variant.grid_sizing.max_kw)}`}
-                    </dd>
-                    <dt>Bei Ihrem Anschluss</dt>
-                    <dd className="es-feasibility" data-ok={current && variant?.checks.feasible}>
-                      {!current || !variant
-                        ? "–"
+                        ? "Ergebnis nach Berechnung"
                         : variant.checks.feasible
-                          ? "Ausreichend im Modell"
-                          : "Nicht ausreichend"}
-                    </dd>
-                    <dt>Abfertigungen rechtzeitig bereit</dt>
-                    <dd>
-                      {metrics
-                        ? `${int(metrics.ready_departures)} / ${int(metrics.departures_total)}`
-                        : "–"}
-                    </dd>
-                    <dt>Höchster Netzbezug</dt>
-                    <dd>{metrics ? powerText(metrics.peak_grid_kw) : "–"}</dd>
-                  </dl>
-                  <p className="es-delta">
-                    {!metrics
-                      ? "Ergebnis nach Berechnung"
-                      : delta === null
-                        ? "Kein gesicherter Anschlussvergleich verfügbar"
-                        : index === 0
-                          ? "Vergleichsbasis: direktes Laden"
-                          : delta === 0
-                            ? "Gleiche Anschlussstufe wie direktes Laden"
-                            : `${powerText(Math.abs(delta))} ${delta > 0 ? "weniger" : "mehr"} als direktes Laden`}
-                  </p>
-                  {current &&
-                    variant &&
-                    variant.checks.reasons.map((reason) => (
-                      <p className="es-warning" key={reason}>
-                        {CHECK_REASONS[reason] ?? reason}
-                      </p>
-                    ))}
-                  <button
-                    type="button"
-                    className="ap-reset"
-                    aria-pressed={selected === option.id}
-                    disabled={!current}
-                    onClick={() => setSelected(option.id)}
-                  >
-                    Für Detailansicht wählen
-                  </button>
-                </article>
-              );
-            })}
+                          ? "Ihr Anschluss: ausreichend im Modell"
+                          : "Ihr Anschluss: nicht ausreichend"}
+                    </p>
+                    <p className="es-delta">
+                      {!metrics
+                        ? "Ergebnis nach Berechnung"
+                        : delta === null
+                          ? "Kein gesicherter Anschlussvergleich verfügbar"
+                          : index === 0
+                            ? "Vergleichsbasis: direktes Laden"
+                            : delta === 0
+                              ? "Gleiche Anschlussstufe wie direktes Laden"
+                              : `${sizingPowerText(Math.abs(delta))} ${delta > 0 ? "weniger" : "mehr"} als direktes Laden`}
+                    </p>
+                    <button
+                      type="button"
+                      className="es-detail-toggle"
+                      aria-pressed={selected === option.id}
+                      aria-controls="es-curve"
+                      disabled={!current}
+                      onClick={() => setSelected(option.id)}
+                    >
+                      Lastverlauf anzeigen
+                    </button>
+                    <details className="es-option__details">
+                      <summary>Prüfwerte</summary>
+                      <dl>
+                        <dt>Abfertigungen rechtzeitig bereit</dt>
+                        <dd>
+                          {metrics
+                            ? `${int(metrics.ready_departures)} / ${int(metrics.departures_total)}`
+                            : "–"}
+                        </dd>
+                        <dt>Höchster Netzbezug</dt>
+                        <dd>{metrics ? powerText(metrics.peak_grid_kw) : "–"}</dd>
+                      </dl>
+                      {current &&
+                        variant &&
+                        variant.checks.reasons.map((reason) => (
+                          <p className="es-warning" key={reason}>
+                            {CHECK_REASONS[reason] ?? reason}
+                          </p>
+                        ))}
+                    </details>
+                  </article>
+                );
+              })}
+            </div>
           </div>
           {current && result.variants.every((v) => v.checks.feasible) && (
             <p className="ap-takeaway">
@@ -356,20 +387,32 @@ export default function ElectrificationStudy() {
             </p>
           )}
           <p className="ap-accuracy">
-            Anschlussbedarf = kleinste erfolgreich simulierte Stufe im 250-kW-Raster bis 8 MW. Keine
-            exakte Mindestleistung, reale Flugpünktlichkeit oder Anschlusszusage. Die Detailwerte
-            gelten für Ihren vorhandenen Anschluss über 72 Stunden.
+            Anschlussbedarf = kleinste erfolgreich simulierte Stufe im{" "}
+            {current ? result.reference.grid_step_kw : 25}-kW-Raster bis 8 MW. Keine exakte
+            Mindestleistung, reale Flugpünktlichkeit oder Anschlusszusage. Die Detailwerte gelten
+            für Ihren vorhandenen Anschluss über 72 Stunden.
           </p>
           {current && chosen && baseline && (
-            <details className="ap-extra">
-              <summary>Drei-Tage-Verlauf der gewählten Variante</summary>
+            <section id="es-curve" ref={curve} aria-labelledby="es-curve-title">
+              <h2 id="es-curve-title">
+                Lastverlauf: {OPTIONS.find((option) => option.id === selected)?.title}
+              </h2>
+              <p>
+                72 Stunden an Ihrem gewählten Anschluss:{" "}
+                {sizingPowerText(inputs.grid_import_limit_kw)}.
+              </p>
+              <p className="ap-accuracy">
+                Dunkel: angeforderte Leistung vor Speicher und Anschlussbegrenzung.
+                {selected !== "direct" && " Hellgrau: direktes Laden zum Vergleich."} Rot:
+                Anschlussgrenze.
+              </p>
               <LoadChart
                 result={resultFromExact(chosen.basis)}
                 today={resultFromExact(baseline.basis)}
                 departures={chosen.departures}
                 changed={selected !== "direct"}
               />
-            </details>
+            </section>
           )}
         </section>
       </div>
@@ -413,6 +456,13 @@ export default function ElectrificationStudy() {
                   <li key={line}>{line}</li>
                 ))}
               </ul>
+              {chosen?.metadata?.planning?.method === "known_duty_energy_envelope_v1" && (
+                <p>
+                  Vorausschauend nutzt den bekannten Fahrplan mit festen Fahrzeugzuweisungen und
+                  Energiehüllen. Das physikalische Replay prüft den Verlauf; daraus folgt keine
+                  globale Optimalitätsgarantie oder Echtzeitsteuerung.
+                </p>
+              )}
               <h3>Methodische Grundlagen</h3>
               <ul>
                 {result.sources.map((source) => (
@@ -444,7 +494,7 @@ export default function ElectrificationStudy() {
               }}
               exactCurrent={current}
               question="Wie gut bildet die gewählte Elektrifizierungsvariante den gemessenen Leistungsverlauf ab?"
-              electrification={{ ...inputs, solution: selected }}
+              electrification={{ ...inputs, solution: chosen.solution }}
             />
           )}
         </section>
