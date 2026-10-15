@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from .coupled_models import (
+    ELECTRIFICATION_ENGINE_VERSION,
     ENGINE_VERSION,
     LEGACY_ENGINE_VERSIONS,
     CoupledConfig,
@@ -37,10 +38,15 @@ def build_world(
     plan: FlightPlanSnapshot, config: CoupledConfig, seed: int,
     engine_version: str = ENGINE_VERSION,
 ) -> CoupledWorld:
-    if engine_version != ENGINE_VERSION and engine_version not in LEGACY_ENGINE_VERSIONS:
+    if engine_version not in (
+        ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION, *LEGACY_ENGINE_VERSIONS,
+    ):
         raise ValueError("Unbekannte Engine-Version der Kopplungswelt")
     verify_snapshot(plan)
     config = CoupledConfig.model_validate(config.model_dump())
+    if (any(f.electric_vehicles is not None for f in config.fleets)
+            and engine_version != ELECTRIFICATION_ENGINE_VERSION):
+        raise ValueError("Gemischte Flotte benoetigt die Elektrifizierungs-Engine")
     if not 0 <= seed <= 2147483647:
         raise ValueError("Ungueltiger Seed")
     if plan.possible_shared_flight_groups and config.shared_group_policy == "reject_unresolved":
@@ -120,9 +126,12 @@ def build_world(
         "Eintrag erzeugt je abgedeckter Klasse einen Auftrag, ohne Gate-/Umlauf-Verknuepfung.",
         "Serviceende ist Aufgabenbereitschaft; Rueckfahrt kann am Horizont noch andauern.",
     ]
-    if engine_version == ENGINE_VERSION:
+    if engine_version in (ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION):
         warnings.append("Parkhausfenster als Ortszeit Europe/Berlin (DST-sicher); "
                         "Ladefrist je Fahrzeug aus der naechsten noch erreichbaren Frist.")
+    if engine_version == ELECTRIFICATION_ENGINE_VERSION:
+        warnings.append("Feste Gesamtflotte; nicht-elektrische Fahrzeuge haben gleiche "
+                        "Einsatzzeiten, ohne Kraftstoff-, Betankungs- oder Emissionsmodell.")
     if plan.possible_shared_flight_groups:
         warnings.append("Mehrfachgruppen bewusst als unabhaengige Nachfrageannahmen verwendet; "
                         "keine bestaetigte Zahl physischer Fluege.")

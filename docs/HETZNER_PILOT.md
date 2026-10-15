@@ -1,6 +1,50 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 13.10.2026 (fokussierte Flughafen-Demo)
+## Aktiver Release vom 15.10.2026 (feste Flotte und Elektroanteil)
+
+Code-Release `55d360430f00f1cc3cdfeba86af15871cdddb93a`, PR #37, aus
+`/opt/airport-releases/55d3604`. Remote- und Container-SHA stimmen ueberein.
+CI `38718935109` vollstaendig gruen. Vorher aktiv: `546af16`.
+
+Die Startseite vergleicht eine konstante Flotte von 100 Fahrzeugen mit
+einstellbarem Elektroanteil. Direktes Laden, gesteuertes Laden und gesteuertes
+Laden mit Speicher teilen Auftraege, Fahrzeug-IDs, Antriebsmix, Start-SOC,
+Ladepunkte und Anschluss. Die neue Engine ist `airport_electrification_v1`;
+bisherige v2-Laeufe bleiben unveraendert. [Modellvertrag](ELECTRIFICATION_COMPARISON.md).
+
+Offline-Sicherung nach Stoppen ausschliesslich des Airport-Backends:
+
+- `/opt/airport-backups/pre-55d3604-20261015.tar.gz`
+- 1.992 Dateien, 33.652.272 Bytes, Modus 0600
+- SHA256 `abf8e99d34f0f4027452874d21f2df599a0c27b7bb1be7516c47d6d6f34f74a1`
+- Wiederherstellung mit Dateihashes geprueft; temporaere Pruefkopie entfernt.
+
+Abnahme: 322 Backend- und 189 Frontend-Tests, Typecheck, Lint, Subpath-Build
+und Archivcheck bestanden. Neue HTTP-Abnahme `smoke_electrification.py
+--materialize`: 0/50/100 Prozent, konstante Flotte/Auftraege, drei Varianten,
+Energiebilanzen und gespeicherter SIL-Lauf
+`46bd451d4a7a4883a03168c46267913f` erfolgreich. Bisherige v2-Welt, KPIs und
+Leistungsreihen vor dem Update exakt gegen den alten Live-Release verglichen.
+Alte oeffentliche Demo-Varianten nach dem Update weiterhin erfolgreich.
+
+Browser lokal und live: drei Regler, Neuberechnung, 0/100 Prozent,
+unveraenderte Gesamtflotte, ausgewaehlter Lauf im Messdaten-Abgleich;
+Desktop und 390 px ohne horizontalen Ueberlauf, Live-Konsole ohne Fehler.
+Bei 100 Prozent und 3,5 MW: 51/47/0 Lademinuten mit Leistungsengpass bei
+direkt/gesteuert/gesteuert mit 2 MWh Speicher. Bereitschaft bleibt 76/310;
+kein betrieblicher Nutzen wird daraus erfunden. FlexLab sowie alle acht
+Airport-Cases, Stabilitaetsfall und beide Planner-Referenzen ueber HTTPS
+bestanden. Die Planner-Referenzen zeigen keinen KPI-Gewinn.
+
+Alle Dateien der Sicherung bleiben vorhanden. Ein gesunder Backend-Prozess,
+keine Neustarts, Startfenster ohne Fehler/Tracebacks. Bestehende Airport-Subnetze
+konfliktfrei und Proxy unveraendert; oeffentlicher Demo-Zugang bleibt bestehen.
+Andere Stacks nicht angefasst. Ruecknahme ueber `/opt/airport-releases/546af16`
+mit altem Build-SHA und `up --build -d`, ohne Volume-Loeschung. Der alte Code
+kann neue Elektrifizierungsjobs nicht ausfuehren; fertig gespeicherte Artefakte
+bleiben im Datenvolume erhalten.
+
+## Release vom 13.10.2026 (fokussierte Flughafen-Demo)
 
 Code-Release `546af16880ebc00df0f5add8c2179a0265169897`, PR #36, aus
 `/opt/airport-releases/546af16`. Remote- und Container-SHA stimmen ueberein;

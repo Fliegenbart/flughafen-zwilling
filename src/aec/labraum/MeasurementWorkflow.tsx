@@ -402,7 +402,7 @@ export default function MeasurementWorkflow({
             ))}
           </select>
         </label>
-        <Link to={{ page: "arbeitsplatz", projekt: SAMPLE_PROJECT.id }}>
+        <Link to={{ page: "start" }}>
           Zur interaktiven Simulation
         </Link>
         {verified && evidence && (

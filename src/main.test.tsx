@@ -37,7 +37,7 @@ describe("Workspace entry point", () => {
   it("opens the Airport Energy Check start page by default", async () => {
     await open();
     expect(
-      await screen.findByRole("heading", { level: 1, name: /Mehr elektrische Fahrzeuge/ }),
+      await screen.findByRole("heading", { level: 1, name: /Gleiche Flotte. Mehr elektrisch/ }),
     ).toBeVisible();
     expect(screen.queryByRole("heading", { name: "FlexLab Workbench" })).toBeNull();
     await waitFor(() => expect(document.title).toBe("Airport Energy Check"));

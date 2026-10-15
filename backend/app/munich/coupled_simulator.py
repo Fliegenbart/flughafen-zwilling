@@ -48,6 +48,7 @@ class Vehicle:
     spec: FleetSpec
     energy: float
     idle_since: int
+    electric: bool = True
     mission: int | None = None
     busy_until: int = 0
 
@@ -70,7 +71,9 @@ def simulate_coupled(
     source = {entry.entry_id: entry for entry in plan.rows}
     vehicles = [Vehicle(
         id=f"{spec.kind}-{i + 1:03d}", spec=spec,
-        energy=spec.battery_capacity_kwh * spec.initial_soc_pct / 100,
+        energy=(spec.battery_capacity_kwh * spec.initial_soc_pct / 100
+                if spec.electric_vehicles is None or i < spec.electric_vehicles else 0),
+        electric=spec.electric_vehicles is None or i < spec.electric_vehicles,
         idle_since=world.start_min, busy_until=world.start_min,
     ) for spec in world.config.fleets for i in range(spec.vehicles)]
     fleets = {spec.kind: [v for v in vehicles if v.spec.kind == spec.kind]
@@ -99,7 +102,8 @@ def simulate_coupled(
     }
     release_idx = 0
     consumed, charged, violations, transformer_loss = 0.0, 0.0, 0, 0.0
-    initial = math.fsum(v.energy for v in vehicles)
+    electric_fleet = [v for v in vehicles if v.electric]
+    initial = math.fsum(v.energy for v in electric_fleet)
     efficiency = world.config.power.charging_efficiency
     for minute in range(world.start_min, world.end_min):
         for v in vehicles:
@@ -122,7 +126,8 @@ def simulate_coupled(
         )):
             mission, row = world.missions[i], evidence[i]
             idle = [v for v in fleets[mission.kind] if v.mission is None]
-            capable = [v for v in idle if v.energy + EPS >= mission.energy_kwh + v.reserve]
+            capable = [v for v in idle if not v.electric
+                       or v.energy + EPS >= mission.energy_kwh + v.reserve]
             if not capable:
                 row["resource_wait_min" if not idle else "energy_wait_min"] += 1
                 continue
@@ -131,6 +136,8 @@ def simulate_coupled(
             v.busy_until = minute + mission.duration_min + mission.return_min
             row.update(vehicle_id=v.id, actual_start_min=minute,
                        return_complete_min=v.busy_until)
+            if v.spec.electric_vehicles is not None:
+                row["electric_vehicle"] = v.electric
             pending.remove(i)
             unassigned[mission.kind].remove(i)
             queue = open_deadlines[mission.kind]
@@ -140,7 +147,7 @@ def simulate_coupled(
             offline = sum(e.offline_chargers for e in world.config.stress_events
                           if e.fleet_kind == spec.kind and e.start_min <= minute < e.end_min)
             eligible = [v for v in fleets[spec.kind]
-                        if v.mission is None and v.energy < v.target - EPS]
+                        if v.electric and v.mission is None and v.energy < v.target - EPS]
             if policy == "mission_priority":
                 eligible.sort(key=lambda v: (
                     v.energy + EPS >= spec.mission_energy_kwh + v.reserve,
@@ -182,6 +189,8 @@ def simulate_coupled(
             if v.mission is not None:
                 m = world.missions[v.mission]
                 cost = m.energy_kwh / (m.duration_min + m.return_min)
+                if not v.electric:
+                    cost = 0.0
                 v.energy -= cost
                 consumed += cost
                 evidence[v.mission]["consumed_kwh"] += cost
@@ -189,22 +198,27 @@ def simulate_coupled(
                     m.duration_min
                 ) else "returning"
                 mission_id = m.mission_id
-            if v.energy < v.reserve - EPS or v.energy > v.spec.battery_capacity_kwh + EPS:
+            if v.electric and (v.energy < v.reserve - EPS
+                               or v.energy > v.spec.battery_capacity_kwh + EPS):
                 violations += 1
                 raise RuntimeError("Fahrzeug-SOC/Reserve verletzt")
             if (minute + 1 - world.start_min) % 5 == 0 or minute + 1 == world.end_min:
                 traces.append({
                     "minute": minute + 1, "vehicle_id": v.id, "kind": v.spec.kind,
-                    "energy_kwh": v.energy, "soc_pct": v.energy / v.spec.battery_capacity_kwh * 100,
+                    "energy_kwh": v.energy if v.electric else None,
+                    "soc_pct": v.energy / v.spec.battery_capacity_kwh * 100 if v.electric else None,
                     "state": state, "mission_id": mission_id,
                     "charging_kw": allocation.get(v.id, 0),
+                    **({"electric_vehicle": v.electric}
+                       if v.spec.electric_vehicles is not None else {}),
                 })
         row.update({
             "mission_queue": float(len(pending)),
-            "fleet_soc_avg_pct": sum(v.energy / v.spec.battery_capacity_kwh * 100
-                                     for v in vehicles) / len(vehicles) if vehicles else 0,
+            "fleet_soc_avg_pct": (sum(v.energy / v.spec.battery_capacity_kwh * 100
+                                      for v in electric_fleet) / len(electric_fleet)
+                                  if electric_fleet else 0),
             "fleet_soc_min_pct": min((v.energy / v.spec.battery_capacity_kwh * 100
-                                      for v in vehicles), default=0),
+                                      for v in electric_fleet), default=0),
             "fleet_busy_count": float(sum(v.mission is not None for v in vehicles)),
             "fleet_charging_count": float(sum(allocation.get(v.id, 0) > EPS for v in vehicles)),
         })
@@ -244,7 +258,7 @@ def simulate_coupled(
         })
     completed = [row for row in evidence if row["actual_complete_min"] is not None]
     on_time = sum(row["deadline_met"] for row in evidence)
-    final = math.fsum(v.energy for v in vehicles)
+    final = math.fsum(v.energy for v in electric_fleet)
     # Unabhaengige Flottenbilanz: Ladeenergie aus der Versorgungsseite, Verbrauch aus der
     # Auftragsformel (Anteil der gefahrenen Minuten), Endstand aus den Fahrzeugzustaenden.
     consumed_by_formula = math.fsum(
@@ -253,6 +267,7 @@ def simulate_coupled(
             world.end_min - row["actual_start_min"],
         ) / (world.missions[i].duration_min + world.missions[i].return_min)
         for i, row in enumerate(evidence) if row["actual_start_min"] is not None
+        and row.get("electric_vehicle", True)
     )
     fleet_balance_error = abs(initial + supply.fleet_delivered_kwh() - consumed_by_formula - final)
     storage_error = supply.storage_closure_error_kwh()

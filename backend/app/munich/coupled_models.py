@@ -10,8 +10,9 @@ COUPLED_DOMAIN = "airport_coupled_v1"
 # v2: Parkhausfenster in Ortszeit (DST-sicher), Ladefrist je Fahrzeug, unabhaengige
 # Energiebilanz, Grundlast-Warnungen und Bereitschaft je Klasse/Aufgabentyp.
 ENGINE_VERSION = "airport_coupled_v2"
+ELECTRIFICATION_ENGINE_VERSION = "airport_electrification_v1"
 LEGACY_ENGINE_VERSIONS = ("airport_coupled_v1",)
-EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2"]
+EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2", "airport_electrification_v1"]
 FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu"]
 CoupledPolicy = Literal["uncontrolled", "mission_priority"]
 
@@ -23,6 +24,9 @@ class StrictModel(BaseModel):
 class FleetSpec(StrictModel):
     kind: FleetKind
     vehicles: int = Field(default=20, ge=0, le=200)
+    # None preserves the original all-electric v2 model and its serialized hashes.
+    electric_vehicles: int | None = Field(default=None, ge=0, le=200,
+                                         exclude_if=lambda value: value is None)
     chargers: int = Field(default=8, ge=0, le=200)
     battery_capacity_kwh: float = Field(default=300, gt=0, le=1000)
     initial_soc_pct: float = Field(default=50, ge=0, le=100)
@@ -39,6 +43,8 @@ class FleetSpec(StrictModel):
 
     @model_validator(mode="after")
     def validate_physics(self) -> FleetSpec:
+        if self.electric_vehicles is not None and self.electric_vehicles > self.vehicles:
+            raise ValueError("Elektrofahrzeuge duerfen die Gesamtflotte nicht uebersteigen")
         if self.chargers > self.vehicles or (self.kind == "bus" and self.chargers > 50):
             raise ValueError("Ladepunkte passen nicht zur modellierten Flotte/Referenzgrenze")
         if self.charge_target_soc_pct <= self.reserve_soc_pct:

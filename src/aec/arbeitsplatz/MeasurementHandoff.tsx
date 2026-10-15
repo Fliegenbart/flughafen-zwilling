@@ -5,6 +5,7 @@ import { extraVehiclesFor } from "../api/preview";
 import { useNav } from "../context";
 import type { Levers } from "../model/livePower";
 import Link from "../Link";
+import type { ElectrificationInputs, Solution } from "../api/electrification";
 
 type RunStatus = {
   run_id: string;
@@ -62,6 +63,7 @@ export default function MeasurementHandoff({
   levers,
   exactCurrent,
   question,
+  electrification,
 }: {
   demo: boolean;
   projectId: string;
@@ -69,6 +71,7 @@ export default function MeasurementHandoff({
   levers: Levers | null;
   exactCurrent: boolean;
   question: string;
+  electrification?: ElectrificationInputs & { solution: Solution };
 }) {
   const nav = useNav();
   const controller = useRef<AbortController | null>(null);
@@ -140,8 +143,12 @@ export default function MeasurementHandoff({
     controller.current = signal;
     try {
       const status = await request<RunStatus>(
-        "/demo/simulation/runs",
-        { method: "POST", body: JSON.stringify(requestFor(levers)), signal: signal.signal },
+        electrification ? "/demo/electrification/runs" : "/demo/simulation/runs",
+        {
+          method: "POST",
+          body: JSON.stringify(electrification ?? requestFor(levers)),
+          signal: signal.signal,
+        },
         { timeoutMs: 60000 },
       );
       if (signal.signal.aborted) return;
