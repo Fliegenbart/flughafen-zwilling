@@ -138,24 +138,38 @@ class EnergyEnvelopePlan:
                 prefix = self.opportunities[identity]
                 prefix.append(prefix[-1] + opportunity)
 
+        # Deadline opportunities never change during a replay. Precompute them
+        # once instead of clamping/indexing every future deadline each minute.
+        self.envelopes = {}
+        for identity, milestones in self.milestones.items():
+            prefix = self.opportunities[identity]
+            last = len(milestones) - 1
+            self.envelopes[identity] = [
+                (due, consumed, consumed + reserve,
+                 prefix[min(horizon, max(0, due - self.start))], i == last)
+                for i, (due, consumed, reserve) in enumerate(milestones)
+            ]
+
     def request(self, minute: int, vehicle) -> tuple[float, int, float]:
         """Return urgency, real duty deadline, requested vehicle-side kW."""
         offset = minute - self.start
         prefix = self.opportunities[vehicle.id]
+        current = prefix[offset]
         urgency, deadline = 0.0, self.end
-        milestones = self.milestones[vehicle.id]
-        for i, (due, consumed, reserve) in enumerate(milestones):
-            if i < len(milestones) - 1 and consumed <= vehicle.consumed + 1e-8:
+        energy, spent = vehicle.energy, vehicle.consumed
+        completed = spent + 1e-8
+        for due, consumed, required, opportunity, terminal in self.envelopes[vehicle.id]:
+            if not terminal and consumed <= completed:
                 continue
-            need = consumed + reserve - vehicle.energy - vehicle.consumed
+            need = required - energy - spent
             if need <= 1e-8:
                 continue
-            remaining = prefix[min(len(prefix) - 1, max(offset, due - self.start))] - prefix[offset]
+            remaining = opportunity - current if due > minute else 0.0
             ratio = need / remaining if remaining > 1e-9 else 1e6
             if ratio > urgency:
                 urgency, deadline = ratio, due
         share = self.port_share[vehicle.spec.kind][offset]
-        forecast_kw = ((prefix[offset + 1] - prefix[offset]) / self.efficiency / DT_H)
+        forecast_kw = ((prefix[offset + 1] - current) / self.efficiency / DT_H)
         # If delayed work invalidates the forecast idle window, request emergency
         # charging rather than deadlocking on the old planned busy interval.
         kw = (vehicle.spec.charger_kw if urgency >= 1 and forecast_kw <= 1e-9
