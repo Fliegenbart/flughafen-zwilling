@@ -373,6 +373,89 @@
   border-color: #c9d8eb;
 }
 
+.es-handoff {
+  max-width: 1312px;
+  margin: 0 auto 28px;
+  padding: 28px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 40px;
+  border: 1px solid #c9d8eb;
+  border-radius: 16px;
+  background: #fff;
+}
+.es-handoff h2 {
+  font:
+    650 28px/1.15 "Inter Tight Variable",
+    sans-serif;
+  color: #10213e;
+  margin: 8px 0 16px;
+}
+.es-handoff p {
+  font-size: 14px;
+  color: #4b5c77;
+  margin-bottom: 14px;
+}
+.es-handoff small {
+  color: #4b5c77;
+  font-size: 12px;
+}
+.es-handoff label {
+  display: grid;
+  gap: 8px;
+  font-weight: 550;
+  font-size: 14px;
+}
+.es-handoff select {
+  width: 100%;
+  border: 1px solid #c9d8eb;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+  color: #10213e;
+  font: inherit;
+  margin-bottom: 16px;
+}
+.es-handoff .ap-reset {
+  background: #3867df;
+  color: #fff;
+  border-color: #3867df;
+}
+.es .es-foundations {
+  max-width: 1312px;
+  border: 1px solid #c9d8eb;
+  border-radius: 12px;
+  background: #fff;
+  padding-inline: 28px;
+}
+.es-foundations h2 {
+  font:
+    650 24px/1.2 "Inter Tight Variable",
+    sans-serif;
+}
+.es-foundations .ap-intro > :is(p, ul) {
+  font-size: 14px;
+  max-width: 90ch;
+  line-height: 1.65;
+}
+@media (max-width: 1400px) {
+  .es-handoff,
+  .es .es-foundations {
+    margin-inline: 32px;
+  }
+}
+@media (max-width: 700px) {
+  .es-handoff {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px;
+  }
+  .es-handoff,
+  .es .es-foundations {
+    margin-inline: 16px;
+  }
+}
+
 .es-fleet {
   border-collapse: collapse;
   width: 100%;

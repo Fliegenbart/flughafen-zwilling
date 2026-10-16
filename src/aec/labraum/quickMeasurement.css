@@ -1,0 +1,273 @@
+.qm {
+  color-scheme: light;
+  --qm-ink: #10213e;
+  --qm-line: #d4dfef;
+  color: var(--qm-ink);
+  background: linear-gradient(120deg, #eaf0fc, transparent 55%), #f6f8fc;
+  font-family: "IBM Plex Sans", sans-serif;
+}
+.qm-head {
+  padding: 36px max(24px, calc((100% - 1120px) / 2));
+  background: #10213e;
+  color: #d9e6fc;
+}
+.qm-head a {
+  color: #bbd3ff;
+}
+.qm-eyebrow,
+.qm-step {
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.qm-eyebrow {
+  margin: 26px 0 12px;
+}
+.qm h1 {
+  font-family: "Inter Tight Variable", sans-serif;
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 650;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  color: white;
+}
+.qm h1 em {
+  font-style: normal;
+  color: #a9c9ff;
+}
+.qm-head > p:not(.qm-eyebrow) {
+  max-width: 65ch;
+  margin: 18px 0;
+}
+.qm-privacy {
+  display: inline-block;
+  border-top: 1px solid #526887;
+  padding-top: 14px;
+  font-size: 13px;
+}
+.qm-body {
+  max-width: 1168px;
+  padding: 28px 24px 48px;
+  margin: auto;
+  display: grid;
+  gap: 22px;
+}
+.qm-body > label {
+  max-width: 440px;
+}
+.qm label {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 550;
+}
+.qm select,
+.qm button {
+  font: inherit;
+  border: 1px solid var(--qm-line);
+  border-radius: 9px;
+  color: var(--qm-ink);
+  padding: 11px 15px;
+  background: white;
+  max-width: 100%;
+}
+.qm select {
+  width: 100%;
+}
+.qm button {
+  cursor: pointer;
+  text-align: center;
+  width: fit-content;
+}
+.qm button:hover {
+  background: #eff4ff;
+  border-color: #3867df;
+}
+.qm .qm-primary {
+  background: #3867df;
+  color: white;
+  border-color: #3867df;
+  font-weight: 600;
+}
+.qm .qm-primary:hover {
+  background: #204dbb;
+}
+.qm button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.qm :is(button, select, input, summary, a):focus-visible {
+  outline: 3px solid #6b9afe;
+  outline-offset: 3px;
+}
+.qm-context {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #4b5c77;
+}
+.qm-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.qm section {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 28px;
+  border: 1px solid var(--qm-line);
+  border-radius: 16px;
+  background: #fff;
+}
+.qm-step {
+  color: #3663c4;
+}
+.qm h2 {
+  font-family: "Inter Tight Variable", sans-serif;
+  font-size: 25px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+.qm p {
+  line-height: 1.55;
+}
+.qm section > p {
+  font-size: 14px;
+  color: #4b5c77;
+}
+.qm details {
+  width: 100%;
+  padding-top: 12px;
+  border-top: 1px solid var(--qm-line);
+  font-size: 14px;
+}
+.qm details > :not(summary) {
+  margin-top: 14px;
+}
+.qm summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.qm-drop {
+  width: 100%;
+  border: 1px dashed #8fa8cc;
+  border-radius: 12px;
+  background: #f4f7fd;
+  padding: 18px;
+}
+.qm-drop span {
+  font-size: 12px;
+  font-weight: 400;
+  color: #4b5c77;
+}
+.qm-drop input {
+  display: block;
+  max-width: 100%;
+  font: inherit;
+  font-size: 12px;
+}
+.qm input[type="file"] {
+  background: #fff;
+  color: #10213e;
+}
+.qm-drop input::file-selector-button {
+  border: 1px solid #a6bad8;
+  background: white;
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-right: 8px;
+  color: #10213e;
+}
+.qm .qm-check {
+  display: flex;
+  align-items: flex-start;
+  font-weight: 400;
+  font-size: 13px;
+}
+.qm-check input {
+  margin-top: 3px;
+  flex: none;
+}
+.qm-error {
+  padding: 16px;
+  border-left: 3px solid #aa4c38;
+  background: #fff2ee;
+  color: #782d21;
+  overflow-wrap: anywhere;
+}
+.qm-error button {
+  display: block;
+  margin-top: 12px;
+}
+.qm-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 100%;
+  padding: 22px 0;
+  border-block: 1px solid var(--qm-line);
+}
+.qm-stats dt {
+  font-size: 12px;
+  color: #4b5c77;
+}
+.qm-stats dd {
+  font-family: "Inter Tight Variable", sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  margin: 6px 0;
+}
+.qm-stats small {
+  font-size: 12px;
+  color: #4b5c77;
+}
+.qm-trace {
+  width: 100%;
+  margin: 0;
+}
+.qm-trace svg {
+  display: block;
+  width: 100%;
+}
+.qm-trace text {
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 11px;
+  fill: #4b5c77;
+}
+.qm-trace figcaption {
+  font-size: 12px;
+  color: #4b5c77;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.qm-trace figcaption span:first-child {
+  color: #3867df;
+}
+.qm-trace figcaption span:nth-child(2) {
+  color: #a24a10;
+}
+.qm code {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .qm-steps,
+  .qm-stats {
+    grid-template-columns: 1fr;
+  }
+  .qm-head {
+    padding: 24px 20px;
+  }
+  .qm-body {
+    padding: 24px 16px;
+  }
+  .qm section {
+    padding: 22px 18px;
+  }
+  .qm-stats {
+    gap: 18px;
+  }
+}

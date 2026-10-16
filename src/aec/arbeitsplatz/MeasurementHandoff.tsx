@@ -64,6 +64,7 @@ export default function MeasurementHandoff({
   exactCurrent,
   question,
   electrification,
+  buttonLabel = "Mit Messdaten überprüfen",
 }: {
   demo: boolean;
   projectId: string;
@@ -72,6 +73,7 @@ export default function MeasurementHandoff({
   exactCurrent: boolean;
   question: string;
   electrification?: ElectrificationInputs & { solution: Solution };
+  buttonLabel?: string;
 }) {
   const nav = useNav();
   const controller = useRef<AbortController | null>(null);
@@ -204,9 +206,7 @@ export default function MeasurementHandoff({
         }
         onClick={() => void start()}
       >
-        {state === "creating" || state === "polling"
-          ? "SIL-Lauf wird gespeichert …"
-          : "Mit Messdaten überprüfen"}
+        {state === "creating" || state === "polling" ? "SIL-Lauf wird gespeichert …" : buttonLabel}
       </button>
       {!ready ? (
         <p>Erst die präzise aktuelle Berechnung abwarten; Näherungen werden nicht gespeichert.</p>

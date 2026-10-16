@@ -62,6 +62,7 @@ export default function ElectrificationStudy() {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<Solution | null>(null);
+  const [handoffSolution, setHandoffSolution] = useState<Solution>("direct");
   const active = useRef<AbortController | null>(null);
   const curve = useRef<HTMLElement | null>(null);
   const current = !!result && same(inputs, result.inputs) && !busy && !error;
@@ -95,6 +96,7 @@ export default function ElectrificationStudy() {
 
   const baseline = result?.variants[0];
   const chosen = selected ? result?.variants.find((v) => v.solution === selected) : undefined;
+  const handoff = result?.variants.find((v) => v.solution === handoffSolution);
   const capacityMax = current
     ? Math.max(
         inputs.grid_import_limit_kw,
@@ -416,8 +418,52 @@ export default function ElectrificationStudy() {
           )}
         </section>
       </div>
-      <details className="ap-next">
-        <summary>Annahmen, Nachweis und mit Messdaten weiterprüfen</summary>
+      <section className="es-handoff" aria-labelledby="es-handoff-title">
+        <div>
+          <p className="ap-kicker">Vom Modell zu Ihren Daten</p>
+          <h2 id="es-handoff-title">Das Ergebnis selbst überprüfen.</h2>
+          <p>
+            Lastprofil herunterladen, Messdatei auswählen, Abweichungen sehen. Zum Ausprobieren gibt
+            es eine klar markierte Übungsdatei.
+          </p>
+          <small>Keine Anlagensteuerung. Im Schnellvergleich bleibt Ihre Datei im Browser.</small>
+        </div>
+        <div>
+          <label>
+            Variante für den Messvergleich
+            <select
+              value={handoffSolution}
+              disabled={!current}
+              onChange={(e) => setHandoffSolution(e.target.value as Solution)}
+            >
+              {OPTIONS.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          {handoff && (
+            <MeasurementHandoff
+              key={handoff.calculationId}
+              demo
+              projectId={SAMPLE_PROJECT.id}
+              exact={handoff}
+              levers={{
+                gridLimitKw: inputs.grid_import_limit_kw,
+                batteryKwh: handoffSolution === "managed_storage" ? inputs.storage_kwh : 0,
+                pvFactor: 1,
+              }}
+              exactCurrent={current}
+              question="Wie gut bildet die gewählte Elektrifizierungsvariante den gemessenen Leistungsverlauf ab?"
+              electrification={{ ...inputs, solution: handoff.solution }}
+              buttonLabel="Lastprofil & Messdaten öffnen"
+            />
+          )}
+        </div>
+      </section>
+      <details className="ap-next es-foundations">
+        <summary>Berechnungsgrundlagen & Quellen</summary>
         <section className="ap-intro">
           <h2>Was ist in diesem Vergleich festgehalten?</h2>
           {result && (
@@ -481,22 +527,6 @@ export default function ElectrificationStudy() {
           <button type="button" className="ap-reset" disabled={!current} onClick={download}>
             Berechneten Vergleich herunterladen
           </button>
-          {chosen && (
-            <MeasurementHandoff
-              key={chosen.calculationId}
-              demo
-              projectId={SAMPLE_PROJECT.id}
-              exact={chosen}
-              levers={{
-                gridLimitKw: inputs.grid_import_limit_kw,
-                batteryKwh: selected === "managed_storage" ? inputs.storage_kwh : 0,
-                pvFactor: 1,
-              }}
-              exactCurrent={current}
-              question="Wie gut bildet die gewählte Elektrifizierungsvariante den gemessenen Leistungsverlauf ab?"
-              electrification={{ ...inputs, solution: chosen.solution }}
-            />
-          )}
         </section>
       </details>
       <footer className="ap-footer">

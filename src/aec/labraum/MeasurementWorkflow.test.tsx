@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import LabPage from "./LabPage";
+import MeasurementWorkflow from "./MeasurementWorkflow";
 import { NavContext } from "../context";
 import { request } from "../api/http";
 vi.mock("../api/http", () => ({ request: vi.fn() }));
@@ -27,7 +27,7 @@ function mount(projectId = "beispiel-muc-sued") {
         navigate: vi.fn(),
       }}
     >
-      <LabPage route={{ page: "lab", projekt: projectId }} />
+      <MeasurementWorkflow projectId={projectId} />
     </NavContext.Provider>,
   );
 }

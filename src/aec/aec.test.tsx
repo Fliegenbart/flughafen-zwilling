@@ -76,7 +76,9 @@ describe("Antwortsätze", () => {
     expect(a).toMatch(
       /^In dieser Simulation erreicht „5 Schlepper mehr“ die höchste Einsatzbereitschaft, 18,0 Prozentpunkte über der Ausgangslage\./,
     );
-    expect(a).toMatch(/Dafür liegt der Anschluss in dieser Simulation 21 Minuten länger am Limit\./);
+    expect(a).toMatch(
+      /Dafür liegt der Anschluss in dieser Simulation 21 Minuten länger am Limit\./,
+    );
     expect(a).toMatch(
       /„Batteriespeicher 2 MWh“ verkürzt in dieser Simulation die Zeit am Anschlusslimit am stärksten, um 50 Minuten\./,
     );
@@ -194,10 +196,12 @@ describe("Austausch-Status", () => {
   });
 
   it("lehnt lokale Austauschaktionen für das Beispielprojekt ab", async () => {
-    await expect(proposeTest(SAMPLE_PROJECT, "Lastgang vergleichen", "Abgang Ladepark")).rejects.toThrow(
-      "Für das Beispielprojekt kann kein Messdaten-Abgleich beauftragt werden.",
-    );
-    await expect(advanceExchange(SAMPLE_PROJECT, item("vorgeschlagen"), "angenommen", "lab")).rejects.toThrow(
+    await expect(
+      proposeTest(SAMPLE_PROJECT, "Lastgang vergleichen", "Abgang Ladepark"),
+    ).rejects.toThrow("Für das Beispielprojekt kann kein Messdaten-Abgleich beauftragt werden.");
+    await expect(
+      advanceExchange(SAMPLE_PROJECT, item("vorgeschlagen"), "angenommen", "lab"),
+    ).rejects.toThrow(
       "Für das Beispielprojekt kann kein Messdaten-Abgleich fortgeschrieben werden.",
     );
   });
@@ -327,25 +331,27 @@ describe("Oberfläche", () => {
     ).toBeVisible();
     fireEvent.click(within(nav).getByRole("link", { name: /Nachweise & Prüfplan/ }));
     expect(
-      await screen.findByRole("heading", { level: 1, name: /Messdaten für den Abgleich stehen noch aus/ }),
+      await screen.findByRole("heading", {
+        level: 1,
+        name: /Messdaten für den Abgleich stehen noch aus/,
+      }),
     ).toBeVisible();
     await waitFor(() => expect(document.title).toBe("Nachweise & Prüfplan · Airport Energy Check"));
     expect(screen.getByText(/Beispielwerte und Simulationen sind keine Messdaten/)).toBeVisible();
     // Beispielprojekte enthalten keine erfundenen Auftraege oder Aktionen.
     expect(
-      await screen.findByText(
-        "Für das Beispielprojekt ist kein Messdaten-Abgleich beauftragt.",
-        {
-          exact: false,
-        },
-      ),
+      await screen.findByText("Für das Beispielprojekt ist kein Messdaten-Abgleich beauftragt.", {
+        exact: false,
+      }),
     ).toBeVisible();
     const status = screen.getByRole("heading", {
       level: 2,
       name: "Messdaten-Abgleich",
     }).parentElement!.parentElement!;
     expect(within(status).queryByRole("button", { name: /erledigt|Annehmen/ })).toBeNull();
-    expect(within(status).queryByRole("button", { name: "Messdaten-Abgleich anfragen" })).toBeNull();
+    expect(
+      within(status).queryByRole("button", { name: "Messdaten-Abgleich anfragen" }),
+    ).toBeNull();
   });
 
   it("leitet den alten Schritt Abgleich in den Lab-Raum um", () => {
@@ -363,7 +369,7 @@ describe("Oberfläche", () => {
   it("zeigt den Messdaten-Abgleich ohne Beispielaufträge oder Rollenschalter", async () => {
     openApp(`?seite=lab&projekt=${SAMPLE_PROJECT.id}`);
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Simulation mit Messdaten überprüfen" }),
+      await screen.findByRole("heading", { level: 1, name: "Vom Lastprofil zum Messvergleich." }),
     ).toBeVisible();
     await waitFor(() => expect(document.title).toBe("Messdaten-Abgleich · Airport Energy Check"));
     expect(screen.getByRole("link", { name: "Messdaten-Abgleich" })).toHaveAttribute(
@@ -373,6 +379,7 @@ describe("Oberfläche", () => {
     expect(screen.queryByRole("article")).toBeNull();
     expect(screen.queryByText(/Am Zug:/)).toBeNull();
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(screen.queryByText("Ihre Prüffrage")).toBeNull();
   });
 
   it("zeigt alle acht Fälle in der Bibliothek und übernimmt einen ins Projekt", async () => {
