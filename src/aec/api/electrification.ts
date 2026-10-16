@@ -37,6 +37,7 @@ export type ElectrificationComparison = {
     non_electric_vehicles: number;
     initial_fleet_hash: string;
     missions_hash: string;
+    duty_roster_hash?: string;
     mission_count: number;
     grid_import_limit_kw: number;
     fleet: {

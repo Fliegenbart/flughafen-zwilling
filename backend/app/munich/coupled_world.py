@@ -12,6 +12,7 @@ from .coupled_models import (
     ENGINE_VERSION,
     GRID_SIZING_ENGINE_VERSION,
     LEGACY_ENGINE_VERSIONS,
+    PREDICTIVE_ENGINE_VERSION,
     CoupledConfig,
     CoupledWorld,
     Mission,
@@ -41,15 +42,19 @@ def build_world(
 ) -> CoupledWorld:
     if engine_version not in (
         ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION,
+        PREDICTIVE_ENGINE_VERSION,
         *LEGACY_ENGINE_VERSIONS,
     ):
         raise ValueError("Unbekannte Engine-Version der Kopplungswelt")
     verify_snapshot(plan)
     config = CoupledConfig.model_validate(config.model_dump())
     if (any(f.electric_vehicles is not None for f in config.fleets)
-            and engine_version not in (ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION)):
+            and engine_version not in (ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION,
+                                       PREDICTIVE_ENGINE_VERSION)):
         raise ValueError("Gemischte Flotte benoetigt die Elektrifizierungs-Engine")
-    if config.repeat_days != 1 and engine_version != GRID_SIZING_ENGINE_VERSION:
+    if config.repeat_days != 1 and engine_version not in (
+        GRID_SIZING_ENGINE_VERSION, PREDICTIVE_ENGINE_VERSION,
+    ):
         raise ValueError("Wiederholte Tage benoetigen die Anschlussvergleich-Engine")
     if config.repeat_days != 1 and config.stress_events:
         raise ValueError("Mehrtagereferenz erlaubt keine mehrdeutigen Tages-Stoerungen")
@@ -136,12 +141,19 @@ def build_world(
         warnings[0] = ('Synthetische Planzeiten; keine gemessenen oder '
                        'veroeffentlichten Flughafenablaeufe.')
     if engine_version in (ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION,
-                          GRID_SIZING_ENGINE_VERSION):
+                          GRID_SIZING_ENGINE_VERSION, PREDICTIVE_ENGINE_VERSION):
         warnings.append("Parkhausfenster als Ortszeit Europe/Berlin (DST-sicher); "
                         "Ladefrist je Fahrzeug aus der naechsten noch erreichbaren Frist.")
-    if engine_version in (ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION):
+    if engine_version in (ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION,
+                          PREDICTIVE_ENGINE_VERSION):
         warnings.append("Feste Gesamtflotte; nicht-elektrische Fahrzeuge haben gleiche "
                         "Einsatzzeiten, ohne Kraftstoff-, Betankungs- oder Emissionsmodell.")
+    if engine_version == PREDICTIVE_ENGINE_VERSION:
+        warnings[2] = ('Feste Fahrzeugzuordnung je Auftrag, unabhaengig von Laderegel und Netz; '
+                       'keine Ersatzfahrzeuge bei Energiemangel.')
+        warnings.append('Ladeplanung kennt alle modellierten Einsaetze und Lastprofile; '
+                        'vorausschauende Heuristik, keine Optimalitaetsgarantie '
+                        'oder reale Prognose.')
     if plan.possible_shared_flight_groups:
         warnings.append("Mehrfachgruppen bewusst als unabhaengige Nachfrageannahmen verwendet; "
                         "keine bestaetigte Zahl physischer Fluege.")

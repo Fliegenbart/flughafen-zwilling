@@ -1,6 +1,124 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 15.10.2026 (literaturgestuetzter Anschlussvergleich)
+## Aktiver Release vom 16.10.2026 (vorausschauende Ladeplanung)
+
+Code-Release `dd03409d11ca75a33f2ed3b9f28072bee14e3ae8`, PR #39, aus
+`/opt/airport-releases/dd03409`. Remote-Commit, sauberer Release-Worktree und
+laufender Container-Build-SHA stimmen ueberein. CI `38906995680` vollstaendig
+gruen. Vorher aktiv und Ruecknahmeziel:
+`deb3d4335b8440b023ea7b8f40ec20c40f921688`.
+Der folgende reine Dokumentationscommit wird nicht als neuer Code deployt.
+
+Die Engine `airport_electrification_v3` ergaenzt eine vorausschauende
+Energiehuellen-Heuristik mit bekanntem Einsatzplan und ein 25-kW-Suchraster.
+Alle Varianten behalten dieselben Fahrzeuge, festen Fahrzeugzuweisungen,
+Auftraege, Ladepunkte und Anfangsladungen. Keine Diesel-Ersatzfahrzeuge und
+keine geliehene Anfangsenergie. Jede Stufe wird minutenweise ausgespielt;
+Fahrzeuge und Speicher muessen am Ende mindestens ihre Anfangsladung haben.
+Keine globale Optimalitaet, reale Prognose oder FMG-Kalibrierung.
+[Modellvertrag und Grenzen](ELECTRIFICATION_COMPARISON.md).
+
+Die hellere Vergleichsansicht behaelt drei Regler und drei gleichberechtigte
+Varianten mit gemeinsamer Balkenskala. Anschlusswerte werden exakt in kW
+angezeigt. Alte Ergebnisse verschwinden bei geaenderten Eingaben; Lastverlauf,
+Pruefwerte, Annahmen und Messdaten-Handoff bleiben erreichbar.
+
+Live ueber HTTPS nachgerechnet, jeweils mit 2 MWh Speicher in Variante 3:
+
+| Elektroanteil | Direkt laden | Vorausschauend laden | Geplant + Speicher |
+| --- | --- | --- | --- |
+| 0 % | 375 kW | 375 kW | 325 kW |
+| 50 % | 875 kW | 800 kW | 675 kW |
+| 100 % | 1.400 kW | 1.225 kW | 1.150 kW |
+
+Das sind die ersten erfolgreichen Stufen fuer diese Modellregeln, keine
+kontinuierlichen Minima oder Anschlusszusagen. Bei 100 Prozent und einem
+vorhandenen Anschluss von 1.250 kW sind zwar auch bei direktem Laden alle
+540 Abfertigungen rechtzeitig bereit, die Fahrzeugladung wird dort aber
+nicht vollstaendig wiederhergestellt. Beide geplanten Varianten bestehen.
+Gleiche Bereitschaft allein ist deshalb kein ausreichender Erfolgsnachweis.
+
+Offline-Sicherung nach Stoppen ausschliesslich des Airport-Backends:
+
+- `/opt/airport-backups/pre-dd03409-20261016T132650Z.tar.gz`
+- 2.309 Dateien; Archiv 47.344.695 Bytes, Modus 0600
+- SHA256 `e472e3959f28a00140ac235d6fd9a48ee9cac9109da0197974f51e581f4a4229`
+- In einer privaten Pruefkopie entpackt und alle Dateihashes verifiziert;
+  diese temporaere Kopie anschliessend entfernt.
+- Alle 2.309 vorherigen Dateipfade nach dem Start vorhanden.
+
+Abnahme bestanden:
+
+- 363 Backend- und 192 Frontend-Tests, Lint, Typecheck, beide Frontend-Builds,
+  Archivcheck und CI inklusive Container-/Proxytests.
+- Modellreview und Kontrollrechnungen zu Energiebilanzen, Ladepunkten,
+  Zuordnungsidentitaet und Null-EV-Gegenprobe. 18 vollstaendige Replays vor/nach
+  der Planer-Beschleunigung identisch. Alle acht historischen Airport-Cases
+  behalten nach der SIL-Korrektur exakt dieselben KPIs und Telemetriedaten.
+- Zusaetzliche Grenzwerte 50/100 Prozent mit 0/6 MWh lokal bestanden. Ohne
+  Speicher haben beide geplanten Varianten identische Welten und Ergebnisse;
+  nur diese identische Anschluss-Suche wird wiederverwendet. Die angezeigten
+  Verlaeufe werden weiterhin separat gerechnet.
+- Kalter Null-Speicher-Vergleich mit 100 Prozent auf Hetzner, isoliert mit
+  1 CPU, ohne Netzwerk oder Datenmounts: 76,542 s, 1.400/1.225/1.225 kW.
+  Erste Berechnungen sind nicht sofortig; UI nennt bis zu zwei Minuten.
+  Wiederholte Anschluss-Suchen werden gecacht. HTTP-Limit bleibt 120 s.
+- `smoke_electrification.py --materialize`: 0/50/100 Prozent, Endladungen,
+  Anschlussstufen und gespeicherter Lauf `cefc0b5833b64acfb60145ee30f46ff1`
+  inklusive Artefakten bestanden.
+- `smoke_public_simulation.py`, `smoke_demo.py --planner --all-cases`,
+  `smoke_flexlab.py`, `smoke_munich.py` und `smoke_coupled.py` ueber HTTPS
+  bestanden. Vorhandener Snapshot
+  `8a4a3241a933eb8e4e94efc54a93638f6c2bded7405bbe0efb4702736b53aed7`
+  weiter nutzbar. Planner-Referenzen zeigen weiterhin keinen KPI-Gewinn;
+  technische Fertigstellung alter Modellfaelle ist kein fachlicher PASS.
+- Personalengpass zusaetzlich waehrend einer Bestandsabfrage getestet:
+  `0ef3ad76a4fa40b1b2da10852db6bdf2`, vorher `running`, danach `completed`,
+  Audit-Fingerprint korrekt. 343 Records wurden parallel gelesen.
+- `smoke_pilot.py` mit dem neuen 72-Stunden-Lauf direkt gegen
+  `127.0.0.1:8000` im Backend-Container bestanden. Das Skript erlaubt nur
+  lokale Ziele. Synthetischer CSV-Import, Replay, schlechte Daten und
+  Paket-Hashes geprueft: `NOT_EVALUABLE`, keine empirische Validierung.
+- Live-Browser: Default, 100 Prozent/1.250 kW, echte Neuberechnung,
+  ausgeblendete veraltete Ergebnisse, Fehlergruende, Lastverlauf und Handoff
+  geprueft. Browser-Lauf `937569d719c249baa7cde2f7f7d78130` ist abgeschlossen:
+  Policy `lookahead`, exakt 1.250 kW, 100 elektrische Fahrzeuge, 4.320
+  Minutenwerte und wiederhergestellte Endladung serverseitig bestaetigt.
+  Desktop 1.440 px und Mobil 390 px ohne horizontalen Ueberlauf;
+  Browserkonsole ohne Fehler oder CSP-Warnungen, 37 selbst gehostete
+  WOFF2-Dateien HTTP 200. Kein nativer Dateidialog in diesem Browser-Smoke;
+  der CSV-/Replay-Pfad wurde separat ueber HTTP geprueft.
+- Alle vorherigen 319 Laeufe, sieben Projekte und zwei Flugplan-Snapshots
+  erhalten. Bisherige Projekt-Overviews und -Lagebilder HTTP 200,
+  Bibliothek acht Faelle und `exchange/whoami` HTTP 200.
+
+Zwei fruehere Kandidaten wurden bei fehlgeschlagener Live-Abnahme tatsaechlich
+auf `deb3d43` zurueckgesetzt, jeweils ohne Datenrestore:
+`f5e4108` ueberschritt im kalten 100-Prozent-Vergleich das HTTP-Zeitlimit.
+`b643a1e` bestand den Ladevergleich, traf aber beim alten Turnaround-Code
+unter paralleler Bestandsabfrage auf `telemetry_shutdown_timeout`.
+Der finale Code beseitigt redundante Planerarbeit und verarbeitet SIL-
+Telemetrie synchron vor dem Schliessen der Ausgabedatei, getrennt von der
+Tickzeitmessung. HIL bleibt unveraendert asynchron. Callback-Fehler bleiben
+Fehler; externe Callback-Abhaengigkeiten muessen begrenzte I/O-Zeiten haben.
+Der optionale Influx-Requesttimeout ist explizit 10 s, wie zuvor der
+Bibliotheksdefault. Im Pilot bleibt der Token leer. Fehlgeschlagene QA-Laeufe
+wurden nicht nachtraeglich umgewertet oder geloescht.
+
+Finaler Start ab `2026-10-16T13:27:37Z`: ein gesunder Backend-Prozess mit
+`--workers 1`, keine Neustarts, keine Fehler/Tracebacks oder HTTP-5xx im
+kontrollierten Logfenster. Beide bestehenden Airport-Subnetze konfliktfrei,
+Host-Proxy-Hash unveraendert. Die bewusst oeffentliche Demo bleibt ohne
+Passwort, HTTP leitet auf HTTPS. Keine Hardwarewrites, kein Influx-Token,
+keine Aenderungen an anderen Compose-Stacks.
+
+Ruecknahme: Airport-Backend stoppen, aus `/opt/airport-releases/deb3d43` mit
+`TWIN_BUILD_GIT_COMMIT=deb3d4335b8440b023ea7b8f40ec20c40f921688`
+`up --build -d`, niemals `down -v`. Alte Releases koennen neue abgeschlossene
+Records lesen, aber keine v3-Jobs ausfuehren. Sicherung nur bei
+nachgewiesenem Datenschaden zurueckspielen.
+
+## Release vom 15.10.2026 (literaturgestuetzter Anschlussvergleich)
 
 Code-Release `deb3d4335b8440b023ea7b8f40ec20c40f921688`, PR #38, aus
 `/opt/airport-releases/deb3d43`. Remote-Commit, sauberer Release-Worktree und
@@ -404,7 +522,7 @@ Nach jedem Deploy, sobald die neue Version geprueft ist:
 
 Stand 08.10.2026 nach dem ersten Aufraeumen: Sicherungen 90 MB statt 2,5 GB, Releases 27 MB.
 
-## Aktiver Release vom 08.10.2026 (Arbeitsbildschirm)
+## Release vom 08.10.2026 (Arbeitsbildschirm)
 
 Code-Release `78a6bab5b664b9b08b131fd1d65735db14a3cd50` (PR #30) ist aktiv, gebaut aus
 `/opt/airport-releases/78a6bab`; vorher `27b3850`. Keine Netz- oder Compose-Aenderung.

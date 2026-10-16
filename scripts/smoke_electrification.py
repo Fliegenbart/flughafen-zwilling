@@ -35,7 +35,9 @@ def main():
         assert contract['non_electric_vehicles'] == 100 - share
         assert result['reference']['days'] == 3
         assert result['reference']['resource_baseline_feasible']
-        assert result['engine_version'] == 'airport_electrification_v2'
+        assert result['engine_version'] == 'airport_electrification_v3'
+        assert contract['fixed_vehicle_assignments'] is True
+        assert len(contract['duty_roster_hash']) == 64
         variants = result['variants']
         assert [v['solution'] for v in variants] == ['direct', 'managed', 'managed_storage']
         assert variants[0]['world_hash'] == variants[1]['world_hash']
@@ -51,7 +53,9 @@ def main():
             assert variant['metrics']['departures_total'] == 540
             sizing = variant['grid_sizing']
             assert sizing['status'] == 'feasible' and sizing['required_grid_kw'] is not None
-            assert sizing['required_grid_kw'] % 250 == 0
+            assert sizing['required_grid_kw'] % 25 == 0
+            assert sizing['step_kw'] == 25
+            assert variant['metadata']['planning']['duty_roster_hash'] == contract['duty_roster_hash']
             assert sizing['evaluations'][-1]['checks']['feasible']
             assert all(not e['checks']['feasible'] for e in sizing['evaluations'][:-1])
             if share == 0:
@@ -60,6 +64,7 @@ def main():
                           'requirements_kw': [v['grid_sizing']['required_grid_kw'] for v in variants],
                           'metrics': [v['metrics'] for v in variants]}))
     assert len({c['missions_hash'] for c in contracts}) == 1
+    assert len({c['duty_roster_hash'] for c in contracts}) == 1
     assert len({c['parking_jobs_hash'] for c in contracts}) == 1
     assert len({c['source_plan_sha256'] for c in contracts}) == 1
     if args.materialize:

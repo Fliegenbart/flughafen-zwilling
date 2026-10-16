@@ -40,7 +40,9 @@ export function describeChanges(changes: VariantChanges): string {
     parts.push(
       changes.charging_policy === "mission_priority"
         ? "Wer zuerst los muss, lädt zuerst"
-        : "Jedes Fahrzeug lädt, sobald es steckt",
+        : changes.charging_policy === "lookahead"
+          ? "Vorausschauend mit bekanntem Fahrplan"
+          : "Jedes Fahrzeug lädt, sobald es steckt",
     );
   if (changes.pv_factor !== undefined) parts.push(`Photovoltaik × ${dec1(changes.pv_factor)}`);
   return parts.join(" · ");

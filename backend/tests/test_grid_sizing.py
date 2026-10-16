@@ -5,7 +5,7 @@ import pytest
 from app.exchange.electrification import ElectrificationRequest, prepare_electrification
 from app.exchange.grid_sizing import connection_checks, minimum_energy_bound, search_connection
 from app.exchange.electrification_reference import reference_day
-from app.munich.coupled_models import GRID_SIZING_ENGINE_VERSION
+from app.munich.coupled_models import PREDICTIVE_ENGINE_VERSION
 from app.munich.coupled_simulator import simulate_coupled
 
 
@@ -33,7 +33,7 @@ def test_raster_search_returns_first_actually_successful_step_without_monotonici
         calls.append(kw)
         return sample_result(kpis__missions_on_time=10 if kw == 500 else 9)
 
-    answer = search_connection(evaluate, max_kw=1000)
+    answer = search_connection(evaluate, step_kw=250, max_kw=1000)
     assert answer['status'] == 'feasible'
     assert answer['required_grid_kw'] == 500
     assert calls == [0, 250, 500]
@@ -42,7 +42,8 @@ def test_raster_search_returns_first_actually_successful_step_without_monotonici
 
 
 def test_failed_raster_never_fabricates_a_requirement():
-    answer = search_connection(lambda _: sample_result(kpis__missions_on_time=9), max_kw=500)
+    answer = search_connection(lambda _: sample_result(kpis__missions_on_time=9),
+                               step_kw=250, max_kw=500)
     assert answer['status'] == 'not_found'
     assert answer['required_grid_kw'] is None
     assert len(answer['evaluations']) == 3
@@ -54,9 +55,9 @@ def test_grid_scan_skips_only_steps_below_a_declared_necessary_energy_bound():
         calls.append(kw)
         return sample_result()
     answer = search_connection(evaluate, lower_bound_kw=280, max_kw=1000)
-    assert calls == [500]
+    assert calls == [300]
     assert answer['energy_lower_bound_kw'] == 280
-    assert answer['required_grid_kw'] == 500
+    assert answer['required_grid_kw'] == 300
 
 
 def test_energy_bound_includes_mandatory_electric_tasks_not_initial_battery_credit():
@@ -106,7 +107,7 @@ def test_reference_times_are_real_departure_columns_not_synthetic_arrival_times(
 def test_reference_has_three_days_and_sufficient_non_electric_fleet():
     plan, config, policy, world, _ = prepare_electrification(
         ElectrificationRequest(electric_share_pct=0, grid_import_limit_kw=8000), 'direct')
-    assert world.engine_version == GRID_SIZING_ENGINE_VERSION
+    assert world.engine_version == PREDICTIVE_ENGINE_VERSION
     assert config.repeat_days == 3
     assert world.day_minutes == world.end_min == 4320
     assert world.start_min == 0
@@ -164,7 +165,8 @@ def test_api_reports_verified_required_capacity_and_separate_current_checks(clie
     for variant in data['variants']:
         sizing = variant['grid_sizing']
         assert sizing['status'] == 'feasible'
-        assert sizing['required_grid_kw'] % 250 == 0
+        assert sizing['required_grid_kw'] % 25 == 0
+        assert sizing['step_kw'] == 25
         assert sizing['evaluations'][-1]['checks']['feasible']
         assert all(not e['checks']['feasible'] for e in sizing['evaluations'][:-1])
         assert isinstance(variant['checks']['feasible'], bool)

@@ -11,13 +11,17 @@ RUNS_TOTAL = Counter("twin_runs_total", "Runs", ["state", "realtime_mode"])
 WATCHDOG_MISSES = Counter("twin_watchdog_misses_total", "Watchdog misses")
 TICK_DRIFT_P99 = Gauge("twin_tick_drift_p99_ms", "P99 drift")
 PLAYBOOK_JOBS_TOTAL = Counter("twin_playbook_jobs_total", "Playbook jobs", ["state"])
-PLAYBOOK_JOB_DURATION_SECONDS = Gauge("twin_playbook_job_duration_seconds", "Playbook job duration in seconds")
-PLAYBOOK_CANDIDATES_EVALUATED = Gauge("twin_playbook_candidates_evaluated", "Playbook candidates evaluated")
+PLAYBOOK_JOB_DURATION_SECONDS = Gauge(
+    "twin_playbook_job_duration_seconds", "Playbook job duration in seconds"
+)
+PLAYBOOK_CANDIDATES_EVALUATED = Gauge(
+    "twin_playbook_candidates_evaluated", "Playbook candidates evaluated"
+)
 
 
 class InfluxTelemetryWriter:
     def __init__(self, url: str, token: str, org: str, bucket: str) -> None:
-        self.client = InfluxDBClient(url=url, token=token, org=org)
+        self.client = InfluxDBClient(url=url, token=token, org=org, timeout=10_000)
         self.write_api = self.client.write_api(
             write_options=WriteOptions(batch_size=1000, flush_interval=500)
         )

@@ -12,11 +12,12 @@ COUPLED_DOMAIN = "airport_coupled_v1"
 ENGINE_VERSION = "airport_coupled_v2"
 ELECTRIFICATION_ENGINE_VERSION = "airport_electrification_v1"
 GRID_SIZING_ENGINE_VERSION = "airport_electrification_v2"
+PREDICTIVE_ENGINE_VERSION = "airport_electrification_v3"
 LEGACY_ENGINE_VERSIONS = ("airport_coupled_v1",)
 EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2", "airport_electrification_v1",
-                        "airport_electrification_v2"]
+                        "airport_electrification_v2", "airport_electrification_v3"]
 FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu"]
-CoupledPolicy = Literal["uncontrolled", "mission_priority"]
+CoupledPolicy = Literal["uncontrolled", "mission_priority", "lookahead"]
 
 
 class StrictModel(BaseModel):
