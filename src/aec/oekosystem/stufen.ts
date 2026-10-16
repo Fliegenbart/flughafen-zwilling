@@ -32,6 +32,12 @@ export type Stage = {
   savingKw: number | null;
   /** Ohne Speicher ist Stufe 3 dieselbe Rechnung wie Stufe 2. */
   inactive?: boolean;
+  /**
+   * Der Speicher senkt den Bedarf nicht: Die einfache Speicherregel des Modells laedt aus dem
+   * Netz nach und muss am Ende voll sein. Ein Speicher, der nicht hilft, bliebe aus; die Stufe
+   * zaehlt dann nicht.
+   */
+  noGain?: boolean;
 };
 
 /** Naechster Wert eines Rasters (die Regler laufen auf genau diesen Werten). */
@@ -49,6 +55,7 @@ export function stagesFor(atlas: Atlas, s: Settings): Stage[] | null {
   const uncontrolled = atlas.peaks[peakKey(s)];
   if (!entry || uncontrolled === undefined) return null;
   const [, managed, storage] = entry;
+  const noGain = managed !== null && (storage === null || storage >= managed);
   const saving = (kw: number | null) =>
     uncontrolled !== null && kw !== null ? uncontrolled - kw : null;
   return [
@@ -72,7 +79,8 @@ export function stagesFor(atlas: Atlas, s: Settings): Stage[] | null {
       title: "+\u00a0Speicher",
       needKw: storage,
       savingKw: saving(storage),
-      inactive: s.storage_kwh === 0,
+      inactive: s.storage_kwh === 0 || noGain,
+      noGain: s.storage_kwh > 0 && noGain,
     },
   ];
 }

@@ -15,11 +15,13 @@ const ENTRIES: Record<string, [number | null, number | null, number | null]> = {
   "50|0|500|40": [875, 800, 800],
   "50|2000|2000|40": [875, 775, 600],
   "100|2000|500|40": [1400, 1225, 1150],
+  "50|2000|500|200": [1300, 1300, 1400],
 };
 const PEAKS: Record<string, number | null> = {
   "50|500|40": 1625,
   "50|2000|40": 1575,
   "100|500|40": 1850,
+  "50|500|200": 2475,
 };
 
 function comparison(body: Record<string, number>, feasible = true) {
@@ -207,6 +209,22 @@ describe("Startseite für den Kundentermin", () => {
     fireEvent.change(slider("Speicher"), { target: { value: "0" } });
     expect(screen.getByRole("button", { name: /\+\sSpeicher/ })).toBeDisabled();
     expect(screen.getByText("kein Speicher eingestellt")).toBeVisible();
+  });
+
+  it("schaltet die Speicherstufe ab, wenn der Speicher den Bedarf nicht senkt", async () => {
+    serve();
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: /\+\sSpeicher/ }));
+    fireEvent.change(slider("Laden im Parkhaus"), { target: { value: "3" } });
+    const storage = screen.getByRole("button", { name: /\+\sSpeicher/ });
+    expect(storage).toBeDisabled();
+    expect(storage).toHaveTextContent("2,0 MWh Speicher senken hier den Bedarf nicht");
+    expect(storage).not.toHaveTextContent("1.400");
+    expect(screen.getByRole("button", { name: /\+\sLademanagement/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText(/Mit Lademanagement reicht er, ohne Netzausbau\.$/)).toBeVisible();
   });
 
   it("meldet fehlende Vorab-Werte, statt Zahlen zu erfinden", async () => {

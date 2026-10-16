@@ -49,6 +49,15 @@ describe("Treppe des Ökosystems", () => {
     expect(say(atlas(1625, 800, 675), 780, { storage_kwh: 0 })).toMatch(/wachsen/);
   });
 
+  it("zählt einen Speicher, der den Bedarf nicht senkt, nicht als Stufe", () => {
+    const stages = stagesFor(atlas(1625, 800, 850), START)!;
+    expect(stages[2]).toMatchObject({ inactive: true, noGain: true });
+    expect(firstSufficient(stages, 825)).toMatchObject({ id: "managed" });
+    expect(say(atlas(1625, 800, 850), 700)).toMatch(/^Ihr Anschluss muss um 100\skW wachsen/);
+    expect(stagesFor(atlas(1625, 800, 800), START)![2]!.noGain).toBe(true);
+    expect(stagesFor(atlas(1625, 800, 675), START)![2]!.noGain).toBe(false);
+  });
+
   it("sagt ehrlich, wenn das Modell keine Stufe findet", () => {
     expect(say(atlas(null, null, null), 1500)).toMatch(
       /^Selbst 8.000\skW Anschluss reichen im Modell nicht/,

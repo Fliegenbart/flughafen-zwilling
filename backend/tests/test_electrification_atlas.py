@@ -53,11 +53,16 @@ def test_atlas_covers_every_lever_position(atlas):
         count *= len(values)
     assert len(atlas["entries"]) == count
     assert len(atlas["peaks"]) == count // len(AXES["storage_kwh"])
-    for entry in atlas["entries"].values():
+    for key, entry in atlas["entries"].items():
         assert len(entry) == 3
         for status, required in entry:
             assert status in {"feasible", "not_found", "resource_infeasible"}
             assert (required is None) == (status != "feasible")
+        # Die Geschichte der Kundenseite: Lademanagement braucht nie mehr als ohne Steuerung.
+        share, _, pv, parking = key.split("|")
+        _, uncontrolled = atlas["peaks"][peak_key(int(share), int(pv), int(parking))]
+        if uncontrolled is not None and entry[1][1] is not None:
+            assert entry[1][1] <= uncontrolled, key
 
 
 def test_atlas_matches_the_live_search(atlas):

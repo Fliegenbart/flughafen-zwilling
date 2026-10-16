@@ -91,21 +91,23 @@ export default function OekosystemCheck() {
   const stages = useMemo(() => (atlas ? stagesFor(atlas, settings) : null), [atlas, settings]);
   const sentence =
     stages && atlas ? answer(stages, settings.grid_import_limit_kw, atlas.gridMaxKw) : "";
+  // Wird die gewaehlte Stufe abgeschaltet (kein Speicher, kein Vorteil), zeigt die Kurve Stufe 2.
+  const current: StageId = stages?.find((s) => s.id === selected)?.inactive ? "managed" : selected;
   const fresh = curves && sameSettings(curves.for, settings) ? curves.data : null;
   const connection = settings.grid_import_limit_kw;
   const uncontrolled = fresh?.uncontrolled;
   const variant =
-    selected === "uncontrolled" ? null : fresh?.variants.find((v) => v.solution === selected);
-  const shown = selected === "uncontrolled" ? uncontrolled : variant;
-  const stageTitle = stages?.find((s) => s.id === selected)?.title.replace("+\u00a0", "mit ");
+    current === "uncontrolled" ? null : fresh?.variants.find((v) => v.solution === current);
+  const shown = current === "uncontrolled" ? uncontrolled : variant;
+  const stageTitle = stages?.find((s) => s.id === current)?.title.replace("+\u00a0", "mit ");
   const base = useMemo(
     () => (uncontrolled ? againstConnection(uncontrolled.basis, connection) : null),
     [uncontrolled, connection],
   );
   const shownResult =
-    selected === "uncontrolled" ? base : variant ? resultFromExact(variant.basis) : null;
+    current === "uncontrolled" ? base : variant ? resultFromExact(variant.basis) : null;
   const note =
-    selected === "uncontrolled"
+    current === "uncontrolled"
       ? base?.shortfalls.length
         ? {
             tone: "stop" as const,
@@ -172,7 +174,7 @@ export default function OekosystemCheck() {
                 stages={stages}
                 connectionKw={settings.grid_import_limit_kw}
                 storageKwh={settings.storage_kwh}
-                selected={selected}
+                selected={current}
                 onSelect={setSelected}
               />
               <section className="oe-curve" aria-labelledby="oe-curve-title">
@@ -186,7 +188,7 @@ export default function OekosystemCheck() {
                     result={shownResult}
                     today={base}
                     departures={shown.departures}
-                    changed={selected !== "uncontrolled"}
+                    changed={current !== "uncontrolled"}
                   />
                 ) : (
                   <p className="oe-loading" role="status">
@@ -200,7 +202,7 @@ export default function OekosystemCheck() {
                   <p className="oe-note">
                     Schwarz: was das Vorfeld, das Parkhaus und der übrige Flughafen aus dem Netz
                     brauchen
-                    {selected !== "uncontrolled" ? ", grau zum Vergleich ohne Steuerung" : ""}. Rote
+                    {current !== "uncontrolled" ? ", grau zum Vergleich ohne Steuerung" : ""}. Rote
                     Linie: Ihr Anschluss.
                   </p>
                 ) : null}

@@ -5,15 +5,23 @@
 import { dec1 } from "../model/format";
 import { kw, type Stage, type StageId } from "./stufen";
 
-const SUB: Record<StageId, (storageKwh: number) => string> = {
+const SUB: Record<StageId, (storageKwh: number, stage: Stage) => string> = {
   uncontrolled: () => "jedes Fahrzeug lädt sofort, nichts wird gesteuert",
   managed: () => "Ladezeiten nach dem Einsatzplan",
-  managed_storage: (s) => (s ? `mit ${dec1(s / 1000)} MWh Speicher` : "kein Speicher eingestellt"),
+  managed_storage: (s, stage) =>
+    !s
+      ? "kein Speicher eingestellt"
+      : stage.noGain
+        ? `${dec1(s / 1000)} MWh Speicher senken hier den Bedarf nicht`
+        : `mit ${dec1(s / 1000)} MWh Speicher`,
 };
 
 /** Runde Skala, auf der Anschluss und alle Stufen Platz haben. */
 export function scaleMax(stages: Stage[], connectionKw: number): number {
-  const top = Math.max(connectionKw, ...stages.map((s) => s.needKw ?? 0));
+  const top = Math.max(
+    connectionKw,
+    ...stages.filter((s) => !s.inactive).map((s) => s.needKw ?? 0),
+  );
   const step = top > 4000 ? 1000 : 500;
   return Math.ceil((top * 1.12) / step) * step;
 }
@@ -51,7 +59,9 @@ export default function Treppe({
       </div>
       <ol className="oe-treppe__stages">
         {stages.map((s) => {
-          const over = s.needKw !== null && s.needKw > connectionKw;
+          // Eine abgeschaltete Stufe zeigt keine Zahl: Sie wuerde im Termin nicht gebaut.
+          const need = s.inactive ? null : s.needKw;
+          const over = need !== null && need > connectionKw;
           return (
             <li key={s.id}>
               <button
@@ -66,19 +76,19 @@ export default function Treppe({
                 </span>
                 <span className="oe-stage__name">
                   {s.title}
-                  <small>{SUB[s.id](storageKwh)}</small>
+                  <small>{SUB[s.id](storageKwh, s)}</small>
                 </span>
                 <span className="oe-treppe__cell oe-stage__track" aria-hidden="true">
-                  {s.needKw !== null ? (
+                  {need !== null ? (
                     <>
                       <span
                         className="oe-stage__fill"
-                        style={{ width: pct(Math.min(s.needKw, connectionKw)) }}
+                        style={{ width: pct(Math.min(need, connectionKw)) }}
                       />
                       {over ? (
                         <span
                           className="oe-stage__over"
-                          style={{ left: pct(connectionKw), width: pct(s.needKw - connectionKw) }}
+                          style={{ left: pct(connectionKw), width: pct(need - connectionKw) }}
                         />
                       ) : null}
                     </>
@@ -86,8 +96,8 @@ export default function Treppe({
                   <span className="oe-stage__limit" style={{ left: pct(connectionKw) }} />
                 </span>
                 <span className="oe-stage__value" data-over={over || undefined}>
-                  {s.needKw === null ? "über 8.000\u00a0kW" : kw(s.needKw)}
-                  {s.savingKw ? <small>{kw(s.savingKw)} weniger</small> : null}
+                  {s.inactive ? "–" : s.needKw === null ? "über 8.000\u00a0kW" : kw(s.needKw)}
+                  {!s.inactive && s.savingKw ? <small>{kw(s.savingKw)} weniger</small> : null}
                 </span>
               </button>
             </li>
