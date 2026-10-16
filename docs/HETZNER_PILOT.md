@@ -1,6 +1,81 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 16.10.2026 (vorausschauende Ladeplanung)
+## Aktiver Release vom 16.10.2026 (einfacher Messdatenablauf)
+
+Code-Release `2c594ab5d7c05ebb2876f7c604c0d49a471e5fcd`, PR #40, aus
+`/opt/airport-releases/2c594ab`. Gepruefter Remote-Commit, sauberer Worktree,
+CI `38914425210` erfolgreich (Backend, Frontend, Archive und Container-/Proxytests).
+Ruecknahmeziel: `/opt/airport-releases/dd03409`, SHA
+`dd03409d11ca75a33f2ed3b9f28072bee14e3ae8`. Dieser nachfolgende reine
+Dokumentationscommit wird nicht als neuer Code deployt.
+
+Neu ist ein Drei-Schritt-Einstieg: verifiziertes Lastprofil herunterladen,
+CSV im Browser auswaehlen, Abweichungen ansehen. Keine Messdaten-Uploads oder
+persistente Speicherung im Schnellvergleich, keine Anlagensteuerung und kein
+PASS-/Validierungsurteil. Die Uebungsdatei ist im Inhalt als synthetisch markiert;
+der bisherige formale Server-Workflow lehnt ihr Zusatzfeld ab. Dieser bleibt
+separat aufklappbar und behaelt Eingaben beim Zuklappen. Anleitung:
+[Lastprofil und Messdaten](MEASUREMENT_QUICKSTART.md).
+
+Offline-Sicherung nach Stoppen ausschliesslich des Airport-Backends:
+
+- `/opt/airport-backups/pre-2c594ab-20261016T142622Z.tar.gz`
+- 2.502 Dateien; 58.450.853 Bytes; Modus 0600
+- SHA256 `9819ab5bc590296796ee04251e65f6bb90e8e5398103dab5ae879291cb2802fd`
+- Private Pruefkopie entpackt, alle Dateihashes verifiziert, Pruefkopie entfernt.
+- Alle bisherigen 344 Runs, acht Projekte, zwei Flugplan-Snapshots und
+  2.502 Dateipfade nach Neustart vorhanden. Projekt-Overviews und -Lagebilder
+  erreichbar, Szenario-Bibliothek unveraendert acht Faelle.
+
+Abnahme bestanden:
+
+- 368 Backend-Tests und 210 Frontend-Tests; Lint, Typecheck, Ruff, normaler
+  und Subpath-Build, Archivcheck. Profil-/CSV-Tests einschliesslich Auth,
+  manipulierter Artefakte, fehlender Werte und Zeitdeckung.
+- Drei durch Review gefundene UI-Zustands-/Dateianzeigefehler mit roten
+  Regressionstests reproduziert und korrigiert; final keine Review-Blocker.
+- Lokaler Browser: Variante uebernehmen, tatsaechliche Datei herunterladen,
+  native Dateiauswahl, 4.320 Werte vergleichen. Alle exportierten CSV-Werte
+  separat exakt gegen die verifizierte API-Projektion geprueft. Leere
+  Vorlage wird abgewiesen, vorheriges Ergebnis verschwindet.
+- Live-Browser: alter Referenzlauf `937569d719c249baa7cde2f7f7d78130`
+  lesbar, Uebungsdatei heruntergeladen und ueber den Dateidialog ausgewaehlt.
+  Ergebnis: 4.320 Werte, MAE 49,81 kW, Energieabweichung 4,85 Prozent,
+  sichtbar als synthetische Uebung und nicht als Validierungsnachweis.
+  Desktop 1.440 px und Mobil 390 px, kein horizontaler Seitenueberlauf,
+  keine Browser-/CSP-Fehler. Ein gebuendelter Browser-Toolaufruf fuer Download
+  und Dateidialog kam erst nach laengerer Wartezeit zurueck; die anschliessende
+  Auswertung wurde erfolgreich verifiziert. Daraus wird keine Aussage ueber
+  Dialoggeschwindigkeit in anderen Browsern abgeleitet.
+- Live-Einstieg von der Startseite: Variante `managed_storage`, 50 Prozent
+  elektrisch, 1.500 kW Anschluss ausgewaehlt und als neuer Run
+  `b0e1b365fad049beb39ee8f984943b38` in den Schnellvergleich uebernommen.
+  Variantenangabe und 4.320 Profilwerte korrekt; kein Chart- oder Projektumweg.
+- HTTPS-Smokes `smoke_electrification.py --materialize`,
+  `smoke_public_simulation.py`, `smoke_demo.py --planner --all-cases`,
+  `smoke_flexlab.py`, `smoke_munich.py` und `smoke_coupled.py` bestanden.
+  Neuer materialisierter Lauf `e680afdefe6d4545aa9ae45fbb5a8ab8` abgeschlossen.
+  Die bestehenden Modell-Kapazitaeten sind unveraendert; Planner weiterhin
+  ohne nachgewiesenen KPI-Gewinn. Negative FlexLab-Faelle bleiben negativ.
+- `smoke_measurement_profile.py` ueber HTTPS fuer alten und neuen Run:
+  Netzbezug, Vorfeld-Laden und Parkhaus, jeweils 4.320 exakte Minutenwerte,
+  Einheit, SHA256 und Zeitsemantik verifiziert. Kein Messdaten-Upload.
+- `smoke_pilot.py` aus dem Release-Worktree per stdin im laufenden Backend
+  gegen `127.0.0.1:8000`: synthetischer Import, Replay, schlechte Daten und
+  Paket-Hashes bestanden. Projekt `ab6d3476-4819-45c5-86a2-e218843739f1`,
+  Bewertung bewusst `NOT_EVALUABLE`. Das Skript ist nicht als Datei im
+  Container installiert; ein erster Aufruf dieses nicht vorhandenen Pfads
+  scheiterte, der anschliessende stdin-Aufruf war erfolgreich.
+
+Start `2026-10-16T14:27:13Z`, ein gesunder Backend-Prozess mit `--workers 1`,
+keine Neustarts, leerer Influx-Token. Keine Tracebacks, Application-ERRORs oder
+HTTP-5xx im kontrollierten Backend-Logfenster. Beide bestehenden Subnetze
+`10.253.250.0/24` und `10.253.251.0/24` konfliktfrei. Host-Proxy unveraendert,
+HTTP leitet auf HTTPS um. Die ausdruecklich oeffentliche Demo bleibt oeffentlich;
+keine fremden Stacks, Hardwareadapter, Auth-Einstellungen oder Netzwerke geaendert.
+Kein Rollback und kein Datenrestore erforderlich.
+
+## Release vom 16.10.2026 (vorausschauende Ladeplanung)
 
 Code-Release `dd03409d11ca75a33f2ed3b9f28072bee14e3ae8`, PR #39, aus
 `/opt/airport-releases/dd03409`. Remote-Commit, sauberer Release-Worktree und
