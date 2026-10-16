@@ -190,7 +190,10 @@ export default function OekosystemCheck() {
                   />
                 ) : (
                   <p className="oe-loading" role="status">
-                    {curveError || "Die Kurve wird gerechnet …"}
+                    {curveError ||
+                      (fresh && !uncontrolled
+                        ? "Der Server liefert noch keine Kurve ohne Steuerung."
+                        : "Die Kurve wird gerechnet …")}
                   </p>
                 )}
                 {shown ? (
