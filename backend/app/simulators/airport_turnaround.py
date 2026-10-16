@@ -70,6 +70,7 @@ def run_airport_turnaround_simulation(
     adapters: list[AdapterPlugin],
     telemetry_callback: Callable[[TelemetrySample], None] | None = None,
 ) -> tuple[RunSummary, SafetySummary]:
+    """Replay ticks; SIL callbacks must return or raise, with bounded external I/O."""
     params = model_pack.parameter_set
     rng = random.Random(seed)
 
@@ -373,13 +374,7 @@ def run_airport_turnaround_simulation(
                 ),
             ]
 
-            for sample in samples:
-                if worker is None:
-                    try:
-                        _consume_telemetry(sample)
-                    except Exception as exc:
-                        raise RuntimeError("telemetry_callback_failed") from exc
-                    continue
+            for sample in samples if worker else ():
                 try:
                     telemetry_queue.put(sample, timeout=0.05)
                 except Full as exc:
@@ -395,6 +390,12 @@ def run_airport_turnaround_simulation(
 
             tick_duration_ms = (time.perf_counter() - tick_start) * 1000.0
             tick_drift_abs_ms.append(abs(tick_duration_ms - scenario.tick_ms))
+            if worker is None:
+                for sample in samples:
+                    try:
+                        _consume_telemetry(sample)
+                    except Exception as exc:
+                        raise RuntimeError("telemetry_callback_failed") from exc
 
     finally:
         for adapter in adapters:

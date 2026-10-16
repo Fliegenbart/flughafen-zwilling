@@ -102,6 +102,7 @@ def run_legacy_ems_simulation(
     adapters: list[AdapterPlugin],
     telemetry_callback: Callable[[TelemetrySample], None] | None = None,
 ) -> tuple[RunSummary, SafetySummary]:
+    """Replay ticks; SIL callbacks must return or raise, with bounded external I/O."""
     params = model_pack.parameter_set
     rng = random.Random(seed)
 
@@ -314,13 +315,7 @@ def run_legacy_ems_simulation(
                 TelemetrySample(ts=ts, source="twin_core", asset_id="grid", metric="grid_on", value=int(bool(state["grid_on"])), unit="bool", run_id=run_id),
                 TelemetrySample(ts=ts, source="twin_core", asset_id="io", metric="io_latency_ms", value=round(latency, 6), unit="ms", run_id=run_id),
             ]
-            for sample in samples:
-                if worker is None:
-                    try:
-                        _consume_telemetry(sample)
-                    except Exception as exc:
-                        raise RuntimeError("telemetry_callback_failed") from exc
-                    continue
+            for sample in samples if worker else ():
                 try:
                     telemetry_queue.put(sample, timeout=0.05)
                 except Full as exc:
@@ -338,6 +333,12 @@ def run_legacy_ems_simulation(
             drift = tick_duration_ms - scenario.tick_ms
             tick_drift_signed_ms.append(drift)
             tick_drift_abs_ms.append(abs(drift))
+            if worker is None:
+                for sample in samples:
+                    try:
+                        _consume_telemetry(sample)
+                    except Exception as exc:
+                        raise RuntimeError("telemetry_callback_failed") from exc
 
     finally:
         for adapter in adapters:
