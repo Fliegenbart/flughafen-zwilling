@@ -261,7 +261,7 @@ export default function ElectrificationStudy() {
           </p>
           <p role="status" className="es-status">
             {busy
-              ? "Der Server prüft Anschlussstufen für drei Varianten. Das kann etwa eine Minute dauern."
+              ? "Der Server prüft Anschlussstufen für drei Varianten. Die erste Berechnung kann bis zu zwei Minuten dauern."
               : error
                 ? "Vergleich nicht verfügbar."
                 : !current

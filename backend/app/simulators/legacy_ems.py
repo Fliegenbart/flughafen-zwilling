@@ -152,6 +152,15 @@ def run_legacy_ems_simulation(
     digest = hashlib.sha256()
     telemetry_errors: list[Exception] = []
 
+    def _consume_telemetry(sample: TelemetrySample) -> None:
+        digest.update(
+            f"{sample.ts}|{sample.asset_id}|{sample.metric}|{sample.value}|{sample.unit}|{sample.quality}\n".encode(
+                "utf-8"
+            )
+        )
+        if telemetry_callback and not telemetry_errors:
+            telemetry_callback(sample)
+
     def _telemetry_worker() -> None:
         while not telemetry_stop.is_set() or not telemetry_queue.empty():
             try:
@@ -159,20 +168,17 @@ def run_legacy_ems_simulation(
             except Empty:
                 continue
             try:
-                digest.update(
-                    f"{sample.ts}|{sample.asset_id}|{sample.metric}|{sample.value}|{sample.unit}|{sample.quality}\n".encode(
-                        "utf-8"
-                    )
-                )
-                if telemetry_callback and not telemetry_errors:
-                    telemetry_callback(sample)
+                _consume_telemetry(sample)
             except Exception as exc:
                 telemetry_errors.append(exc)
             finally:
                 telemetry_queue.task_done()
 
-    worker = Thread(target=_telemetry_worker, daemon=True)
-    worker.start()
+    # Only HIL needs telemetry off the tick thread. SIL must finish each write
+    # before returning, rather than race a fixed shutdown deadline under load.
+    worker = Thread(target=_telemetry_worker, daemon=True) if realtime_mode != "sil" else None
+    if worker:
+        worker.start()
 
     try:
         for adapter in adapters:
@@ -309,6 +315,12 @@ def run_legacy_ems_simulation(
                 TelemetrySample(ts=ts, source="twin_core", asset_id="io", metric="io_latency_ms", value=round(latency, 6), unit="ms", run_id=run_id),
             ]
             for sample in samples:
+                if worker is None:
+                    try:
+                        _consume_telemetry(sample)
+                    except Exception as exc:
+                        raise RuntimeError("telemetry_callback_failed") from exc
+                    continue
                 try:
                     telemetry_queue.put(sample, timeout=0.05)
                 except Full as exc:
@@ -334,9 +346,10 @@ def run_legacy_ems_simulation(
             except Exception:
                 pass
         telemetry_stop.set()
-        worker.join(timeout=2.0)
-        if worker.is_alive():
-            raise RuntimeError("telemetry_shutdown_timeout")
+        if worker:
+            worker.join(timeout=2.0)
+            if worker.is_alive():
+                raise RuntimeError("telemetry_shutdown_timeout")
         if telemetry_errors:
             raise RuntimeError("telemetry_callback_failed") from telemetry_errors[0]
 
