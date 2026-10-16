@@ -69,6 +69,10 @@ def test_comparison_is_reproducible_and_freezes_three_fair_variants(client):  # 
     for variant in data["variants"]:
         assert variant["coupled_kpis"]["fleet_energy_balance_error_kwh"] < 1e-6
         assert variant["coupled_kpis"]["storage_energy_balance_error_kwh"] < 1e-6
+    # Ohne Steuerung bremst nichts: Bedarf ist die Spitze, mindestens so viel wie gedeckelt direkt.
+    free = data["uncontrolled"]
+    assert free["basis"]["policy"] == "uncontrolled"
+    assert free["grid_sizing"]["required_grid_kw"] >= direct["grid_sizing"]["required_grid_kw"]
     assert client.get("/api/v1/runs").json() == []
 
 

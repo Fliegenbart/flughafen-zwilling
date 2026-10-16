@@ -154,9 +154,14 @@ def test_documented_narrowbody_energy_parameters_are_used():
         assert specs[kind].battery_capacity_kwh == battery
 
 
-def test_api_reports_verified_required_capacity_and_separate_current_checks(client):
+def test_api_reports_verified_required_capacity_and_separate_current_checks(client, monkeypatch):
+    # Die Live-Suche mit ihrer Pruefspur, nicht die vorab gerechnete Tabelle.
+    from app.exchange import electrification
+    monkeypatch.setattr(electrification, 'atlas_sizes', lambda *args: None)
+    electrification._size_solutions.cache_clear()
     response = client.post('/api/v1/demo/electrification', json={
         'electric_share_pct': 100, 'grid_import_limit_kw': 1500, 'storage_kwh': 2000})
+    electrification._size_solutions.cache_clear()
     assert response.status_code == 200, response.text
     data = response.json()
     assert data['reference']['days'] == 3

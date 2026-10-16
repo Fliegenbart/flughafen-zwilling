@@ -52,7 +52,7 @@ function payload(share = 50) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  window.history.replaceState(null, "", "/");
+  window.history.replaceState(null, "", "/?seite=fachleute");
 });
 
 it("compares three solutions with a fixed fleet, suppresses stale results and recalculates", async () => {
@@ -67,7 +67,7 @@ it("compares three solutions with a fixed fleet, suppresses stale results and re
       ),
   );
   vi.stubGlobal("fetch", fetcher);
-  window.history.replaceState(null, "", "/");
+  window.history.replaceState(null, "", "/?seite=fachleute");
   render(<AirportEnergyCheck basePath="/" />);
   expect(
     await screen.findByText(

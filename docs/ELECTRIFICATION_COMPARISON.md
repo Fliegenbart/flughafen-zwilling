@@ -167,6 +167,14 @@ Vertrag und liefert Hashes fuer Auftraege und Anfangsflotte.
    Kapazitaet. Speicherleistung = Kapazitaet / 2, Start-SOC 50 %, Reserve 10 %,
    Netzladung unter 80 % der Anschlussgrenze.
 
+Zusaetzlich liefert der Vergleich `uncontrolled`: dieselbe Flotte ganz ohne
+Steuerung. Kein Anschluss bremst, jedes Fahrzeug laedt sofort mit voller
+Leistung. Der Bedarf ist die hoechste Netzlast der drei Tage, auf 25 kW
+aufgerundet. Anders als Variante 1 (sofort laden, am Anschluss proportional
+begrenzt) zeigt das, was ein Anschluss ohne jedes Lademanagement tragen
+muesste. Die Kundenseite nutzt diesen Wert als erste Stufe der Treppe; die
+Fachansicht zeigt weiter Variante 1.
+
 Die Auftragsdisposition ist in allen Varianten gleich. Ein Vorteil einer
 Laderegel wird nicht vorausgesetzt. Auch unveraenderte oder schlechtere
 Ergebnisse werden angezeigt. Der Elektroanteil wird deterministisch mit
@@ -191,8 +199,17 @@ Behauptung eines zyklisch nachhaltigen Jahresbetriebs.
 
 ## Schnittstellen und bestehende Daten
 
-- `POST /api/v1/demo/electrification`: Elektroanteil, Anschluss und
-  Speicherkapazitaet; drei rein serverseitig berechnete Varianten.
+- `POST /api/v1/demo/electrification`: Elektroanteil, Anschluss,
+  Speicherkapazitaet, Photovoltaik (`pv_kwp`, Standard 500) und Ladevorgaenge
+  im Parkhaus (`parking_sessions`, Standard 40); drei rein serverseitig
+  berechnete Varianten plus `uncontrolled` (siehe Vergleichsvertrag).
+- `GET /api/v1/demo/electrification/atlas`: vorab gerechnete Anschlussstufen
+  fuer alle Reglerstellungen des Beispielflughafens (`entries`: direkt,
+  vorausschauend, mit Speicher; `peaks`: ohne Steuerung). Erzeugt von
+  `backend/scripts/make_electrification_atlas.py`, liegt in
+  `backend/app/exchange/data/electrification_atlas.json`. Passt die Datei
+  nicht zu Engine, Referenz oder Raster, wird sie ignoriert und der Vergleich
+  rechnet wie bisher.
 - `POST /api/v1/demo/electrification/runs`: zusaetzlich `solution` mit
   `direct`, `managed` oder `managed_storage`; friert genau diese Variante
   fuer den bestehenden SIL-Worker und Messdaten-Abgleich ein.

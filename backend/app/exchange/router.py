@@ -31,6 +31,7 @@ from .electrification import (
     compare_electrification,
     prepare_electrification,
 )
+from .electrification_atlas import public_atlas
 from .live import PreviewRequest, preview
 from .situation import build_situation, empty_situation
 from .variants import VariantRequest, VariantRunRequest, VariantService, fleet_summary
@@ -861,6 +862,11 @@ def create_router(storage, lab_service, plans, base_dir: Path | None = None,
     @router.post("/demo/electrification")
     def electrification_comparison(body: ElectrificationRequest) -> dict:
         return compare_electrification(body)
+
+    @router.get("/demo/electrification/atlas")
+    def electrification_atlas() -> dict:
+        """Vorab gerechneter Anschlussbedarf fuer alle Reglerstufen des Beispielflughafens."""
+        return public_atlas()
 
     @router.post("/demo/electrification/runs", response_model=RunStatus, status_code=202)
     def materialize_electrification(body: ElectrificationRunRequest) -> RunStatus:

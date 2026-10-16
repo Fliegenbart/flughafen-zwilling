@@ -47,6 +47,8 @@ const isLabWerkstatt = (v: string | null): v is LabWerkstatt => v === "pilot" ||
 
 export type Route =
   | { page: "start" }
+  /** Fuer Fachleute: der ausfuehrliche Vergleich, Messdaten-Uebergabe und eigene Projekte. */
+  | { page: "fachleute" }
   | { page: "bibliothek"; werkstatt?: "simulation" }
   /** Pruefbereich: Pruefauftraege, Messdaten und Modellabgleich eines Projekts. */
   | { page: "lab"; projekt: string; werkstatt?: LabWerkstatt; run?: string }
@@ -79,6 +81,7 @@ const WERKSTATT_HOME: Record<Exclude<Werkstatt, LabWerkstatt>, Question> = {
 export function parseRoute(search: string): Route {
   const p = new URLSearchParams(search);
   const werkstatt = p.get("werkstatt");
+  if (p.get("seite") === "fachleute") return { page: "fachleute" };
   if (p.get("seite") === "bibliothek")
     return werkstatt === "simulation" ? { page: "bibliothek", werkstatt } : { page: "bibliothek" };
   const projekt = p.get("projekt");
@@ -109,7 +112,9 @@ export function parseRoute(search: string): Route {
 
 export function toSearch(route: Route): string {
   const p = new URLSearchParams();
-  if (route.page === "bibliothek") {
+  if (route.page === "fachleute") {
+    p.set("seite", "fachleute");
+  } else if (route.page === "bibliothek") {
     p.set("seite", "bibliothek");
     if (route.werkstatt) p.set("werkstatt", route.werkstatt);
   } else if (route.page === "arbeitsplatz") {
