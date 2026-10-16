@@ -1,0 +1,557 @@
+/*
+ * Startseite fuer den Kundentermin. Weisser Grund fuer den Beamer, eine Schrift (IBM Plex Sans
+ * aus arbeitsplatz.css), Farbe nur mit Bedeutung: Gelb auf Schwarz wie die Ortsschilder am
+ * Rollweg fuer die Stufen, Rot wie der Haltebalken fuer den Anschluss und was fehlt,
+ * Gruen fuer eingesparte Leistung.
+ */
+.ap.oe {
+  --ap-bg: #ffffff;
+  --ap-surface: #eef0f2;
+  --ap-ink: #161b21;
+  --ap-muted: #5d6874;
+  --ap-faint: #cdd3d9;
+  --ap-stop: #c62a1f;
+  --ap-go: #1f7a4a;
+  --ap-focus: #1d5fd1;
+  --oe-sign: #ffc72c;
+  --oe-panel: #f3f4f5;
+  background: var(--ap-bg);
+}
+.oe .ap-chart {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+/* ------------------------------------------------------------- Kopfzeile */
+.oe-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  border-bottom: 1px solid var(--ap-faint);
+}
+.oe-brand {
+  flex: 1;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.oe-brand span {
+  margin-left: 14px;
+  font-weight: 400;
+  color: var(--ap-muted);
+}
+.oe-tool,
+.oe-button {
+  font: inherit;
+  font-size: 15px;
+  padding: 7px 14px;
+  border: 1px solid var(--ap-faint);
+  border-radius: 6px;
+  background: var(--ap-bg);
+  color: var(--ap-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.oe-tool:hover:not(:disabled),
+.oe-button:hover:not(:disabled) {
+  border-color: var(--ap-ink);
+}
+.oe-tool:disabled,
+.oe-button:disabled {
+  color: var(--ap-muted);
+  cursor: default;
+}
+.oe-tool[aria-pressed="true"] {
+  background: var(--ap-ink);
+  border-color: var(--ap-ink);
+  color: var(--ap-bg);
+}
+.oe-tool kbd {
+  margin-left: 4px;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+/* --------------------------------------------------------------- Raster */
+.oe-body {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  gap: 56px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px 32px 40px;
+}
+
+/* --------------------------------------------------------------- Regler */
+.oe-levers {
+  min-width: 0;
+}
+.oe-levers fieldset {
+  display: grid;
+  gap: 22px;
+  margin: 0 0 34px;
+  padding: 0;
+  border: 0;
+}
+.oe-levers legend {
+  margin-bottom: 18px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.oe-lever {
+  display: grid;
+  gap: 2px;
+}
+.oe-lever__name {
+  font-size: 15px;
+  color: var(--ap-muted);
+}
+.oe-lever__value {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.oe-lever input[type="range"] {
+  width: 100%;
+  margin: 6px 0 2px;
+  accent-color: var(--ap-ink);
+}
+.oe-lever__hint {
+  font-size: 13px;
+  color: var(--ap-muted);
+}
+
+/* -------------------------------------------------------------- Antwort */
+.oe-main {
+  min-width: 0;
+}
+.oe-main h1 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ap-muted);
+}
+.oe-answer {
+  max-width: 30ch;
+  margin: 0 0 32px;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.oe-loading,
+.oe-error {
+  margin: 12px 0;
+  color: var(--ap-muted);
+}
+.oe-error {
+  color: var(--ap-stop);
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------- Treppe */
+.oe-treppe {
+  margin: 0 0 40px;
+}
+.oe-treppe__row {
+  display: grid;
+  grid-template-columns: 30px 220px minmax(0, 1fr) 130px;
+  align-items: center;
+  gap: 16px;
+}
+.oe-treppe__cell {
+  position: relative;
+}
+.oe-treppe__head {
+  height: 26px;
+}
+.oe-treppe__limitlabel {
+  position: absolute;
+  bottom: 2px;
+  transform: translateX(-50%);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ap-stop);
+  white-space: nowrap;
+}
+.oe-treppe__stages {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.oe-stage {
+  width: 100%;
+  padding: 12px 10px 12px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.oe-stage:hover:not(:disabled) {
+  background: var(--oe-panel);
+}
+.oe-stage[aria-pressed="true"] {
+  background: var(--oe-panel);
+  box-shadow: inset 4px 0 0 var(--ap-ink);
+}
+.oe-stage:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.oe-sign {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
+  background: #111;
+  color: var(--oe-sign);
+  font-size: 17px;
+  font-weight: 700;
+}
+.oe-sign--stop {
+  background: var(--ap-stop);
+  color: #fff;
+}
+.oe-stage__name {
+  display: grid;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.oe-stage__name small {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ap-muted);
+}
+.oe-stage__track {
+  height: 30px;
+  background: linear-gradient(var(--ap-surface), var(--ap-surface)) left center / 100% 1px no-repeat;
+}
+.oe-stage__fill,
+.oe-stage__over {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.oe-stage__fill {
+  left: 0;
+  background: var(--ap-ink);
+}
+.oe-stage__over {
+  background: repeating-linear-gradient(-45deg, var(--ap-stop) 0 6px, #e8a29c 6px 10px);
+}
+.oe-stage__limit {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  width: 3px;
+  margin-left: -1px;
+  background: var(--ap-stop);
+}
+.oe-stage__value {
+  display: grid;
+  font-size: 21px;
+  font-weight: 600;
+  text-align: right;
+  line-height: 1.2;
+}
+.oe-stage__value[data-over] {
+  color: var(--ap-stop);
+}
+.oe-stage__value small {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ap-go);
+}
+.oe-treppe__axis {
+  height: 22px;
+  margin-top: 4px;
+}
+.oe-treppe__axis .oe-treppe__cell {
+  height: 100%;
+}
+.oe-treppe__axis .oe-treppe__cell span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: var(--ap-muted);
+}
+.oe-treppe__grid {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 14px 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ap-stop);
+}
+
+/* ---------------------------------------------------------- Tageskurve */
+.oe-curve h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.oe-note {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--ap-muted);
+}
+
+/* -------------------------------------------------- So geht es weiter */
+.oe-weiter {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 28px 32px 8px;
+  border-top: 1px solid var(--ap-faint);
+}
+.oe-weiter h2 {
+  margin: 0 0 18px;
+  font-size: 22px;
+  font-weight: 600;
+}
+.oe-weiter ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.oe-weiter h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.oe-weiter p {
+  margin: 0 0 12px;
+  color: var(--ap-muted);
+}
+
+/* --------------------------------------------------------------- Fuss */
+.oe-foot {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 32px 40px;
+  font-size: 14px;
+  color: var(--ap-muted);
+}
+.oe-foot p {
+  max-width: 80ch;
+  margin: 0 0 10px;
+}
+.oe-foot summary {
+  cursor: pointer;
+  color: var(--ap-ink);
+}
+.oe-foot ul {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+.oe-foot__expert {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.oe-print-only {
+  display: none;
+}
+
+/* ------------------------------------------------------------ Schmal */
+@media screen and (max-width: 960px) {
+  .oe-head {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+  .oe-brand span {
+    display: block;
+    margin-left: 0;
+    font-size: 14px;
+  }
+  .oe-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    padding: 20px 16px 32px;
+  }
+  /* Schmal zaehlt zuerst die Antwort, die Regler folgen. */
+  .oe-main {
+    order: -1;
+  }
+  .oe-answer {
+    font-size: 26px;
+  }
+  .oe-treppe__row {
+    grid-template-columns: 30px minmax(0, 1fr) 100px;
+  }
+  .oe-treppe__row > :nth-child(3) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .oe-treppe__head,
+  .oe-treppe__axis {
+    display: none;
+  }
+  .oe-weiter ol {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .oe-weiter,
+  .oe-foot {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  /* Praesentiert wird vom Laptop am Beamer, nicht vom Telefon. */
+  .oe-head [aria-keyshortcuts] {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------- Praesentation */
+@media screen {
+  .oe[data-presenting] {
+    font-size: 19px;
+  }
+  .oe[data-presenting] .oe-body {
+    grid-template-columns: 280px minmax(0, 1fr);
+    max-width: none;
+    padding: 28px 40px;
+  }
+  .oe[data-presenting] .oe-answer {
+    font-size: 44px;
+  }
+  .oe[data-presenting] .oe-lever__value {
+    font-size: 32px;
+  }
+  .oe[data-presenting] .oe-stage__name,
+  .oe[data-presenting] .oe-treppe__grid {
+    font-size: 21px;
+  }
+  .oe[data-presenting] .oe-stage__value {
+    font-size: 26px;
+  }
+  .oe[data-presenting] .oe-treppe__row {
+    grid-template-columns: 36px 240px minmax(0, 1fr) 140px;
+  }
+  .oe[data-presenting] .oe-sign {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+  .oe[data-presenting] .oe-weiter,
+  .oe[data-presenting] .oe-foot,
+  .oe[data-presenting] .oe-lever__hint,
+  .oe[data-presenting] .oe-main h1 {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------- Druck */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm;
+  }
+  .oe {
+    min-height: 0;
+    font-size: 12px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .aec-skip,
+  .oe-tool,
+  .oe-levers fieldset,
+  .oe-weiter__screen,
+  .oe-foot details,
+  .oe-foot__expert,
+  .ap-chart__readout,
+  .oe-loading {
+    display: none !important;
+  }
+  .oe-print-only {
+    display: block;
+  }
+  .oe-head {
+    padding: 0 0 8px;
+  }
+  .oe-body {
+    display: block;
+    padding: 0;
+  }
+  .oe-levers__print {
+    margin: 10px 0 14px;
+    font-size: 12px;
+    color: var(--ap-muted);
+  }
+  .oe-main h1 {
+    font-size: 14px;
+  }
+  .oe-answer {
+    max-width: none;
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+  .oe-curve h2 {
+    font-size: 14px;
+  }
+  .oe-note {
+    font-size: 11px;
+  }
+  .oe-stage {
+    padding: 6px 4px;
+  }
+  .oe-treppe {
+    margin-bottom: 12px;
+    break-inside: avoid;
+  }
+  .oe-curve {
+    break-inside: avoid;
+  }
+  /* Auf dem Handout: was der Flughafen fuer den naechsten Schritt liefert. */
+  .oe-weiter {
+    padding: 10px 0 0;
+    break-inside: avoid;
+  }
+  .oe-weiter h2 {
+    margin-bottom: 6px;
+    font-size: 15px;
+  }
+  .oe-weiter ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+  .oe-weiter h3 {
+    font-size: 13px;
+  }
+  .oe-weiter p {
+    margin-bottom: 4px;
+  }
+  /* Die Kurve wurde fuer den Bildschirm vermessen; auf dem Blatt skaliert sie mit. */
+  .oe .ap-chart svg {
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+  }
+  .oe-foot {
+    padding: 8px 0 0;
+    font-size: 11px;
+  }
+}

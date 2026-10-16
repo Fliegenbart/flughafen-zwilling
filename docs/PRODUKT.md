@@ -78,9 +78,11 @@ Modellrechnungen, keine Schätzungen. Der Beispielflughafen ist erfunden.
 
 | Teil | Stand | Lücke zum Steckbrief |
 | --- | --- | --- |
-| Stufen 1–3 (direkt, vorausschauend, mit Speicher) | Rechnung steht (`airport_electrification_v3`) | Ergebnis dauert bis zu zwei Minuten |
-| Stufe 4 Photovoltaik | fest als Annahme (500 kWp) | kein Regler |
-| Stufe 5 Parkhaus | fest als Annahme (40 Vorgänge am Tag), nicht gesteuert | kein Regler, kein gemeinsames Lademanagement |
-| Stufe 6 Netzausbau | Anschlussbedarf je Stufe vorhanden | nicht als eigene Stufe erzählt |
-| Kundensicht | Startseite mit drei Karten | keine einzelne Antwort, Messdaten und Altwerkzeuge sichtbar |
-| PDF, Präsentationsmodus | im Arbeitsbildschirm (PR #32), nicht im Live-Stand | übernehmen |
+| Stufe 1 Ladeinfrastruktur | ohne jede Steuerung gerechnet (höchste Netzlast) | – |
+| Stufen 2–3 (Lademanagement, Speicher) | Rechnung steht (`airport_electrification_v3`), vorab für alle Reglerstellungen gerechnet | – |
+| Stufe 4 Photovoltaik | Regler (0 bis 4.000 kWp), wirkt auf alle Stufen | noch keine eigene Stufe der Treppe |
+| Stufe 5 Parkhaus | Regler (0 bis 200 Ladevorgänge am Tag) | Parkhaus wird nicht gesteuert, kein gemeinsames Lademanagement |
+| Stufe 6 Netzausbau | als Satz und rotes Schild unter der Treppe | – |
+| Kundensicht | Startseite: ein Satz, Treppe, Kurve, „So geht es weiter“; Altwerkzeuge unter `?seite=fachleute` | eigenes Kundenprojekt noch nicht an die Treppe angeschlossen |
+| PDF, Präsentationsmodus | Taste P, eine A4-Seite als Handout | – |
+| Kosten | nicht enthalten | erst nach Preisfreigabe durch E.ON |

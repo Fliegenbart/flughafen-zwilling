@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from math import ceil
 from time import perf_counter
 from typing import Literal
 
@@ -18,6 +19,7 @@ from .demo import (
     DEMO_WAIT_SECONDS,
     _canonical_hash,
 )
+from .electrification_atlas import atlas_sizes
 from .electrification_reference import REFERENCE_ID, SOURCES, reference_config, reference_day
 from .grid_sizing import (
     GRID_MAX_KW,
@@ -38,6 +40,9 @@ class ElectrificationRequest(BaseModel):
     electric_share_pct: int = Field(default=50, ge=0, le=100, strict=True)
     grid_import_limit_kw: float = Field(default=1500, ge=0, le=8000)
     storage_kwh: float = Field(default=2000, ge=0, le=6000)
+    # Oekosystem-Bausteine neben dem Vorfeld: Photovoltaik und Laden im Parkhaus.
+    pv_kwp: float = Field(default=500, ge=0, le=5000)
+    parking_sessions: int = Field(default=40, ge=0, le=275, strict=True)
 
 
 class ElectrificationRunRequest(ElectrificationRequest):
@@ -58,6 +63,8 @@ def prepare_electrification(request: ElectrificationRequest, solution: Solution)
     for fleet, count in zip(config.fleets, electric):
         fleet.electric_vehicles = count
     config.power.grid_import_limit_kw = request.grid_import_limit_kw
+    config.power.pv_capacity_kwp = request.pv_kwp
+    config.power.parking_sessions = request.parking_sessions
     config.power.battery_capacity_kwh = request.storage_kwh if solution == "managed_storage" else 0
     config.power.battery_power_kw = config.power.battery_capacity_kwh / 2
     config.power.battery_grid_charge_below_kw = (
@@ -102,29 +109,71 @@ def _resource_baseline_feasible() -> bool:
     return connection_checks(result)['feasible']
 
 
+def size_solution(solution: Solution, electric_share_pct: int, storage_kwh: float,
+                  pv_kwp: float = 500, parking_sessions: int = 40) -> dict:
+    """Kleinste erfolgreiche Anschlussstufe einer Ladeloesung (Raster-Suche, siehe grid_sizing)."""
+    if not _resource_baseline_feasible():
+        return {"status": "resource_infeasible", "required_grid_kw": None,
+                "step_kw": GRID_STEP_KW, "max_kw": GRID_MAX_KW, "evaluations": []}
+
+    def request(kw: float) -> ElectrificationRequest:
+        return ElectrificationRequest(
+            electric_share_pct=electric_share_pct, grid_import_limit_kw=kw,
+            storage_kwh=storage_kwh, pv_kwp=pv_kwp, parking_sessions=parking_sessions)
+
+    def evaluate(kw):
+        plan, _, policy, world, _ = prepare_electrification(request(kw), solution)
+        return simulate_coupled(world, plan, policy, capture_traces=False)
+
+    _, _, _, world, _ = prepare_electrification(request(1500), solution)
+    return search_connection(evaluate, lower_bound_kw=minimum_energy_bound(world))
+
+
+@lru_cache(maxsize=8)
+def uncontrolled_need(electric_share_pct: int, pv_kwp: float = 500,
+                      parking_sessions: int = 40) -> dict:
+    """Anschluss fuer Laden ganz ohne Steuerung: kein Anschluss bremst, jedes Fahrzeug laedt
+    sofort mit voller Leistung. Bedarf = hoechste Netzlast in drei Tagen, aufs Raster gerundet.
+
+    Anders als die Variante "direct" (sofort laden, am Anschluss proportional begrenzt) bremst
+    hier nichts; was ueber dem Anschluss liegt, waere Ueberlast.
+    """
+    request = ElectrificationRequest(
+        electric_share_pct=electric_share_pct, grid_import_limit_kw=GRID_MAX_KW, storage_kwh=0,
+        pv_kwp=pv_kwp, parking_sessions=parking_sessions)
+    plan, config, policy, world, _ = prepare_electrification(request, "direct")
+    result = simulate_coupled(world, plan, policy, capture_traces=False)
+    peak = max(r["grid_import_kw"] for r in result.series)
+    required = ceil(peak / GRID_STEP_KW - 1e-9) * GRID_STEP_KW
+    feasible = connection_checks(result)["feasible"] and required < GRID_MAX_KW
+    departures, _ = departures_by_half_hour(result)
+    return {
+        "grid_sizing": {"status": "feasible" if feasible else "not_found",
+                        "required_grid_kw": required if feasible else None,
+                        "peak_kw": round(peak, 1), "step_kw": GRID_STEP_KW,
+                        "max_kw": GRID_MAX_KW},
+        "basis": {**basis_from_series(result.series, config, day_minutes=world.day_minutes,
+                                      start_min=world.start_min,
+                                      day_start_utc=world.day_start_utc, policy=policy,
+                                      run_id=None), "departures": departures},
+    }
+
+
 @lru_cache(maxsize=12)
-def _size_solutions(electric_share_pct: int, storage_kwh: float) -> dict:
+def _size_solutions(electric_share_pct: int, storage_kwh: float, pv_kwp: float = 500,
+                    parking_sessions: int = 40) -> dict:
+    # Vorab gerechnete Stufen (scripts/make_electrification_atlas.py) machen den Vergleich schnell.
+    cached = atlas_sizes(electric_share_pct, storage_kwh, pv_kwp, parking_sessions)
+    if cached is not None:
+        return cached
     answers = {}
     for solution in SOLUTIONS:
         if solution == "managed_storage" and storage_kwh == 0:
             # Same world and policy as managed, not an estimated shortcut.
             answers[solution] = answers["managed"]
             continue
-        if not _resource_baseline_feasible():
-            answers[solution] = {"status": "resource_infeasible", "required_grid_kw": None,
-                                 "step_kw": GRID_STEP_KW, "max_kw": GRID_MAX_KW,
-                                 "evaluations": []}
-            continue
-
-        def evaluate(kw, solution=solution):
-            plan, _, policy, world, _ = prepare_electrification(ElectrificationRequest(
-                electric_share_pct=electric_share_pct, grid_import_limit_kw=kw,
-                storage_kwh=storage_kwh), solution)
-            return simulate_coupled(world, plan, policy, capture_traces=False)
-
-        _, _, _, world, _ = prepare_electrification(ElectrificationRequest(
-            electric_share_pct=electric_share_pct, storage_kwh=storage_kwh), solution)
-        answers[solution] = search_connection(evaluate, lower_bound_kw=minimum_energy_bound(world))
+        answers[solution] = size_solution(solution, electric_share_pct, storage_kwh, pv_kwp,
+                                          parking_sessions)
     return answers
 
 
@@ -134,7 +183,8 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
     started = perf_counter()
     variants, contract = [], None
     try:
-        sizes = _size_solutions(request.electric_share_pct, request.storage_kwh)
+        sizes = _size_solutions(request.electric_share_pct, request.storage_kwh,
+                                request.pv_kwp, request.parking_sessions)
         for solution in SOLUTIONS:
             plan, config, policy, world, _ = prepare_electrification(request, solution)
             invariant = _contract(plan, config, world)
@@ -179,10 +229,13 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
                              "stateless": True, "engine_version": world.engine_version,
                              "planning": result.planning_meta},
             })
+        uncontrolled = uncontrolled_need(request.electric_share_pct, request.pv_kwp,
+                                         request.parking_sessions)
     finally:
         _SIMULATION_LOCK.release()
     return {
         "inputs": request.model_dump(), "comparison_contract": contract, "variants": variants,
+        "uncontrolled": uncontrolled,
         "comparison_id": _canonical_hash({"contract": contract, "inputs": request.model_dump(),
             "variants": [v["input_hash"] for v in variants]}),
         "engine_version": PREDICTIVE_ENGINE_VERSION,
@@ -216,5 +269,7 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
             "Vorausschauende Energieplanung mit vollstaendig bekanntem Einsatzplan; "
             "Heuristik, keine optimale Loesung oder Prognose realer Verspaetungen.",
             "Direktes Laden ist ebenfalls am vorhandenen Netzanschluss begrenzt.",
+            "Ohne Steuerung (uncontrolled): gleiche Flotte, kein Anschluss bremst; Bedarf = "
+            "hoechste Netzlast in drei Tagen, auf 25 kW aufgerundet.",
         ],
     }
