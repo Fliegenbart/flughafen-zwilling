@@ -106,6 +106,10 @@ def _resource_baseline_feasible() -> bool:
 def _size_solutions(electric_share_pct: int, storage_kwh: float) -> dict:
     answers = {}
     for solution in SOLUTIONS:
+        if solution == "managed_storage" and storage_kwh == 0:
+            # Same world and policy as managed, not an estimated shortcut.
+            answers[solution] = answers["managed"]
+            continue
         if not _resource_baseline_feasible():
             answers[solution] = {"status": "resource_infeasible", "required_grid_kw": None,
                                  "step_kw": GRID_STEP_KW, "max_kw": GRID_MAX_KW,
