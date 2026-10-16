@@ -79,7 +79,7 @@ export default function MeasurementForm({
           ? `Die Prüfgrenzen stehen fest (Fingerabdruck ${inputs.tolerances?.sha256?.slice(0, 12) ?? "–"}…).`
           : "Noch ist nicht festgelegt, wie weit Modell und Messung auseinanderliegen dürfen. Ohne diese Grenzen kann keine Prüfmessung das Modell bestätigen."}{" "}
         <Link to={{ page: "lab", projekt: route.projekt, werkstatt: "pilot" }}>
-          Grenzen festlegen (Testing-Lab)
+          Grenzen festlegen (Prüfbereich)
         </Link>
       </p>
       <form className="aec-dgrid" onSubmit={submit} aria-label="Messreihe einlesen">
@@ -142,7 +142,11 @@ export default function MeasurementForm({
             <li key={i.id} data-valid={i.valid ? "" : undefined}>
               <span>{i.filename}</span>
               <span>
-                {i.role === "holdout" ? "Prüfmessung" : i.role === "lab" ? "Lab" : "zum Abstimmen"}
+                {i.role === "holdout"
+                  ? "Prüfmessung"
+                  : i.role === "lab"
+                    ? "Prüfbereich"
+                    : "zum Abstimmen"}
               </span>
               <span>
                 {i.valid

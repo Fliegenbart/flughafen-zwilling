@@ -139,6 +139,16 @@ def evaluate_assertions(
                 AssertionSpec(name="BHKW-Erzeugung absetzbar (nur Modell)",
                               metric="energy_kpis.chp_unabsorbed_kwh", op="<=", threshold=0.001),
             ]
+            if (summary.energy_kpis is not None
+                    and summary.energy_kpis.vehicle_recharge_deficit_kwh is not None):
+                merged.extend([
+                    AssertionSpec(name="Fahrzeug-Anfangsladung wiederhergestellt",
+                                  metric="energy_kpis.vehicle_recharge_deficit_kwh",
+                                  op="<=", threshold=0.00001),
+                    AssertionSpec(name="Speicher-Anfangsladung wiederhergestellt",
+                                  metric="energy_kpis.storage_recharge_deficit_kwh",
+                                  op="<=", threshold=0.00001),
+                ])
         elif summary.domain == "airport_energy_v1":
             merged = [
                 AssertionSpec(name="Modellbilanz", metric="energy_kpis.balance_error_max_kw",

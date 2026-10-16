@@ -63,7 +63,7 @@ describe("Datenstand", () => {
     expect(s.real).toBe(0);
     expect(s.items.map((i) => i.state)).toEqual(["fehlt", "fehlt", "fehlt", "fehlt"]);
     expect(s.answer).toBe(
-      "Noch ist keine der 4 Datenquellen belegt, gerechnet wird mit Annahmen. Es fehlen der offizielle Flugplan, Angaben zu Fahrzeugen und Anlagen sowie Messungen vom Flughafen und aus dem Testing-Lab.",
+      "Noch ist keine der 4 Datenquellen belegt, gerechnet wird mit Annahmen. Es fehlen der offizielle Flugplan, Angaben zu Fahrzeugen und Anlagen sowie Messungen vom Flughafen und aus dem Prüfbereich.",
     );
     expect(needsDataStep(s)).toBe(true);
   });
@@ -77,7 +77,7 @@ describe("Datenstand", () => {
     );
     expect(s.real).toBe(2);
     expect(s.answer).toBe(
-      "2 von 4 Datenquellen sind belegt. Es fehlen Messungen vom Flughafen und aus dem Testing-Lab.",
+      "2 von 4 Datenquellen sind belegt. Es fehlen Messungen vom Flughafen und aus dem Prüfbereich.",
     );
     expect(needsDataStep(s)).toBe(false);
   });

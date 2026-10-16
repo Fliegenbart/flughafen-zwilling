@@ -53,10 +53,15 @@ class FlightPlanSnapshot(BaseModel):
     snapshot_id: str = Field(pattern=r"^[a-f0-9]{64}$")
     content_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     source_pdf_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    source_url: Literal[SOURCE_URL] = SOURCE_URL
-    import_method: Literal["manual_user_upload"] = "manual_user_upload"
+    source_url: Literal[
+        SOURCE_URL, "urn:airport-twin:synthetic:apron-grid-reference-v2",
+    ] = SOURCE_URL
+    import_method: Literal["manual_user_upload", "synthetic_generator"] = "manual_user_upload"
     parser_version: Literal[PARSER_VERSION] = PARSER_VERSION
-    evidence_level: Literal["published_schedule_not_actual"] = "published_schedule_not_actual"
+    evidence_level: Literal["published_schedule_not_actual", "synthetic_reference"] = (
+        "published_schedule_not_actual")
+    generated_input_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$",
+                                              exclude_if=lambda value: value is None)
     timezone: Literal[TIMEZONE] = TIMEZONE
     source_data_date: date
     service_date: date

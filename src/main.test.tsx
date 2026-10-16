@@ -36,7 +36,9 @@ describe("Workspace entry point", () => {
 
   it("opens the Airport Energy Check start page by default", async () => {
     await open();
-    expect(await screen.findByRole("heading", { level: 1, name: /Reicht der Anschluss/ })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: /Flughafenflotte elektrifizieren/ }),
+    ).toBeVisible();
     expect(screen.queryByRole("heading", { name: "FlexLab Workbench" })).toBeNull();
     await waitFor(() => expect(document.title).toBe("Airport Energy Check"));
   });
@@ -45,7 +47,10 @@ describe("Workspace entry point", () => {
     await open("?workspace=airport");
     expect(await screen.findByRole("heading", { name: "Airport Twin Core" })).toBeVisible();
     expect(window.location.search).toBe("?seite=bibliothek&werkstatt=simulation");
-    expect(screen.getByRole("link", { name: "Szenario-Bibliothek" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Szenario-Bibliothek" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("offers a skip link to the main area", async () => {
@@ -57,12 +62,16 @@ describe("Workspace entry point", () => {
     expect(document.querySelector("[data-studio]")).not.toBeNull();
   });
 
-  it("redirects FlexLab into the Testing-Lab space and keeps the full workbench", async () => {
+  it("redirects FlexLab into the Messdaten-Abgleich and keeps the full workbench", async () => {
     await open("?workspace=flexlab");
     expect(await screen.findByRole("heading", { name: "FlexLab Workbench" })).toBeVisible();
     expect(window.location.search).toContain("seite=lab");
     expect(window.location.search).toContain("werkstatt=flexlab");
-    expect(screen.getByRole("link", { name: "Testing-Lab" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Messdaten-Abgleich" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await waitFor(() => expect(document.title).toBe("Messdaten-Abgleich · Airport Energy Check"));
     expect(screen.queryByRole("navigation", { name: "Vier Fragen des Projekts" })).toBeNull();
   });
 
@@ -102,12 +111,12 @@ describe("Workspace entry point", () => {
       "/airport/?seite=bibliothek",
     );
     expect(
-      within(screen.getByRole("navigation", { name: "Vier Fragen des Projekts" })).getByRole("link", {
-        name: /Zusage/,
-      }),
-    ).toHaveAttribute(
-      "href",
-      "/airport/?projekt=beispiel-muc-sued&frage=nachweis",
-    );
+      within(screen.getByRole("navigation", { name: "Vier Fragen des Projekts" })).getByRole(
+        "link",
+        {
+          name: /Prüfplan/,
+        },
+      ),
+    ).toHaveAttribute("href", "/airport/?projekt=beispiel-muc-sued&frage=nachweis");
   });
 });

@@ -101,7 +101,7 @@
   line-height: 1.1;
 }
 .ap-lever[data-changed] .ap-lever__value {
-  color: var(--ap-go);
+  color: var(--ap-focus);
 }
 .ap-lever__track {
   position: relative;
@@ -299,5 +299,351 @@
 @media (prefers-reduced-motion: reduce) {
   .ap * {
     transition: none !important;
+  }
+}
+
+.ap-intro {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 32px;
+  line-height: 1.65;
+}
+.ap-intro h2 {
+  font-size: clamp(1.3rem, 2vw, 1.9rem);
+  line-height: 1.25;
+  max-width: 850px;
+}
+.ap-intro p {
+  max-width: 980px;
+}
+.ap-step {
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+.ap-intro textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 850px;
+  min-height: 80px;
+  padding: 12px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+}
+.ap-accuracy code {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .ap-intro {
+    padding: 16px;
+  }
+  .ap-head {
+    flex-wrap: wrap;
+  }
+}
+
+/* Focused airport study: controls, three outcomes, then optional depth. */
+.ap {
+  --ap-bg: #f6f8f8;
+  --ap-surface: #e5ecec;
+  --ap-ink: #153334;
+  --ap-muted: #52696b;
+  --ap-focus: #086e68;
+  background: radial-gradient(ellipse at 85% 12%, #dbecea 0, transparent 48%), var(--ap-bg);
+}
+.ap-head {
+  max-width: 1440px;
+  margin: auto;
+  padding: 22px 32px;
+  border-bottom: 1px solid #cbdada;
+  align-items: center;
+}
+.ap-head__back {
+  letter-spacing: 0.08em;
+  font-size: 12px;
+  text-decoration: none;
+}
+.ap-head__back::before {
+  content: none;
+}
+.ap-head__title {
+  font-size: 13px;
+  color: var(--ap-muted);
+  font-weight: 400;
+}
+.ap-tools {
+  position: relative;
+  font-size: 14px;
+}
+.ap-tools summary,
+.ap-extra summary,
+.ap-next > summary,
+.ap-projects > summary {
+  cursor: pointer;
+  padding: 14px 0;
+  font-weight: 500;
+}
+.ap-tools > div {
+  position: absolute;
+  right: 0;
+  top: 45px;
+  z-index: 10;
+  min-width: 230px;
+  padding: 18px;
+  display: grid;
+  gap: 18px;
+  background: white;
+  border: 1px solid #cbdada;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px #15333418;
+}
+.ap-intro {
+  max-width: 1440px;
+  padding: 42px 32px 18px;
+}
+.ap-intro h1 {
+  font-family: "Inter Tight Variable", "IBM Plex Sans", sans-serif;
+  font-size: clamp(36px, 4.8vw, 66px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  margin: 20px 0;
+  font-weight: 580;
+}
+.ap-intro h1 em {
+  font-style: normal;
+  color: #08766b;
+}
+.ap-intro > p {
+  max-width: 810px;
+}
+.ap-kicker {
+  color: #08766b;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.ap-study-note {
+  font-size: 12px;
+  color: var(--ap-muted);
+}
+.ap-system {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  list-style: none;
+  padding: 0;
+  margin: 30px 0 4px;
+  border-top: 1px solid #cbdada;
+  border-bottom: 1px solid #cbdada;
+}
+.ap-system li {
+  position: relative;
+  padding: 20px;
+  display: grid;
+  gap: 4px;
+  border-right: 1px solid #cbdada;
+}
+.ap-system li:first-child {
+  padding-left: 0;
+}
+.ap-system li:last-child {
+  border: 0;
+}
+.ap-system li > span {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: #08766b;
+}
+.ap-system small {
+  color: var(--ap-muted);
+  font-size: 12px;
+}
+.ap-body {
+  max-width: 1440px;
+  margin: auto;
+  gap: 28px;
+  padding-top: 28px;
+  grid-template-columns: 270px minmax(0, 1fr);
+  align-items: start;
+}
+.ap-levers {
+  background: white;
+  border: 1px solid #d4e0de;
+  border-radius: 16px;
+  padding: 22px;
+  gap: 26px;
+  box-shadow: 0 8px 24px #15333405;
+}
+.ap-control-heading h2 {
+  font-size: 21px;
+  margin: 8px 0;
+}
+.ap-control-heading p,
+.ap-result-lead {
+  font-size: 14px;
+  color: var(--ap-muted);
+}
+.ap-lever__value {
+  font-size: 30px;
+}
+.ap-outcome {
+  margin: 0;
+  max-width: none;
+}
+.ap-outcome__title {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+.ap-result-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0 18px;
+}
+.ap-result-card {
+  min-width: 0;
+  border: 1px solid #cbdada;
+  border-radius: 14px;
+  padding: 20px;
+  background: #ffffffc9;
+}
+.ap-result-card h3 {
+  font-size: 15px;
+  min-height: 42px;
+  margin: 0 0 16px;
+}
+.ap-result-pair {
+  display: grid;
+  gap: 12px;
+}
+.ap-result-pair > div {
+  display: grid;
+  gap: 4px;
+}
+.ap-result-pair span {
+  font-size: 12px;
+  color: var(--ap-muted);
+}
+.ap-result-pair strong {
+  font-size: clamp(20px, 2vw, 28px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.ap-result-pair > div:last-child strong {
+  color: #08766b;
+}
+.ap-result-card p {
+  font-size: 12px;
+  color: var(--ap-muted);
+  margin: 12px 0 0;
+}
+.ap-result-card .ap-delta {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 0;
+  border-bottom: 1px solid #dbe5e3;
+}
+.ap-delta[data-direction="better"] {
+  color: #146c42;
+}
+.ap-delta[data-direction="worse"] {
+  color: #b23220;
+}
+.ap-takeaway {
+  border-left: 3px solid #08766b;
+  padding: 10px 18px;
+  background: #e6f0ed;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.ap-extra {
+  border-top: 1px solid #cbdada;
+  font-size: 14px;
+  margin-top: 16px;
+}
+.ap-curve {
+  padding-top: 4px;
+}
+.ap-chart {
+  overflow: hidden;
+  background: #fff;
+  padding: 10px;
+  border-radius: 12px;
+}
+.ap-next,
+.ap-projects {
+  max-width: 1376px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-top: 1px solid #cbdada;
+  background: #f6f8f8;
+  color: #153334;
+  font-family: "IBM Plex Sans", sans-serif;
+}
+.ap-next .ap-intro {
+  padding: 12px 0 28px;
+}
+.ap-footer {
+  max-width: 1376px;
+  margin: auto;
+  padding: 24px 32px;
+  font-size: 12px;
+  color: var(--ap-muted);
+}
+@media (max-width: 1000px) {
+  .ap-body {
+    grid-template-columns: 230px minmax(0, 1fr);
+    gap: 20px;
+  }
+  .ap-result-cards {
+    grid-template-columns: 1fr;
+  }
+  .ap-result-card h3 {
+    min-height: 0;
+  }
+  .ap-result-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 650px) {
+  .ap-head,
+  .ap-intro {
+    padding: 20px;
+  }
+  .ap-head__title {
+    display: none;
+  }
+  .ap-tools {
+    margin-left: auto;
+  }
+  .ap-system {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ap-system li {
+    padding: 14px;
+  }
+  .ap-system li:first-child {
+    padding-left: 14px;
+  }
+  .ap-body {
+    display: block;
+    padding: 16px 20px 30px;
+  }
+  .ap-levers {
+    margin-bottom: 28px;
+  }
+  .ap-result-cards {
+    gap: 10px;
+  }
+  .ap-next,
+  .ap-projects {
+    padding: 0 20px;
+  }
+  .ap-outcome table {
+    font-size: 12px;
   }
 }

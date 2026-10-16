@@ -10,10 +10,14 @@ COUPLED_DOMAIN = "airport_coupled_v1"
 # v2: Parkhausfenster in Ortszeit (DST-sicher), Ladefrist je Fahrzeug, unabhaengige
 # Energiebilanz, Grundlast-Warnungen und Bereitschaft je Klasse/Aufgabentyp.
 ENGINE_VERSION = "airport_coupled_v2"
+ELECTRIFICATION_ENGINE_VERSION = "airport_electrification_v1"
+GRID_SIZING_ENGINE_VERSION = "airport_electrification_v2"
+PREDICTIVE_ENGINE_VERSION = "airport_electrification_v3"
 LEGACY_ENGINE_VERSIONS = ("airport_coupled_v1",)
-EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2"]
+EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2", "airport_electrification_v1",
+                        "airport_electrification_v2", "airport_electrification_v3"]
 FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu"]
-CoupledPolicy = Literal["uncontrolled", "mission_priority"]
+CoupledPolicy = Literal["uncontrolled", "mission_priority", "lookahead"]
 
 
 class StrictModel(BaseModel):
@@ -23,6 +27,9 @@ class StrictModel(BaseModel):
 class FleetSpec(StrictModel):
     kind: FleetKind
     vehicles: int = Field(default=20, ge=0, le=200)
+    # None preserves the original all-electric v2 model and its serialized hashes.
+    electric_vehicles: int | None = Field(default=None, ge=0, le=200,
+                                         exclude_if=lambda value: value is None)
     chargers: int = Field(default=8, ge=0, le=200)
     battery_capacity_kwh: float = Field(default=300, gt=0, le=1000)
     initial_soc_pct: float = Field(default=50, ge=0, le=100)
@@ -39,6 +46,8 @@ class FleetSpec(StrictModel):
 
     @model_validator(mode="after")
     def validate_physics(self) -> FleetSpec:
+        if self.electric_vehicles is not None and self.electric_vehicles > self.vehicles:
+            raise ValueError("Elektrofahrzeuge duerfen die Gesamtflotte nicht uebersteigen")
         if self.chargers > self.vehicles or (self.kind == "bus" and self.chargers > 50):
             raise ValueError("Ladepunkte passen nicht zur modellierten Flotte/Referenzgrenze")
         if self.charge_target_soc_pct <= self.reserve_soc_pct:
@@ -138,6 +147,7 @@ class CoupledConfig(StrictModel):
         "reject_unresolved"
     )
     stress_events: list[StressEvent] = Field(default_factory=list, max_length=20)
+    repeat_days: int = Field(default=1, ge=1, le=3, exclude_if=lambda value: value == 1)
 
     @model_validator(mode="after")
     def unique_fleets(self) -> CoupledConfig:
@@ -165,6 +175,7 @@ class Mission(StrictModel):
     duration_min: int = Field(gt=0)
     return_min: int = Field(ge=0)
     energy_kwh: float = Field(gt=0)
+    service_day: int = Field(default=0, ge=0, le=2, exclude_if=lambda value: value == 0)
 
 
 class ParkingJob(StrictModel):
@@ -185,7 +196,7 @@ class CoupledWorld(StrictModel):
     start_min: int
     end_min: int
     missions: list[Mission] = Field(min_length=1, max_length=10000)
-    parking_jobs: list[ParkingJob] = Field(max_length=275)
+    parking_jobs: list[ParkingJob] = Field(max_length=825)
     warnings: list[str]
     world_hash: str
 

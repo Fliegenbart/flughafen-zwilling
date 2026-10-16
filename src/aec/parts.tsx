@@ -26,8 +26,8 @@ export function Mark({ size = 28 }: { size?: number }) {
 export function SourceTag({ source }: { source: DataSource }) {
   if (source === "api") return null;
   return (
-    <span className="aec-sample" title="Erfundene Werte zum Ausprobieren">
-      Beispielwerte
+    <span className="aec-sample" title="Illustrative Werte, keine Messdaten">
+      Illustrative Beispielwerte
     </span>
   );
 }

@@ -64,7 +64,7 @@ class VariantChanges(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     grid_import_limit_kw: float | None = Field(default=None, ge=0, le=100000)
-    storage_kwh: float | None = Field(default=None, gt=0, le=50000)
+    storage_kwh: float | None = Field(default=None, ge=0, le=50000)
     storage_kw: float | None = Field(default=None, gt=0, le=20000)
     extra_vehicles: dict[FleetKind, int] = Field(default_factory=dict)
     charging_policy: CoupledPolicy | None = None
@@ -77,7 +77,9 @@ class VariantChanges(BaseModel):
             raise ValueError("Variante aendert keinen Parameter")
         if self.storage_kw is not None and self.storage_kwh is None:
             raise ValueError("Speicherleistung ohne Speicherkapazitaet")
-        if self.storage_kwh is not None:
+        if self.storage_kwh == 0 and self.storage_kw is not None:
+            raise ValueError("Speicherleistung ohne Speicherkapazitaet")
+        if self.storage_kwh is not None and self.storage_kwh > 0:
             power = self.storage_kw if self.storage_kw is not None else self.storage_kwh / 2
             # Fachliche Grenze: hoechstens 4C (volle Entladung in 15 min), mindestens 0,1C.
             if power > self.storage_kwh * 4 or power < self.storage_kwh * 0.1:
@@ -141,7 +143,19 @@ def apply_changes(
     if changes.grid_import_limit_kw is not None:
         power["grid_import_limit_kw"] = changes.grid_import_limit_kw
         varied["power.grid_import_limit_kw"] = changes.grid_import_limit_kw
-    if changes.storage_kwh is not None:
+    if changes.storage_kwh == 0:
+        power.update(
+            battery_capacity_kwh=0,
+            battery_power_kw=0,
+            battery_initial_soc_pct=power["battery_reserve_pct"],
+            battery_grid_charge_below_kw=None,
+        )
+        varied.update({
+            "power.battery_capacity_kwh": 0,
+            "power.battery_power_kw": 0,
+            "power.battery_grid_charge_below_kw": None,
+        })
+    elif changes.storage_kwh is not None:
         kw = changes.storage_kw if changes.storage_kw is not None else changes.storage_kwh / 2
         power.update(
             battery_capacity_kwh=changes.storage_kwh, battery_power_kw=kw,
