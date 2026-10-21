@@ -13,7 +13,15 @@ from ..models import (
     TelemetrySample,
 )
 from .coupled_evidence import build_artifacts
-from .coupled_models import COUPLED_DOMAIN, ENGINE_VERSION, LEGACY_ENGINE_VERSIONS, CoupledWorld
+from .coupled_models import (
+    COUPLED_DOMAIN,
+    ELECTRIFICATION_ENGINE_VERSION,
+    ENGINE_VERSION,
+    GRID_SIZING_ENGINE_VERSION,
+    LEGACY_ENGINE_VERSIONS,
+    PREDICTIVE_ENGINE_VERSION,
+    CoupledWorld,
+)
 from .coupled_simulator import simulate_coupled
 from .coupled_world import verify_world
 from .flightplan import FlightPlanSnapshot
@@ -32,14 +40,17 @@ def validate_coupled_inputs(
             f"Lauf wurde mit aelterer Engine {meta['engine_version']} eingefroren; "
             f"aktuelle Engine {ENGINE_VERSION} rechnet anders. Neuen Vergleich erzeugen.",
         )
-    if meta.get("calibrated") is not False or meta.get("engine_version") != ENGINE_VERSION:
+    if meta.get("calibrated") is not False or meta.get("engine_version") not in (
+        ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION,
+        PREDICTIVE_ENGINE_VERSION,
+    ):
         raise ValueError("Engine/Unkalibriert-Metadaten widersprechen dem Kopplungsmodell")
     if meta.get("flight_plan_usage") != "drives_explicit_hypothetical_missions":
         raise ValueError("Flugplanverwendung nicht als explizite Auftragsannahme gekennzeichnet")
     world = CoupledWorld.model_validate(meta.get("coupled_world"))
     plan = FlightPlanSnapshot.model_validate(meta.get("flight_plan_snapshot"))
     verify_world(world, plan)
-    if world.engine_version != ENGINE_VERSION:
+    if world.engine_version != meta.get("engine_version"):
         raise ValueError("Welt-Engine passt nicht zur aktuellen Kopplungs-Engine")
     if request.seed != world.seed:
         raise ValueError("Seed passt nicht zur eingefrorenen Welt; neuen Vergleich erzeugen")
@@ -48,7 +59,7 @@ def validate_coupled_inputs(
         raise ValueError("Kopplung benoetigt eingefrorenen Horizont und 1-Minuten-Schritte")
     if scenario.disturbances or scenario.timeline_events:
         raise ValueError("Kopplungsstoerungen ausschliesslich in der eingefrorenen Welt definieren")
-    if model.parameter_set.get("policy") not in {"uncontrolled", "mission_priority"}:
+    if model.parameter_set.get("policy") not in {"uncontrolled", "mission_priority", "lookahead"}:
         raise ValueError("Unbekannte Laderegel")
     return world, plan
 

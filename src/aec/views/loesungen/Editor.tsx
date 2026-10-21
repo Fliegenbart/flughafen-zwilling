@@ -62,7 +62,9 @@ export default function Editor({
         .{" "}
         {board.base.policy === "mission_priority"
           ? "Wer zuerst los muss, lädt zuerst."
-          : "Jedes Fahrzeug lädt, sobald es steckt."}
+          : board.base.policy === "lookahead"
+            ? "Vorausschauend: bekannte Planzeiten leiten die Ladefenster. Keine globale Optimalitätsgarantie."
+            : "Jedes Fahrzeug lädt, sobald es steckt."}
         {board.base.source === "coupled_run" ? "" : " Vorerst sind das Standardwerte."} Jede Lösung
         ändert eine Sache daran.
       </p>

@@ -3,11 +3,58 @@ import { distributeFleet } from "../model/dataStatus";
 import type { LiveBasis, Levers } from "../model/livePower";
 import type { Project } from "../types";
 import { request } from "./http";
+import { SAMPLE_PROJECT } from "../sample";
 import { enc, isObj, num } from "./parse";
 
 export type DepartureBin = { startMin: number; count: number; delayed: number };
+export const CHARGING_POLICIES = ["uncontrolled", "mission_priority", "lookahead"] as const;
+export type ChargingPolicy = (typeof CHARGING_POLICIES)[number];
+
+export const isChargingPolicy = (value: unknown): value is ChargingPolicy =>
+  typeof value === "string" && (CHARGING_POLICIES as readonly string[]).includes(value);
+
+const CHARGING_POLICY_LABELS: Record<ChargingPolicy, string> = {
+  uncontrolled: "Direkt laden",
+  mission_priority: "Fristenpriorität",
+  lookahead: "Vorausschauend",
+};
+
+export const chargingPolicyLabel = (policy: ChargingPolicy | undefined) =>
+  policy ? CHARGING_POLICY_LABELS[policy] : "Unbekannte Laderegel";
+
+export const PLANNING_METHODS = [
+  "known_duty_energy_envelope_v1",
+  "immediate_grid_limited_v1",
+] as const;
+export type PlanningMethod = (typeof PLANNING_METHODS)[number];
+
+export const isPlanningMethod = (value: unknown): value is PlanningMethod =>
+  typeof value === "string" && (PLANNING_METHODS as readonly string[]).includes(value);
+
+/** Rohmetadaten bleiben für Export und Nachweis erhalten; camelCase ist nur eine Lesehilfe. */
+export type PlanningMetadata = Record<string, unknown> & {
+  method?: PlanningMethod;
+  perfect_foresight?: boolean;
+  optimality_guaranteed?: boolean;
+  fixed_vehicle_assignments?: boolean;
+  duty_roster_hash?: string;
+  horizon_minutes?: number;
+  end_soc_enforced_by_replay?: boolean;
+  perfectForesight?: boolean;
+  optimalityGuaranteed?: boolean;
+  fixedVehicleAssignments?: boolean;
+};
+
+export type PreviewMetadata = Record<string, unknown> & {
+  policy?: ChargingPolicy;
+  planning?: PlanningMetadata;
+};
 
 export type Preview = {
+  calculationId?: string;
+  inputHash?: string;
+  engineVersion?: string;
+  metadata?: PreviewMetadata;
   basis: LiveBasis;
   departures: DepartureBin[];
   delayedDepartures: number | null;
@@ -18,6 +65,31 @@ export type Preview = {
 };
 
 const nums = (v: unknown) => (Array.isArray(v) ? v.map((x) => num(x)) : []);
+
+function metadataFromApi(value: unknown): PreviewMetadata | undefined {
+  if (!isObj(value)) return undefined;
+  const planningRaw = isObj(value.planning) ? value.planning : null;
+  const planning: PlanningMetadata | undefined = planningRaw
+    ? {
+        ...planningRaw,
+        ...(isPlanningMethod(planningRaw.method) ? { method: planningRaw.method } : {}),
+        ...(typeof planningRaw.perfect_foresight === "boolean"
+          ? { perfectForesight: planningRaw.perfect_foresight }
+          : {}),
+        ...(typeof planningRaw.optimality_guaranteed === "boolean"
+          ? { optimalityGuaranteed: planningRaw.optimality_guaranteed }
+          : {}),
+        ...(typeof planningRaw.fixed_vehicle_assignments === "boolean"
+          ? { fixedVehicleAssignments: planningRaw.fixed_vehicle_assignments }
+          : {}),
+      }
+    : undefined;
+  return {
+    ...value,
+    policy: isChargingPolicy(value.policy) ? value.policy : undefined,
+    planning,
+  };
+}
 
 /** Antwort der Vorschau (oder der Beispiel-Referenz) in die Browser-Form bringen. */
 export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview | null {
@@ -30,6 +102,10 @@ export function previewFromApi(raw: unknown, departuresRaw?: unknown): Preview |
       ? departuresRaw
       : [];
   return {
+    calculationId: typeof raw.calculation_id === "string" ? raw.calculation_id : undefined,
+    inputHash: typeof raw.input_hash === "string" ? raw.input_hash : undefined,
+    engineVersion: typeof raw.engine_version === "string" ? raw.engine_version : undefined,
+    metadata: metadataFromApi(raw.metadata),
     basis: {
       dayMinutes: num(raw.day_minutes, 1440),
       startMin: num(raw.start_min),
@@ -75,9 +151,10 @@ export function changesFor(levers: Levers, today: Levers): Record<string, number
   const out: Record<string, number> = {};
   if (Math.abs(levers.gridLimitKw - today.gridLimitKw) > 0.5)
     out.grid_import_limit_kw = Math.round(levers.gridLimitKw);
-  if (levers.batteryKwh > 0 && levers.batteryKwh !== today.batteryKwh) {
+  if (levers.batteryKwh !== today.batteryKwh) {
     out.storage_kwh = Math.round(levers.batteryKwh);
-    out.storage_kw = Math.round(levers.batteryKw ?? levers.batteryKwh / 2);
+    if (levers.batteryKwh > 0)
+      out.storage_kw = Math.round(levers.batteryKw ?? levers.batteryKwh / 2);
   }
   if (Math.abs(levers.pvFactor - 1) > 1e-3) out.pv_factor = Math.round(levers.pvFactor * 100) / 100;
   return out;
@@ -96,9 +173,11 @@ export async function getPreview(
   signal?: AbortSignal,
 ): Promise<Preview> {
   const raw = await request<unknown>(
-    `/projects/${enc(project.id)}/situation/preview`,
+    project.id === SAMPLE_PROJECT.id
+      ? "/demo/simulation"
+      : `/projects/${enc(project.id)}/situation/preview`,
     { method: "POST", body: JSON.stringify(changes), signal },
-    { timeoutMs: 15000 },
+    { timeoutMs: 60000 },
   );
   const preview = previewFromApi(raw);
   if (!preview) throw new Error("Die Vorschau hat keine Kurve geliefert.");

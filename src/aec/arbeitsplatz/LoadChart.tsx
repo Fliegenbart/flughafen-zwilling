@@ -92,7 +92,15 @@ export default function LoadChart({
     null,
   );
   const ticks = Array.from({ length: Math.floor(top / 1000) + 1 }, (_, i) => i * 1000);
-  const hours = [0, 3, 6, 9, 12, 15, 18, 21, 24];
+  const multiday = dayMin > 1500;
+  const hours = multiday
+    ? Array.from({ length: 9 }, (_, i) => (i * dayMin) / 480)
+    : [0, 3, 6, 9, 12, 15, 18, 21, 24];
+  const timeLabel = (minute: number) =>
+    `${multiday ? `Tag ${Math.floor(minute / 1440) + 1}, ` : ""}${clock(minute)}`;
+  const clearText = multiday
+    ? "Keine begrenzte Ladeleistung im 3-Tage-Verlauf."
+    : "Der Anschluss reicht den ganzen Tag.";
   const maxDep = Math.max(1, ...departures.map((d) => d.count));
   const hp = hover != null ? pts[Math.min(pts.length - 1, Math.round(hover / STEP))] : null;
 
@@ -104,8 +112,8 @@ export default function LoadChart({
         role="img"
         aria-label={
           worst
-            ? `Von ${clock(worst.start)} bis ${clock(worst.end)} Uhr fehlen bis zu ${powerText(worst.maxMissingKw)}.`
-            : "Der Anschluss reicht den ganzen Tag."
+            ? `Von ${timeLabel(worst.start)} bis ${timeLabel(worst.end)} Uhr fehlen bis zu ${powerText(worst.maxMissingKw)}.`
+            : clearText
         }
         onPointerMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
@@ -139,22 +147,23 @@ export default function LoadChart({
           <g className="ap-chart__note">
             <line x1={x(worst.start)} x2={x(worst.end)} y1={PAD.top - 14} y2={PAD.top - 14} />
             <text x={x(worst.start)} y={PAD.top - 22}>
-              {clock(worst.start)}–{clock(worst.end)} Uhr: bis zu {powerText(worst.maxMissingKw)}{" "}
-              fehlen
+              {timeLabel(worst.start)} bis {timeLabel(worst.end)} Uhr: bis zu{" "}
+              {powerText(worst.maxMissingKw)} fehlen
             </text>
           </g>
         ) : (
           <text className="ap-chart__ok" x={PAD.left} y={PAD.top - 22}>
-            Der Anschluss reicht den ganzen Tag.
+            {clearText}
           </text>
         )}
         {hours.map((hr) => (
           <text key={hr} className="ap-chart__hour" x={x(hr * 60)} y={H - 8} textAnchor="middle">
             {hr}
+            {multiday ? " h" : ""}
           </text>
         ))}
         {departures.map((d) => {
-          const bw = (30 / dayMin) * w - 2;
+          const bw = Math.max(0.5, (30 / dayMin) * w - 2);
           const bh = (d.count / maxDep) * (DEP_H - 18);
           const dh = (d.delayed / maxDep) * (DEP_H - 18);
           return (
@@ -191,7 +200,7 @@ export default function LoadChart({
       </svg>
       <figcaption className="ap-chart__readout" aria-live="polite">
         {hp
-          ? `${clock(hp.m)} Uhr: ${powerText(hp.need)} gebraucht${
+          ? `${timeLabel(hp.m)} Uhr: ${powerText(hp.need)} gebraucht${
               hp.miss > 0.5
                 ? `, ${powerText(hp.miss)} fehlen`
                 : hp.cover > 0.5

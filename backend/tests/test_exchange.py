@@ -356,6 +356,9 @@ def test_real_coupled_run_profile_and_situation(client, tmp_path):
     assert item["content"]["flight_plan"]["content_sha256"] == plan.content_sha256
     profile = client.get(f"/api/v1/projects/{pid}/exchange/{item['id']}/profile.json").json()
     assert profile["unit"] == "kW" and profile["points"]
+    quick = client.get(f"/api/v1/runs/{run_id}/measurement-profile").json()
+    assert quick["evidence_level"] == "model_checked"
+    assert quick["points"] and quick["provenance"]["artifact_sha256"]
     situation = client.get(f"/api/v1/projects/{pid}/situation").json()
     assert situation["available"] is True, situation
     assert situation["answer"]["departures_total"] >= 1

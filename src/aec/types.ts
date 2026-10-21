@@ -80,7 +80,7 @@ export type VariantChanges = {
   storage_kwh?: number;
   storage_kw?: number;
   extra_vehicles?: Partial<Record<FleetKind, number>>;
-  charging_policy?: "uncontrolled" | "mission_priority";
+  charging_policy?: "uncontrolled" | "mission_priority" | "lookahead";
   chargers_offline?: Partial<Record<FleetKind, number>>;
   pv_factor?: number;
 };

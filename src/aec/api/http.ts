@@ -49,6 +49,10 @@ export async function request<T>(
   { timeoutMs = 12000, translate = explain }: Options = {},
 ): Promise<T> {
   const controller = new AbortController();
+  const externalSignal = init?.signal;
+  const forwardAbort = () => controller.abort();
+  if (externalSignal?.aborted) forwardAbort();
+  else externalSignal?.addEventListener("abort", forwardAbort, { once: true });
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     let response: Response;
@@ -60,7 +64,7 @@ export async function request<T>(
           "X-Exchange-Role": storedRole(),
           ...init?.headers,
         },
-        signal: init?.signal ?? controller.signal,
+        signal: controller.signal,
       });
     } catch (e) {
       throw new Error(translate(e instanceof Error ? e.message : "Failed to fetch"));
@@ -74,6 +78,7 @@ export async function request<T>(
     return body as T;
   } finally {
     clearTimeout(timer);
+    externalSignal?.removeEventListener("abort", forwardAbort);
   }
 }
 

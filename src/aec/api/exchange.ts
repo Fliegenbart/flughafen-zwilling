@@ -1,5 +1,4 @@
-/** Austausch Flughafen und Testing-Lab, inkl. Uebernahme aus der Bibliothek. */
-import { sampleExchange } from "../sample";
+/** Austausch fuer den Messdaten-Abgleich, inkl. Uebernahme aus der Bibliothek. */
 import type { ExchangeItem, ExchangeKind, ExchangeStatus, Party, Project } from "../types";
 import { request as call } from "./http";
 import { enc, evidence, isObj, str } from "./parse";
@@ -63,67 +62,32 @@ export function exchangeFromApi(raw: unknown): ExchangeItem | null {
   };
 }
 
-const sessionKey = (projectId: string) => `aec.exchange.${projectId}`;
-function sessionItems(projectId: string): ExchangeItem[] {
-  try {
-    const raw = sessionStorage.getItem(sessionKey(projectId));
-    return raw ? (JSON.parse(raw) as ExchangeItem[]) : sampleExchange(projectId);
-  } catch {
-    return sampleExchange(projectId);
-  }
-}
-function saveSession(projectId: string, items: ExchangeItem[]) {
-  try {
-    sessionStorage.setItem(sessionKey(projectId), JSON.stringify(items));
-  } catch {
-    /* fluechtig */
-  }
-}
-
 export async function listExchange(project: Project): Promise<ExchangeItem[]> {
-  if (project.source === "api") {
-    try {
-      const data = await call<unknown>(`/projects/${enc(project.id)}/exchange`);
-      if (Array.isArray(data))
-        return data.map(exchangeFromApi).filter((x): x is ExchangeItem => x !== null);
-    } catch {
-      /* Beispiel */
-    }
-  }
-  return sessionItems(project.id);
+  if (project.source !== "api") return [];
+  const data = await call<unknown>(`/projects/${enc(project.id)}/exchange`);
+  if (!Array.isArray(data)) throw new Error("Unerwartete Antwort der Austausch-API");
+  return data.map(exchangeFromApi).filter((x): x is ExchangeItem => x !== null);
 }
 
 export async function advanceExchange(
   project: Project,
   item: ExchangeItem,
   to: ExchangeStatus,
-  by: Party,
+  _by: Party,
   reason?: string,
 ): Promise<ExchangeItem> {
-  if (item.source === "api") {
-    const raw = await call<unknown>(
-      `/projects/${enc(project.id)}/exchange/${enc(item.id)}/transition`,
-      {
-        method: "POST",
-        body: JSON.stringify({ to: STATUS_TO_API[to], ...(reason ? { reason } : {}) }),
-      },
-    );
-    const next = exchangeFromApi(raw);
-    if (!next) throw new Error("Unerwartete Antwort der Austausch-API");
-    return next;
+  if (project.source !== "api" || item.source !== "api") {
+    throw new Error("Für das Beispielprojekt kann kein Messdaten-Abgleich fortgeschrieben werden.");
   }
-  const next: ExchangeItem = {
-    ...item,
-    status: to,
-    history: [
-      ...item.history,
-      { status: to, at: new Date().toISOString().slice(0, 16), by, note: reason },
-    ],
-  };
-  saveSession(
-    project.id,
-    sessionItems(project.id).map((i) => (i.id === item.id ? next : i)),
+  const raw = await call<unknown>(
+    `/projects/${enc(project.id)}/exchange/${enc(item.id)}/transition`,
+    {
+      method: "POST",
+      body: JSON.stringify({ to: STATUS_TO_API[to], ...(reason ? { reason } : {}) }),
+    },
   );
+  const next = exchangeFromApi(raw);
+  if (!next) throw new Error("Unerwartete Antwort der Austausch-API");
   return next;
 }
 
@@ -132,33 +96,19 @@ export async function proposeTest(
   question: string,
   component: string,
 ): Promise<ExchangeItem> {
-  if (project.source === "api") {
-    const raw = await call<unknown>(`/projects/${enc(project.id)}/exchange`, {
-      method: "POST",
-      body: JSON.stringify({
-        type: "test_request",
-        question,
-        component: component || "nicht angegeben",
-      }),
-    });
-    const item = exchangeFromApi(raw);
-    if (!item) throw new Error("Unerwartete Antwort der Austausch-API");
-    return item;
+  if (project.source !== "api") {
+    throw new Error("Für das Beispielprojekt kann kein Messdaten-Abgleich beauftragt werden.");
   }
-  const item: ExchangeItem = {
-    id: `${project.id}-l${Date.now().toString(36)}`,
-    kind: "testanfrage",
-    title: question,
-    summary: component,
-    from: "flughafen",
-    status: "vorgeschlagen",
-    evidence: "assumption",
-    source: "beispiel",
-    history: [
-      { status: "vorgeschlagen", at: new Date().toISOString().slice(0, 16), by: "flughafen" },
-    ],
-  };
-  saveSession(project.id, [item, ...sessionItems(project.id)]);
+  const raw = await call<unknown>(`/projects/${enc(project.id)}/exchange`, {
+    method: "POST",
+    body: JSON.stringify({
+      type: "test_request",
+      question,
+      component: component || "nicht angegeben",
+    }),
+  });
+  const item = exchangeFromApi(raw);
+  if (!item) throw new Error("Unerwartete Antwort der Austausch-API");
   return item;
 }
 
@@ -178,17 +128,6 @@ export async function adoptScenario(
     });
     return "api";
   }
-  const item: ExchangeItem = {
-    id: `${project.id}-s${Date.now().toString(36)}`,
-    kind: "szenario",
-    title: `${name} als Stresstest`,
-    summary: "Aus der Szenario-Bibliothek übernommen.",
-    from: "flughafen",
-    status: "uebergeben",
-    evidence: "synthetic",
-    source: "beispiel",
-    history: [{ status: "uebergeben", at: new Date().toISOString().slice(0, 16), by: "flughafen" }],
-  };
-  saveSession(project.id, [item, ...sessionItems(project.id)]);
+  void name;
   return "beispiel";
 }

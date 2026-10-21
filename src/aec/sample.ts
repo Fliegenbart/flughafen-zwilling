@@ -3,7 +3,7 @@
  * Werden nur gezeigt, wenn das Backend keine Daten liefert, und sind dann
  * in der Oberflaeche ueberall als "Beispieldaten" markiert.
  */
-import type { ExchangeItem, Project, Situation, Variant } from "./types";
+import type { Project, Situation, Variant } from "./types";
 
 export const SAMPLE_PROJECT: Project = {
   id: "beispiel-muc-sued",
@@ -79,7 +79,7 @@ export function sampleVariants(): Variant[] {
       name: "Heute",
       kind: "basis",
       onTimePct: 78,
-      minutesAtLimit: 52,
+      minutesAtLimit: 50,
       gridEnergyMwh: 41.2,
       peakKw: 4140,
     }),
@@ -113,66 +113,7 @@ export function sampleVariants(): Variant[] {
   ];
 }
 
-export function sampleExchange(projectId: string): ExchangeItem[] {
-  return [
-    {
-      id: `${projectId}-x1`,
-      kind: "testanfrage",
-      title: "Ladepunkt 150 kW unter Spitzenwelle prüfen",
-      summary:
-        "Hält der Ladepunkt die Leistung, wenn zwölf Schlepper zwischen 06:10 und 07:30 gleichzeitig nachladen?",
-      from: "flughafen",
-      status: "geplant",
-      evidence: "empirical_open",
-      source: "beispiel",
-      history: [
-        { status: "vorgeschlagen", at: "2026-10-01T09:12", by: "flughafen" },
-        {
-          status: "angenommen",
-          at: "2026-10-01T14:40",
-          by: "lab",
-          note: "Prüfstand frei ab KW 42.",
-        },
-        {
-          status: "geplant",
-          at: "2026-10-02T10:05",
-          by: "lab",
-          note: "Termin 14.10., vier Stunden.",
-        },
-      ],
-    },
-    {
-      id: `${projectId}-x2`,
-      kind: "szenario",
-      title: "Enteisungsfenster als Stresstest",
-      summary:
-        "Szenario aus der Bibliothek: Enteisung verlängert die Abfertigung, Ladefenster schrumpfen.",
-      from: "flughafen",
-      status: "vorgeschlagen",
-      evidence: "synthetic",
-      source: "beispiel",
-      history: [{ status: "vorgeschlagen", at: "2026-10-03T08:30", by: "flughafen" }],
-    },
-    {
-      id: `${projectId}-x3`,
-      kind: "auswertung",
-      title: "FlexLab: Speicherzyklus 2 MWh ausgewertet",
-      summary: "Wirkungsgrad und Leistungsrampen aus der Labmessung; Datenqualität ausreichend.",
-      from: "lab",
-      status: "erledigt",
-      evidence: "empirical_open",
-      source: "beispiel",
-      history: [
-        { status: "vorgeschlagen", at: "2026-09-28T11:00", by: "lab" },
-        { status: "angenommen", at: "2026-09-29T09:00", by: "flughafen" },
-        { status: "geplant", at: "2026-09-29T09:30", by: "lab" },
-        {
-          status: "erledigt",
-          at: "2026-10-02T16:20",
-          by: "lab",
-          note: "Auswertung liegt im Lab-Abgleich.",
-        },
-      ],
-    },
-  ];
+export function sampleExchange(projectId: string) {
+  void projectId;
+  return [];
 }

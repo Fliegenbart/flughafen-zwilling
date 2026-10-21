@@ -18,7 +18,10 @@ import { WerkstattLinks } from "../Werkstatt";
 
 type Claim = { level: EvidenceLevel; title: string; text: string };
 
-function claimsFor({ project }: Pick<ViewProps, "project">, overview: Overview | null): Claim[] {
+export function claimsFor(
+  { project }: Pick<ViewProps, "project">,
+  overview: Overview | null,
+): Claim[] {
   const passed = (overview?.summary.empirical_passed ?? 0) > 0;
   return [
     {
@@ -28,24 +31,24 @@ function claimsFor({ project }: Pick<ViewProps, "project">, overview: Overview |
     },
     {
       level: "synthetic",
-      title: "Was ausgedacht ist",
-      text: "Die Krisenfälle aus der Bibliothek und alle Beispielwerte.",
+      title: "Was illustriert oder simuliert ist",
+      text: "Illustrative Beispielwerte, Szenarien und Simulationen. Sie sind keine Messdaten.",
     },
     {
       level: "model_checked",
       title: "Was wir rechnerisch geprüft haben",
-      text: "Keine Energie geht verloren, Abflugzeiten werden eingehalten, alle Lösungen laufen unter gleichen Bedingungen, und jede Rechnung lässt sich wiederholen.",
+      text: "Die Simulation ist nachvollziehbar und Varianten werden unter denselben Annahmen verglichen.",
     },
     passed
       ? {
           level: "empirical_passed",
-          title: "Was eine Messung bestätigt hat",
-          text: "Eine Prüfmessung am Flughafen hat die vorher festgelegten Grenzen eingehalten.",
+          title: "Was Messdaten belegen",
+          text: "Messdaten aus einem abgegrenzten Prüffall halten die festgelegten Grenzen ein. Sie belegen nicht die gesamte Simulation.",
         }
       : {
           level: "empirical_open",
           title: "Was noch gemessen werden muss",
-          text: "Ob das Modell die Wirklichkeit trifft. Dafür fehlen Messungen am Flughafen und im Testing-Lab.",
+          text: "Ob die Simulation den abgegrenzten Prüffall abbildet. Dafür fehlen geeignete Messdaten.",
         },
   ];
 }
@@ -59,16 +62,20 @@ function reportHtml(props: ViewProps, claims: Claim[], overview: Overview | null
   const tech = (overview?.elements ?? [])
     .map((e) => `<li>${esc(e.title)} · ${esc(e.status)} · <code>${esc(e.refId)}</code></li>`)
     .join("");
-  return `<!doctype html><html lang="de"><meta charset="utf-8"><title>Zusage ${esc(props.project.name)}</title>
+  const resultKind =
+    props.board.source === "beispiel"
+      ? " (Illustrative Beispielwerte, keine Messdaten)"
+      : " (Simulationsergebnis, keine Messung)";
+  return `<!doctype html><html lang="de"><meta charset="utf-8"><title>Nachweise &amp; Prüfplan ${esc(props.project.name)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"><style>${REPORT_STYLES}</style><body><main>
-<small>Airport Energy Check · Zusammenfassung${props.situation.source === "beispiel" ? " · <b>Beispielwerte</b>" : ""}</small>
+<small>Airport Energy Check · Nachweise &amp; Prüfplan${props.situation.source === "beispiel" ? " · <b>Illustrative Beispielwerte, keine Messdaten</b>" : ""}</small>
 <h1>${esc(props.project.name)}</h1>
 <p><b>Wann es knapp wird:</b> ${esc(bottleneckAnswer(props.situation))}</p>
-<p><b>Was hilft:</b> ${esc(props.board.answer?.headline ?? variantsAnswer(props.variants))}${props.board.source === "beispiel" ? " (Beispielwerte)" : ""}</p>
+<p><b>Was hilft:</b> ${esc(props.board.answer?.headline ?? variantsAnswer(props.variants))}${resultKind}</p>
 <table>${rows}</table>
 <h2>Anhang für Fachleute</h2><ul>${tech || "<li>Noch keine gespeicherten Berechnungen.</li>"}</ul>
 <p>Modellversion: ${CURRENT_COUPLED_ENGINE}. Prüfgrenzen vorab festgelegt: ${overview?.locked ? `ja, SHA256 ${esc(overview.sha256 ?? "")}` : "nein"}.</p>
-<p>Prototyp von electrified labs. Das Modell ist nicht an Messungen kalibriert und steuert keine Anlagen.</p></main></body></html>`;
+<p>Flughafen-Simulationsprototyp. Das Modell ist nicht an Messdaten kalibriert und steuert keine Anlagen.</p></main></body></html>`;
 }
 
 export default function NachweisView(props: ViewProps) {
@@ -99,13 +106,13 @@ export default function NachweisView(props: ViewProps) {
     <>
       <AnswerHead
         id="aec-view-title"
-        question="Zusage · Was können wir versprechen?"
+        question="Nachweise & Prüfplan · Was ist belegt?"
         answer={
           passed
-            ? "Die Rechnung ist geprüft, und eine Messung vom Flughafen hat sie bestätigt."
-            : "Die Rechnung ist geprüft, verbindlich zusagen lassen sich die Zahlen erst nach einer Messung."
+            ? "Messdaten liegen für abgegrenzte Prüffälle vor. Die gesamte Simulation ist damit nicht validiert."
+            : "Die Simulation ist nachvollziehbar gerechnet; Messdaten für den Abgleich stehen noch aus."
         }
-        lead="Grün wird eine Aussage erst, wenn eine Messung die vorher vereinbarten Grenzen einhält."
+        lead="Beispielwerte und Simulationen sind keine Messdaten. Messdaten gelten nur für den jeweiligen Prüffall."
         evidence={top}
         source={overview?.source ?? "beispiel"}
         kpis={(["assumption", "synthetic", "model_checked", top] as EvidenceLevel[]).map((l) => ({

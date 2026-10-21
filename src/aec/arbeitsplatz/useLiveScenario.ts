@@ -2,17 +2,11 @@
  * Zustand des Arbeitsbildschirms: heutiger Tag, Regler-Stellung und was gerade zu sehen ist.
  *
  * Beim Ziehen rechnet der Browser sofort eine Naeherung (model/livePower). Nach einer kurzen
- * Pause holt er die genaue Vorschau vom Backend und ersetzt die Naeherung. Beispielprojekte ohne
- * Server bleiben bei der Naeherung auf einem synthetischen Referenztag.
+ * Pause holt er die gekoppelte Vorschau vom Backend und ersetzt die Naeherung.
+ * Auch der Demonstrationstag wird serverseitig gerechnet, ohne Fixture-Fallback.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  changesFor,
-  extraVehiclesFor,
-  getPreview,
-  previewFromApi,
-  type Preview,
-} from "../api/preview";
+import { changesFor, extraVehiclesFor, getPreview, type Preview } from "../api/preview";
 import {
   leversFromBasis,
   resultFromExact,
@@ -34,7 +28,7 @@ export type Scenario = {
   exact: Preview | null;
   accuracy: Accuracy;
   error: string;
-  /** Beispielprojekt ohne Server: nur Naeherung auf einem Referenztag. */
+  /** Synthetische Demonstrationseingaben, ebenfalls serverseitig berechnet. */
   sample: boolean;
   setLevers: (next: Levers) => void;
   reset: () => void;
@@ -43,14 +37,7 @@ export type Scenario = {
 const SETTLE_MS = 280;
 
 async function loadToday(project: Project): Promise<{ preview: Preview; sample: boolean }> {
-  if (project.source === "api") return { preview: await getPreview(project, {}), sample: false };
-  const ref = await import("../model/__fixtures__/livePowerReference.json");
-  const preview = previewFromApi(
-    { ...ref.default.basis, kpis: ref.default.kpis },
-    ref.default.departures,
-  );
-  if (!preview) throw new Error("Beispieltag fehlt.");
-  return { preview, sample: true };
+  return { preview: await getPreview(project, {}), sample: project.source !== "api" };
 }
 
 export function useLiveScenario(project: Project | null): Scenario {
@@ -102,7 +89,6 @@ export function useLiveScenario(project: Project | null): Scenario {
       setAccuracy("naeherung");
       clearTimeout(timer.current);
       inflight.current?.abort();
-      if (sample) return;
       const extra = extraVehiclesFor(next);
       const changes = {
         ...changesFor(next, leversFromBasis(today.basis)),
@@ -122,10 +108,11 @@ export function useLiveScenario(project: Project | null): Scenario {
           .catch((e: unknown) => {
             if (controller.signal.aborted) return;
             setError(e instanceof Error ? e.message : "Die genaue Rechnung ist fehlgeschlagen.");
+            setAccuracy("fehler");
           });
       }, SETTLE_MS);
     },
-    [today, project, sample],
+    [today, project],
   );
 
   const reset = useCallback(() => {
@@ -136,6 +123,7 @@ export function useLiveScenario(project: Project | null): Scenario {
     setResult(resultFromExact(today.basis));
     setExact(today);
     setAccuracy("genau");
+    setError("");
   }, [today]);
 
   return {

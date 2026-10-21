@@ -12,6 +12,9 @@ from make_live_power_fixture import busy_day  # noqa: E402
 from test_pilot_evidence import project  # noqa: E402
 from test_variants import AIRPORT, client  # noqa: E402,F401
 
+from app.exchange.live import PreviewRequest  # noqa: E402
+from app.exchange.variants import VariantChanges, apply_changes  # noqa: E402
+from app.munich.coupled_models import CoupledConfig, PowerConfig  # noqa: E402
 from app.munich.flightplan_store import FlightPlanStore  # noqa: E402
 
 
@@ -53,3 +56,24 @@ def test_preview_rejects_nonsense(client, tmp_path):  # noqa: F811
     assert client.post(url, json={"pv_factor": 9}).status_code == 422
     assert client.post(url, json={"storage_kw": 500}).status_code == 422
     assert client.post(url, json={"unbekannt": 1}).status_code == 422
+
+
+def test_preview_zero_storage_explicitly_deactivates_a_battery_baseline():
+    base = CoupledConfig(power=PowerConfig(
+        battery_capacity_kwh=2000,
+        battery_power_kw=1000,
+        battery_initial_soc_pct=50,
+        battery_grid_charge_below_kw=2800,
+    ))
+
+    changes = PreviewRequest(storage_kwh=0).changes()
+    config, _, varied = apply_changes(
+        base, "uncontrolled", VariantChanges.model_validate(changes), 1440,
+    )
+
+    assert changes == {"storage_kwh": 0}
+    assert config.power.battery_capacity_kwh == 0
+    assert config.power.battery_power_kw == 0
+    assert config.power.battery_initial_soc_pct == config.power.battery_reserve_pct
+    assert config.power.battery_grid_charge_below_kw is None
+    assert varied["power.battery_capacity_kwh"] == 0

@@ -1,0 +1,147 @@
+.mw {
+  max-width: 1060px;
+  margin: auto;
+  padding: var(--sp-6) var(--gutter);
+  display: grid;
+  gap: 28px;
+}
+.mw h1 {
+  font: 400 clamp(2.4rem, 5vw, 4rem)/1.05 var(--font-display);
+  max-width: 20ch;
+}
+.mw header p {
+  max-width: 72ch;
+  margin-top: 20px;
+}
+.mw section {
+  border: 1px solid var(--aec-line);
+  border-radius: 16px;
+  padding: 28px;
+  background: var(--aec-surface);
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.mw h2 {
+  font-size: 1.35rem;
+}
+.mw label {
+  display: grid;
+  gap: 8px;
+  font-weight: 550;
+}
+.mw input,
+.mw textarea,
+.mw select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 12px;
+  border: 1px solid var(--aec-line);
+  border-radius: 8px;
+  background: var(--aec-bg);
+  color: var(--aec-ink);
+  font: inherit;
+}
+.mw input:focus-visible,
+.mw textarea:focus-visible,
+.mw select:focus-visible {
+  outline: 2px solid var(--aec-focus);
+  outline-offset: 3px;
+}
+.mw textarea {
+  min-height: 85px;
+}
+.mw fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.mw fieldset:disabled {
+  opacity: 0.6;
+}
+.mw-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+.mw-steps li {
+  border-top: 3px solid #dbad40;
+  padding: 12px 0;
+  font: 500 0.9rem/1.5 var(--font-data);
+}
+.mw-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.mw .mw-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 400;
+}
+.mw-check input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin-top: 3px;
+}
+.mw-notice,
+.mw-receipt {
+  padding: 18px;
+  border-left: 3px solid #b88a28;
+  background: var(--aec-surface);
+  overflow-wrap: anywhere;
+}
+.mw .aec-button {
+  justify-self: start;
+  max-width: 100%;
+  white-space: normal;
+}
+.mw-result {
+  border-top: 1px solid var(--aec-line);
+  padding-top: 20px;
+  display: grid;
+  gap: 14px;
+}
+.mw dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+}
+.mw dd {
+  font: 500 1rem var(--font-data);
+}
+.mw code {
+  overflow-wrap: anywhere;
+}
+.mw button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (max-width: 640px) {
+  .mw {
+    padding: 24px 16px;
+  }
+  .mw section {
+    padding: 18px;
+  }
+  .mw-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+  .mw-grid {
+    grid-template-columns: 1fr;
+  }
+  .mw dl {
+    grid-template-columns: 1fr;
+  }
+  .mw dd {
+    margin-bottom: 10px;
+  }
+}

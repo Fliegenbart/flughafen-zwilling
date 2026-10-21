@@ -1,5 +1,14 @@
 # Airport Twin Core + FlexLab Workbench
 
+Der aktuelle Einstieg vergleicht die **Elektrifizierung derselben Gesamtflotte**:
+Elektroanteil, Anschluss und Speicher einstellen; direktes Laden, gesteuertes
+Laden und gesteuertes Laden mit Speicher unter gleichen Bedingungen berechnen.
+Der Vergleich bestimmt je Variante die kleinste erfolgreich gepruefte Anschlussstufe
+im 250-kW-Raster: alle Aufgaben rechtzeitig, Grundlast und Parken versorgt, Ladestaende
+nach drei Tagen wiederhergestellt. Der Vorfeldbereich ist synthetisch, nicht kalibriert.
+[Kurzer Vorfuehrablauf](docs/FOCUSED_AIRPORT_DEMO.md) und
+[Modellannahmen](docs/ELECTRIFICATION_COMPARISON.md).
+
 **Der Flughafen-Zwilling ist der primaere Arbeitsbereich. Die FlexLab Workbench
 bleibt als separates Zusatzwerkzeug erhalten; sie ersetzt den Flughafen nicht.**
 Ein gemeinsamer lokaler Docker-Start, drei klar getrennte Oberflaechen und
@@ -19,7 +28,7 @@ docker compose -f docker-compose.demo.yml up --build -d
 
 | Arbeitsbereich | Link | Zweck |
 | --- | --- | --- |
-| Flughafen (Standard) | [localhost:5176](http://localhost:5176/) | Acht Airport-Stresstests, KPI-Kurven, Playbook-/Baseline-Vergleich |
+| Flughafen (Standard) | [localhost:5176](http://localhost:5176/) | Feste Gesamtflotte, Elektroanteil und drei Ladestrategien |
 | Flughafen (Direktlink) | [workspace=airport](http://localhost:5176/?workspace=airport) | Derselbe Airport Twin Core |
 | Muenchen (Energiepilot) | [workspace=munich](http://localhost:5176/?workspace=munich) | Synthetische Campusbilanz und fairer Ladestrategie-Vergleich |
 | FlexLab (Zusatzwerkzeug) | [workspace=flexlab](http://localhost:5176/?workspace=flexlab) | Getrennte Leistungs-/Messdatenauswertung und CSV-Import |

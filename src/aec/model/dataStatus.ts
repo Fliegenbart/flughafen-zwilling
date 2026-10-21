@@ -270,7 +270,7 @@ function messdaten(inp: DataInputs): DataItem {
 }
 
 function lab(inp: DataInputs): DataItem {
-  const base = { id: "lab" as const, title: "Messungen im Testing-Lab" };
+  const base = { id: "lab" as const, title: "Messdaten aus dem Prüfbereich" };
   const measured = inp.labRuns.filter((r) => r.source === "csv_import");
   const done = latest(
     measured.filter((r) => r.state === "completed"),
@@ -293,15 +293,15 @@ function lab(inp: DataInputs): DataItem {
     return {
       ...base,
       state: "echt",
-      source: done.filename ?? "FlexLab-CSV",
+      source: done.filename ?? "CSV-Import",
       date: `eingelesen am ${deDate(done.createdTs)}`,
       evidence: "empirical_open",
       evidenceDetail: "Messung an einem einzelnen Gerät, nicht am Flughafen.",
       detail:
         done.verdict === "pass"
-          ? "Das Gerät hat den Versuch bestanden."
+          ? "Die Messung hält die festgelegten Prüfgrenzen ein."
           : done.verdict === "fail"
-            ? "Das Gerät hat den Versuch nicht bestanden."
+            ? "Die Messung hält die festgelegten Prüfgrenzen nicht ein."
             : "Das Ergebnis ist nicht eindeutig.",
       warnings,
     };
@@ -310,13 +310,13 @@ function lab(inp: DataInputs): DataItem {
   return {
     ...base,
     state: simulated ? "annahme" : "fehlt",
-    source: simulated ? "FlexLab-Simulation" : null,
+    source: simulated ? "Simulation im Prüfbereich" : null,
     date: null,
     evidence: simulated ? "synthetic" : "assumption",
-    evidenceDetail: simulated ? "Simuliert, nicht gemessen." : "Noch nicht im Lab gemessen.",
+    evidenceDetail: simulated ? "Simulation, keine Messdaten." : "Noch keine Messdaten aus dem Prüfbereich.",
     detail: simulated
-      ? "Bisher gibt es nur simulierte Versuche."
-      : "Ohne Messung im Lab bleibt offen, wie sich die echten Geräte verhalten.",
+      ? "Bisher liegt nur eine Simulation vor."
+      : "Ohne Messdaten aus dem Prüfbereich bleibt offen, wie sich die technischen Komponenten verhalten.",
     warnings,
   };
 }
@@ -325,7 +325,7 @@ const MISSING_TEXT: Record<DataItemId, string> = {
   flugplan: "der offizielle Flugplan",
   flotte: "Angaben zu Fahrzeugen und Anlagen",
   messdaten: "Messungen vom Flughafen",
-  lab: "Messungen aus dem Testing-Lab",
+  lab: "Messdaten aus dem Prüfbereich",
 };
 
 /** Aufzaehlung; enthaelt ein Teil schon "und", verbindet das letzte Glied mit "sowie". */
@@ -351,7 +351,7 @@ function dataAnswer(items: DataItem[]): string {
     if (ids.has("messdaten") && ids.has("lab")) {
       for (const id of missing)
         if (id !== "messdaten" && id !== "lab") texts.push(MISSING_TEXT[id]);
-      texts.push("Messungen vom Flughafen und aus dem Testing-Lab");
+      texts.push("Messungen vom Flughafen und aus dem Prüfbereich");
     } else texts.push(...missing.map((id) => MISSING_TEXT[id]));
     const plural = texts.length > 1 || !texts[0]!.startsWith("der ");
     parts.push(`Es ${plural ? "fehlen" : "fehlt"} ${join(texts)}.`);
