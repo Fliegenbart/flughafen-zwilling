@@ -57,6 +57,7 @@ export default function LoadChart({
   changed,
   note,
   formatCap = powerText,
+  drawNote = true,
 }: {
   result: LiveResult;
   today: LiveResult;
@@ -66,6 +67,8 @@ export default function LoadChart({
   note?: { text: string; tone: "ok" | "stop" };
   /** Leistungsformat der Anschlusslinie, passend zur umgebenden Seite. */
   formatCap?: (kw: number) => string;
+  /** false: Die Seite setzt den Satz selbst als Text ueber die Kurve (bricht schmal um). */
+  drawNote?: boolean;
 }) {
   const [box, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
@@ -152,7 +155,7 @@ export default function LoadChart({
         >
           Netzanschluss {formatCap(capNow)}
         </text>
-        {note ? (
+        {!drawNote ? null : note ? (
           note.tone === "ok" ? (
             <text className="ap-chart__ok" x={PAD.left} y={PAD.top - 22}>
               {note.text}

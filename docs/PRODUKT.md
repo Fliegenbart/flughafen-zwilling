@@ -79,10 +79,11 @@ Modellrechnungen, keine Schätzungen. Der Beispielflughafen ist erfunden.
 | Teil | Stand | Lücke zum Steckbrief |
 | --- | --- | --- |
 | Stufe 1 Ladeinfrastruktur | ohne jede Steuerung gerechnet (höchste Netzlast) | – |
-| Stufen 2–3 (Lademanagement, Speicher) | Rechnung steht (`airport_electrification_v3`), vorab für alle Reglerstellungen gerechnet | Speicherregel ist einfach (lädt unter 80 % des Anschlusses aus dem Netz nach, muss am Ende voll sein); an 157 von 2.860 Stellungen, meist bei viel Parkhaus, senkt der Speicher den Bedarf nicht. Die Treppe schaltet Stufe 3 dann ab, statt eine höhere Zahl zu zeigen |
+| Stufen 2–3 (Lademanagement, Speicher) | Rechnung steht (`airport_electrification_v3`), vorab für alle Reglerstellungen gerechnet | Speicherregel ist einfach (lädt unter 80 % des Anschlusses aus dem Netz nach, muss am Ende voll sein); an 263 von 2.640 Stellungen mit Speicher, meist bei viel Parkhaus, senkt der Speicher den Bedarf nicht (157 davon brauchen sogar mehr). Die Treppe schaltet Stufe 3 dann ab, statt eine höhere Zahl zu zeigen |
 | Stufe 4 Photovoltaik | Regler (0 bis 4.000 kWp), wirkt auf alle Stufen | noch keine eigene Stufe der Treppe |
-| Stufe 5 Parkhaus | Regler (0 bis 200 Ladevorgänge am Tag) | Parkhaus wird nicht gesteuert, kein gemeinsames Lademanagement |
+| Stufe 5 Parkhaus | Regler (0 bis 200 Ladevorgänge am Tag) | Parkhaus wird nicht vorausgeplant, nur am vollen Anschluss gleichmäßig mit gedrosselt; kein gemeinsames Lademanagement mit dem Vorfeld |
 | Stufe 6 Netzausbau | als Satz und rotes Schild unter der Treppe | – |
-| Kundensicht | Startseite: ein Satz, Treppe, Kurve, „So geht es weiter“; Altwerkzeuge unter `?seite=fachleute` | eigenes Kundenprojekt noch nicht an die Treppe angeschlossen |
+| Kundensicht | Startseite: ein Satz, Treppe, Kurve, „So geht es weiter“. Seite für Fachleute unter `?seite=fachleute`: dieselbe Rechnung, ausführlich begründet, von der Startseite verlinkt. Die Reglerstellung steht in der Adresse | eigenes Kundenprojekt noch nicht an die Treppe angeschlossen |
+| Altwerkzeuge | Messdaten-Übergabe, SIL-Läufe, eigene Projekte unter `?seite=labor`, nirgends aus der Kundensicht verlinkt | – |
 | PDF, Präsentationsmodus | Taste P, eine A4-Seite als Handout | – |
 | Kosten | nicht enthalten | erst nach Preisfreigabe durch E.ON |

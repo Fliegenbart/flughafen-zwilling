@@ -313,7 +313,9 @@ function lab(inp: DataInputs): DataItem {
     source: simulated ? "Simulation im Prüfbereich" : null,
     date: null,
     evidence: simulated ? "synthetic" : "assumption",
-    evidenceDetail: simulated ? "Simulation, keine Messdaten." : "Noch keine Messdaten aus dem Prüfbereich.",
+    evidenceDetail: simulated
+      ? "Simulation, keine Messdaten."
+      : "Noch keine Messdaten aus dem Prüfbereich.",
     detail: simulated
       ? "Bisher liegt nur eine Simulation vor."
       : "Ohne Messdaten aus dem Prüfbereich bleibt offen, wie sich die technischen Komponenten verhalten.",

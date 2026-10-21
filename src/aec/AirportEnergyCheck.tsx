@@ -14,6 +14,7 @@ import { Mark } from "./parts";
 import { SAMPLE_PROJECT } from "./sample";
 import Home from "./Home";
 import OekosystemCheck from "./oekosystem/OekosystemCheck";
+import Fachleute from "./oekosystem/Fachleute";
 import Arbeitsplatz from "./arbeitsplatz/Arbeitsplatz";
 import LabPage from "./labraum/LabPage";
 import Library from "./Library";
@@ -38,6 +39,7 @@ function titleFor(route: Route): string {
   if (route.page === "lab") return "Messdaten-Abgleich · Airport Energy Check";
   if (route.page === "arbeitsplatz") return "Arbeitsplatz · Airport Energy Check";
   if (route.page === "fachleute") return "Für Fachleute · Airport Energy Check";
+  if (route.page === "labor") return "Labor · Airport Energy Check";
   if (route.page === "projekt") {
     const q = STEPS.find((x) => x.id === route.frage)!;
     return `${q.label} · Airport Energy Check`;
@@ -106,7 +108,12 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
   const dataTheme = theme === "system" ? undefined : theme;
 
   // Arbeitsbildschirm: eigener, schlanker Rahmen ohne die bisherige Kopfzeile.
-  if (route.page === "arbeitsplatz" || route.page === "start" || route.page === "fachleute")
+  if (
+    route.page === "arbeitsplatz" ||
+    route.page === "start" ||
+    route.page === "fachleute" ||
+    route.page === "labor"
+  )
     return (
       <NavContext.Provider value={nav}>
         <a className="aec-skip" href="#aec-main">
@@ -116,6 +123,8 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
           {route.page === "start" ? (
             <OekosystemCheck />
           ) : route.page === "fachleute" ? (
+            <Fachleute />
+          ) : route.page === "labor" ? (
             <Home />
           ) : (
             <Arbeitsplatz key={route.projekt} route={route} />

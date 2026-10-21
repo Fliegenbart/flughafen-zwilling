@@ -308,6 +308,15 @@
   font-size: 17px;
   font-weight: 600;
 }
+.oe-curve__note {
+  margin: 0 0 -24px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ap-go);
+}
+.oe-curve__note[data-tone="stop"] {
+  color: var(--ap-stop);
+}
 .oe-note {
   margin: 6px 0 0;
   font-size: 14px;
@@ -367,6 +376,11 @@
 .oe-foot__expert {
   display: inline-block;
   margin-top: 10px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.oe-foot__hint {
+  margin: 2px 0 0;
   font-size: 13px;
 }
 .oe-print-only {
@@ -477,6 +491,7 @@
     print-color-adjust: exact;
   }
   .aec-skip,
+  .oe-foot__hint,
   .oe-tool,
   .oe-levers fieldset,
   .oe-weiter__screen,

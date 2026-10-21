@@ -5,128 +5,40 @@
  */
 import "../arbeitsplatz/arbeitsplatz.css";
 import "./oekosystem.css";
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  compareElectrification,
-  getAtlas,
-  type Atlas,
-  type ElectrificationComparison,
-} from "../api/electrification";
 import Link from "../Link";
-import { resultFromExact, type LiveBasis } from "../model/livePower";
 import LoadChart from "../arbeitsplatz/LoadChart";
+import { CurveWaiting, curveFor } from "./kurve";
 import Levers from "./Levers";
 import Treppe from "./Treppe";
-import { answer, kw, START, stagesFor, type Settings, type StageId } from "./stufen";
+import { answer, changedFromStart, kw, type StageId } from "./stufen";
+import { useOekosystem } from "./useOekosystem";
 import { usePresentation } from "./usePresentation";
 import Weiter from "./Weiter";
 
-const SETTLE_MS = 400;
-const REASONS: Record<string, string> = {
-  service_deadlines: "nicht alle Einsätze werden rechtzeitig fertig",
-  parking_deadlines: "im Parkhaus werden nicht alle Autos voll",
-  background_supply: "der übrige Flughafen bekommt nicht genug Strom",
-  vehicle_recharge: "die Fahrzeuge sind am Ende nicht wieder geladen",
-  storage_recharge: "der Speicher ist am Ende nicht wieder geladen",
-  energy_balance: "die Energiebilanz geht nicht auf",
-};
-const sameSettings = (a: Settings, b: Settings) =>
-  (Object.keys(a) as (keyof Settings)[]).every((k) => a[k] === b[k]);
-
-/** Ohne Steuerung bremst nichts: was ueber dem Anschluss liegt, ist Ueberlast (rot im Diagramm). */
-function againstConnection(basis: LiveBasis, connectionKw: number) {
-  const load = basis.gridImportKw ?? [];
-  return resultFromExact({
-    ...basis,
-    gridCapKw: load.map(() => connectionKw),
-    gridImportKw: load.map((v) => Math.min(v, connectionKw)),
-    requestedKw: load.map((v) => Math.max(0, v - connectionKw)),
-    deliveredKw: load.map(() => 0),
-    batteryKw: load.map(() => 0),
-  });
-}
-
 export default function OekosystemCheck() {
-  const [atlas, setAtlas] = useState<Atlas | null>(null);
-  const [loadError, setLoadError] = useState("");
-  const [settings, setSettings] = useState<Settings>(START);
-  const [selected, setSelected] = useState<StageId>("uncontrolled");
-  const [curves, setCurves] = useState<{ for: Settings; data: ElectrificationComparison } | null>(
-    null,
-  );
-  const [curveError, setCurveError] = useState("");
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const {
+    atlas,
+    loadError,
+    settings,
+    setSettings,
+    stages,
+    fresh,
+    curveError,
+    retry,
+    selected,
+    setSelected,
+  } = useOekosystem("start");
   const { presenting, setPresenting, toggleRef } = usePresentation();
 
-  useEffect(() => {
-    const controller = new AbortController();
-    getAtlas(controller.signal)
-      .then(setAtlas)
-      .catch((e: unknown) => {
-        if (!controller.signal.aborted)
-          setLoadError(e instanceof Error ? e.message : "Die Werte ließen sich nicht laden.");
-      });
-    return () => controller.abort();
-  }, []);
-
-  // Tageskurven genau nachrechnen, sobald die Regler kurz ruhen.
-  useEffect(() => {
-    const controller = new AbortController();
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      setCurveError("");
-      compareElectrification(settings, controller.signal)
-        .then((data) => setCurves({ for: settings, data }))
-        .catch((e: unknown) => {
-          if (!controller.signal.aborted)
-            setCurveError(e instanceof Error ? e.message : "Die Kurve ließ sich nicht rechnen.");
-        });
-    }, SETTLE_MS);
-    return () => {
-      clearTimeout(timer.current);
-      controller.abort();
-    };
-  }, [settings]);
-
-  const stages = useMemo(() => (atlas ? stagesFor(atlas, settings) : null), [atlas, settings]);
   const sentence =
     stages && atlas ? answer(stages, settings.grid_import_limit_kw, atlas.gridMaxKw) : "";
   // Wird die gewaehlte Stufe abgeschaltet (kein Speicher, kein Vorteil), zeigt die Kurve Stufe 2.
-  const current: StageId = stages?.find((s) => s.id === selected)?.inactive ? "managed" : selected;
-  const fresh = curves && sameSettings(curves.for, settings) ? curves.data : null;
-  const connection = settings.grid_import_limit_kw;
-  const uncontrolled = fresh?.uncontrolled;
-  const variant =
-    current === "uncontrolled" ? null : fresh?.variants.find((v) => v.solution === current);
-  const shown = current === "uncontrolled" ? uncontrolled : variant;
+  // Die einfache Leistungsbegrenzung gibt es nur auf der Fachleute-Seite.
+  const chosen: StageId = selected === "direct" ? "managed" : selected;
+  const current: StageId = stages?.find((s) => s.id === chosen)?.inactive ? "managed" : chosen;
   const stageTitle = stages?.find((s) => s.id === current)?.title.replace("+\u00a0", "mit ");
-  const base = useMemo(
-    () => (uncontrolled ? againstConnection(uncontrolled.basis, connection) : null),
-    [uncontrolled, connection],
-  );
-  const shownResult =
-    current === "uncontrolled" ? base : variant ? resultFromExact(variant.basis) : null;
-  const note =
-    current === "uncontrolled"
-      ? base?.shortfalls.length
-        ? {
-            tone: "stop" as const,
-            text: "Ohne Steuerung liegen die Ladespitzen über Ihrem Anschluss. Das wäre Überlast.",
-          }
-        : { tone: "ok" as const, text: "Der Anschluss trägt auch ungesteuertes Laden." }
-      : !variant
-        ? undefined
-        : variant.checks.feasible
-          ? {
-              tone: "ok" as const,
-              text: shownResult?.shortfalls.length
-                ? "Ladespitzen über dem Anschluss werden verschoben, alle Einsätze bleiben pünktlich."
-                : "Der Anschluss reicht an allen drei Tagen.",
-            }
-          : {
-              tone: "stop" as const,
-              text: `Hier reicht der Anschluss nicht: ${REASONS[variant.checks.reasons[0] ?? ""] ?? "das Modell findet keine Lösung"}.`,
-            };
+  const curve = curveFor(fresh, current, settings.grid_import_limit_kw);
+  const einstellung = changedFromStart(settings);
 
   return (
     <div className="ap oe" data-presenting={presenting || undefined}>
@@ -181,24 +93,25 @@ export default function OekosystemCheck() {
                 <h2 id="oe-curve-title">
                   Netzlast über drei Tage, {stageTitle ?? "ohne Steuerung"}
                 </h2>
-                {shown && base && shownResult ? (
+                {curve ? (
+                  <p className="oe-curve__note" data-tone={curve.note.tone} aria-hidden="true">
+                    {curve.note.text}
+                  </p>
+                ) : null}
+                {curve ? (
                   <LoadChart
-                    note={note}
+                    drawNote={false}
+                    note={curve.note}
                     formatCap={kw}
-                    result={shownResult}
-                    today={base}
-                    departures={shown.departures}
+                    result={curve.result}
+                    today={curve.base}
+                    departures={curve.departures}
                     changed={current !== "uncontrolled"}
                   />
                 ) : (
-                  <p className="oe-loading" role="status">
-                    {curveError ||
-                      (fresh && !uncontrolled
-                        ? "Der Server liefert noch keine Kurve ohne Steuerung."
-                        : "Die Kurve wird gerechnet …")}
-                  </p>
+                  <CurveWaiting error={curveError} incomplete={!!fresh} onRetry={retry} />
                 )}
-                {shown ? (
+                {curve ? (
                   <p className="oe-note">
                     Schwarz: was das Vorfeld, das Parkhaus und der übrige Flughafen aus dem Netz
                     brauchen
@@ -220,28 +133,13 @@ export default function OekosystemCheck() {
           gerechnet. Die Werte stammen aus Literatur und Annahmen, das Modell ist nicht an Messungen
           kalibriert.
         </p>
-        {fresh ? (
-          <details>
-            <summary>Annahmen und Quellen</summary>
-            <ul>
-              {fresh.limitations.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-            <ul>
-              {fresh.sources.map((source) => (
-                <li key={source.url}>
-                  <a href={source.url} target="_blank" rel="noreferrer">
-                    {source.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </details>
-        ) : null}
-        <Link to={{ page: "fachleute" }} className="oe-foot__expert">
+        <Link
+          to={einstellung ? { page: "fachleute", einstellung } : { page: "fachleute" }}
+          className="oe-foot__expert"
+        >
           Ausführlicher Vergleich für Fachleute
         </Link>
+        <p className="oe-foot__hint">Annahmen, Rechenweg und Quellen zu dieser Einstellung.</p>
       </footer>
     </div>
   );

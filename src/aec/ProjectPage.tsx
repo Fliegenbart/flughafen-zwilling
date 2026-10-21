@@ -267,7 +267,7 @@ export default function ProjectPage({
       <div className="aec-projectbar">
         <div className="aec-projectbar__id">
           <Link
-            to={{ page: "start" }}
+            to={{ page: "labor" }}
             className="aec-projectbar__back"
             label="Zurück zu allen Projekten"
           >

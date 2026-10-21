@@ -1,7 +1,7 @@
 /** Die Regler: was der Flughafen hat und welche Bausteine dazukommen. */
 import type { Atlas } from "../api/electrification";
 import { dec1, int } from "../model/format";
-import { kw, type Settings } from "./stufen";
+import { CONNECTION, kw, type Settings } from "./stufen";
 
 type Lever = {
   key: keyof Settings;
@@ -24,7 +24,7 @@ const AIRPORT: Lever[] = [
     key: "grid_import_limit_kw",
     label: "Netzanschluss heute",
     show: kw,
-    range: { min: 250, max: 5000, step: 25 },
+    range: CONNECTION,
   },
 ];
 const BLOCKS: Lever[] = [
