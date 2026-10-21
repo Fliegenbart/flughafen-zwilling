@@ -13,7 +13,9 @@ from app.exchange.electrification import (
     uncontrolled_need,
 )
 from app.exchange.electrification_atlas import AXES, atlas_key, load_atlas, peak_key
+from app.exchange.electrification_reference import REFERENCE_ID, STORAGE_RULE
 from app.exchange.grid_sizing import GRID_STEP_KW
+from app.munich.coupled_models import PREDICTIVE_ENGINE_VERSION
 
 
 def test_photovoltaics_and_parking_are_levers_of_the_reference():
@@ -63,6 +65,9 @@ def test_atlas_covers_every_lever_position(atlas):
         _, uncontrolled = atlas["peaks"][peak_key(int(share), int(pv), int(parking))]
         if uncontrolled is not None and entry[1][1] is not None:
             assert entry[1][1] <= uncontrolled, key
+        # Speicherregel: im Zweifel bleibt der Speicher aus, braucht also nie mehr Anschluss.
+        if entry[1][1] is not None:
+            assert entry[2][1] is not None and entry[2][1] <= entry[1][1], key
 
 
 def test_atlas_matches_the_live_search(atlas):
@@ -84,16 +89,39 @@ def test_comparison_answers_from_the_atlas_on_the_grid(atlas):
     assert [v["required_grid_kw"] for v in sizes.values()] == [e[1] for e in entry]
 
 
-def test_atlas_is_ignored_when_it_does_not_fit_the_model(tmp_path, monkeypatch):
+@pytest.mark.parametrize("stale_fields", [
+    {"engine_version": "alt", "reference_id": "x"},
+    # Gleiche Engine und Referenz, aber mit der alten Speicherregel (80-%-Netzladung) gerechnet.
+    {"engine_version": PREDICTIVE_ENGINE_VERSION, "reference_id": REFERENCE_ID},
+    {"engine_version": PREDICTIVE_ENGINE_VERSION, "reference_id": REFERENCE_ID,
+     "storage_rule": "grid_recharge_below_80pct"},
+])
+def test_atlas_is_ignored_when_it_does_not_fit_the_model(tmp_path, monkeypatch, stale_fields):
     stale = tmp_path / "atlas.json"
-    stale.write_text(json.dumps({"engine_version": "alt", "reference_id": "x", "axes": AXES,
-                                 "grid_step_kw": 25, "grid_max_kw": 8000, "entries": {}}))
+    stale.write_text(json.dumps({**stale_fields, "axes": AXES, "grid_step_kw": 25,
+                                 "grid_max_kw": 8000, "entries": {}, "peaks": {}}))
     monkeypatch.setattr(atlas_module, "ATLAS_PATH", stale)
     atlas_module.load_atlas.cache_clear()
     try:
         assert atlas_module.load_atlas() is None
         assert atlas_module.atlas_sizes(50, 2000, 500, 40) is None
         assert atlas_module.public_atlas() == {"available": False}
+    finally:
+        atlas_module.load_atlas.cache_clear()
+
+
+def test_atlas_for_the_current_storage_rule_is_used(tmp_path, monkeypatch):
+    fitting = tmp_path / "atlas.json"
+    fitting.write_text(json.dumps({
+        "engine_version": PREDICTIVE_ENGINE_VERSION, "reference_id": REFERENCE_ID,
+        "storage_rule": STORAGE_RULE, "axes": AXES, "grid_step_kw": 25, "grid_max_kw": 8000,
+        "entries": {atlas_key(50, 2000, 500, 40): [
+            ["feasible", 900], ["feasible", 825], ["feasible", 800]]}, "peaks": {}}))
+    monkeypatch.setattr(atlas_module, "ATLAS_PATH", fitting)
+    atlas_module.load_atlas.cache_clear()
+    try:
+        sizes = atlas_module.atlas_sizes(50, 2000, 500, 40)
+        assert [v["required_grid_kw"] for v in sizes.values()] == [900, 825, 800]
     finally:
         atlas_module.load_atlas.cache_clear()
 

@@ -3,7 +3,8 @@
 Die Werte sind echte Modellrechnungen (dieselbe Raster-Suche wie im Vergleich), einmal fuer
 alle Reglerstufen gerechnet von scripts/make_electrification_atlas.py. Liegt eine Stellung
 auf dem Raster, antwortet der Vergleich sofort; sonst rechnet er wie bisher. Passt die
-Datei nicht mehr zum Modell (Engine oder Referenz geaendert), wird sie nicht benutzt.
+Datei nicht mehr zum Modell (Engine, Referenz oder Speicherregel geaendert), wird sie nicht
+benutzt.
 """
 from __future__ import annotations
 
@@ -12,7 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION
-from .electrification_reference import REFERENCE_ID
+from .electrification_reference import REFERENCE_ID, STORAGE_RULE
 from .grid_sizing import GRID_MAX_KW, GRID_STEP_KW
 
 ATLAS_PATH = Path(__file__).resolve().parent / "data" / "electrification_atlas.json"
@@ -42,6 +43,7 @@ def load_atlas() -> dict | None:
         return None
     if (data.get("engine_version") != PREDICTIVE_ENGINE_VERSION
             or data.get("reference_id") != REFERENCE_ID
+            or data.get("storage_rule") != STORAGE_RULE
             or data.get("grid_step_kw") != GRID_STEP_KW or data.get("grid_max_kw") != GRID_MAX_KW
             or data.get("axes") != AXES):
         return None

@@ -2,7 +2,7 @@
 
 Ergebnis: backend/app/exchange/data/electrification_atlas.json (siehe electrification_atlas.py).
 Laeuft parallel auf allen Kernen; auf einem Laptop rund ein bis zwei Stunden.
-Neu erzeugen, wenn sich Modell, Referenz oder Raster aendern:
+Neu erzeugen, wenn sich Modell, Referenz, Speicherregel oder Raster aendern:
 
     cd backend && python scripts/make_electrification_atlas.py
 
@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 
 from app.exchange.electrification import size_solution, uncontrolled_need  # noqa: E402
 from app.exchange.electrification_atlas import ATLAS_PATH, AXES, atlas_key, peak_key  # noqa: E402
-from app.exchange.electrification_reference import REFERENCE_ID  # noqa: E402
+from app.exchange.electrification_reference import REFERENCE_ID, STORAGE_RULE  # noqa: E402
 from app.exchange.grid_sizing import GRID_MAX_KW, GRID_STEP_KW  # noqa: E402
 from app.munich.coupled_models import PREDICTIVE_ENGINE_VERSION  # noqa: E402
 
@@ -36,11 +36,12 @@ def _short(result: dict) -> list:
 def group(share: int, pv: int, parking: int) -> dict:
     """Direkt und vorausschauend einmal, mit Speicher fuer jede Speicherstufe."""
     direct = _short(size_solution("direct", share, 0, pv, parking))
-    managed = _short(size_solution("managed", share, 0, pv, parking))
+    without = size_solution("managed", share, 0, pv, parking)
+    managed = _short(without)
     out = {}
     for storage in AXES["storage_kwh"]:
-        with_storage = managed if storage == 0 else _short(
-            size_solution("managed_storage", share, storage, pv, parking))
+        with_storage = managed if storage == 0 else _short(size_solution(
+            "managed_storage", share, storage, pv, parking, without_storage=without))
         out[atlas_key(share, storage, pv, parking)] = [direct, managed, with_storage]
     return out
 
@@ -66,12 +67,13 @@ def main() -> None:
     if "--peaks-only" in sys.argv:
         payload = json.loads(ATLAS_PATH.read_text(encoding="utf-8"))
         if (payload.get("axes") != AXES
-                or payload.get("engine_version") != PREDICTIVE_ENGINE_VERSION):
+                or payload.get("engine_version") != PREDICTIVE_ENGINE_VERSION
+                or payload.get("storage_rule") != STORAGE_RULE):
             raise SystemExit("Vorhandene Datei passt nicht zum Modell; ganz neu rechnen.")
     else:
         payload = {"engine_version": PREDICTIVE_ENGINE_VERSION, "reference_id": REFERENCE_ID,
-                   "grid_step_kw": GRID_STEP_KW, "grid_max_kw": GRID_MAX_KW, "axes": AXES,
-                   "entries": run(group, groups)}
+                   "storage_rule": STORAGE_RULE, "grid_step_kw": GRID_STEP_KW,
+                   "grid_max_kw": GRID_MAX_KW, "axes": AXES, "entries": run(group, groups)}
     payload["peaks"] = run(peak, groups)
     ATLAS_PATH.parent.mkdir(parents=True, exist_ok=True)
     ATLAS_PATH.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")

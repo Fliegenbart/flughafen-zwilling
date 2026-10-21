@@ -20,7 +20,13 @@ from .demo import (
     _canonical_hash,
 )
 from .electrification_atlas import atlas_sizes
-from .electrification_reference import REFERENCE_ID, SOURCES, reference_config, reference_day
+from .electrification_reference import (
+    REFERENCE_ID,
+    SOURCES,
+    STORAGE_RULE,
+    reference_config,
+    reference_day,
+)
 from .grid_sizing import (
     GRID_MAX_KW,
     GRID_STEP_KW,
@@ -49,7 +55,11 @@ class ElectrificationRunRequest(ElectrificationRequest):
     solution: Solution
 
 
-def prepare_electrification(request: ElectrificationRequest, solution: Solution):
+def prepare_electrification(request: ElectrificationRequest, solution: Solution, *,
+                            storage_on: bool = True):
+    """Gemeinsame Welt der drei Loesungen. ``storage_on=False`` laesst einen eingebauten
+    Speicher ausgeschaltet: gleiche Kapazitaet, aber weder Laden noch Entladen (STORAGE_RULE).
+    """
     plan, config = reference_day(), reference_config()
     total = sum(f.vehicles for f in config.fleets)
     target = (total * request.electric_share_pct + 50) // 100
@@ -66,10 +76,12 @@ def prepare_electrification(request: ElectrificationRequest, solution: Solution)
     config.power.pv_capacity_kwp = request.pv_kwp
     config.power.parking_sessions = request.parking_sessions
     config.power.battery_capacity_kwh = request.storage_kwh if solution == "managed_storage" else 0
-    config.power.battery_power_kw = config.power.battery_capacity_kwh / 2
-    config.power.battery_grid_charge_below_kw = (
-        request.grid_import_limit_kw * 0.8 if config.power.battery_capacity_kwh else None
-    )
+    active = bool(config.power.battery_capacity_kwh) and storage_on
+    config.power.battery_power_kw = config.power.battery_capacity_kwh / 2 if active else 0
+    # Netzladung bis zum vollen Anschluss, aber nur mit dem, was nach Grundlast, Vorfeld und
+    # Parkhaus in derselben Minute frei bleibt (coupled_power.step). Bei 80 % blieb tagsueber
+    # die Reserve ungenutzt und der Speicher kam nicht auf seinen Anfangsstand zurueck.
+    config.power.battery_grid_charge_below_kw = request.grid_import_limit_kw if active else None
     policy = "uncontrolled" if solution == "direct" else "lookahead"
     world = build_world(plan, config, DEFAULT_SEED, PREDICTIVE_ENGINE_VERSION)
     changes = {**request.model_dump(exclude={"solution"}), "solution": solution}
@@ -110,8 +122,15 @@ def _resource_baseline_feasible() -> bool:
 
 
 def size_solution(solution: Solution, electric_share_pct: int, storage_kwh: float,
-                  pv_kwp: float = 500, parking_sessions: int = 40) -> dict:
-    """Kleinste erfolgreiche Anschlussstufe einer Ladeloesung (Raster-Suche, siehe grid_sizing)."""
+                  pv_kwp: float = 500, parking_sessions: int = 40, *,
+                  without_storage: dict | None = None) -> dict:
+    """Kleinste erfolgreiche Anschlussstufe einer Ladeloesung (Raster-Suche, siehe grid_sizing).
+
+    Mit Speicher gilt "im Zweifel aus" (STORAGE_RULE): Gesucht wird mit laufendem Speicher nur
+    bis zum Bedarf ohne Speicher (``without_storage``, sonst hier gerechnet). Besteht er bis
+    dahin keine Stufe, wird dort der ausgeschaltete Speicher ausgespielt. Mehr Anschluss als
+    ohne Speicher braucht diese Loesung damit nie.
+    """
     if not _resource_baseline_feasible():
         return {"status": "resource_infeasible", "required_grid_kw": None,
                 "step_kw": GRID_STEP_KW, "max_kw": GRID_MAX_KW, "evaluations": []}
@@ -121,12 +140,28 @@ def size_solution(solution: Solution, electric_share_pct: int, storage_kwh: floa
             electric_share_pct=electric_share_pct, grid_import_limit_kw=kw,
             storage_kwh=storage_kwh, pv_kwp=pv_kwp, parking_sessions=parking_sessions)
 
-    def evaluate(kw):
-        plan, _, policy, world, _ = prepare_electrification(request(kw), solution)
+    def evaluate(kw, storage_on=True):
+        plan, _, policy, world, _ = prepare_electrification(request(kw), solution,
+                                                            storage_on=storage_on)
         return simulate_coupled(world, plan, policy, capture_traces=False)
 
     _, _, _, world, _ = prepare_electrification(request(1500), solution)
-    return search_connection(evaluate, lower_bound_kw=minimum_energy_bound(world))
+    bound = minimum_energy_bound(world)
+    if solution != "managed_storage" or not storage_kwh:
+        return search_connection(evaluate, lower_bound_kw=bound)
+    without = without_storage or size_solution(
+        "managed", electric_share_pct, 0, pv_kwp, parking_sessions)
+    limit = without["required_grid_kw"]
+    scan = search_connection(evaluate, lower_bound_kw=bound,
+                             **({} if limit is None else {"max_kw": limit}))
+    if scan["required_grid_kw"] is not None or limit is None:
+        return {**scan, "storage_mode": "on"}
+    off = search_connection(lambda kw: evaluate(kw, storage_on=False),
+                            lower_bound_kw=limit, max_kw=limit)
+    return {**scan, "status": off["status"], "required_grid_kw": off["required_grid_kw"],
+            "evaluations": scan["evaluations"] + [
+                {**e, "storage_mode": "off"} for e in off["evaluations"]],
+            "storage_mode": "off"}
 
 
 @lru_cache(maxsize=8)
@@ -173,7 +208,7 @@ def _size_solutions(electric_share_pct: int, storage_kwh: float, pv_kwp: float =
             answers[solution] = answers["managed"]
             continue
         answers[solution] = size_solution(solution, electric_share_pct, storage_kwh, pv_kwp,
-                                          parking_sessions)
+                                          parking_sessions, without_storage=answers.get("managed"))
     return answers
 
 
@@ -181,7 +216,7 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
     if not _SIMULATION_LOCK.acquire(timeout=DEMO_WAIT_SECONDS):
         raise HTTPException(status_code=429, detail="Demo ausgelastet. Vergleich erneut versuchen.")
     started = perf_counter()
-    variants, contract = [], None
+    variants, contract, passed = [], None, {}
     try:
         sizes = _size_solutions(request.electric_share_pct, request.storage_kwh,
                                 request.pv_kwp, request.parking_sessions)
@@ -192,13 +227,25 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
                 raise RuntimeError("Vergleichsbedingungen stimmen nicht ueberein")
             contract = invariant
             result = simulate_coupled(world, plan, policy, capture_traces=False)
+            storage_mode = None
+            if solution == "managed_storage" and config.power.battery_capacity_kwh:
+                storage_mode = "on"
+                # Im Zweifel aus (STORAGE_RULE): scheitert der laufende Speicher an diesem
+                # Anschluss, wo es ohne Speicher reicht, bleibt er ausgeschaltet.
+                if not connection_checks(result)["feasible"] and passed["managed"]:
+                    plan, config, policy, world, _ = prepare_electrification(
+                        request, solution, storage_on=False)
+                    result = simulate_coupled(world, plan, policy, capture_traces=False)
+                    storage_mode = "off"
+            passed[solution] = connection_checks(result)["feasible"]
             departures, delayed = departures_by_half_hour(result)
             input_hash = _canonical_hash({"world_hash": world.world_hash, "policy": policy})
             variants.append({
                 **basis_from_series(result.series, config, day_minutes=world.day_minutes,
                                     start_min=world.start_min, day_start_utc=world.day_start_utc,
                                     policy=policy, run_id=None),
-                "solution": solution, "engine_version": world.engine_version,
+                "solution": solution, "storage_mode": storage_mode,
+                "engine_version": world.engine_version,
                 "world_hash": world.world_hash, "input_hash": input_hash,
                 "calculation_id": input_hash,
                 "departures": departures, "kpis": preview_kpis(result, departures, delayed),
@@ -246,7 +293,8 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
                       "arrivals_per_day": 180,
                       "scope": "synthetic_apron_section_not_whole_munich_airport",
                       "resource_baseline_feasible": _resource_baseline_feasible(),
-                      "grid_step_kw": GRID_STEP_KW, "grid_max_kw": GRID_MAX_KW},
+                      "grid_step_kw": GRID_STEP_KW, "grid_max_kw": GRID_MAX_KW,
+                      "storage_rule": STORAGE_RULE},
         "sources": SOURCES,
         "limitations": [
             "Synthetischer Vorfeldbereich, kein Modell des gesamten Muenchner Flughafens.",
@@ -264,6 +312,9 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
             "Anfangsladung jedes Fahrzeugs und des Speichers am Ende wiederhergestellt.",
             "Speicher startet mit 50 %, Fahrzeuge mit 85 %; keine geliehene Anfangsenergie, "
             "aber kein saisonaler oder zyklischer Jahresnachweis.",
+            "Speicher laedt aus dem Netz nur, was am Anschluss nach allen Lasten frei bleibt; "
+            "hilft er nicht, bleibt er fuer die drei Tage aus und braucht nie mehr Anschluss "
+            "als ohne Speicher.",
             "Kein Kosten-, ROI-, Netzschutz- oder Lastflussnachweis.",
             "Gleiche Fahrzeugzuordnung je Auftrag, kein Ausweichen auf Dieselfahrzeuge.",
             "Vorausschauende Energieplanung mit vollstaendig bekanntem Einsatzplan; "

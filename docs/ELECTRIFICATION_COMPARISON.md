@@ -31,8 +31,92 @@ Nachweis fuer diese Modellregel, kein kontinuierliches oder globales Optimum.
   identisch. Ohne elektrische Vorfeldfahrzeuge und ohne stationaeren Speicher
   muessen die Leistungsreihen exakt gleich sein.
 - Die dritte Variante ergaenzt denselben Planer um den gewaehlten Speicher.
-  Die bestehende Peak-Shaving-Regel und Speicher-Endladung bleiben explizit;
-  dem Planer wird keine fiktive kostenlose Anfangsenergie gutgeschrieben.
+  Seine Regel steht im Abschnitt „Speicherregel“; dem Planer wird keine
+  fiktive kostenlose Anfangsenergie gutgeschrieben.
+
+## Speicherregel: nie mehr Anschluss als ohne Speicher
+
+Kennung `grid_recharge_to_limit_or_off_v1` (`STORAGE_RULE`). Sie gilt nur fuer
+die Elektrifizierung (`prepare_electrification`, `size_solution`,
+`compare_electrification`). Der Minutenkern `coupled_power.step` und die
+anderen Varianten bleiben unveraendert.
+
+1. **Netzladung bis zum vollen Anschluss.** Der Speicher laedt aus dem Netz mit
+   dem, was in derselben Minute nach Grundlast, Vorfeld und Parkhaus am
+   Anschluss frei bleibt. Er nimmt keiner Last Leistung weg und hebt den
+   Netzbezug nie ueber den Anschluss. Bisher endete die Netzladung bei 80 %
+   des Anschlusses.
+2. **Entladen wie bisher.** Der Speicher entlaedt nur, wenn die Lasten mehr
+   verlangen, als Anschluss und PV liefern. Laden und Entladen fallen nie in
+   dieselbe Minute.
+3. **Im Zweifel aus.** Die Suche spielt den laufenden Speicher nur bis zum
+   Bedarf ohne Speicher aus. Besteht er bis dahin keine Stufe, bleibt er fuer
+   die drei Tage ausgeschaltet: gleiche Kapazitaet, Leistung 0, Stand konstant
+   50 %. Diese Rechnung wird an der Stufe ohne Speicher tatsaechlich
+   ausgespielt und ist physikalisch dieselbe wie ohne Speicher. Damit braucht
+   „mit Speicher“ an keiner Stellung mehr Anschluss als „ohne Speicher“.
+   Der Vergleich am eingestellten Anschluss folgt derselben Regel und meldet
+   `storage_mode` (`on` oder `off`).
+
+Die Regel schreibt keine Anfangsenergie gut; der Speicher muss am Ende wieder
+mindestens 50 % haben. Die Wahl zwischen an und aus faellt
+einmal fuer den ganzen Dreitageplan, mit demselben bekannten Einsatzplan, den
+auch der vorausschauende Planer nutzt. Ein Regelabstand zum Anschluss ist wie
+bei den Lasten nicht modelliert. Der Wirkungsgrad bleibt 95 % je Richtung.
+
+### Warum die 80-%-Regel mehr Anschluss brauchte
+
+Mit der alten Regel brauchte der Speicher an 157 von 2.860 Stellungen mehr
+Anschluss als ohne Speicher, meist bei 100 bis 200 Parkhaus-Ladevorgaengen und
+wenig PV. Die drei schlechtesten Faelle, nachgerechnet mit `size_solution` am
+Anschluss, der ohne Speicher reicht:
+
+| Stellung (Anteil, Speicher, PV, Parkhaus) | ohne Speicher | mit Speicher alt | Speicher am Ende | entladen | davon Parkhaus | nachgeladen | freie Netzreserve | mit Speicher neu |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 100 %, 6 MWh, 0 kWp, 200 | 1.400 kW | 1.525 kW | 14 % | 3,9 MWh | 3,2 MWh | 2,0 MWh | 12,4 MWh | 1.275 kW |
+| 50 %, 6 MWh, 0 kWp, 100 | 825 kW | 900 kW | 24 % | 3,6 MWh | 2,7 MWh | 2,4 MWh | 7,0 MWh | 775 kW |
+| 100 %, 2 MWh, 500 kWp, 200 | 1.400 kW | 1.475 kW | 29 % | 1,8 MWh | 1,4 MWh | 1,6 MWh | 13,1 MWh | 1.250 kW |
+
+„Freie Netzreserve“ ist die Energie, die der Speicher unterhalb des Anschlusses
+haette aufnehmen koennen, solange er nicht voll war. An allen drei Stellungen
+scheitert die alte Regel nur an der Endbedingung des Speichers. Einsaetze,
+Parkhaus und Fahrzeuge bestehen mit Speicher schon ab 1.375 kW (Beispiel
+100 %, 2 MWh, 500 kWp, 200), also unter dem Bedarf ohne Speicher.
+
+Die Ursache liegt im Zusammenspiel. Nachts zwischen 0 und 6 Uhr verlangen
+Parkhaus und Grundlast mehr, als der Anschluss liefert. Der Speicher deckt die
+Spitze und gibt dabei 75 bis 82 % seiner entladenen Energie ins Parkhaus, das
+ohne Speicher gedrosselt und trotzdem rechtzeitig fertig wuerde. Tagsueber
+liegen Vorfeld und Grundlast um 80 % des Anschlusses. Die alte Regel liess
+den Speicher nur in diesem schmalen Rest laden, die Reserve bis zum vollen
+Anschluss blieb ungenutzt. So kam der Speicher nach drei Naechten nicht auf
+seine 50 % zurueck.
+
+### Die Stichprobe bestaetigt die neue Netzladung
+
+Stichprobe mit der neuen Netzladung, ohne die Rueckfallstufe „aus“: alle 157
+frueher schlechteren Stellungen und 200 zufaellige weitere (Seed 7). An allen
+357 Stellungen braucht der laufende Speicher weniger Anschluss als ohne
+Speicher. Die 157 Stellungen brauchten im Mittel 44 kW mehr und sparen jetzt im
+Mittel 99 kW. Die 200 weiteren sparen im Mittel 157 statt 123 kW; 133 werden
+besser, 67 bleiben gleich, keine wird schlechter. Die Rueckfallstufe sichert
+den Grundsatz fuer Stellungen ausserhalb der Stichprobe.
+
+Die Tests stehen in `backend/tests/test_storage_rule.py` (drei
+Beispielstellungen, Netzladung nur aus freier Leistung, ausgeschalteter
+Speicher gleich ohne Speicher, Rueckfall in Suche und Vergleich) und in
+`test_electrification_atlas.py` (mit Speicher nie mehr als ohne in der ganzen
+Tabelle, sobald sie neu gerechnet ist).
+
+### Was die Regel noch nicht abdeckt
+
+- Der Speicher entlaedt weiter auch fuer Parkhauslast, die ohne Speicher
+  rechtzeitig fertig wuerde. Eine Entladung nur fuer fristkritische Last waere
+  ein weiterer Schritt, aendert aber nichts am Grundsatz.
+- Der eingefrorene SIL-Lauf (`POST /demo/electrification/runs`) rechnet den
+  laufenden Speicher ohne Rueckfallstufe.
+- Die vorab gerechnete Tabelle traegt `storage_rule`. Eine Datei mit anderer
+  oder fehlender Kennung ignoriert der Server; dann rechnet der Vergleich live.
 
 ## Aussagegrenzen
 
@@ -165,7 +249,9 @@ Vertrag und liefert Hashes fuer Auftraege und Anfangsflotte.
 2. Gesteuert laden: Prioritaet nach erreichbaren Einsatzfristen, kein Speicher.
 3. Gesteuert plus Speicher: gleiche Prioritaetsregel plus die eingestellte
    Kapazitaet. Speicherleistung = Kapazitaet / 2, Start-SOC 50 %, Reserve 10 %,
-   Netzladung unter 80 % der Anschlussgrenze.
+   Netzladung bis zum vollen Anschluss aus freier Leistung, im Zweifel aus
+   (Abschnitt „Speicherregel“). Bis Oktober 2026 endete die Netzladung bei
+   80 % der Anschlussgrenze.
 
 Zusaetzlich liefert der Vergleich `uncontrolled`: dieselbe Flotte ganz ohne
 Steuerung. Kein Anschluss bremst, jedes Fahrzeug laedt sofort mit voller
@@ -208,8 +294,8 @@ Behauptung eines zyklisch nachhaltigen Jahresbetriebs.
   vorausschauend, mit Speicher; `peaks`: ohne Steuerung). Erzeugt von
   `backend/scripts/make_electrification_atlas.py`, liegt in
   `backend/app/exchange/data/electrification_atlas.json`. Passt die Datei
-  nicht zu Engine, Referenz oder Raster, wird sie ignoriert und der Vergleich
-  rechnet wie bisher.
+  nicht zu Engine, Referenz, Speicherregel (`storage_rule`) oder Raster, wird
+  sie ignoriert und der Vergleich rechnet wie bisher.
 - `POST /api/v1/demo/electrification/runs`: zusaetzlich `solution` mit
   `direct`, `managed` oder `managed_storage`; friert genau diese Variante
   fuer den bestehenden SIL-Worker und Messdaten-Abgleich ein.

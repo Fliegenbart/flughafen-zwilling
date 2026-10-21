@@ -6,6 +6,10 @@ from ..munich.flightplan import parse_pages
 from .demo import _HEADER, _airport_code, _canonical_hash
 
 REFERENCE_ID = "apron_grid_reference_v2"
+# Speicherregel der Elektrifizierung (docs/ELECTRIFICATION_COMPARISON.md): Netzladung bis zum
+# vollen Anschluss aus dem, was nach allen Lasten frei bleibt; hilft der Speicher nicht, bleibt
+# er aus. Die vorab gerechnete Tabelle gilt nur fuer genau diese Regel.
+STORAGE_RULE = "grid_recharge_to_limit_or_off_v1"
 SOURCES = [
     {"title": "He et al. (2026), Table 1: narrow-body GSE energy and batteries",
      "url": "https://doi.org/10.1038/s41467-026-71125-4"},
