@@ -1,6 +1,27 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 21.10.2026 (Kundenseite nach Steckbrief)
+## Aktiver Release vom 21.10.2026 (Fachleute-Seite aufgeräumt)
+
+Code-Release `50b8bece3fe19cb56e07c28ec7b1523d58038798`, PR #43, aus
+`/opt/airport-releases/50b8bec`. CI für #43 erfolgreich. Ruecknahmeziel:
+`/opt/airport-releases/386b088`. Nur Frontend geaendert; Backend gleich 386b088.
+
+`?seite=fachleute` zeigt jetzt dieselbe Rechnung wie die Startseite, ausfuehrlich
+begruendet; die Reglerstellung steht in der Adresse. Altwerkzeuge liegen unter
+`?seite=labor`, nirgends verlinkt.
+
+Gleicher Ablauf wie 386b088 (bauen bei laufender Version, nur `twin-core` stoppen,
+sichern, starten). Sicherung `/opt/airport-backups/pre-50b8bec-20261021T145809Z.tar.gz`,
+2.831 Dateien, 70.544.694 Bytes, Modus 0600, SHA256
+`04484a4fca2d44e3b7a093c7cf5568f8b772e44106e2e8aa9c487369d2433806`, MD5 aller Dateien
+gegen das Volume identisch, Pruefkopie entfernt. Netze vorher geprueft.
+
+Abnahme: 237 Frontend-Tests, Lint, Typecheck, Build; HTTPS `/health` ok, Build
+`50b8bec` im Vergleich, `smoke_electrification.py` und `smoke_public_simulation.py`
+bestanden; `?seite=fachleute`, `?seite=labor` und Adressen mit Einstellung liefern
+200; Live-Browser ohne Konsolenfehler. Keine Neustarts, keine Fehler im Logfenster.
+
+## Release vom 21.10.2026 (Kundenseite nach Steckbrief)
 
 Code-Release `386b088e92c8b51e3f5153c159b2913b1808c4ae`, PR #41 (baut auf #40 auf),
 aus `/opt/airport-releases/386b088`. Gepruefter Remote-Commit, sauberer Worktree,
