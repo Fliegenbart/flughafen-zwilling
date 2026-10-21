@@ -127,7 +127,11 @@ export function comparison(body: Record<string, number>, feasible = true) {
 }
 
 export const bodies: Record<string, number>[] = [];
-export function serve({ atlas = true, feasible = true } = {}) {
+export function serve({
+  atlas = true,
+  feasible = true,
+  failCompare = () => false,
+}: { atlas?: boolean; feasible?: boolean; failCompare?: () => boolean } = {}) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
@@ -142,6 +146,11 @@ export function serve({ atlas = true, feasible = true } = {}) {
       if (url.endsWith("/demo/electrification")) {
         const body = JSON.parse(String(init?.body));
         bodies.push(body);
+        if (failCompare())
+          return new Response(
+            JSON.stringify({ detail: "Demo ausgelastet. Vergleich erneut versuchen." }),
+            { status: 429 },
+          );
         return new Response(JSON.stringify(comparison(body, feasible)));
       }
       return new Response("{}", { status: 404 });

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AirportEnergyCheck from "../AirportEnergyCheck";
 import { bodies, serve } from "./__fixtures__/server";
+import { forgetShared } from "./useOekosystem";
 
 const open = (search = "?seite=fachleute") => {
   window.history.replaceState(null, "", `/${search}`);
@@ -11,6 +12,7 @@ const slider = (name: string) => screen.getByRole("slider", { name });
 
 beforeEach(() => {
   bodies.length = 0;
+  forgetShared();
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -27,7 +29,10 @@ describe("Seite für Fachleute", () => {
     fireEvent.click(screen.getByRole("link", { name: "Ausführlicher Vergleich für Fachleute" }));
     await waitFor(() => expect(window.location.search).toBe("?seite=fachleute&anschluss=650"));
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Der Vergleich im Detail" }),
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Wie viel Anschluss braucht das Vorfeld, und warum?",
+      }),
     ).toBeVisible();
     expect(await screen.findByText(/^Ihr Anschluss muss um 25\skW wachsen/)).toBeVisible();
     expect(screen.getByRole("columnheader", { name: /Bei Ihren 650\skW/ })).toBeVisible();
@@ -48,10 +53,16 @@ describe("Seite für Fachleute", () => {
       .slice(1)
       .map((r) => r.textContent);
     expect(lines).toEqual([
-      expect.stringMatching(/^1Ohne Steuerung.*1.625\skWÜberlast, Spitze 1.614\skW$/),
-      expect.stringMatching(/^Einfache Leistungsbegrenzung.*875\skWreicht$/),
-      expect.stringMatching(/^2Lademanagement.*Diesen Wert zeigt die Übersicht\.800\skWreicht$/),
-      expect.stringMatching(/^3\+ Speicher.*2,0 MWh Speicher mit 1.000\skW.*675\skWreicht$/),
+      expect.stringMatching(
+        /^1Ohne Steuerung.*sobald ein Ladepunkt frei ist.*Benötigt 1.625\skW.*Überlast, Spitze 1.614\skW$/,
+      ),
+      expect.stringMatching(/^Einfache Leistungsbegrenzung.*Benötigt 875\skW.*reicht$/),
+      expect.stringMatching(
+        /^2Lademanagement.*Diesen Wert zeigt die Übersicht\.Benötigt 800\skW.*reicht$/,
+      ),
+      expect.stringMatching(
+        /^3\+\sSpeicher.*2,0 MWh Speicher und 1.000\skW.*Benötigt 675\skW.*reicht$/,
+      ),
     ]);
   });
 
@@ -59,14 +70,16 @@ describe("Seite für Fachleute", () => {
     serve();
     open();
     expect(
-      await screen.findByRole("heading", { name: /Ohne Steuerung bei Ihren 1.500\skW/ }),
+      await screen.findByRole("heading", {
+        name: /So laufen drei Tage ohne Steuerung an Ihren 1.500\skW/,
+      }),
     ).toBeVisible();
     expect(screen.getByText("Über Ihrem Anschluss").nextSibling).toHaveTextContent(
       /bis zu 114\skW/,
     );
     fireEvent.click(screen.getByRole("button", { name: /^Lademanagement/ }));
     expect(
-      screen.getByRole("heading", { name: "Netzlast über drei Tage, Lademanagement" }),
+      screen.getByRole("heading", { name: "Netzlast über drei Tage mit Lademanagement" }),
     ).toBeVisible();
     expect(
       screen.getByText("Abflüge mit allen Fahrzeugen rechtzeitig bereit").nextSibling,
@@ -81,7 +94,7 @@ describe("Seite für Fachleute", () => {
       "table",
     )!;
     expect(within(fleet).getByRole("row", { name: /Gepäckschlepper/ })).toHaveTextContent(
-      /^Gepäckschlepper35185\d kWh7,7 kWh12 × 22\skW$/,
+      /^Gepäckschlepper351850 kWh7,7 kWh12 × 22\skW$/,
     );
     const basis = within(
       screen.getByRole("heading", { name: "Woraus der Bedarf entsteht" }).closest("section")!,
@@ -89,9 +102,12 @@ describe("Seite für Fachleute", () => {
     expect(basis.getByText(/Photovoltaik: 2.000 kWp/)).toHaveTextContent(
       /höchstens 20 % der Nennleistung/,
     );
-    expect(basis.getByText(/Parkhaus: 100 Ladevorgänge am Tag mit je 11\skW/)).toBeVisible();
-    expect(basis.getByText(/180 Abflüge am Tag in drei Wellen/)).toBeVisible();
+    expect(basis.getByText(/Parkhaus: 100 Autos am Tag laden mit je 11\skW/)).toHaveTextContent(
+      /zwischen 0 und 1:30 Uhr.*gleichmäßig gedrosselt/,
+    );
+    expect(basis.getByText(/je 60 Abflüge zwischen 6 und 9/)).toHaveTextContent(/180 am Tag/);
     expect(screen.getByRole("heading", { name: "Wann ein Anschluss reicht" })).toBeVisible();
+    expect(screen.getByText(/bis zu seiner Frist erledigt/)).toBeVisible();
     expect(screen.getByRole("link", { name: "He et al. (2026)" })).toHaveAttribute(
       "href",
       "https://doi.org/10.1038/x",
@@ -109,6 +125,50 @@ describe("Seite für Fachleute", () => {
     );
     expect(slider("Netzanschluss heute")).toHaveValue("1500");
     await waitFor(() => expect(window.location.search).toBe("?seite=fachleute"));
+  });
+
+  it("fragt den Server erst nach dem Einrasten und bietet nach einem Fehler einen neuen Versuch", async () => {
+    let fail = true;
+    serve({ failCompare: () => fail });
+    open("?seite=fachleute&anteil=47&speicher=2100");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Demo ausgelastet");
+    expect(bodies.map((b) => [b.electric_share_pct, b.storage_kwh])).toEqual([[50, 2000]]);
+    expect(screen.getAllByText("nicht gerechnet")).toHaveLength(4);
+    fail = false;
+    fireEvent.click(screen.getByRole("button", { name: "Erneut rechnen" }));
+    expect(screen.queryByText("nicht gerechnet")).toBeNull();
+    expect(await screen.findAllByText("reicht")).toHaveLength(3);
+    expect(bodies).toHaveLength(2);
+  });
+
+  it("rechnet beim Wechsel zwischen den Seiten nicht neu und behält die Stufe", async () => {
+    serve();
+    open("");
+    await screen.findByRole("img", { name: /Überlast/ });
+    fireEvent.click(screen.getByRole("button", { name: /\+\sSpeicher/ }));
+    const atlasCalls = () =>
+      (fetch as unknown as { mock: { calls: [string][] } }).mock.calls.filter(([u]) =>
+        u.endsWith("/atlas"),
+      ).length;
+    expect(atlasCalls()).toBe(1);
+    fireEvent.click(screen.getByRole("link", { name: "Ausführlicher Vergleich für Fachleute" }));
+    expect(
+      await screen.findByRole("heading", {
+        name: "Netzlast über drei Tage mit Lademanagement und Speicher",
+      }),
+    ).toBeVisible();
+    expect(atlasCalls()).toBe(1);
+    expect(bodies).toHaveLength(1);
+  });
+
+  it("nennt den Speicher ohne Vorteil, statt eine höhere Zahl zu zeigen", async () => {
+    serve();
+    open("?seite=fachleute&parkhaus=200");
+    const row = (await screen.findByText(/MWh Speicher senken hier den Bedarf nicht/)).closest(
+      "tr",
+    )!;
+    expect(within(row).getByRole("button")).toBeDisabled();
+    expect(row).not.toHaveTextContent("1.400");
   });
 
   it("zeigt keine Messdaten-Werkzeuge, Läufe oder Altprojekte", async () => {

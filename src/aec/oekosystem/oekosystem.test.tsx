@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AirportEnergyCheck from "../AirportEnergyCheck";
 import { bodies, serve } from "./__fixtures__/server";
+import { forgetShared } from "./useOekosystem";
 
 const open = () => {
   window.history.replaceState(null, "", "/");
@@ -11,6 +12,7 @@ const slider = (name: string) => screen.getByRole("slider", { name });
 
 beforeEach(() => {
   bodies.length = 0;
+  forgetShared();
 });
 afterEach(() => {
   vi.unstubAllGlobals();

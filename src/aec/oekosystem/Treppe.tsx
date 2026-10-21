@@ -6,7 +6,7 @@ import { dec1 } from "../model/format";
 import { kw, type Stage, type StageId } from "./stufen";
 
 const SUB: Record<StageId, (storageKwh: number, stage: Stage) => string> = {
-  uncontrolled: () => "jedes Fahrzeug lädt sofort, nichts wird gesteuert",
+  uncontrolled: () => "volle Leistung, sobald ein Ladepunkt frei ist, nichts wird gesteuert",
   managed: () => "Ladezeiten nach dem Einsatzplan",
   managed_storage: (s, stage) =>
     !s

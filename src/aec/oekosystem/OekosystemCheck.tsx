@@ -5,10 +5,9 @@
  */
 import "../arbeitsplatz/arbeitsplatz.css";
 import "./oekosystem.css";
-import { useState } from "react";
 import Link from "../Link";
 import LoadChart from "../arbeitsplatz/LoadChart";
-import { curveFor } from "./kurve";
+import { CurveWaiting, curveFor } from "./kurve";
 import Levers from "./Levers";
 import Treppe from "./Treppe";
 import { answer, changedFromStart, kw, type StageId } from "./stufen";
@@ -17,15 +16,26 @@ import { usePresentation } from "./usePresentation";
 import Weiter from "./Weiter";
 
 export default function OekosystemCheck() {
-  const { atlas, loadError, settings, setSettings, stages, fresh, curveError } =
-    useOekosystem("start");
-  const [selected, setSelected] = useState<StageId>("uncontrolled");
+  const {
+    atlas,
+    loadError,
+    settings,
+    setSettings,
+    stages,
+    fresh,
+    curveError,
+    retry,
+    selected,
+    setSelected,
+  } = useOekosystem("start");
   const { presenting, setPresenting, toggleRef } = usePresentation();
 
   const sentence =
     stages && atlas ? answer(stages, settings.grid_import_limit_kw, atlas.gridMaxKw) : "";
   // Wird die gewaehlte Stufe abgeschaltet (kein Speicher, kein Vorteil), zeigt die Kurve Stufe 2.
-  const current: StageId = stages?.find((s) => s.id === selected)?.inactive ? "managed" : selected;
+  // Die einfache Leistungsbegrenzung gibt es nur auf der Fachleute-Seite.
+  const chosen: StageId = selected === "direct" ? "managed" : selected;
+  const current: StageId = stages?.find((s) => s.id === chosen)?.inactive ? "managed" : chosen;
   const stageTitle = stages?.find((s) => s.id === current)?.title.replace("+\u00a0", "mit ");
   const curve = curveFor(fresh, current, settings.grid_import_limit_kw);
   const einstellung = changedFromStart(settings);
@@ -99,12 +109,7 @@ export default function OekosystemCheck() {
                     changed={current !== "uncontrolled"}
                   />
                 ) : (
-                  <p className="oe-loading" role="status">
-                    {curveError ||
-                      (fresh && !fresh.uncontrolled
-                        ? "Der Server liefert noch keine Kurve ohne Steuerung."
-                        : "Die Kurve wird gerechnet …")}
-                  </p>
+                  <CurveWaiting error={curveError} incomplete={!!fresh} onRetry={retry} />
                 )}
                 {curve ? (
                   <p className="oe-note">

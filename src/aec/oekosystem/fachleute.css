@@ -79,21 +79,30 @@ a.oe-tool {
   outline-offset: -3px;
 }
 .oe-calc__name {
-  display: grid;
-  gap: 2px;
   font-size: 17px;
   font-weight: 600;
 }
-.oe-calc__name small {
+.oe-calc__how {
+  display: block;
   max-width: 60ch;
+  margin: -6px 12px 12px 52px;
   color: var(--ap-muted);
   font-size: 14px;
   font-weight: 400;
   line-height: 1.4;
 }
 .oe-sign--ghost {
+  box-sizing: border-box;
   border: 1.5px dashed var(--ap-faint);
   background: none;
+}
+/* Spaltennamen in der Zelle, nur schmal sichtbar (breit stehen sie im Tabellenkopf). */
+.oe-calc__label {
+  display: none;
+}
+.oe-fleet-wrap {
+  max-width: 920px;
+  margin-bottom: 18px;
 }
 .oe-calc__need,
 .oe-calc__said {
@@ -176,8 +185,6 @@ a.oe-tool {
 }
 .oe-fleet {
   width: 100%;
-  max-width: 920px;
-  margin-bottom: 18px;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
 }
@@ -214,9 +221,21 @@ a.oe-tool {
   .oe-figures {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  /* Schmal: Name ueber die ganze Breite, darunter Bedarf und Urteil nebeneinander. */
+  /* Schmal: Name ueber die ganze Breite, darunter Bedarf und Urteil nebeneinander. Der
+     Tabellenkopf bleibt fuer Screenreader da, sichtbar stehen die Namen in den Zellen. */
   .oe-calc thead {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .oe-calc__label {
+    display: block;
+    color: var(--ap-muted);
+    font-size: 13px;
+    font-weight: 400;
   }
   .oe-calc tbody tr {
     display: grid;
@@ -235,9 +254,11 @@ a.oe-tool {
     padding: 0 12px 12px;
     text-align: right;
   }
-  .oe-fleet {
-    display: block;
+  .oe-fleet-wrap {
     overflow-x: auto;
+  }
+  .oe-fleet {
+    min-width: 560px;
   }
 }
 
@@ -258,5 +279,21 @@ a.oe-tool {
   }
   .oe-figures dd {
     font-size: 16px;
+  }
+  .oe-answer--small {
+    max-width: none;
+    margin-bottom: 10px;
+    font-size: 18px;
+  }
+  .oe-h2,
+  .oe-calc__need {
+    font-size: 14px;
+  }
+  .oe-calc__name {
+    font-size: 13px;
+  }
+  .oe-calc__how {
+    margin: 0 4px 6px 46px;
+    font-size: 11px;
   }
 }

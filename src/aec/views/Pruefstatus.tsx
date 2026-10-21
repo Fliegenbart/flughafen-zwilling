@@ -49,7 +49,10 @@ export default function Pruefstatus({ project }: { project: Project }) {
     void listExchange(project)
       .then((list) => alive && setItems(list))
       .catch((err: unknown) => {
-        if (alive) setError(err instanceof Error ? err.message : "Messdaten-Abgleich konnte nicht geladen werden.");
+        if (alive)
+          setError(
+            err instanceof Error ? err.message : "Messdaten-Abgleich konnte nicht geladen werden.",
+          );
       });
     return () => {
       alive = false;
@@ -133,7 +136,8 @@ export default function Pruefstatus({ project }: { project: Project }) {
             Messdaten-Abgleich anfragen
           </button>
           <p className="aec-fine">
-            Der Vergleich wird erst mit Messdaten, dokumentierter Messgrenze und festgelegten Kriterien durchgeführt.
+            Der Vergleich wird erst mit Messdaten, dokumentierter Messgrenze und festgelegten
+            Kriterien durchgeführt.
           </p>
         </form>
       )}

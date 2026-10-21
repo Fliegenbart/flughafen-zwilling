@@ -2737,6 +2737,12 @@ li[data-from="lab"] > .aec-msg {
 
 /* Keep upcoming steps readable on narrow screens. */
 @media (max-width: 760px) {
-  .aec-qnav__sign { font-size: .8rem; gap: 6px; }
-  .aec-qnav nav { min-width: 0; overflow-x: auto; }
+  .aec-qnav__sign {
+    font-size: 0.8rem;
+    gap: 6px;
+  }
+  .aec-qnav nav {
+    min-width: 0;
+    overflow-x: auto;
+  }
 }

@@ -7,7 +7,10 @@ export const EXCHANGE_FLOW: ExchangeStatus[] = [
   "geplant",
   "erledigt",
 ];
-export const PARTY_LABEL: Record<Party, string> = { flughafen: "Flughafen", lab: "Messdaten-Abgleich" };
+export const PARTY_LABEL: Record<Party, string> = {
+  flughafen: "Flughafen",
+  lab: "Messdaten-Abgleich",
+};
 const other = (p: Party): Party => (p === "lab" ? "flughafen" : "lab");
 
 /** Wer ist am Zug? Vorschlaege werden angenommen, dann werden Messdaten abgeglichen. */

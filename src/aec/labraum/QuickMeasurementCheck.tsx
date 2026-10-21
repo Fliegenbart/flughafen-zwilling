@@ -313,7 +313,7 @@ export default function QuickMeasurementCheck({ initialRun }: { initialRun?: str
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
-                  if (input.current) input.current.value = "";
+                    if (input.current) input.current.value = "";
                     void choose(e.dataTransfer.files[0]);
                   }}
                 >

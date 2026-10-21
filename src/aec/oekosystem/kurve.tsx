@@ -74,3 +74,32 @@ export function curveFor(
         },
   };
 }
+
+/** Solange keine Kurve da ist: rechnet, fehlt auf dem Server oder ist fehlgeschlagen. */
+export function CurveWaiting({
+  error,
+  incomplete,
+  onRetry,
+}: {
+  error: string;
+  /** Rechnung da, aber ohne Kurve ohne Steuerung (aelterer Server). */
+  incomplete: boolean;
+  onRetry: () => void;
+}) {
+  if (error)
+    return (
+      <p className="oe-error" role="alert">
+        {error}{" "}
+        <button type="button" className="oe-tool" onClick={onRetry}>
+          Erneut rechnen
+        </button>
+      </p>
+    );
+  return (
+    <p className="oe-loading" role="status">
+      {incomplete
+        ? "Der Server liefert noch keine Kurve ohne Steuerung."
+        : "Die Kurve wird gerechnet …"}
+    </p>
+  );
+}

@@ -402,9 +402,7 @@ export default function MeasurementWorkflow({
             ))}
           </select>
         </label>
-        <Link to={{ page: "start" }}>
-          Zur interaktiven Simulation
-        </Link>
+        <Link to={{ page: "start" }}>Zur interaktiven Simulation</Link>
         {verified && evidence && (
           <div className="mw-receipt">
             <strong>Integrität geprüft, keine empirische Validierung.</strong>

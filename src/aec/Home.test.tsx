@@ -18,9 +18,7 @@ afterEach(() => {
 
 function renderHome() {
   return render(
-    <NavContext.Provider
-      value={{ basePath: "/", route: { page: "start" }, navigate: vi.fn() }}
-    >
+    <NavContext.Provider value={{ basePath: "/", route: { page: "start" }, navigate: vi.fn() }}>
       <Home />
     </NavContext.Provider>,
   );
@@ -31,15 +29,18 @@ describe("Home", () => {
     projectsApi.listProjects.mockResolvedValue([SAMPLE_PROJECT]);
     renderHome();
 
-    expect(
-      screen.getByRole("link", { name: "Simulation selbst ausprobieren" }),
-    ).toHaveAttribute("href", `/?projekt=${SAMPLE_PROJECT.id}&ansicht=neu`);
+    expect(screen.getByRole("link", { name: "Simulation selbst ausprobieren" })).toHaveAttribute(
+      "href",
+      `/?projekt=${SAMPLE_PROJECT.id}&ansicht=neu`,
+    );
     expect(screen.getByText("Flughafentag")).toBeInTheDocument();
     expect(screen.getByText("Engpass")).toBeInTheDocument();
     expect(screen.getByText("Varianten")).toBeInTheDocument();
     expect(screen.getByText("Prüfplan")).toBeInTheDocument();
     expect(screen.getByText(/Grafik ist illustrativ/)).toBeInTheDocument();
-    expect(screen.getByText(/Wenn Busse, Gepäckschlepper und Bodenstromgeräte elektrisch werden/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Wenn Busse, Gepäckschlepper und Bodenstromgeräte elektrisch werden/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/synthetisches Beispiel/)).toBeInTheDocument();
   });
 
