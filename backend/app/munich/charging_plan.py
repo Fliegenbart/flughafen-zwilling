@@ -4,6 +4,11 @@ An invariant duty roster prevents diesel substitution from becoming a charging b
 The controller spreads required energy over forecast idle/charging opportunities before
 each duty and the terminal SOC deadline. The minute simulator, not this forecast, decides
 feasibility and enforces actual plugs, power, reserves and service deadlines.
+
+Engine v4 plans from the measured state of charge instead of the nominal energy already
+consumed, adds a planning reserve on future duty energy, and replaces the terminal milestone
+by the end of the measured day (steady_cycle): each vehicle must be back at the state it had
+at the start of that day. Duties after the measured day keep being planned normally.
 """
 from __future__ import annotations
 
@@ -14,9 +19,13 @@ from functools import lru_cache
 from math import ceil
 from zoneinfo import ZoneInfo
 
-from .coupled_models import CoupledWorld
+from .coupled_models import CYCLIC_ENGINE_VERSION, CoupledWorld
 from .coupled_power import DT_H, base_power
-from .coupled_world import canonical_hash
+from .coupled_world import canonical_hash, steady_cycle
+
+# Planreserve (v4): Energie kuenftiger Einsaetze wird mit diesem Faktor eingeplant. Damit
+# vertraegt die Planung Abweichungen im Verbrauch, ohne bei jeder Abweichung zu scheitern.
+PLAN_MARGIN = 1.15
 
 
 @dataclass(frozen=True)
@@ -67,7 +76,14 @@ class EnergyEnvelopePlan:
     def __init__(self, world: CoupledWorld):
         self.start, self.end = world.start_min, world.end_min
         self.efficiency = world.config.power.charging_efficiency
+        self.cyclic = world.engine_version == CYCLIC_ENGINE_VERSION
+        self.margin = PLAN_MARGIN if self.cyclic else 1.0
         self.milestones: dict[str, list[tuple[int, float, float]]] = {}
+        # v4: Summe der Einsatzenergien je Fahrzeug bis zum k-ten Einsatz (Index k).
+        self.cumulative: dict[str, list[float]] = {}
+        duty_starts: dict[str, list[int]] = {}
+        # v4: Stand jedes Fahrzeugs zu Beginn des Messtags, vom Simulator gesetzt.
+        self.cycle_target: dict[str, float] = {}
         horizon = self.end - self.start
         specs = {f'{f.kind}-{i + 1:03d}': f for f in world.config.fleets
                  for i in range(f.vehicles if f.electric_vehicles is None else f.electric_vehicles)}
@@ -85,6 +101,8 @@ class EnergyEnvelopePlan:
             identity = duty.vehicle_id
             spec = specs[identity]
             total[identity] += duty.energy_kwh
+            self.cumulative.setdefault(identity, [0.0]).append(total[identity])
+            duty_starts.setdefault(identity, []).append(duty.start_min)
             self.milestones.setdefault(identity, []).append((
                 duty.start_min - guard[spec.kind], total[identity],
                 spec.battery_capacity_kwh * spec.reserve_soc_pct / 100))
@@ -92,6 +110,7 @@ class EnergyEnvelopePlan:
                 horizon, duty.start_min + duty.duration_min + duty.return_min - self.start)
             idle[identity][a:b] = bytes(max(0, b - a))
         for identity, spec in specs.items():
+            self.cumulative.setdefault(identity, [0.0])
             self.milestones.setdefault(identity, []).append((
                 self.end - guard[spec.kind], total[identity],
                 spec.battery_capacity_kwh * spec.initial_soc_pct / 100))
@@ -101,7 +120,9 @@ class EnergyEnvelopePlan:
                    for f in world.config.fleets}
         p = world.config.power
         parking_profile = [0.0] * horizon
-        for job in world.parking_jobs:
+        # v4: das Parkhaus weicht dem Vorfeld aus (gesteuert, siehe coupled_simulator), es wird
+        # deshalb nicht als feste Last vorhergesagt.
+        for job in ([] if self.cyclic else world.parking_jobs):
             remaining = job.energy_kwh
             for offset in range(max(0, job.release_min - self.start),
                                 min(horizon, job.deadline_min - self.start)):
@@ -149,19 +170,36 @@ class EnergyEnvelopePlan:
                  prefix[min(horizon, max(0, due - self.start))], i == last)
                 for i, (due, consumed, reserve) in enumerate(milestones)
             ]
+        # v4: (Frist, Zahl der Einsaetze bis dahin, Zielstand, Gelegenheit bis Frist, Messtag?).
+        # Statt des Endes des Horizonts zaehlt das Ende des Messtags mit dem Stand vom Anfang.
+        self.steps: dict[str, list[tuple[int, int, float, float, bool]]] = {}
+        self.cycle_end = steady_cycle(world)[1]
+        if self.cyclic:
+            cycle_end = self.cycle_end
+            for identity, spec in specs.items():
+                prefix = self.opportunities[identity]
+                starts = duty_starts.get(identity, [])
+                reserve = spec.battery_capacity_kwh * spec.reserve_soc_pct / 100
+                steps = [(start - guard[spec.kind], k + 1, reserve, False)
+                         for k, start in enumerate(starts)]
+                # Zielstand bis der Simulator den Stand zu Beginn des Messtags kennt: Startstand.
+                steps.append((cycle_end - guard[spec.kind],
+                              sum(start < cycle_end for start in starts),
+                              spec.battery_capacity_kwh * spec.initial_soc_pct / 100, True))
+                self.steps[identity] = [
+                    (due, count, level, prefix[min(horizon, max(0, due - self.start))], cycle)
+                    for due, count, level, cycle in steps]
 
-    def request(self, minute: int, vehicle) -> tuple[float, int, float]:
-        """Return urgency, real duty deadline, requested vehicle-side kW."""
+    def request(self, minute: int, vehicle, started: int = 0) -> tuple[float, int, float]:
+        """Return urgency, real duty deadline, requested vehicle-side kW.
+
+        `started` counts the vehicle's duties already dispatched (only used by v4).
+        """
         offset = minute - self.start
         prefix = self.opportunities[vehicle.id]
         current = prefix[offset]
         urgency, deadline = 0.0, self.end
-        energy, spent = vehicle.energy, vehicle.consumed
-        completed = spent + 1e-8
-        for due, consumed, required, opportunity, terminal in self.envelopes[vehicle.id]:
-            if not terminal and consumed <= completed:
-                continue
-            need = required - energy - spent
+        for due, need, opportunity in self._needs(minute, vehicle, started):
             if need <= 1e-8:
                 continue
             remaining = opportunity - current if due > minute else 0.0
@@ -176,11 +214,38 @@ class EnergyEnvelopePlan:
               else urgency * forecast_kw / max(share, 1e-9))
         return urgency, deadline, min(vehicle.spec.charger_kw, max(0, kw))
 
+    def _needs(self, minute: int, vehicle, started: int):
+        """(Frist, fehlende Energie, Gelegenheit bis Frist) je noch offenem Meilenstein."""
+        energy, spent = vehicle.energy, vehicle.consumed
+        if not self.cyclic:
+            completed = spent + 1e-8
+            for due, consumed, required, opportunity, terminal in self.envelopes[vehicle.id]:
+                if not terminal and consumed <= completed:
+                    continue
+                yield due, required - energy - spent, opportunity
+            return
+        # v4: echter Ladestand gegen die noch offenen Einsaetze (mit Planreserve) plus Zielstand:
+        # Reserve vor jedem Einsatz, am Ende des Messtags der Stand von seinem Anfang.
+        cumulative = self.cumulative[vehicle.id]
+        for due, count, level, opportunity, cycle in self.steps[vehicle.id]:
+            if cycle:
+                # Nach der Frist (Steckwechsel-Puffer) bis zum Ende des Messtags: Notladen.
+                if minute >= self.cycle_end:
+                    continue
+                level = self.cycle_target.get(vehicle.id, level)
+            elif count <= started:
+                continue
+            open_energy = cumulative[count] - cumulative[min(started, count)]
+            yield due, open_energy * self.margin + level - energy, opportunity
+
 
 def planning_metadata(world: CoupledWorld, policy: str) -> dict:
-    return {'method': ('known_duty_energy_envelope_v1' if policy == 'lookahead'
-                       else 'immediate_grid_limited_v1'),
+    cyclic = world.engine_version == CYCLIC_ENGINE_VERSION
+    method = ('known_duty_soc_feedback_v2' if cyclic else 'known_duty_energy_envelope_v1')
+    return {'method': (method if policy == 'lookahead' else 'immediate_grid_limited_v1'),
             'perfect_foresight': policy == 'lookahead', 'optimality_guaranteed': False,
             'horizon_minutes': world.end_min - world.start_min,
             'duty_roster_hash': duty_hash(world), 'fixed_vehicle_assignments': True,
-            'end_soc_enforced_by_replay': True}
+            'end_soc_enforced_by_replay': True,
+            **({'plan_margin': PLAN_MARGIN, 'end_condition': 'measured_day_steady_state'}
+               if cyclic else {})}

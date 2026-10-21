@@ -4,7 +4,7 @@ from test_demo_materialization import _completed
 from test_variants import client  # noqa: F401
 
 from app.exchange.electrification import ElectrificationRequest, prepare_electrification
-from app.munich.coupled_models import ELECTRIFICATION_ENGINE_VERSION, PREDICTIVE_ENGINE_VERSION
+from app.munich.coupled_models import CYCLIC_ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION
 from app.munich.coupled_simulator import simulate_coupled
 from app.munich.coupled_world import build_world
 
@@ -87,7 +87,7 @@ def test_selected_variant_is_preserved_in_normal_sil_run(client):  # noqa: F811
     assert record["summary"]["coupled_kpis"] == preview["coupled_kpis"]
     assert record["summary"]["energy_world_hash"] == preview["world_hash"]
     assert record["model_pack_snapshot"]["calibration_meta"]["engine_version"] == (
-        PREDICTIVE_ENGINE_VERSION)
+        CYCLIC_ENGINE_VERSION)
 
 
 @pytest.mark.parametrize("payload", [

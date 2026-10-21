@@ -8,11 +8,12 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from .coupled_models import (
+    CYCLIC_ENGINE_VERSION,
     ELECTRIFICATION_ENGINE_VERSION,
     ENGINE_VERSION,
     GRID_SIZING_ENGINE_VERSION,
     LEGACY_ENGINE_VERSIONS,
-    PREDICTIVE_ENGINE_VERSION,
+    PLANNING_ENGINE_VERSIONS,
     CoupledConfig,
     CoupledWorld,
     Mission,
@@ -36,24 +37,36 @@ def local_clock_minute(midnight: datetime, origin: datetime, clock_min: int) -> 
     return int((local.astimezone(timezone.utc) - origin).total_seconds() // 60)
 
 
+def steady_cycle(world: CoupledWorld) -> tuple[int, int]:
+    """Messtag fuer den eingeschwungenen Betrieb (Engine v4): der vorletzte Tag des Horizonts.
+
+    Davor schwingt der Betrieb vom Startstand ein, danach laeuft er normal weiter, sodass das
+    Rechenende den Messtag nicht verzerrt. Fahrzeuge und Speicher muessen am Ende des Messtags
+    mindestens so voll sein wie an seinem Anfang (gleiche Uhrzeit). Bei Horizonten unter zwei
+    Tagen ist der Messtag der ganze Horizont, also die bisherige Bedingung (Ende >= Anfang).
+    """
+    if world.end_min - world.start_min < 2 * 1440:
+        return world.start_min, world.end_min
+    return world.end_min - 2 * 1440, world.end_min - 1440
+
+
 def build_world(
     plan: FlightPlanSnapshot, config: CoupledConfig, seed: int,
     engine_version: str = ENGINE_VERSION,
 ) -> CoupledWorld:
     if engine_version not in (
         ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION,
-        PREDICTIVE_ENGINE_VERSION,
-        *LEGACY_ENGINE_VERSIONS,
+        *PLANNING_ENGINE_VERSIONS, *LEGACY_ENGINE_VERSIONS,
     ):
         raise ValueError("Unbekannte Engine-Version der Kopplungswelt")
     verify_snapshot(plan)
     config = CoupledConfig.model_validate(config.model_dump())
     if (any(f.electric_vehicles is not None for f in config.fleets)
             and engine_version not in (ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION,
-                                       PREDICTIVE_ENGINE_VERSION)):
+                                       *PLANNING_ENGINE_VERSIONS)):
         raise ValueError("Gemischte Flotte benoetigt die Elektrifizierungs-Engine")
     if config.repeat_days != 1 and engine_version not in (
-        GRID_SIZING_ENGINE_VERSION, PREDICTIVE_ENGINE_VERSION,
+        GRID_SIZING_ENGINE_VERSION, *PLANNING_ENGINE_VERSIONS,
     ):
         raise ValueError("Wiederholte Tage benoetigen die Anschlussvergleich-Engine")
     if config.repeat_days != 1 and config.stress_events:
@@ -141,19 +154,23 @@ def build_world(
         warnings[0] = ('Synthetische Planzeiten; keine gemessenen oder '
                        'veroeffentlichten Flughafenablaeufe.')
     if engine_version in (ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION,
-                          GRID_SIZING_ENGINE_VERSION, PREDICTIVE_ENGINE_VERSION):
+                          GRID_SIZING_ENGINE_VERSION, *PLANNING_ENGINE_VERSIONS):
         warnings.append("Parkhausfenster als Ortszeit Europe/Berlin (DST-sicher); "
                         "Ladefrist je Fahrzeug aus der naechsten noch erreichbaren Frist.")
     if engine_version in (ELECTRIFICATION_ENGINE_VERSION, GRID_SIZING_ENGINE_VERSION,
-                          PREDICTIVE_ENGINE_VERSION):
+                          *PLANNING_ENGINE_VERSIONS):
         warnings.append("Feste Gesamtflotte; nicht-elektrische Fahrzeuge haben gleiche "
                         "Einsatzzeiten, ohne Kraftstoff-, Betankungs- oder Emissionsmodell.")
-    if engine_version == PREDICTIVE_ENGINE_VERSION:
+    if engine_version in PLANNING_ENGINE_VERSIONS:
         warnings[2] = ('Feste Fahrzeugzuordnung je Auftrag, unabhaengig von Laderegel und Netz; '
                        'keine Ersatzfahrzeuge bei Energiemangel.')
         warnings.append('Ladeplanung kennt alle modellierten Einsaetze und Lastprofile; '
                         'vorausschauende Heuristik, keine Optimalitaetsgarantie '
                         'oder reale Prognose.')
+    if engine_version == CYCLIC_ENGINE_VERSION:
+        warnings.append('Ladeplanung rechnet mit dem echten Ladestand und einer Planreserve auf '
+                        'den Verbrauch; Erfolg heisst: der vorletzte Tag endet mit mindestens dem '
+                        'Stand, mit dem er begann (Fahrzeuge und Speicher, eingeschwungen).')
     if plan.possible_shared_flight_groups:
         warnings.append("Mehrfachgruppen bewusst als unabhaengige Nachfrageannahmen verwendet; "
                         "keine bestaetigte Zahl physischer Fluege.")

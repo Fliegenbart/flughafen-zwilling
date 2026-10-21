@@ -40,9 +40,15 @@ ENGINE_VERSION = "airport_coupled_v2"
 ELECTRIFICATION_ENGINE_VERSION = "airport_electrification_v1"
 GRID_SIZING_ENGINE_VERSION = "airport_electrification_v2"
 PREDICTIVE_ENGINE_VERSION = "airport_electrification_v3"
+# v4: Ladeplanung mit Rueckkopplung auf den Ladestand und Planreserve, eingeschwungener Endstand
+# (der letzte Tag muss sich selbst tragen), steuerbares Parkhaus, Speicher laedt aus der vollen
+# freien Reserve. v3 bleibt fuer eingefrorene Laeufe unveraendert.
+CYCLIC_ENGINE_VERSION = "airport_electrification_v4"
+PLANNING_ENGINE_VERSIONS = (PREDICTIVE_ENGINE_VERSION, CYCLIC_ENGINE_VERSION)
 LEGACY_ENGINE_VERSIONS = ("airport_coupled_v1",)
 EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2", "airport_electrification_v1",
-                        "airport_electrification_v2", "airport_electrification_v3"]
+                        "airport_electrification_v2", "airport_electrification_v3",
+                        "airport_electrification_v4"]
 FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu"]
 CoupledPolicy = Literal["uncontrolled", "mission_priority", "lookahead"]
 

@@ -5,7 +5,7 @@ import pytest
 from app.exchange.electrification import ElectrificationRequest, prepare_electrification
 from app.exchange.grid_sizing import connection_checks, minimum_energy_bound, search_connection
 from app.exchange.electrification_reference import reference_day
-from app.munich.coupled_models import PREDICTIVE_ENGINE_VERSION
+from app.munich.coupled_models import CYCLIC_ENGINE_VERSION
 from app.munich.coupled_simulator import simulate_coupled
 
 
@@ -107,7 +107,7 @@ def test_reference_times_are_real_departure_columns_not_synthetic_arrival_times(
 def test_reference_has_three_days_and_sufficient_non_electric_fleet():
     plan, config, policy, world, _ = prepare_electrification(
         ElectrificationRequest(electric_share_pct=0, grid_import_limit_kw=8000), 'direct')
-    assert world.engine_version == PREDICTIVE_ENGINE_VERSION
+    assert world.engine_version == CYCLIC_ENGINE_VERSION
     assert config.repeat_days == 3
     assert world.day_minutes == world.end_min == 4320
     assert world.start_min == 0
@@ -179,9 +179,11 @@ def test_api_reports_verified_required_capacity_and_separate_current_checks(clie
 
 
 def test_saved_run_cannot_pass_by_borrowing_starting_vehicle_energy(client):
+    # Puenktlich allein reicht nicht: der Messtag muss die Fahrzeuge wieder so voll machen,
+    # wie er sie vorgefunden hat (eingeschwungen), sonst lebt der Betrieb vom Startstand.
     from test_demo_materialization import _completed
-    inputs = {'electric_share_pct': 50, 'grid_import_limit_kw': 800,
-              'storage_kwh': 2000, 'solution': 'direct'}
+    inputs = {'electric_share_pct': 50, 'grid_import_limit_kw': 650,
+              'storage_kwh': 2000, 'solution': 'managed'}
     created = client.post('/api/v1/demo/electrification/runs', json=inputs)
     assert created.status_code == 202, created.text
     record = _completed(client, created.json()['run_id'])

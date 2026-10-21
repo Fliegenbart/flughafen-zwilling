@@ -12,7 +12,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
-from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION
+from ..munich.coupled_models import CYCLIC_ENGINE_VERSION
 from .airport_model import AIRPORT_MODEL_VERSION, grid_raster, storage_axis
 from .airport_spec import load_spec
 from .demo import _canonical_hash
@@ -84,7 +84,7 @@ def load_atlas(airport: str | None = None) -> dict | None:
         expected = (reference_id_for(airport), axes_for(airport))
     except (OSError, ValueError, KeyError):
         return None
-    if (data.get("engine_version") != PREDICTIVE_ENGINE_VERSION
+    if (data.get("engine_version") != CYCLIC_ENGINE_VERSION
             or data.get("reference_id") != expected[0]
             or data.get("grid_step_kw") != step or data.get("grid_max_kw") != top
             or data.get("axes") != expected[1]):
@@ -102,11 +102,14 @@ def atlas_sizes(share: int, storage: float, pv: float, parking: int,
     if entry is None:
         return None
     step, top = raster_for(airport)
-    return {
-        solution: {"status": status, "required_grid_kw": required, "step_kw": step,
+    out = {
+        solution: {"status": cell[0], "required_grid_kw": cell[1], "step_kw": step,
                    "max_kw": top, "evaluations": [], "source": "atlas"}
-        for solution, (status, required) in zip(SOLUTIONS, entry)
+        for solution, cell in zip(SOLUTIONS, entry)
     }
+    # Dritter Wert der Speicherspalte: "off", wenn der Speicher dort ausgeschaltet bleibt.
+    out["managed_storage"]["storage_mode"] = (entry[2][2] if len(entry[2]) > 2 else "on")
+    return out
 
 
 def public_atlas(airport: str | None = None) -> dict:
@@ -120,7 +123,7 @@ def public_atlas(airport: str | None = None) -> dict:
         "reference_id": data["reference_id"], "grid_step_kw": data["grid_step_kw"],
         "airport": airport,
         "grid_max_kw": data["grid_max_kw"], "axes": data["axes"], "solutions": list(SOLUTIONS),
-        "entries": {k: [required for _, required in v] for k, v in data["entries"].items()},
+        "entries": {k: [cell[1] for cell in v] for k, v in data["entries"].items()},
         "peaks": {k: required for k, (_, required) in data["peaks"].items()},
         "evidence_level": "synthetic_uncalibrated",
     }

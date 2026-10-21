@@ -6,8 +6,9 @@ from bisect import bisect_left
 from dataclasses import dataclass, field
 
 from .coupled_models import (
+    CYCLIC_ENGINE_VERSION,
     GRID_SIZING_ENGINE_VERSION,
-    PREDICTIVE_ENGINE_VERSION,
+    PLANNING_ENGINE_VERSIONS,
     CoupledKpis,
     CoupledPolicy,
     CoupledWorld,
@@ -15,7 +16,7 @@ from .coupled_models import (
     TaskReadiness,
 )
 from .coupled_power import DT_H, ChargeRequest, PowerBalance
-from .coupled_world import verify_world
+from .coupled_world import steady_cycle, verify_world
 from .flightplan import FlightPlanSnapshot
 from .models import EnergyKpiSummary
 
@@ -66,16 +67,50 @@ class Vehicle:
         return self.spec.battery_capacity_kwh * self.spec.charge_target_soc_pct / 100
 
 
+# Parkvorgaenge planen ihre Frist mit diesem Puffer (Minuten) und laden ab dann voll.
+PARKING_GUARD_MIN = 30
+
+
+def _steered_parking(minute: int, world: CoupledWorld, remaining: list[float],
+                     apron: list[ChargeRequest], supply: PowerBalance) -> list[ChargeRequest]:
+    """Gesteuertes Parkhaus (Engine v4 mit Lademanagement): jeder Vorgang laedt mindestens die
+    gleichmaessige Rate, mit der er seine Frist (minus Puffer) noch schafft; darueber fuellt er
+    die freie Leistung nach Vorfeld und Speicher, frueheste Frist zuerst."""
+    efficiency = world.config.power.charging_efficiency
+    active = sorted((job.deadline_min, i) for i, job in enumerate(world.parking_jobs)
+                    if job.release_min <= minute < job.deadline_min and remaining[i] > EPS)
+    if not active:
+        return []
+    room = supply.parking_room(minute, math.fsum(r.kw for r in apron))
+    out = []
+    plan = {}
+    for deadline, i in active:
+        job = world.parking_jobs[i]
+        cap = min(job.charger_kw, remaining[i] / DT_H / efficiency)
+        left = deadline - minute - PARKING_GUARD_MIN
+        forced = cap if left <= 1 else min(cap, remaining[i] / efficiency / (left * DT_H))
+        plan[i] = [forced, cap]
+        room -= forced
+    for deadline, i in active:
+        forced, cap = plan[i]
+        extra = min(cap - forced, max(0.0, room))
+        room -= extra
+        if forced + extra > EPS:
+            out.append(ChargeRequest(world.parking_jobs[i].id, "parking", forced + extra, deadline))
+    return out
+
+
 def simulate_coupled(
     world: CoupledWorld, plan: FlightPlanSnapshot, policy: CoupledPolicy,
     *, capture_traces: bool = True,
 ) -> CoupledResult:
     if policy not in {"uncontrolled", "mission_priority", "lookahead"}:
         raise ValueError("Nicht unterstuetzte Regel")
-    if policy == 'lookahead' and world.engine_version != PREDICTIVE_ENGINE_VERSION:
-        raise ValueError('Vorausschauende Ladeplanung benoetigt Engine v3')
-    if world.engine_version == PREDICTIVE_ENGINE_VERSION and policy == 'mission_priority':
-        raise ValueError('Engine v3 nutzt uncontrolled oder lookahead, nicht die alte Prioritaet')
+    if policy == 'lookahead' and world.engine_version not in PLANNING_ENGINE_VERSIONS:
+        raise ValueError('Vorausschauende Ladeplanung benoetigt Engine v3 oder v4')
+    if world.engine_version in PLANNING_ENGINE_VERSIONS and policy == 'mission_priority':
+        raise ValueError('Engine v3/v4 nutzt uncontrolled oder lookahead, '
+                         'nicht die alte Prioritaet')
     verify_world(world, plan)
     world = CoupledWorld.model_validate(world.model_dump())
     source = {entry.entry_id: entry for entry in plan.rows}
@@ -91,7 +126,7 @@ def simulate_coupled(
     roster, planning_meta, controller = {}, None, None
     next_duty = {v.id: 0 for v in vehicles}
     vehicle_duties = {v.id: [] for v in vehicles}
-    if world.engine_version == PREDICTIVE_ENGINE_VERSION:
+    if world.engine_version in PLANNING_ENGINE_VERSIONS:
         from .charging_plan import EnergyEnvelopePlan, duty_roster, planning_metadata
         roster = {d.mission_id: d for d in duty_roster(world)}
         for i, m in enumerate(world.missions):
@@ -133,7 +168,22 @@ def simulate_coupled(
     electric_fleet = [v for v in vehicles if v.electric]
     initial = math.fsum(v.energy for v in electric_fleet)
     efficiency = world.config.power.charging_efficiency
+    # v4: Staende zu Beginn und Ende des Messtags (eingeschwungener Betrieb, steady_cycle).
+    cyclic = world.engine_version == CYCLIC_ENGINE_VERSION
+    cycle_start, cycle_end = steady_cycle(world)
+    cycle_energy: dict[str, float] = {}
+    cycle_final: dict[str, float] = {}
+    if cyclic:
+        supply.cycle = (cycle_start, cycle_end)
     for minute in range(world.start_min, world.end_min):
+        if cyclic and minute == cycle_start:
+            cycle_energy = {v.id: v.energy for v in electric_fleet}
+            supply.kpis.battery_cycle_start_kwh = supply.cycle_min_kwh = supply.stored
+            if controller:
+                controller.cycle_target = dict(cycle_energy)
+        if cyclic and minute == cycle_end:
+            cycle_final = {v.id: v.energy for v in electric_fleet}
+            supply.kpis.battery_cycle_end_kwh = supply.stored
         for v in vehicles:
             if v.mission is not None:
                 row = evidence[v.mission]
@@ -189,7 +239,8 @@ def simulate_coupled(
                           if e.fleet_kind == spec.kind and e.start_min <= minute < e.end_min)
             eligible = [v for v in fleets[spec.kind]
                         if v.electric and v.mission is None and v.energy < v.target - EPS]
-            planned = {v.id: controller.request(minute, v) for v in eligible} if controller else {}
+            planned = ({v.id: controller.request(minute, v, next_duty[v.id]) for v in eligible}
+                       if controller else {})
             if controller:
                 eligible.sort(key=lambda v: (-planned[v.id][0], planned[v.id][1], v.id))
                 eligible = [v for v in eligible if planned[v.id][2] > EPS]
@@ -215,12 +266,15 @@ def simulate_coupled(
                     v.id, "apron", min(requested_kw, (v.target - v.energy) / DT_H / efficiency),
                     deadline,
                 ))
-        for i, job in enumerate(world.parking_jobs):
-            if job.release_min <= minute < job.deadline_min and remaining[i] > EPS:
-                requests.append(ChargeRequest(
-                    job.id, "parking", min(job.charger_kw, remaining[i] / DT_H / efficiency),
-                    job.deadline_min,
-                ))
+        if cyclic and controller:
+            requests.extend(_steered_parking(minute, world, remaining, requests, supply))
+        else:
+            for i, job in enumerate(world.parking_jobs):
+                if job.release_min <= minute < job.deadline_min and remaining[i] > EPS:
+                    requests.append(ChargeRequest(
+                        job.id, "parking", min(job.charger_kw, remaining[i] / DT_H / efficiency),
+                        job.deadline_min,
+                    ))
         allocation, row = supply.step(minute, requests, policy)
         # Angefragte Ladeleistung (Fahrzeugseite) fuer "fehlende kW"; reine Zusatzspalte.
         row["charging_requested_kw"] = math.fsum(r.kw for r in requests)
@@ -392,7 +446,21 @@ def simulate_coupled(
                 "unmet_kwh": remaining[i], "ready_at_min": ready.get(i), "deadline_met": i in ready}
                for i, job in enumerate(world.parking_jobs)]
     energy = supply.kpis
-    if world.engine_version in (GRID_SIZING_ENGINE_VERSION, PREDICTIVE_ENGINE_VERSION):
+    if cyclic:
+        if cycle_end == world.end_min:
+            cycle_final = {v.id: v.energy for v in electric_fleet}
+            energy.battery_cycle_end_kwh = energy.battery_final_kwh
+        energy.vehicle_recharge_deficit_kwh = clean(math.fsum(max(
+            0, cycle_energy[v.id] - cycle_final[v.id]) for v in electric_fleet))
+        # Ein Speicher, der am Messtag voll wurde, pendelt sich unter dem Anfangsstand ein, wenn
+        # er den Fehlbetrag bei vollem Speicher noch haette aufnehmen koennen (gleicher Verlauf,
+        # nur tiefer, bis er wieder voll ist) und dabei die Reserve nicht erreicht.
+        energy.battery_cycle_absorbable_kwh = clean(max(0.0, min(
+            supply.cycle_full_slack_kwh, supply.cycle_min_kwh - supply.reserve)))
+        energy.storage_recharge_deficit_kwh = clean(max(
+            0, energy.battery_cycle_start_kwh - energy.battery_cycle_end_kwh
+            - energy.battery_cycle_absorbable_kwh))
+    elif world.engine_version in (GRID_SIZING_ENGINE_VERSION, *PLANNING_ENGINE_VERSIONS):
         energy.vehicle_recharge_deficit_kwh = clean(math.fsum(max(
             0, v.spec.battery_capacity_kwh * v.spec.initial_soc_pct / 100 - v.energy)
             for v in electric_fleet))
@@ -410,6 +478,8 @@ def simulate_coupled(
         world.world_hash, kpis, energy, evidence, departures, traces, series, parking,
         [{"vehicle_id": v.id, "kind": v.spec.kind, "electric": v.electric,
           "initial_kwh": (v.spec.battery_capacity_kwh * v.spec.initial_soc_pct / 100
-                          if v.electric else 0), "final_kwh": v.energy}
+                          if v.electric else 0), "final_kwh": v.energy,
+          **({"cycle_start_kwh": cycle_energy.get(v.id, 0.0),
+              "cycle_end_kwh": cycle_final.get(v.id, 0.0)} if cyclic else {})}
          for v in vehicles], planning_meta,
     )

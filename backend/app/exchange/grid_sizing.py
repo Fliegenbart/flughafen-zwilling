@@ -4,9 +4,10 @@ from math import ceil
 from typing import Callable
 from zoneinfo import ZoneInfo
 
-from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION, CoupledWorld
+from ..munich.coupled_models import CYCLIC_ENGINE_VERSION, PLANNING_ENGINE_VERSIONS, CoupledWorld
 from ..munich.coupled_power import base_power
 from ..munich.coupled_simulator import CoupledResult
+from ..munich.coupled_world import steady_cycle
 
 GRID_STEP_KW = 25
 GRID_MAX_KW = 8000
@@ -20,28 +21,38 @@ def minimum_energy_bound(world: CoupledWorld) -> float:
     only fully electric classes. v3 counts exact fixed electric duties, including
     mixed classes; unlike legacy dispatch it cannot substitute diesel vehicles.
     Surplus generation is optimistically all usable, so this can only be a lower bound.
+    v4 only demands a self-sustaining measured day (steady_cycle), so only work that lies
+    wholly inside that day counts; energy borrowed from the start state is allowed elsewhere.
     """
     p = world.config.power
     origin = datetime.fromisoformat(world.day_start_utc)
     zone = ZoneInfo('Europe/Berlin')
+    first, last = (steady_cycle(world) if world.engine_version == CYCLIC_ENGINE_VERSION
+                   else (world.start_min, world.end_min))
+
+    def inside(start: int, end: int) -> bool:
+        return first <= start and end <= last
+
     net_kwh = 0.0
-    for minute in range(world.start_min, world.end_min):
+    for minute in range(first, last):
         clock = (origin + timedelta(minutes=minute)).astimezone(zone)
         background, pv, chp = base_power(clock.hour * 60 + clock.minute, p)
         net_kwh += (background - pv - chp) / 60
     electric_kinds = {f.kind for f in world.config.fleets
                       if f.electric_vehicles == f.vehicles and f.vehicles > 0}
     battery_energy = sum(m.energy_kwh for m in world.missions if m.kind in electric_kinds)
-    if world.engine_version == PREDICTIVE_ENGINE_VERSION:
+    if world.engine_version in PLANNING_ENGINE_VERSIONS:
         from ..munich.charging_plan import duty_roster
         electric_ids = {f'{f.kind}-{i + 1:03d}' for f in world.config.fleets
                         for i in range(f.vehicles if f.electric_vehicles is None
                                        else f.electric_vehicles)}
         battery_energy = sum(d.energy_kwh for d in duty_roster(world)
-                             if d.vehicle_id in electric_ids)
-    battery_energy += sum(job.energy_kwh for job in world.parking_jobs)
+                             if d.vehicle_id in electric_ids and inside(
+                                 d.start_min, d.start_min + d.duration_min + d.return_min))
+    battery_energy += sum(job.energy_kwh for job in world.parking_jobs
+                          if inside(job.release_min, job.deadline_min))
     net_kwh += battery_energy / p.charging_efficiency / p.transformer_efficiency
-    return max(0, net_kwh / ((world.end_min - world.start_min) / 60))
+    return max(0, net_kwh / ((last - first) / 60))
 
 
 def connection_checks(result: CoupledResult) -> dict:
@@ -53,10 +64,18 @@ def connection_checks(result: CoupledResult) -> dict:
         reasons.append("parking_deadlines")
     if k.background_unserved_kwh > ENERGY_TOLERANCE_KWH:
         reasons.append("background_supply")
-    if sum(max(0, v['initial_kwh'] - v['final_kwh'])
+    # v4: Ende des Messtags gegen seinen Anfang (eingeschwungen), sonst Ende gegen Start.
+    if sum(max(0, v.get('cycle_start_kwh', v['initial_kwh'])
+               - v.get('cycle_end_kwh', v['final_kwh']))
            for v in result.terminal_vehicles if v['electric']) > ENERGY_TOLERANCE_KWH:
         reasons.append("vehicle_recharge")
-    if e.battery_final_kwh + ENERGY_TOLERANCE_KWH < e.battery_initial_kwh:
+    storage_start = getattr(e, 'battery_cycle_start_kwh', None)
+    if storage_start is None:
+        storage_start, storage_end = e.battery_initial_kwh, e.battery_final_kwh
+    else:
+        # Fehlbetrag, den ein voll gewordener Speicher ausgleicht (siehe coupled_simulator).
+        storage_end = e.battery_cycle_end_kwh + (e.battery_cycle_absorbable_kwh or 0)
+    if storage_end + ENERGY_TOLERANCE_KWH < storage_start:
         reasons.append("storage_recharge")
     if max(k.fleet_energy_balance_error_kwh, k.storage_energy_balance_error_kwh) > 1e-6:
         reasons.append("energy_balance")
