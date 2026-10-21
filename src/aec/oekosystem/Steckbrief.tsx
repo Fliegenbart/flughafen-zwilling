@@ -23,6 +23,10 @@ const host = (url: string) => {
   }
 };
 
+/** Fahrzeuge, die das Modell fuer den Flughafen rechnet (vier Klassen). */
+export const modelFleet = (profile: AirportProfile) =>
+  Object.values(profile.fleet.vehicles).reduce((a, b) => a + b, 0);
+
 /** Flughafen waehlen; ein Wechsel startet mit den Werten dieses Flughafens. */
 export function AirportPicker({
   airports,
@@ -124,8 +128,8 @@ export function AirportModel({ profile }: { profile: AirportProfile }) {
       <Item title="Einsätze je Flug" basis={profile.coverage_basis}>
         {`${coverage} der Flüge`}
       </Item>
-      <Item title="Flotte" basis={profile.fleet.basis}>
-        {fleet}
+      <Item title="Flotte im Modell" basis={profile.fleet.basis}>
+        {`${fleet}. Der echte Fuhrpark ist größer, weil das Modell nur diese vier Klassen rechnet`}
       </Item>
       <Item title="Elektroanteil heute" basis={profile.electric_share_basis}>
         {profile.electric_share_now_pct == null

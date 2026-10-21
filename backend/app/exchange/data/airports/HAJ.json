@@ -1,0 +1,175 @@
+{
+ "id": "HAJ",
+ "name": "Hannover",
+ "full_name": "Flughafen Hannover-Langenhagen (Hannover Airport)",
+ "as_of": "2026-10",
+ "departures_per_day": 80.6,
+ "departures_basis": {
+  "text": "Spitzenmonat ist der Oktober (Herbstferien). Laut ADV-Monatsstatistik Oktober 2025 gab es in Hannover 4.996 Bewegungen im Linien- und Charterverkehr (an+ab, einschließlich Nur-Fracht und Post). Rechnung: 4.996 / 2 / 31 = 80,6 Abflüge pro Tag. Zum Vergleich 2025: Juli 4.251, August 4.186, September 4.430 (September aus den Kumulwerten Januar–August und Januar–Oktober). 2026 liegt August bei 4.263 Bewegungen (68,8 Abflüge/Tag); Oktober 2026 ist noch nicht veröffentlicht, Januar–August 2026 liegt 1,0 % unter Vorjahr. Nicht enthalten sind Allgemeine Luftfahrt (Oktober 2025: 836 Bewegungen) und sonstiger gewerblicher Verkehr wie Taxi-, Schul- und Bereitstellungsflüge (742). Gegenprobe: Der Flugplan des Flughafens zeigt für den 22. und 23.10.2026 80 bzw. 84 Passagierabflüge.",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/07.2025-ADV-Monatsstatistik.pdf",
+   "https://www.hannover-airport.de/abflug/"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  12,
+  6,
+  7,
+  10,
+  8,
+  16,
+  8,
+  3,
+  4,
+  5,
+  10,
+  6,
+  5,
+  10,
+  14,
+  8,
+  2,
+  5,
+  8,
+  8,
+  6,
+  3,
+  0,
+  0
+ ],
+ "arrivals_by_hour": [
+  13,
+  10,
+  8,
+  3,
+  2,
+  0,
+  0,
+  3,
+  4,
+  11,
+  8,
+  9,
+  11,
+  6,
+  12,
+  2,
+  5,
+  6,
+  10,
+  7,
+  7,
+  4,
+  11,
+  16
+ ],
+ "profile_basis": {
+  "text": "Belegt: Gewichte = geplante Abflüge und Ankünfte je Ortsstunde laut Flugplan des Flughafens für 22. und 23.10.2026 (Herbstferien Niedersachsen), zusammen 164 Abflüge und 168 Ankünfte, Codeshares einmal gezählt. Planmäßige Flüge sind nie verboten; von 23 bis 6 Uhr sind nur Jets zugelassen, die die Lärmgrenzwerte nach ICAO-Kapitel 4 einhalten (DFS NfL 1-1809-19). Profil: Abflugwelle 0–6 Uhr (Türkei, Ägypten, Griechenland, Spanien; ab 4 Uhr erste Umläufe, vermutlich der hier stationierten Flugzeuge), Tagesplateau mit Spitze um 14 Uhr, Ankunftswelle 22–2 Uhr, keine planmäßigen Abflüge 22–24 Uhr. 36 % der Abflüge und 38 % der Ankünfte liegen 22–6 Uhr. Die Umwelterklärung nennt für 2024 21 % aller Bewegungen nachts; bezogen nur auf Linien- und Charterbewegungen wären es höchstens 32 %. Der Ferienmonat liegt darüber. Annahme: Nur-Frachtflüge fehlen im Fluggastplan; es sind wenige.",
+  "sources": [
+   "https://www.hannover-airport.de/abflug/",
+   "https://www.hannover-airport.de/ankunft/",
+   "https://www.hannover-airport.de/fileadmin/downloads/Unternehmen_Airport/Verantwortung_und_Umwelt/DFS_Betriebszeiten.pdf",
+   "https://www.hannover-airport.de/fileadmin/bilder/Unternehmen_Airport/Verantwortung_und_Umwelt/Umwelterklaerung_2025_Gesamte_Datei.pdf"
+  ],
+  "assumption": false
+ },
+ "coverage_pct": {
+  "bus": 48,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 50
+ },
+ "coverage_basis": {
+  "text": "Positionen: 20 Terminalpositionen mit Fluggastbrücken und 20–21 Positionen am Vorfeldrand für Linien- und Charterverkehr. An den Brücken stellt der Flughafen stationären Bodenstrom bereit; dort sind bordeigene Aggregate dann unzulässig (Benutzungsordnung, Anhang B Nr. 5 und 8). Rund 50 % der Positionen haben also keinen festen Bodenstrom, daraus gpu 50. Fluggäste an Vorfeldrandpositionen fahren per Bus (3 Abflug-Bus-Gates). Wie sich die Abflüge auf die Positionen verteilen, ist nicht veröffentlicht. Annahme: wie die Positionen, abzüglich weniger Nur-Frachtflüge ohne Busse, daraus bus 48. Werden Brückenpositionen bevorzugt belegt, liegen bus und gpu niedriger. Pushback 100 %: Nose-in-Positionen dürfen nur mit Schlepperhilfe verlassen werden (Benutzungsordnung 2.4); ob Vorfeldrandpositionen ohne Pushback auskommen, ist nicht veröffentlicht. Gepäckschlepper 100 %.",
+  "sources": [
+   "https://www.hannover-airport.de/unternehmen-airport/das-unternehmen/hannover-airport-kompakt/",
+   "https://www.hannover-airport.de/fileadmin/downloads/B2B_und_Gesch%C3%A4ftskunden/Entgelte_und_AGB/AGB_und_Entgelttabellen/Flughafenbenutzungsordnung_Dez2024.pdf"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": 65,
+ "electric_share_basis": {
+  "text": "65 % der 145 Fahrzeuge der Bodenverkehrstochter AGS fahren elektrisch, u. a. eGPUs, Schlepper, Förderbänder, Fluggasttreppen und Pushbacks bis 280 t (daHAJm, 07.04.2026; ebenso Umwelterklärung 2025–2027, dort in einer Grafik rund 70 %). Der Wert gilt für den gesamten AGS-Fuhrpark und ist nicht nach Fahrzeugklassen aufgeteilt. Fahrzeuge anderer Abfertiger und der Flughafengesellschaft sind nicht enthalten. AGS hat laut Flughafen über 80 % Marktanteil.",
+  "sources": [
+   "https://dahajm.hannover-airport.de/verantwortung/co2-piloten-fahren-elektrisch/",
+   "https://www.hannover-airport.de/fileadmin/bilder/Unternehmen_Airport/Verantwortung_und_Umwelt/Umwelterklaerung_2025_Gesamte_Datei.pdf"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 72,
+ "parking_basis": {
+  "text": "72 öffentliche Ladepunkte an Parkhäusern: 64 Stellplätze an 32 AC-Ladesäulen (22 kW) in Parkhaus 1 und 3 sowie 8 DC-Schnellladepunkte (bis 400 kW) im Ladepark an Parkhaus 2. Annahme: ein Ladevorgang je Punkt und Tag, also 72. Nicht gezählt sind 27 Ladesäulen für Dienstwagen und die Schnelllader an einer Tankstelle am Standort.",
+  "sources": [
+   "https://www.hannover-airport.de/fileadmin/bilder/Unternehmen_Airport/Verantwortung_und_Umwelt/Umwelterklaerung_2025_Gesamte_Datei.pdf",
+   "https://www.hannover-airport.de/parken/"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "5,34 Mio. (5.344.722), +2,3 % gegenüber 2024",
+   "source": "https://www.hannover-airport.de/unternehmen-airport/das-unternehmen/"
+  },
+  {
+   "label": "Abflüge pro Tag im Spitzenmonat",
+   "value": "Rund 81 im Linien- und Charterverkehr (Oktober 2025: 4.996 Bewegungen an+ab)",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Betriebszeit",
+   "value": "Rund um die Uhr geöffnet; von 23 bis 6 Uhr nur Jets, die die Lärmgrenzwerte nach ICAO-Kapitel 4 einhalten, sowie festgelegte Ausnahmen",
+   "source": "https://www.hannover-airport.de/fileadmin/downloads/Unternehmen_Airport/Verantwortung_und_Umwelt/DFS_Betriebszeiten.pdf"
+  },
+  {
+   "label": "Nachtanteil 2024",
+   "value": "21 % aller Flugbewegungen (13.664 von 64.683) zwischen 22 und 6 Uhr",
+   "source": "https://www.hannover-airport.de/fileadmin/bilder/Unternehmen_Airport/Verantwortung_und_Umwelt/Umwelterklaerung_2025_Gesamte_Datei.pdf"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "Flughafentochter AGS mit über 80 % Marktanteil (eigene Angabe der AGS)",
+   "source": "https://www.hannover-airport.de/fileadmin/bilder/Unternehmen_Airport/Verantwortung_und_Umwelt/Umwelterklaerung_2025_Gesamte_Datei.pdf"
+  },
+  {
+   "label": "Elektrofahrzeuge heute",
+   "value": "65 % der 145 AGS-Fahrzeuge fahren elektrisch, darunter eGPUs, Schlepper und Pushbacks",
+   "source": "https://dahajm.hannover-airport.de/verantwortung/co2-piloten-fahren-elektrisch/"
+  },
+  {
+   "label": "Eigene Stromerzeugung und Netz",
+   "value": "2 Erdgas-BHKW mit rund 3,5 MW elektrisch, PV rund 0,9 MWp; das Campusnetz ist laut Flughafen stark ausgelastet",
+   "source": "https://www.hannover-airport.de/fileadmin/bilder/Unternehmen_Airport/Verantwortung_und_Umwelt/Umwelterklaerung_2025_Gesamte_Datei.pdf"
+  },
+  {
+   "label": "Klimaziel",
+   "value": "CO2e −65 % bis 2030 (Basis 1999), bilanziell CO2e-neutral bis 2045",
+   "source": "https://www.hannover-airport.de/fileadmin/bilder/Unternehmen_Airport/Verantwortung_und_Umwelt/Umwelterklaerung_2025_Gesamte_Datei.pdf"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 10,
+   "baggage_tractor": 11,
+   "pushback_tug": 5,
+   "gpu": 12
+  },
+  "chargers": {
+   "bus": 4,
+   "baggage_tractor": 4,
+   "pushback_tug": 2,
+   "gpu": 5
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 3, baggage_tractor 5, pushback_tug 3, gpu 5), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

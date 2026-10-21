@@ -108,7 +108,7 @@ export default function Levers({
     label: "Elektrische Fahrzeuge im Vorfeld",
     show: (v) => `${v}\u00a0%`,
     hint: (v) =>
-      `${int(Math.round((total * v) / 100))} von ${int(total)} Fahrzeugen fahren elektrisch` +
+      `${int(Math.round((total * v) / 100))} von ${int(total)} Fahrzeugen${airport ? " im Modell" : ""} fahren elektrisch` +
       (airport?.electric_share_now_pct != null
         ? `, heute rund ${int(airport.electric_share_now_pct)} %`
         : ""),

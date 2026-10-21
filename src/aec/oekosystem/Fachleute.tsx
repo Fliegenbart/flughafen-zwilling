@@ -500,12 +500,19 @@ export default function Fachleute() {
             {profile ? (
               <>
                 <li>
-                  Das Tagesprofil ist aus veröffentlichten Eckdaten gebaut, nicht aus dem echten
-                  Flugplan von {profile.name}. Gerechnet wird ein typischer Tag im Spitzenmonat.
+                  {profile.profile_basis.assumption
+                    ? `Das Tagesprofil ist aus veröffentlichten Eckdaten gebaut, nicht aus dem echten Flugplan von ${profile.name}.`
+                    : `Das Tagesprofil ist aus dem veröffentlichten Flugplan von ${profile.name} ausgezählt und auf einen typischen Tag im Spitzenmonat skaliert. Frachtflüge und Tagesschwankungen können fehlen.`}{" "}
+                  Gerechnet wird ein typischer Tag im Spitzenmonat.
                 </li>
                 <li>
                   Gerechnet werden vier Fahrzeugklassen: Busse, Gepäckschlepper, Flugzeugschlepper
-                  und mobile Bodenstromgeräte. Weitere Geräte wie Förderbänder oder Hubwagen fehlen.
+                  und mobile Bodenstromgeräte. Weitere Geräte wie Förderbänder, Hubwagen oder Pkw
+                  fehlen, ihr Ladebedarf kommt dazu.
+                </li>
+                <li>
+                  Energie je Einsatz gilt für Kurz- und Mittelstreckenflugzeuge. Großraumflugzeuge
+                  brauchen mehr, an Drehkreuzen liegt der echte Bedarf deshalb höher.
                 </li>
                 <li>Nichts davon ist mit dem Flughafen abgestimmt.</li>
               </>

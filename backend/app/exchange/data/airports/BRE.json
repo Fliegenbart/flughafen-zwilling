@@ -1,0 +1,182 @@
+{
+ "id": "BRE",
+ "name": "Bremen",
+ "full_name": "Bremen Airport (Flughafen Bremen GmbH)",
+ "as_of": "2026-10",
+ "departures_per_day": 27.2,
+ "departures_basis": {
+  "text": "Spitzenmonat 2025 nach Linien- und Charterbewegungen war der Juli. Laut ADV-Monatsstatistik 07/2025 hatte Bremen 1.684 Bewegungen im Linien- und Charterverkehr (an+ab). Rechnung: 1.684 ÷ 2 ÷ 31 = 27,2 Abflüge pro Tag. Nicht enthalten: nicht-gewerblicher Verkehr (524) und sonstiger gewerblicher Verkehr (574). Zum Vergleich 2025: August 1.596, September 1.572 (aus Kumulwerten), Oktober 1.641 (26,5 pro Tag, stärkster Monat nach Passagieren); Jahresmittel 17.257 ÷ 2 ÷ 365 = 23,6. Luftfracht ist gering (329 t im Jahr 2025). 2026 liegt der Verkehr niedriger: Januar bis August −15,2 %, Juni 1.446, Juli 1.362 (aus Kumulwerten, 22,0 pro Tag), August 1.283. Der Wochenflugplan 21.–27.10.2026 zeigt 21 Abflüge pro Tag. Die 27,2 sind also der Spitzenwert des letzten vollen Jahres.",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2015/11/07.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/06.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.bremen-airport.com/fluginfo/fluege/wochenflugplan"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  2.14,
+  0.86,
+  0.43,
+  2.57,
+  2.86,
+  1.71,
+  0.71,
+  1.43,
+  1.0,
+  0.71,
+  1.0,
+  0.86,
+  2.14,
+  1.0,
+  1.29,
+  0.29,
+  0.0,
+  0.0
+ ],
+ "arrivals_by_hour": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.14,
+  0.0,
+  1.43,
+  3.86,
+  2.29,
+  0.43,
+  1.29,
+  1.57,
+  0.71,
+  0.29,
+  1.14,
+  2.43,
+  1.43,
+  0.43,
+  1.29,
+  0.86,
+  0.86,
+  1.0
+ ],
+ "profile_basis": {
+  "text": "Belegt: Die Gewichte sind die mittleren planmäßigen Abflüge bzw. Ankünfte je Ortsstunde laut Wochenflugplan des Flughafens für 21.–27.10.2026 (147 Abflüge, 150 Ankünfte, abgerufen am 21.10.2026). Laut Flughafenbenutzungsordnung sind Starts und Landungen von 22 bis 7 Uhr verboten. Ausnahmen: Flugzeuge, die mindestens ICAO-Lärmstandard Kap. 3 erfüllen, bis 22:30 und ab 6 Uhr; zwei Landungen von Home-Carriern bis 23 Uhr, verspätet bis 24 Uhr. Sa und So ist der Flughafen 23:30–6 Uhr geschlossen. Daher stehen die Stunden 0–5 auf 0. Muster: erste Abflüge 6:00–6:20 Uhr, Abflugspitze 9–11 Uhr, Ankunftsspitze 9 Uhr, zweite Welle 17–18 Uhr, letzte Abflüge gegen 21:40 Uhr, letzte Landung 23:00 Uhr. Späte Ankünfte und frühe Abflüge derselben Airlines deuten auf über Nacht abgestellte Flugzeuge. Annahme: Die Verteilung der Herbstwoche gilt auch für den Spitzenmonat Juli.",
+  "sources": [
+   "https://www.bremen-airport.com/fluginfo/fluege/wochenflugplan",
+   "https://www.bremen-airport.com/fileadmin/user_upload/FBO_01.10.2026.pdf"
+  ],
+  "assumption": true
+ },
+ "coverage_pct": {
+  "bus": 35,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 50
+ },
+ "coverage_basis": {
+  "text": "Gepäckschlepper 100 % und Pushback 100 % (Standardwerte): Laut FBO dürfen Flugzeuge Nose-in-Positionen nur mit Schlepperhilfe verlassen; wie viele Abflüge ohne Pushback auskommen, ist nicht veröffentlicht. Busse 35 % (Annahme): Das Hauptterminal hat 5 Fluggastbrücken bei 18 Gates (A01–A14, B01–B04), für Terminal 2 sieht das Flugplatzhandbuch Walk-Deboarding vor. Im Wochenflugplan 21.–27.10.2026 entfallen 48 % der Abflüge auf Netzwerkairlines, 24 % auf Ryanair und 28 % auf Urlaubs- und Charterairlines. Wie viele Flüge per Bus abgefertigt werden, ist nicht veröffentlicht. Bodenstromgeräte 50 % (Annahme): Stationären Bodenstrom stellt der Flughafen an den Fluggastbrücken und den nördlichen Außenpositionen bereit (Anhang A, Stand 2019), mobile Geräte bietet er als Leistung an. Die Zahl der Positionen mit festem Anschluss ist nicht veröffentlicht.",
+  "sources": [
+   "https://www.bremen-airport.com/fileadmin/user_upload/FBO_01.10.2026.pdf",
+   "https://www.bremen-airport.com/fileadmin/_migrated/xdownloads/190415_Anhang_A-Zentrale_Infrastruktureinrichtungen.pdf",
+   "https://www.bremen-airport.com/fileadmin/user_upload/Sonderleistungsverzeichnis_ab_01.01.2026.pdf",
+   "https://www.bremen-airport.com/fileadmin/user_upload/FHB_Version_8.1.pdf",
+   "https://de.wikipedia.org/wiki/Flughafen_Bremen",
+   "https://www.bremen-airport.com/fluginfo/fluege/wochenflugplan"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": 32,
+ "electric_share_basis": {
+  "text": "Der Anteil gilt für alle Fahrzeuge auf dem Vorfeld: rund 42 von etwa 130 fahren elektrisch, also etwa 32 % (FBG-Bericht vom 03.07.2025, gleicher Wortlaut schon im Bericht von 2024, daher eher Stand 2023/24). Mobile Frachtbänder sowie Gepäck- und Frachtschlepper fahren laut Bericht nur noch elektrisch, auch die mobilen Fluggasttreppen haben Elektroantrieb. Zu Zahl und Antrieb der Busse und Pushback-Fahrzeuge gibt es keine Angaben; mobile Bodenstromgeräte rechnet der Flughafen inklusive Kraftstoff ab. Die Pressemitteilung vom 04.09.2026 spricht ohne Zahl von einem überwiegend elektrischen Fuhrpark.",
+  "sources": [
+   "https://www.bremen-airport.com/fileadmin/user_upload/20250703_-_FBG_-_Bericht_Verwendung_2025.pdf",
+   "https://www.bremen-airport.com/fileadmin/user_upload/20240625_-_FBG_-_Bericht_Verwendung_2024.pdf",
+   "https://www.bremen-airport.com/fileadmin/user_upload/Sonderleistungsverzeichnis_ab_01.01.2026.pdf",
+   "https://www.bremen-airport.com/unternehmen/presse/pressemitteilungen/pressemitteilungen?tx_xpress_display%5Bnews%5D=346&cHash=f9919357a8cac95aaa3197bdf256ab90"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 4,
+ "parking_basis": {
+  "text": "Der Flughafen nannte 2014 vier Ladestationen im Parkhaus. OpenStreetMap verzeichnet dort eine Ladestation mit zwei Säulen, der Eintrag stammt ebenfalls aus 2014/15. Eine aktuelle Zahl ist nicht veröffentlicht, die Parkseiten (Stand 2026) erwähnen kein Laden. Annahme: 4 öffentliche Ladepunkte mit je einem Ladevorgang pro Tag, also 4. Zum Vergleich: P1, P2 und P3 haben zusammen 4.800 Stellplätze.",
+  "sources": [
+   "https://www.bremen-airport.com/fileadmin/user_upload/Downloadcenter/Allgemeine_Informationen/AIR_RZ_131221-Umweltbericht-Ansicht.pdf",
+   "https://www.openstreetmap.org/node/3045322784",
+   "https://www.bremen-airport.com/am-flughafen/anreise-parken/parken/parken/allgemeine-infos-und-anreise-706"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "1,99 Mio. (+5,6 % gegenüber 2024)",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag im Juli 2025",
+   "value": "Rund 27 im Linien- und Charterverkehr (1.684 Bewegungen ÷ 2 ÷ 31 Tage)",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/07.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Nachtflugbeschränkung",
+   "value": "22–7 Uhr grundsätzlich keine Starts und Landungen; Flugzeuge mit ICAO-Lärmstandard Kap. 3 bis 22:30 und ab 6 Uhr; Sa und So 23:30–6 Uhr geschlossen",
+   "source": "https://www.bremen-airport.com/fileadmin/user_upload/FBO_01.10.2026.pdf"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "Tochter Bremen Airport Handling (Gepäck, Vorfeld, Fracht); Bremen Airport Service übernimmt Teile der Flugzeugabfertigung",
+   "source": "https://www.bremen-airport.com/unternehmen/flughafen-bremen/tochtergesellschaften"
+  },
+  {
+   "label": "Elektrofahrzeuge auf dem Vorfeld",
+   "value": "Rund 42 von 130 (Bericht 2025); Gepäck- und Frachtschlepper sowie Frachtbänder fahren nur noch elektrisch, auch mobile Fluggasttreppen",
+   "source": "https://www.bremen-airport.com/fileadmin/user_upload/20250703_-_FBG_-_Bericht_Verwendung_2025.pdf"
+  },
+  {
+   "label": "Bodenstrom",
+   "value": "Stationär an den Fluggastbrücken und den nördlichen Außenpositionen, vom Flughafen betrieben (Stand 2019)",
+   "source": "https://www.bremen-airport.com/fileadmin/_migrated/xdownloads/190415_Anhang_A-Zentrale_Infrastruktureinrichtungen.pdf"
+  },
+  {
+   "label": "Photovoltaik",
+   "value": "Freiflächenanlage mit 550 kWp südlich der Start- und Landebahn geplant (Stand 2025), ausgelegt auf vollständigen Eigenverbrauch",
+   "source": "https://www.bremen-airport.com/fileadmin/user_upload/20250703_-_FBG_-_Bericht_Verwendung_2025.pdf"
+  },
+  {
+   "label": "Emissionsminderung",
+   "value": "Treibhausgasemissionen laut Flughafen um 82 % gesenkt, 53 % davon durch eigene Maßnahmen, der Rest durch Ökostrom; Basisjahr nicht genannt",
+   "source": "https://www.bremen-airport.com/unternehmen/presse/pressemitteilungen/pressemitteilungen?tx_xpress_display%5Bnews%5D=346&cHash=f9919357a8cac95aaa3197bdf256ab90"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 7,
+   "baggage_tractor": 9,
+   "pushback_tug": 3,
+   "gpu": 5
+  },
+  "chargers": {
+   "bus": 3,
+   "baggage_tractor": 4,
+   "pushback_tug": 2,
+   "gpu": 2
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 2, baggage_tractor 4, pushback_tug 2, gpu 2), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

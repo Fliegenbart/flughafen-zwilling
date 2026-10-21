@@ -1,0 +1,184 @@
+{
+ "id": "DTM",
+ "name": "Dortmund",
+ "full_name": "Flughafen Dortmund (Dortmund Airport)",
+ "as_of": "2026-10",
+ "departures_per_day": 29.4,
+ "departures_basis": {
+  "text": "Spitzenmonat ist der August. Laut ADV-Monatsstatistik August 2026 gab es in Dortmund 1.825 Bewegungen im Linien- und Charterverkehr (an+ab, +0,7 %). Rechnung: 1.825 / 2 / 31 = 29,4 Abflüge pro Tag. Zum Vergleich: August 2025 1.813 (29,2 pro Tag), Juli 2026 1.747 (aus den Kumulwerten Januar–Juni und Januar–August), Oktober 2025 1.763, Mai 2026 1.692. Nicht enthalten sind nicht gewerblicher Verkehr (August 2026: 839) und sonstiger gewerblicher Verkehr wie Taxi- und Geschäftsreiseflüge (684). Fracht fertigt Dortmund seit 2024 nicht mehr ab (ADV: 0 t). Gegenprobe: Der Flugplan des Flughafens zeigt für Montag bis Samstag, 19.–24.10.2026, 181 Abflüge, also 30,2 pro Tag.",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/06.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/05.2026-ADV-Monatsstatistik.pdf",
+   "https://www.dortmund-airport.com/de/abflug"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  9,
+  47,
+  18,
+  2,
+  4,
+  5,
+  24,
+  24,
+  16,
+  12,
+  6,
+  10,
+  1,
+  3,
+  0,
+  0,
+  0
+ ],
+ "arrivals_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  2,
+  26,
+  38,
+  9,
+  0,
+  10,
+  10,
+  30,
+  19,
+  14,
+  8,
+  9,
+  3,
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "profile_basis": {
+  "text": "Gewichte = geplante Abflüge und Ankünfte je Ortsstunde laut Flugplan des Flughafens für Montag bis Samstag, 19.–24.10.2026 (letzte Woche des Sommerflugplans, NRW-Herbstferien): 181 Abflüge und 181 Ankünfte. Profil: Ankunftswelle 7–9 Uhr, vor allem Wizz Air aus Ost- und Südosteuropa; Abflugwelle 8–10 Uhr mit 26 % der Abflüge zwischen 8 und 9 Uhr (bis zu 11 an einem Tag); zweite Welle 13–16 Uhr; letzte Abflüge zwischen 18 und 20:30 Uhr. Abflüge folgen meist 35–70 Minuten auf die Ankunft desselben Flugzeugs; Abflüge vor 7 Uhr gibt es nicht. Planmäßige Starts sind nur 6–22 Uhr erlaubt, Landungen 6–23 Uhr, zwischen 22 und 23 Uhr im Schnitt höchstens 4 pro Tag; in dieser Woche gab es dort keine. Annahme: Der Spitzenmonat August verteilt sich über den Tag wie diese Woche; im Sommer können Abendflüge etwas häufiger sein.",
+  "sources": [
+   "https://www.dortmund-airport.com/de/abflug",
+   "https://www.dortmund-airport.com/de/ankunft",
+   "https://www.dortmund-airport.com/de/nachbarn/betriebszeiten",
+   "https://cdn0.scrvt.com/airportdtm/80d405e92c16be38/709af8c3f3bb/FBO-DTM-gueltig-ab-09.02.2026.pdf"
+  ],
+  "assumption": true
+ },
+ "coverage_pct": {
+  "bus": 0,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 100
+ },
+ "coverage_basis": {
+  "text": "Bus 0: Laut Ausschreibungsunterlage des Flughafens (BADV, Stand 5.2.2025) sind alle Flüge Walk-Boarding-Flüge; Fluggäste gehen zu Fuß zwischen Terminal und Flugzeug. Nur die Positionen 3 und 4 von 13 haben Fluggastbrücken. Schlepper 100. Pushback 100 (Annahme): Pushback erbringt allein der Flughafen, Positionen ohne Pushback sind nicht veröffentlicht. GPU 100 (Annahme): An den Terminalpositionen 0–12 müssen Flugzeuge die bodenseitige Energieversorgung nutzen, nach 22 Uhr nur über GPU. Das Abfertigungsentgelt enthält GPU und Push-back als Grundausstattung. Positionen werden mit mobilen E-GPU ausgestattet (2023 für vier Positionen beschlossen), 2024 kamen drei e-GPU als Ersatz der Dieselgeräte dazu. Eine stationäre Bodenstromversorgung gibt es; wie viele Positionen sie versorgt und ob die e-GPU mit Akku oder am Netz laufen, ist nicht veröffentlicht. 100 ist daher die Obergrenze.",
+  "sources": [
+   "https://cdn0.scrvt.com/airportdtm/bb1071053f2162de/42c66f816a06/begleitdokument-badv_stand_2025_02_05.pdf",
+   "https://cdn0.scrvt.com/airportdtm/98ee29f2b01fa4b8/cccbd9898d22/2024-12-20-aufsichtsratssitzung.pdf",
+   "https://cdn0.scrvt.com/airportdtm/80d405e92c16be38/709af8c3f3bb/FBO-DTM-gueltig-ab-09.02.2026.pdf",
+   "https://cdn0.scrvt.com/airportdtm/c1ef9dbd18d4e055/876eb66cf1cd/entgeltordnung_edlw_2026-nicht-genehmigungspflichtige-entgelte_15062026.pdf",
+   "https://www.aerotelegraph.com/ticker/flughafen-dortmund-investiert-in-e-schlepper-bodenstromanlagen-und-sonnenenergie/eylmtjv",
+   "https://cdn0.scrvt.com/airportdtm/54a467b4831d39bf/79af8ce902ff/2024-06-14-aufsichtsratssitzung.pdf"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": null,
+ "electric_share_basis": {
+  "text": "Der Flughafen veröffentlicht keinen Elektroanteil und keine Gesamtzahl seiner Vorfeldgeräte. Bekannt aus Pressemitteilungen, jeweils für die Flotte der Flughafen Dortmund GmbH: elektrische Flugzeugschlepper seit 2017 (Ende 2022 zwei im Einsatz und ein weiterer beschlossen, Auslieferung eines weiteren für 2025 angekündigt), sechs E-Förderbandwagen (2020 vier im Einsatz, zwei beschlossen), acht mobile E-Fluggasttreppen für 2025 angekündigt und vier weitere beschlossen (12/2025), drei e-GPU genehmigt (6/2024). Ziel von 2020: eigener Fuhrpark bis 2030 möglichst zu 100 % elektrisch, ohne große Nutzfahrzeuge, mit Ladeinfrastruktur auf dem Vorfeld.",
+  "sources": [
+   "https://cdn0.scrvt.com/airportdtm/31db05175adaf4f4/11362024a6e1/2020-03-13-Aufsichtsratssitzung-DTM.pdf",
+   "https://cdn0.scrvt.com/airportdtm/5f95b65d5e892c8b/255bdca77aa4/09-12-2022-dtm-aufsichtsrat.pdf",
+   "https://cdn0.scrvt.com/airportdtm/54a467b4831d39bf/79af8ce902ff/2024-06-14-aufsichtsratssitzung.pdf",
+   "https://cdn0.scrvt.com/airportdtm/4a73d56c7fa7ad05/23411d5f8c70/2025-04-04-aufsichtsratssitzung.pdf",
+   "https://cdn0.scrvt.com/airportdtm/1de4513d46bbb051/0bc16e12649d/2025-12-19-aufsichtsratssitzung.pdf"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 0,
+ "parking_basis": {
+  "text": "Im Parkhaus P1 gibt es zwei öffentliche AC-Ladepunkte (22 kW); laut Flughafen sind sie derzeit nicht in Betrieb. Im Ladesäulenregister der Bundesnetzagentur (Stand 1.9.2026) ist am Flughafen kein Ladepunkt gemeldet. Daher 0 Ladevorgänge pro Tag. Laufen die zwei Punkte wieder, ergeben sich mit einem Vorgang je Punkt und Tag 2. Ein öffentlicher Schnellladepark eines externen Betreibers auf dem Parkplatz vor dem Verwaltungsgebäude ist angekündigt (Aufsichtsrat 20.3.2026); Größe und Termin sind nicht veröffentlicht.",
+  "sources": [
+   "https://www.dortmund-airport.com/de/parken",
+   "https://data.bundesnetzagentur.de/Bundesnetzagentur/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenregister_BNetzA_2026-09-01.csv",
+   "https://cdn0.scrvt.com/airportdtm/6f94c05104476d89/e7d6e06928e1/2026-03-20-aufsichtsratssitzung.pdf"
+  ],
+  "assumption": false
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "3,24 Mio. (3.242.569), Rekord; davon 2,56 Mio. mit Wizz Air",
+   "source": "https://cdn0.scrvt.com/airportdtm/68e7363ca3b1c4db/5c418bc9672e/Geschaeftsbericht-2025.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag im Spitzenmonat",
+   "value": "Rund 29 im Linien- und Charterverkehr (August 2026: 1.825 Bewegungen an+ab)",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Betriebszeiten",
+   "value": "Starts 6–22 Uhr, Landungen 6–23 Uhr; 22–23 Uhr im Schnitt höchstens 4 Landungen pro Tag",
+   "source": "https://www.dortmund-airport.com/de/nachbarn/betriebszeiten"
+  },
+  {
+   "label": "Vorfeldpositionen",
+   "value": "13 Positionen; nur die Positionen 3 und 4 haben Fluggastbrücken",
+   "source": "https://cdn0.scrvt.com/airportdtm/98ee29f2b01fa4b8/cccbd9898d22/2024-12-20-aufsichtsratssitzung.pdf"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "Flughafen fertigt selbst ab; ein weiterer Abfertiger wurde 2025 für die Zeit ab 1.7.2026 ausgeschrieben; Pushback und stationärer Bodenstrom sind zentrale Infrastruktur; alle Flüge Walk-Boarding",
+   "source": "https://cdn0.scrvt.com/airportdtm/bb1071053f2162de/42c66f816a06/begleitdokument-badv_stand_2025_02_05.pdf"
+  },
+  {
+   "label": "Elektrische Abfertigungsgeräte",
+   "value": "Elektrifizierung des Fuhrparks läuft; für 2025 angekündigt: ein weiterer E-Flugzeugschlepper und acht mobile E-Fluggasttreppen",
+   "source": "https://cdn0.scrvt.com/airportdtm/4a73d56c7fa7ad05/23411d5f8c70/2025-04-04-aufsichtsratssitzung.pdf"
+  },
+  {
+   "label": "Photovoltaik",
+   "value": "361,5 kWp auf den Hangars 2.1 und 2.2, in Betrieb seit Dezember 2024; Netzbetreiber Dortmunder Netz GmbH",
+   "source": "https://www.marktstammdatenregister.de/MaStR/Einheit/Detail/IndexOeffentlich/9240196"
+  },
+  {
+   "label": "Klimaziel",
+   "value": "CO2 −65 % bis 2030 (Basis 2010), CO2-neutraler Betrieb im direkten Einflussbereich bis 2045",
+   "source": "https://www.dortmund-airport.com/de/nachhaltigkeit/ziele-und-massnahmen"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 0,
+   "baggage_tractor": 9,
+   "pushback_tug": 3,
+   "gpu": 14
+  },
+  "chargers": {
+   "bus": 0,
+   "baggage_tractor": 4,
+   "pushback_tug": 2,
+   "gpu": 6
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 0, baggage_tractor 4, pushback_tug 2, gpu 6), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

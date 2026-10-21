@@ -43,7 +43,7 @@ def main() -> None:
     print("Puffer Beispielflughafen:", {k: round(v, 2) for k, v in buffer.items()})
     for airport in airports:
         spec = load_spec(airport)
-        upper = {k: max(20, int(200 * scale(spec) * 1.5)) for k in FLEET_KINDS}
+        upper = {k: max(20, int(60 * scale(spec) * 1.5)) for k in FLEET_KINDS}
         start = {k: upper[k] for k in FLEET_KINDS}
         config = airport_config(spec, start, {k: 0 for k in FLEET_KINDS})
         minimum = minimal_fleet(airport_day(airport), config, DEFAULT_SEED, upper)

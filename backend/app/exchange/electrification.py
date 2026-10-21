@@ -356,13 +356,17 @@ def _airport_limitations(airport: str) -> list[str]:
     step = grid_raster(spec)[0]
     return [
         f"Ganzes Vorfeld von {spec.name} an einem typischen Tag im Spitzenmonat; Tagesprofil "
-        "aus veroeffentlichten Eckdaten konstruiert, kein echter Flugplan.",
+        + ("aus veroeffentlichten Eckdaten konstruiert, kein echter Flugplan."
+           if spec.profile_basis.assumption else
+           "aus dem veroeffentlichten Flugplan ausgezaehlt und auf diesen Tag skaliert."),
         "Anschluss = Reserve des Flughafennetzes fuer das Laden (Vorfeld und Parkhaus); die "
         "uebrige Last und die Photovoltaik des Flughafens sind darin schon enthalten.",
         "Flotte aus dem Modell bemessen (kleinste puenktliche Dieselflotte plus Puffer des "
         "Beispielflughafens); keine Angabe des Flughafens.",
         "Akku, Energie je Einsatz und Ladeleistung wie im Beispielflughafen (He et al. 2026, "
-        "Busse angenommen).",
+        "Kurz- und Mittelstrecke; Busse angenommen). Grossraumflugzeuge brauchen mehr.",
+        "Nur vier Fahrzeugklassen (Busse, Gepaeck- und Flugzeugschlepper, mobile "
+        "Bodenstromgeraete); weitere Geraete und Pkw kommen im echten Betrieb dazu.",
         f"Anschlussbedarf = erste erfolgreiche Stufe im {step}-kW-Raster, keine Anschlusszusage.",
         "Erfolg: alle Einsaetze bis zur Frist erledigt, Parkhaus versorgt, Fahrzeuge und "
         "Speicher am Ende wieder geladen.",

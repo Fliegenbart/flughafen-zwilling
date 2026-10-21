@@ -69,7 +69,10 @@ def airport_day(airport: str):
     snapshot.evidence_level = 'synthetic_reference'
     snapshot.generated_input_sha256 = _canonical_hash({'text': text})
     snapshot.warnings = [
-        f'Tagesprofil {spec.id} aus veroeffentlichten Eckdaten konstruiert, kein echter Flugplan.',
+        (f'Tagesprofil {spec.id} aus veroeffentlichten Eckdaten konstruiert, kein echter Flugplan.'
+         if spec.profile_basis.assumption else
+         f'Tagesprofil {spec.id} aus dem veroeffentlichten Flugplan ausgezaehlt, auf einen '
+         'typischen Tag im Spitzenmonat skaliert.'),
         'Kein PDF-Upload: source_pdf_sha256 ist ein Null-Platzhalter.',
     ]
     digest = _canonical_hash(snapshot.model_dump(mode='json', exclude={
@@ -155,7 +158,15 @@ def minimal_fleet(plan, config: CoupledConfig, seed: int, upper: dict[str, int])
     gleichzeitig; ohne Elektrofahrzeuge beeinflussen sich die Klassen nicht)."""
     lo = {kind: 0 for kind in FLEET_KINDS}
     hi = dict(upper)
+    from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION
+    from ..munich.coupled_world import build_world
+
     with trusted_scale():
+        # Klassen ohne Einsaetze (z. B. keine Vorfeldbusse bei Walk-Boarding) brauchen 0.
+        used = {m.kind for m in build_world(plan, config, seed, PREDICTIVE_ENGINE_VERSION).missions}
+        for kind in FLEET_KINDS:
+            if kind not in used:
+                hi[kind] = 0
         while any(hi[k] - lo[k] > 1 for k in FLEET_KINDS):
             mid = {k: (lo[k] + hi[k]) // 2 if hi[k] - lo[k] > 1 else hi[k] for k in FLEET_KINDS}
             trial = config.model_copy(update={"fleets": [

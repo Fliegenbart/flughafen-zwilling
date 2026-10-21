@@ -34,12 +34,15 @@ describe("Echter Flughafen", () => {
       ),
     ).toBeVisible();
     expect(screen.getByText(/Mit Lademanagement nötig 950\skW/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Gerechnet sind 137 Busse, Schlepper und Bodenstromgeräte im Modell/),
+    ).toBeVisible();
     expect(screen.getByText("offen")).toBeVisible();
     expect(
       screen.getByRole("slider", { name: "Elektrische Fahrzeuge im Vorfeld" }),
     ).toHaveAttribute("aria-valuetext", "30 %");
     expect(
-      screen.getByText(/41 von 137 Fahrzeugen fahren elektrisch, heute rund 32 %/),
+      screen.getByText(/41 von 137 Fahrzeugen im Modell fahren elektrisch, heute rund 32 %/),
     ).toBeVisible();
     expect(screen.queryByRole("slider", { name: "Photovoltaik" })).toBeNull();
     await waitFor(() => expect(bodies.length).toBeGreaterThan(0));

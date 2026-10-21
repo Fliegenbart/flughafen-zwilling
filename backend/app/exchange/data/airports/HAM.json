@@ -1,0 +1,179 @@
+{
+ "id": "HAM",
+ "name": "Hamburg",
+ "full_name": "Hamburg Airport (Flughafen Hamburg GmbH)",
+ "as_of": "2026-10",
+ "departures_per_day": 173.2,
+ "departures_basis": {
+  "text": "Spitzenmonat 2025 war der Oktober (Jahresstatistik des Flughafens). Die ADV-Monatsstatistik 10/2025 weist für Hamburg 10.741 Bewegungen im Linien- und Charterverkehr aus, ohne sonstigen gewerblichen und nicht-gewerblichen Verkehr. Rechnung: 10.741 ÷ 2 ÷ 31 Tage = 173,2 Abflüge pro Tag. Gegenprobe: Der Abflugplan des Flughafens für 19.–25.10.2026 zeigt im Mittel 177 Abflüge pro Tag (Woche der Hamburger Herbstferien). Zum Vergleich das Jahresmittel 2025: 109.086 ÷ 2 ÷ 365 = 149 Abflüge pro Tag.",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf",
+   "https://www.hamburg-airport.de/resource/blob/92904/e7fa366183fb1e3884561c6bef579582/jahresstatistik-2025-data.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf",
+   "https://www.hamburg-airport.de/de/abfliegen-ankommen/abflug"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  24.0,
+  12.4,
+  6.6,
+  9.0,
+  10.9,
+  12.9,
+  11.3,
+  13.3,
+  12.6,
+  15.6,
+  4.3,
+  8.7,
+  13.7,
+  8.7,
+  6.6,
+  5.9,
+  0.7,
+  0
+ ],
+ "arrivals_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0.6,
+  4.3,
+  8.3,
+  11.0,
+  14.0,
+  11.4,
+  13.0,
+  11.6,
+  15.6,
+  6.3,
+  6.9,
+  14.4,
+  7.9,
+  10.4,
+  6.4,
+  13.1,
+  22.7,
+  0
+ ],
+ "profile_basis": {
+  "text": "Belegt: Die Gewichte sind die mittleren planmäßigen Abflüge bzw. Ankünfte je Ortsstunde laut Abflug- und Ankunftsplan des Flughafens für 19.–25.10.2026 (abgerufen am 21.10.2026, ohne gestrichene Flüge). Planmäßiger Betrieb gilt nur von 6 bis 23 Uhr; von 23 bis 24 Uhr landen und starten nur verspätete Flüge (2025: 122 Starts, 634 Landungen), von 0 bis 6 Uhr nur Flüge mit Ausnahmegenehmigung. Diese Stunden stehen auf 0. Drei Abflüge pro Tag mit Plan-Abflugzeit 05:55 (Start nach 6 Uhr) zählen zur Stunde 6. Muster: Abflugwelle 6–7 Uhr mit im Mittel 24 Abflügen, Ankunftsspitze 22–23 Uhr mit im Mittel 23 Landungen. Für 22–23 Uhr meldet der Senat 6.563 Bewegungen im Jahr 2025, im Jahresmittel 18 pro Tag. Beide Spitzen liegen unter dem Koordinierungseckwert von je 31 Starts bzw. Landungen pro Stunde. Annahme: Die Woche steht für einen typischen Oktobertag.",
+  "sources": [
+   "https://www.hamburg-airport.de/de/abfliegen-ankommen/abflug",
+   "https://www.hamburg-airport.de/de/abfliegen-ankommen/ankunft",
+   "https://www.quickborn.de/media/Dokumente+Quickborn/Umwelt/L%C3%A4rmschutz/Jahresbericht+Flugl%C3%A4rmsituation+Hamburg+2024.pdf",
+   "https://www.hamburg-airport.de/resource/blob/92904/e7fa366183fb1e3884561c6bef579582/jahresstatistik-2025-data.pdf",
+   "https://fluko.org/wp-content/uploads/2026/10/20261001-Airport-Capacity-Parameters_S27_L3.pdf"
+  ],
+  "assumption": false
+ },
+ "coverage_pct": {
+  "bus": 35,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 30
+ },
+ "coverage_basis": {
+  "text": "Gepäckschlepper und Pushback: 100 %, eine Ausnahme ist nicht belegt. Busse 35 % (Annahme): Die Pier hat 15 Fluggastbrücken, davon 2 doppelte, und 4 Walk-in-Positionen; die Vorfelder 1 und 2 haben 44 gewerbliche Positionen (33 + 11). An allen übrigen Positionen fahren die Fluggäste mit dem Bus. Schon die Morgenwelle mit 24 Abflügen pro Stunde übersteigt die 19 Pier-Positionen. Welche Gates Busgates sind, ist nicht veröffentlicht. Reine Frachtflüge zieht die Rechnung nicht ab, weil keine Zahl veröffentlicht ist. Bodenstromgeräte 30 % (Annahme): Die Brückenpositionen erhalten Strom und klimatisierte Luft aus dem eigenen BHKW. Bei der Erneuerung von Vorfeld 1 erhielt der Großteil der Außenpositionen eine feste Stromversorgung. Für Vorfeld 2 ist nichts veröffentlicht. Nach Positionen gezählt fehlt ein fester Anschluss an etwa 25 bis 45 %; da Pier-Positionen öfter belegt sind, gelten 30 %.",
+  "sources": [
+   "https://de.wikipedia.org/wiki/Flughafen_Hamburg",
+   "https://www.hamburg-airport.de/resource/blob/82252/6067968074d18e6a7b9445cd9b301eee/umwelterklaerung-2024-en-data.pdf",
+   "https://www.aerotelegraph.com/hamburg-arbeitet-an-stromversorgung-auf-dem-vorfeld",
+   "https://hamburg-business.com/en/news/renewal-hamburg-airports-apron-complete-after-four-year-build",
+   "https://www.hamburg-airport.de/de/abfliegen-ankommen/abflug"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": null,
+ "electric_share_basis": {
+  "text": "Für die Vorfeldflotte ist kein aktueller elektrischer Anteil veröffentlicht. 2019 nannte der Flughafen 143 Elektrofahrzeuge in der Konzernflotte (Pkw und Transporter) und elektrische Pushback-Fahrzeuge auf dem Vorfeld. Laut Umwelterklärung 2023–2025 fahren Gepäckschlepper und ein Teil der Busse mit Erdgas, Dieselfahrzeuge mit synthetischem Kraftstoff; Elektrofahrzeuge kommen zunehmend zum Einsatz, etwa als Pkw auf dem Vorfeld. 2026 nahm der Flughafen zwei elektrische Highloader in Betrieb. Er hat zudem erste auf Wasserstoff umgerüstete Gepäckschlepper bestellt; die ersten Serienfahrzeuge sollen 2027 kommen.",
+  "sources": [
+   "https://www.hamburg.de/resource/blob/163518/f4dfd8e58ddb265829703bf18b45fcfc/protokoll-flsk-235-data.pdf",
+   "https://www.hamburg-airport.de/resource/blob/82252/6067968074d18e6a7b9445cd9b301eee/umwelterklaerung-2024-en-data.pdf",
+   "https://www.hamburg-airport.de/de/unternehmen/presse/flughafen-bietet-mehr-service-fuer-barrierefreies-reisen--94968",
+   "https://www.aerotelegraph.com/ticker/flughafen-hamburg-bestellt-erste-wasserstoff-gepaeckschlepper/rfcgrxp"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 168,
+ "parking_basis": {
+  "text": "Der Flughafen bietet im Parkhaus P4, Ebene 0, 168 Stellplätze mit Ladepunkt an (Bereich G 129, Bereich W 39), Wechselstrom bis 3,7 kW. Annahme: ein Ladevorgang je Punkt und Tag, also 168. Nicht enthalten sind Ladepunkte nur für Carsharing und ein angekündigter Schnellladepark eines Drittbetreibers, dessen Inbetriebnahme nicht bestätigt ist.",
+  "sources": [
+   "https://hamburg-airport.de/en/plan-book/e-fahrzeuge-aufladen-77570"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "14,77 Mio. (−0,4 % gegenüber 2024)",
+   "source": "https://www.hamburg-airport.de/resource/blob/92904/e7fa366183fb1e3884561c6bef579582/jahresstatistik-2025-data.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag im Oktober 2025",
+   "value": "Rund 173 im Linien- und Charterverkehr (10.741 Bewegungen ÷ 2 ÷ 31 Tage)",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Betriebszeiten",
+   "value": "Planmäßiger Flugbetrieb 6–23 Uhr; 23–24 Uhr nur verspätete Flüge, nach 24 Uhr nur Einzelausnahmen",
+   "source": "https://www.hamburg-airport.de/resource/blob/92904/e7fa366183fb1e3884561c6bef579582/jahresstatistik-2025-data.pdf"
+  },
+  {
+   "label": "Koordinierungseckwert",
+   "value": "48 Bewegungen pro Stunde, davon höchstens je 31 Starts bzw. Landungen",
+   "source": "https://fluko.org/wp-content/uploads/2026/10/20261001-Airport-Capacity-Parameters_S27_L3.pdf"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "Konzerntöchter: GroundSTARS (Gepäck, Fracht, Geräte), STARS (Passagierbusse, Pushback), SAEMS (Fahrzeugwartung)",
+   "source": "https://www.hamburg-airport.de/resource/blob/82252/6067968074d18e6a7b9445cd9b301eee/umwelterklaerung-2024-en-data.pdf"
+  },
+  {
+   "label": "Antriebe der Vorfeldflotte",
+   "value": "Gepäckschlepper und ein Teil der Busse mit Erdgas, Dieselfahrzeuge mit synthetischem Kraftstoff; zunehmend Elektrofahrzeuge, etwa Pkw auf dem Vorfeld",
+   "source": "https://www.hamburg-airport.de/resource/blob/82252/6067968074d18e6a7b9445cd9b301eee/umwelterklaerung-2024-en-data.pdf"
+  },
+  {
+   "label": "Energieversorgung",
+   "value": "2022: 8.350 MWh Strom aus dem eigenen Erdgas-BHKW, dazu 42.036 MWh zugekaufter klimaneutraler Strom",
+   "source": "https://www.hamburg-airport.de/resource/blob/82252/6067968074d18e6a7b9445cd9b301eee/umwelterklaerung-2024-en-data.pdf"
+  },
+  {
+   "label": "Klimaziel",
+   "value": "Net Zero 2035: CO2-Emissionen des Flughafens ohne Kompensation auf null; seit Ende 2021 mit Kompensation CO2-neutral",
+   "source": "https://www.hamburg-airport.de/en/corporate/environment/net-zero"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 20,
+   "baggage_tractor": 25,
+   "pushback_tug": 10,
+   "gpu": 19
+  },
+  "chargers": {
+   "bus": 8,
+   "baggage_tractor": 9,
+   "pushback_tug": 4,
+   "gpu": 8
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 6, baggage_tractor 11, pushback_tug 7, gpu 8), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

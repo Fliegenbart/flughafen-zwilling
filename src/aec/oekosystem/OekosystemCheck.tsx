@@ -10,7 +10,8 @@ import Link from "../Link";
 import LoadChart from "../arbeitsplatz/LoadChart";
 import { CurveWaiting, curveFor } from "./kurve";
 import Levers from "./Levers";
-import { AirportFacts, AirportPicker } from "./Steckbrief";
+import { int } from "../model/format";
+import { AirportFacts, AirportPicker, modelFleet } from "./Steckbrief";
 import Treppe from "./Treppe";
 import { ANSCHLUSS, answer, kw, lineFor, RESERVE, type StageId } from "./stufen";
 import { useOekosystem } from "./useOekosystem";
@@ -110,6 +111,13 @@ export default function OekosystemCheck() {
           ) : (
             <>
               <p className="oe-answer">{sentence}</p>
+              {profile ? (
+                <p className="oe-scope">
+                  Gerechnet sind {int(modelFleet(profile))} Busse, Schlepper und Bodenstromgeräte im
+                  Modell, mit Verbrauch für Kurz- und Mittelstrecke. Weitere Geräte und
+                  Großraumflugzeuge kommen im echten Betrieb dazu.
+                </p>
+              ) : null}
               <Treppe
                 stages={stages}
                 connectionKw={connection}

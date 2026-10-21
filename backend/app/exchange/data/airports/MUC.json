@@ -1,0 +1,189 @@
+{
+ "id": "MUC",
+ "name": "München",
+ "full_name": "Flughafen München Franz Josef Strauß",
+ "as_of": "2026-10",
+ "departures_per_day": 505.5,
+ "departures_basis": {
+  "text": "ADV-Monatsstatistik September 2025: München zählte 30.327 Starts und Landungen im Linien- und Charterverkehr (Fracht eingeschlossen). Rechnung: 30.327 / 2 / 30 Tage = 505,5 Abflüge pro Tag. Nichtgewerbliche (686) und sonstige gewerbliche Bewegungen (1.075) bleiben außen vor. Der September hat 2025 das höchste Tagesmittel: Juni 29.661 in 30 Tagen, Juli 30.298, August 30.035 und Oktober 29.460 in je 31 Tagen; Januar bis Mai lagen im Mittel bei rund 810 Bewegungen pro Tag. 2026 liegt der Verkehr bisher rund 5 % unter dem Vorjahr (August 2026: 28.667 Bewegungen).",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2025/10/09.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/06.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/07.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  3.3,
+  18.7,
+  19.0,
+  40.0,
+  24.0,
+  27.3,
+  52.4,
+  31.3,
+  15.0,
+  24.5,
+  52.4,
+  25.8,
+  10.0,
+  19.3,
+  22.3,
+  26.0,
+  30.3,
+  18.7,
+  0.0
+ ],
+ "arrivals_by_hour": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  2.7,
+  12.7,
+  47.3,
+  19.7,
+  32.7,
+  39.3,
+  22.0,
+  15.3,
+  29.0,
+  52.5,
+  16.2,
+  10.3,
+  25.3,
+  31.0,
+  29.0,
+  35.7,
+  20.0,
+  13.7,
+  7.0
+ ],
+ "profile_basis": {
+  "text": "Belegt: Die Gewichte sind die mittleren planmäßigen Abflüge und Ankünfte je Ortsstunde vom 20. bis 22.10.2026 (Di–Do, Sommerflugplan) laut Flugplanauskunft des Flughafens, rund 460 Abflüge pro Tag. Wellen des Lufthansa-Drehkreuzes: Abflugspitzen um 8, 11 und 15 Uhr, Ankunftsspitzen um 7, 10 und 14 Uhr. In der Kernzeit 0 bis 5 Uhr sind nur Ausnahmeflüge zulässig, daher 0. Der Nachtflugbericht 2025 passt dazu: 86 % der Nachtbewegungen liegen vor Mitternacht, 12 % zwischen 5 und 6 Uhr. Eckwerte: 90 Bewegungen pro Stunde, davon höchstens 58 Starts bzw. 58 Landungen (Landtag, Stand 2014). Hochgerechnet auf 505,5 Abflüge lägen die Spitzen bei 60 Starts und 62 Landungen; diese Stunden sind auf höchstens 58 gekappt, der Überhang liegt in den Nachbarstunden. Stärkste Stunde danach: 14 Uhr mit rund 84 Bewegungen. Annahmen: Das Oktoberprofil gilt im September; Frachtflüge fehlen in der Auskunft.",
+  "sources": [
+   "https://www.munich-airport.com/flight-search-260587",
+   "https://www.munich-airport.com/nachtflug-88324",
+   "https://www.munich-airport.de/_b/0000000000000038241085bb697a05ba/nachtflugbericht2025.pdf",
+   "https://de.wikipedia.org/wiki/Flughafen_M%C3%BCnchen",
+   "https://www.bayern.landtag.de/www/ElanTextAblage_WP17/Drucksachen/Schriftliche%20Anfragen/17_0002609.pdf"
+  ],
+  "assumption": false
+ },
+ "coverage_pct": {
+  "bus": 35,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 40
+ },
+ "coverage_basis": {
+  "text": "bus 35 ist eine Annahme (Standardwert); eine Busquote veröffentlicht der Flughafen nicht. Die Infrastruktur stützt die Größenordnung: Terminal 2 hat 55 gebäudenahe Positionen, davon 27 am Satelliten, der rund 30 % der Bewegungen im T2-System abwickelt. Das Vorfeld West vor Terminal 1 hat 60 Positionen, die Fluggäste per Bus erreichen; seit April 2026 bietet der T1-Pier 12 gebäudenahe Positionen. AeroGround betreibt 95 große Vorfeldbusse. Reine Frachtflüge spielen kaum eine Rolle, 89 % der Fracht fliegt als Beiladung. gpu 40 (Annahme): Die 64 PCA-Anlagen an den gebäudenahen Positionen liefern Bodenstrom. Abflüge von Außen- und Frachtpositionen brauchen ein mobiles Gerät; 5 Punkte Zuschlag decken Positionen ohne feste Versorgung ab. baggage_tractor und pushback_tug: 100, eine abweichende Quote ist nicht veröffentlicht.",
+  "sources": [
+   "https://de.wikipedia.org/wiki/Flughafen_M%C3%BCnchen",
+   "https://www.munich-airport.de/presse-satellitengebaeude-seit-zehn-jahren-erfolgreich-in-betrieb-40157198",
+   "https://www.munich-airport.de/_b/0000000000000036003338bb68ee3406/umwelterklaerung-2025-aeroground.pdf",
+   "https://www.munich-airport.de/_b/0000000000000039238972bb69c102a5/statistischer-jahresbericht-2025.pdf",
+   "https://www.munich-airport.de/_b/0000000000000043012574bb6a8ebd6a/umwelterklaerung-fmg-2026.pdf",
+   "https://www.lobbyregister.bundestag.de/media/64/be/814626/FMG_Integrierter_Bericht_2025.pdf"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": 62,
+ "electric_share_basis": {
+  "text": "AeroGround meldet zum 31.12.2025 583 von 947 Fahrzeugen elektrisch (62 %). Der Wert gilt nur für den Fuhrpark der AeroGround (rund 87 % Marktanteil) einschließlich Bussen und Pkw. Nicht enthalten sind die Flugzeugschlepper sowie die Fuhrparks der weiteren Abfertiger. Je Klasse: große Vorfeldbusse 55 von 95, GPU 35 von 53, Gepäckschlepper 113 elektrisch neben 91 Diesel-Zugfahrzeugen und 32 Diesel-Frachtschleppern.",
+  "sources": [
+   "https://www.munich-airport.de/_b/0000000000000036003338bb68ee3406/umwelterklaerung-2025-aeroground.pdf",
+   "https://www.lobbyregister.bundestag.de/media/64/be/814626/FMG_Integrierter_Bericht_2025.pdf"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 442,
+ "parking_basis": {
+  "text": "Die FMG betrieb Ende 2025 im öffentlichen Bereich rund 390 AC- und 2 DC-Ladepunkte, davon 275 im Ladepark P44. Im Parkhaus P8 (geöffnet seit 1.9.2026) entstehen im ersten Schritt bis zu 50 Ladepunkte; sie sind voll eingerechnet. Summe: 442. Annahme: ein Ladevorgang je Ladepunkt und Tag.",
+  "sources": [
+   "https://www.munich-airport.de/_b/0000000000000043012574bb6a8ebd6a/umwelterklaerung-fmg-2026.pdf",
+   "https://www.munich-airport.com/presse-neues-parkhaus-p8-am-flughafen-muenchen-eroeffnet-43059920",
+   "https://www.electrive.net/2025/09/17/flughafen-muenchen-bietet-138-ac-ladesaeulen-im-gaeste-parkhaus/"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": 40000,
+ "reserve_basis": {
+  "text": "Für das geplante 3. Stromnetz nennt die FMG in ihrer Ausschreibung den Ansatz, rund 40 MW für künftige E-Mobilität vorzuhalten, dazu rund 50 MWp Photovoltaik und ein neues 110/20-kV-Umspannwerk mit zwei Transformatoren zu je 80 MVA. Laut Integriertem Bericht 2025 kostet das Projekt 246 Mio. Euro, der Bau beginnt 2027 und endet bis Ende 2029. Der Wert gilt für die gesamte E-Mobilität am Campus, nicht nur für die Vorfeldflotte.",
+  "sources": [
+   "https://ted.europa.eu/de/notice/277759-2025/pdf",
+   "https://www.lobbyregister.bundestag.de/media/64/be/814626/FMG_Integrierter_Bericht_2025.pdf"
+  ],
+  "assumption": false
+ },
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "rund 43,4 Mio. Fluggäste, 4,4 % mehr als 2024",
+   "source": "https://www.munich-airport.de/_b/0000000000000039238972bb69c102a5/statistischer-jahresbericht-2025.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag (Spitzenmonat September 2025)",
+   "value": "rund 505 im Linien- und Charterverkehr (30.327 Starts und Landungen im Monat)",
+   "source": "https://www.adv.aero/wp-content/uploads/2025/10/09.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Nachtflugregelung",
+   "value": "Nachtzeit 22 bis 6 Uhr; in der Kernzeit 0 bis 5 Uhr nur Post-, DFS-, Not- und genehmigte Ausnahmeflüge",
+   "source": "https://www.munich-airport.com/nachtflug-88324"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "Drei Lizenzen: AeroGround (FMG-Konzern, rund 87 % Marktanteil 2025), Aviapartner/WISAG und Selbstabfertigung der Lufthansa Group seit Winter 2025/26",
+   "source": "https://www.lobbyregister.bundestag.de/media/64/be/814626/FMG_Integrierter_Bericht_2025.pdf"
+  },
+  {
+   "label": "Elektrofahrzeuge heute (AeroGround)",
+   "value": "583 von 947 Fahrzeugen elektrisch (62 %), darunter 55 von 95 großen Vorfeldbussen und 35 von 53 GPU; Stand 31.12.2025",
+   "source": "https://www.munich-airport.de/_b/0000000000000036003338bb68ee3406/umwelterklaerung-2025-aeroground.pdf"
+  },
+  {
+   "label": "Stromversorgung",
+   "value": "FMG ist seit 1988 Energieversorger mit eigenem Verteilnetz; ihr Gas-BHKW (bis 25 MW elektrisch) erzeugte 2025 rund 67 % des Strombedarfs am Campus",
+   "source": "https://www.munich-airport.de/_b/0000000000000043012574bb6a8ebd6a/umwelterklaerung-fmg-2026.pdf"
+  },
+  {
+   "label": "Photovoltaik und Klimaziel",
+   "value": "rund 7 MWp PV Ende 2025, Ausbau auf 50 MWp bis 2030 geplant; Klimaziel Net Zero bis 2035",
+   "source": "https://www.munich-airport.de/_b/0000000000000043012574bb6a8ebd6a/umwelterklaerung-fmg-2026.pdf"
+  },
+  {
+   "label": "Batteriespeicher",
+   "value": "seit 21.10.2026 zwei Großspeicher mit zusammen 3,44 MW und 6,88 MWh; weitere Speicher mit bis zu 50 MWh bis 2029 geplant",
+   "source": "https://www.munich-airport.de/flughafen-muenchen-nimmt-zwei-grossbatteriespeicher-in-betrieb-44193606"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 50,
+   "baggage_tractor": 88,
+   "pushback_tug": 23,
+   "gpu": 38
+  },
+  "chargers": {
+   "bus": 20,
+   "baggage_tractor": 31,
+   "pushback_tug": 10,
+   "gpu": 16
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 15, baggage_tractor 40, pushback_tug 16, gpu 16), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}
