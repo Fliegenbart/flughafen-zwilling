@@ -1,5 +1,6 @@
 /** Die Regler: was der Flughafen hat und welche Bausteine dazukommen. */
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { flushSync } from "react-dom";
 import type { AirportProfile, Atlas } from "../api/electrification";
 import { dec1, int } from "../model/format";
 import { connectionRange, kw, type Settings } from "./stufen";
@@ -106,15 +107,10 @@ export default function Levers({
   const total = airport ? Object.values(airport.fleet.vehicles).reduce((a, b) => a + b, 0) : 100;
   const range = connectionRange(atlas, settings.airport);
   const set = (key: keyof Settings, v: number | null) => onChange({ ...settings, [key]: v });
-  // Beim Umschalten der Reserve verschwindet der gedrueckte Knopf: Fokus dorthin, wo es weitergeht.
-  const focusNext = useRef<"slider" | "button" | null>(null);
+  // Beim Umschalten der Reserve verschwindet der gedrueckte Knopf: sofort neu zeichnen und den
+  // Fokus dorthin setzen, wo es weitergeht (nicht erst in einem spaeteren Effekt).
   const reserveSlider = useRef<HTMLInputElement>(null);
   const reserveButton = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (focusNext.current === "slider") reserveSlider.current?.focus();
-    if (focusNext.current === "button") reserveButton.current?.focus();
-    focusNext.current = null;
-  });
 
   const share: Lever = {
     key: "electric_share_pct",
@@ -183,11 +179,13 @@ export default function Levers({
               className="oe-tool oe-lever__set"
               aria-describedby="oe-reserve-label"
               onClick={() => {
-                focusNext.current = "slider";
                 // Start beim Bedarf mit Lademanagement, aufs Raster des Reglers gerundet.
                 const start = managedNeedKw ?? range.min;
                 const snapped = Math.round(start / range.step) * range.step;
-                set("grid_import_limit_kw", Math.min(range.max, Math.max(range.min, snapped)));
+                flushSync(() =>
+                  set("grid_import_limit_kw", Math.min(range.max, Math.max(range.min, snapped))),
+                );
+                reserveSlider.current?.focus();
               }}
             >
               Reserve eintragen
@@ -217,8 +215,8 @@ export default function Levers({
                 type="button"
                 className="oe-link"
                 onClick={() => {
-                  focusNext.current = "button";
-                  set("grid_import_limit_kw", null);
+                  flushSync(() => set("grid_import_limit_kw", null));
+                  reserveButton.current?.focus();
                 }}
               >
                 Reserve offen lassen
