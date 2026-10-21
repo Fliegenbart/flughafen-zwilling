@@ -13,7 +13,18 @@ import LoadChart from "../arbeitsplatz/LoadChart";
 import { dec1, int } from "../model/format";
 import { CurveWaiting, curveFor, REASONS, type Rechnung } from "./kurve";
 import Levers from "./Levers";
-import { answer, atlasKey, changedFromStart, kw, type Settings, type Stage } from "./stufen";
+import { AirportModel, AirportPicker } from "./Steckbrief";
+import {
+  ANSCHLUSS,
+  answer,
+  atlasKey,
+  kw,
+  lineFor,
+  RESERVE,
+  type Line,
+  type Settings,
+  type Stage,
+} from "./stufen";
 import { useOekosystem } from "./useOekosystem";
 
 const FLEET_NAMES: Record<string, string> = {
@@ -60,7 +71,7 @@ const ROWS: Row[] = [
   {
     id: "managed_storage",
     sign: 3,
-    name: "+ Speicher",
+    name: "+\u00a0Speicher",
     with: "mit Lademanagement und Speicher",
     how: (s) =>
       s.storage_kwh
@@ -100,13 +111,21 @@ function needOf(row: Row, stages: Stage[], directKw: number | null | undefined) 
 }
 
 /** Was bei Ihrem Anschluss passiert, je Rechnung (nach der Serverrechnung). */
-function verdict(data: ElectrificationComparison | null, id: Rechnung, connectionKw: number) {
+function verdict(
+  data: ElectrificationComparison | null,
+  id: Rechnung,
+  connectionKw: number,
+  line: Line,
+) {
   if (!data) return null;
   if (id === "uncontrolled") {
     const peak = data.uncontrolled?.grid_sizing.peak_kw;
     if (peak === undefined) return null;
     return peak > connectionKw
-      ? { ok: false, text: `Überlast, Spitze ${kw(Math.round(peak))}` }
+      ? {
+          ok: false,
+          text: `${line.overload ? "Überlast, " : "darüber, "}Spitze ${kw(Math.round(peak))}`,
+        }
       : { ok: true, text: "trägt" };
   }
   const variant = data.variants.find((v) => v.solution === id);
@@ -133,11 +152,18 @@ function storageWithoutGain(atlas: Atlas) {
 
 export default function Fachleute() {
   const {
+    airport,
+    profile,
+    airports,
     atlas,
     loadError,
     settings,
+    ready,
     setSettings,
     stages,
+    connection,
+    reserveOpen,
+    einstellung,
     fresh,
     last,
     curveError,
@@ -145,11 +171,17 @@ export default function Fachleute() {
     selected,
     setSelected,
   } = useOekosystem("fachleute");
-  const connection = settings.grid_import_limit_kw;
+  const line = lineFor(airport, reserveOpen);
   const storageOff = !!stages?.find((s) => s.id === "managed_storage")?.inactive;
   const current: Rechnung = selected === "managed_storage" && storageOff ? "managed" : selected;
-  const curve = curveFor(fresh, current, connection);
-  const einstellung = changedFromStart(settings);
+  const curve = curveFor(fresh, current, connection, line);
+  const here = airport ? { flughafen: airport } : {};
+  const managedNeed = stages?.find((s) => s.id === "managed")?.needKw ?? null;
+  const at = !airport
+    ? `Bei Ihren ${kw(connection)}`
+    : reserveOpen
+      ? `Bei ${kw(connection)} (mit Lademanagement nötig)`
+      : `Bei Ihrer Reserve von ${kw(connection)}`;
   const entry = atlas?.entries[atlasKey(settings)];
   // Flotte, Grundlast und Quellen haengen nicht an der Stellung: letzte Rechnung genuegt.
   const config = last ? configOf(last) : null;
@@ -160,11 +192,10 @@ export default function Fachleute() {
   return (
     <div className="ap oe oe-fach">
       <header className="oe-head">
-        <p className="oe-brand">
-          Airport Energy Check <span>Beispielflughafen, erfunden</span>
-        </p>
+        <p className="oe-brand">Airport Energy Check</p>
+        <AirportPicker airports={airports} current={airport} page="fachleute" />
         <Link
-          to={einstellung ? { page: "start", einstellung } : { page: "start" }}
+          to={{ page: "start", ...here, ...(einstellung ? { einstellung } : {}) }}
           className="oe-tool"
         >
           Zur Übersicht
@@ -180,13 +211,23 @@ export default function Fachleute() {
       </header>
 
       <div className="oe-body">
-        {atlas ? (
-          <Levers settings={settings} atlas={atlas} onChange={setSettings} />
+        {atlas && ready ? (
+          <Levers
+            settings={settings}
+            atlas={atlas}
+            profile={profile}
+            managedNeedKw={managedNeed}
+            onChange={setSettings}
+          />
         ) : (
           <div className="oe-levers" />
         )}
         <section className="oe-main" aria-labelledby="oe-question">
-          <h1 id="oe-question">Wie viel Anschluss braucht das Vorfeld, und warum?</h1>
+          <h1 id="oe-question">
+            {profile
+              ? `Wie viel Reserve braucht das Vorfeld in ${profile.name}, und warum?`
+              : "Wie viel Anschluss braucht das Vorfeld, und warum?"}
+          </h1>
           {loadError ? (
             <p className="oe-error" role="alert">
               {loadError}
@@ -200,7 +241,13 @@ export default function Fachleute() {
           ) : (
             <>
               <p className="oe-answer oe-answer--small">
-                {answer(stages, connection, atlas.gridMaxKw)}
+                {answer(
+                  stages,
+                  reserveOpen ? null : connection,
+                  atlas.gridMaxKw,
+                  airport ? RESERVE : ANSCHLUSS,
+                  profile?.name,
+                )}
               </p>
 
               <section aria-labelledby="oe-calc-title">
@@ -215,14 +262,14 @@ export default function Fachleute() {
                   <thead>
                     <tr>
                       <th scope="col">Rechnung</th>
-                      <th scope="col">Benötigter Anschluss</th>
-                      <th scope="col">Bei Ihren {kw(connection)}</th>
+                      <th scope="col">{airport ? "Benötigte Reserve" : "Benötigter Anschluss"}</th>
+                      <th scope="col">{at}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {ROWS.map((r) => {
                       const need = needOf(r, stages, entry?.[0]);
-                      const said = verdict(fresh, r.id, connection);
+                      const said = verdict(fresh, r.id, connection, line);
                       const off = r.id === "managed_storage" && storageOff;
                       const description =
                         off && settings.storage_kwh
@@ -264,7 +311,7 @@ export default function Fachleute() {
                                 : kw(need.kw)}
                           </td>
                           <td className="oe-calc__said" data-ok={said ? said.ok : undefined}>
-                            <span className="oe-calc__label">Bei {kw(connection)} </span>
+                            <span className="oe-calc__label">{at} </span>
                             {off ? "–" : (said?.text ?? pending)}
                           </td>
                         </tr>
@@ -291,6 +338,7 @@ export default function Fachleute() {
                     drawNote={false}
                     note={curve.note}
                     formatCap={kw}
+                    capLabel={line.chart}
                     result={curve.result}
                     today={curve.base}
                     departures={curve.departures}
@@ -309,7 +357,9 @@ export default function Fachleute() {
                 ) : null}
               </section>
 
-              {fresh ? <Figures data={fresh} row={row} connectionKw={connection} /> : null}
+              {fresh ? (
+                <Figures data={fresh} row={row} connectionKw={connection} line={line} at={at} />
+              ) : null}
             </>
           )}
         </section>
@@ -327,7 +377,11 @@ export default function Fachleute() {
                 tabIndex={0}
               >
                 <table className="oe-fleet">
-                  <caption id="oe-fleet-caption">Vorfeldflotte des Beispielflughafens</caption>
+                  <caption id="oe-fleet-caption">
+                    {profile
+                      ? `Vorfeldflotte im Modell, ${profile.name}`
+                      : "Vorfeldflotte des Beispielflughafens"}
+                  </caption>
                   <thead>
                     <tr>
                       <th scope="col">Fahrzeugart</th>
@@ -359,25 +413,43 @@ export default function Fachleute() {
                   </tbody>
                 </table>
               </div>
+              {profile ? <AirportModel profile={profile} /> : null}
               <ul className="oe-list">
-                <li>
-                  Flugplan: je 60 Abflüge zwischen 6 und 9, 12 und 15 sowie 18 und 21 Uhr, also{" "}
-                  {int(last.variants[0]!.metrics.departures_total / 3)} am Tag, dazu ebenso viele
-                  Ankünfte. Gerechnet werden drei gleiche Tage hintereinander.
-                </li>
+                {profile ? (
+                  <li>
+                    Reserve: die Leistung, die das Flughafennetz für das Laden auf dem Vorfeld und
+                    im Parkhaus bereitstellt. Übrige Last und Photovoltaik des Flughafens stecken
+                    schon darin, das Modell rechnet sie nicht noch einmal.
+                  </li>
+                ) : (
+                  <li>
+                    Flugplan: je 60 Abflüge zwischen 6 und 9, 12 und 15 sowie 18 und 21 Uhr, also{" "}
+                    {int(last.variants[0]!.metrics.departures_total / 3)} am Tag, dazu ebenso viele
+                    Ankünfte. Gerechnet werden drei gleiche Tage hintereinander.
+                  </li>
+                )}
                 <li>
                   Jeder Einsatz ist einem festen Fahrzeug zugeordnet. Nicht elektrische Fahrzeuge
                   fahren dieselben Einsätze, ohne zu laden.
                 </li>
-                <li>
-                  Übriger Flughafen im Modellbereich: mittags {kw(config.power.background_load_kw)},
-                  nachts bis zu 16 % weniger.
-                </li>
-                <li>
-                  Photovoltaik: {int(settings.pv_kwp)} kWp. Sie liefert mittags höchstens{" "}
-                  {int(config.power.pv_peak_factor * 100)} % der Nennleistung, wie an einem trüben
-                  Herbsttag.
-                </li>
+                {profile ? (
+                  <li>
+                    Akku, Energie je Einsatz und Ladeleistung wie im Beispielflughafen, dazu ein
+                    Puffer an Fahrzeugen wie dort. Gerechnet werden drei gleiche Tage.
+                  </li>
+                ) : (
+                  <>
+                    <li>
+                      Übriger Flughafen im Modellbereich: mittags{" "}
+                      {kw(config.power.background_load_kw)}, nachts bis zu 16 % weniger.
+                    </li>
+                    <li>
+                      Photovoltaik: {int(settings.pv_kwp)} kWp. Sie liefert mittags höchstens{" "}
+                      {int(config.power.pv_peak_factor * 100)} % der Nennleistung, wie an einem
+                      trüben Herbsttag.
+                    </li>
+                  </>
+                )}
                 <li>
                   Parkhaus: {int(settings.parking_sessions)} Autos am Tag laden mit je{" "}
                   {kw(config.power.parking_charger_kw)}. Sie kommen zwischen 0 und 1:30 Uhr und
@@ -401,14 +473,16 @@ export default function Fachleute() {
         </section>
 
         <section aria-labelledby="oe-pass-title">
-          <h2 id="oe-pass-title">Wann ein Anschluss reicht</h2>
+          <h2 id="oe-pass-title">
+            {airport ? "Wann eine Reserve reicht" : "Wann ein Anschluss reicht"}
+          </h2>
           <ul className="oe-list">
             <li>
               Jeder Einsatz ist bis zu seiner Frist erledigt, auch wenn ein Fahrzeug vorher kurz auf
               Strom wartet.
             </li>
             <li>Jedes Auto im Parkhaus ist bis zur Abfahrt geladen.</li>
-            <li>Der übrige Flughafen bekommt jederzeit seinen Strom.</li>
+            {airport ? null : <li>Der übrige Flughafen bekommt jederzeit seinen Strom.</li>}
             <li>Nach drei Tagen sind Fahrzeuge und Speicher wieder so voll wie am Anfang.</li>
           </ul>
           {atlas ? (
@@ -423,10 +497,24 @@ export default function Fachleute() {
         <section aria-labelledby="oe-limits-title">
           <h2 id="oe-limits-title">Was das Modell nicht abbildet</h2>
           <ul className="oe-list">
-            <li>
-              Der Beispielflughafen ist erfunden: ein Vorfeldabschnitt mit 100 Fahrzeugen, kein
-              ganzer Flughafen.
-            </li>
+            {profile ? (
+              <>
+                <li>
+                  Das Tagesprofil ist aus veröffentlichten Eckdaten gebaut, nicht aus dem echten
+                  Flugplan von {profile.name}. Gerechnet wird ein typischer Tag im Spitzenmonat.
+                </li>
+                <li>
+                  Gerechnet werden vier Fahrzeugklassen: Busse, Gepäckschlepper, Flugzeugschlepper
+                  und mobile Bodenstromgeräte. Weitere Geräte wie Förderbänder oder Hubwagen fehlen.
+                </li>
+                <li>Nichts davon ist mit dem Flughafen abgestimmt.</li>
+              </>
+            ) : (
+              <li>
+                Der Beispielflughafen ist erfunden: ein Vorfeldabschnitt mit 100 Fahrzeugen, kein
+                ganzer Flughafen.
+              </li>
+            )}
             <li>
               Akkus und Energie je Einsatz stammen für Gepäckschlepper, Flugzeugschlepper und
               Bodenstromgeräte aus He et al. (2026), für Vorfeldbusse sind sie angenommen.
@@ -487,10 +575,15 @@ function Figures({
   data,
   row,
   connectionKw,
+  line,
+  at,
 }: {
   data: ElectrificationComparison;
   row: Row;
   connectionKw: number;
+  line: Line;
+  /** "Bei Ihren 1.500 kW" usw., passend zu Anschluss oder Reserve. */
+  at: string;
 }) {
   let items: [string, string][];
   let remark = "";
@@ -500,7 +593,7 @@ function Figures({
     const over = Math.max(0, u.grid_sizing.peak_kw - connectionKw);
     items = [
       ["Höchste Netzlast", kw(Math.round(u.grid_sizing.peak_kw))],
-      ["Über Ihrem Anschluss", over > 0 ? `bis zu ${kw(Math.round(over))}` : "nie"],
+      [`Über ${line.yourDat}`, over > 0 ? `bis zu ${kw(Math.round(over))}` : "nie"],
       ["Abflüge mit allen Fahrzeugen rechtzeitig bereit", "alle, weil nichts bremst"],
     ];
   } else {
@@ -516,8 +609,8 @@ function Figures({
       ["Wartezeit auf Strom, alle Einsätze zusammen", `${int(m.energy_wait_min)} min`],
       [
         row.id === "managed" || row.id === "managed_storage"
-          ? "Minuten, in denen der Anschluss das Laden über die Planung hinaus bremste"
-          : "Minuten, in denen der Anschluss das Laden bremste",
+          ? `Minuten, in denen ${line.nomLower} das Laden über die Planung hinaus bremste`
+          : `Minuten, in denen ${line.nomLower} das Laden bremste`,
         `${int(m.restricted_charging_min)} min`,
       ],
       ["Im Vorfeld geladen", `${dec1(m.apron_charged_kwh / 1000)} MWh`],
@@ -525,12 +618,12 @@ function Figures({
     ];
     if (row.id === "managed_storage")
       remark =
-        "Der Speicher lädt nach, solange weniger als 80 % Ihres Anschlusses genutzt sind. Deshalb kann die höchste Netzlast hier über dem benötigten Anschluss liegen.";
+        "Der Speicher lädt nach, solange weniger als 80 % der Leistung an der roten Linie genutzt sind. Deshalb kann die höchste Netzlast hier über dem Bedarf liegen.";
   }
   return (
     <section aria-labelledby="oe-figures-title">
       <h2 id="oe-figures-title" className="oe-h2">
-        So laufen drei Tage {row.with} an Ihren {kw(connectionKw)}
+        So laufen drei Tage {row.with}, {at.charAt(0).toLowerCase() + at.slice(1)}
       </h2>
       <dl className="oe-figures">
         {items.map(([label, value]) => (

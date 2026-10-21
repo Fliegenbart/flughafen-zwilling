@@ -58,6 +58,7 @@ export default function LoadChart({
   note,
   formatCap = powerText,
   drawNote = true,
+  capLabel = "Netzanschluss",
 }: {
   result: LiveResult;
   today: LiveResult;
@@ -69,6 +70,8 @@ export default function LoadChart({
   formatCap?: (kw: number) => string;
   /** false: Die Seite setzt den Satz selbst als Text ueber die Kurve (bricht schmal um). */
   drawNote?: boolean;
+  /** Name der roten Linie, z. B. "Reserve" statt "Netzanschluss". */
+  capLabel?: string;
 }) {
   const [box, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
@@ -153,7 +156,7 @@ export default function LoadChart({
           y={y(capNow) - 8}
           textAnchor="end"
         >
-          Netzanschluss {formatCap(capNow)}
+          {capLabel} {formatCap(capNow)}
         </text>
         {!drawNote ? null : note ? (
           note.tone === "ok" ? (

@@ -71,7 +71,7 @@ describe("Seite für Fachleute", () => {
     open();
     expect(
       await screen.findByRole("heading", {
-        name: /So laufen drei Tage ohne Steuerung an Ihren 1.500\skW/,
+        name: /So laufen drei Tage ohne Steuerung, bei Ihren 1.500\skW/,
       }),
     ).toBeVisible();
     expect(screen.getByText("Über Ihrem Anschluss").nextSibling).toHaveTextContent(

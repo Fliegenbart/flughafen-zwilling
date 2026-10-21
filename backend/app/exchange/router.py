@@ -22,6 +22,7 @@ from ..models import RunStatus
 from ..munich.coupled_models import CoupledConfig
 from ..pilot.router import EvidenceStore, _normalize_uuid, _verified_coupled_series
 from . import library
+from .airport_spec import available_airports, public_airports
 from .assets import MAX_IMPORT_BYTES as ASSET_IMPORT_LIMIT
 from .assets import AssetsRequest, AssetStore
 from .demo import DemoSimulationRequest, materialize_demo_run, simulate_demo
@@ -864,9 +865,18 @@ def create_router(storage, lab_service, plans, base_dir: Path | None = None,
         return compare_electrification(body)
 
     @router.get("/demo/electrification/atlas")
-    def electrification_atlas() -> dict:
-        """Vorab gerechneter Anschlussbedarf fuer alle Reglerstufen des Beispielflughafens."""
-        return public_atlas()
+    def electrification_atlas(
+        airport: str | None = Query(default=None, pattern=r"^[A-Z]{3}$"),
+    ) -> dict:
+        """Vorab gerechneter Anschlussbedarf fuer alle Reglerstufen (Beispiel oder Flughafen)."""
+        if airport is not None and airport not in available_airports():
+            raise HTTPException(status_code=404, detail="Unbekannter Flughafen")
+        return public_atlas(airport)
+
+    @router.get("/demo/airports")
+    def airports() -> list[dict]:
+        """Steckbriefe der Flughaefen aus oeffentlichen Quellen, mit Modellannahmen."""
+        return public_airports()
 
     @router.post("/demo/electrification/runs", response_model=RunStatus, status_code=202)
     def materialize_electrification(body: ElectrificationRunRequest) -> RunStatus:

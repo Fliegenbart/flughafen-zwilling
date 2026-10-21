@@ -353,6 +353,102 @@
   color: var(--ap-muted);
 }
 
+/* ------------------------------------------------- Flughafen und Steckbrief */
+.oe-brand {
+  flex: 0 0 auto;
+}
+.oe-brand__sub {
+  flex: 1;
+  color: var(--ap-muted);
+}
+.oe-picker {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  color: var(--ap-muted);
+  font-size: 15px;
+}
+.oe-picker select {
+  max-width: 100%;
+  padding: 6px 30px 6px 10px;
+  border: 1px solid var(--ap-faint);
+  border-radius: 6px;
+  background: var(--ap-bg);
+  color: var(--ap-ink);
+  font: inherit;
+  font-weight: 600;
+}
+.oe-picker select:focus-visible {
+  outline: 3px solid var(--ap-focus);
+  outline-offset: 1px;
+}
+.oe-lever__set {
+  justify-self: start;
+  margin: 6px 0 2px;
+}
+.oe-link {
+  justify-self: start;
+  margin: -6px 0 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ap-muted);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.oe-facts {
+  margin-top: 40px;
+}
+.oe-facts h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.oe-facts dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 32px;
+  margin: 0;
+}
+.oe-facts dl div {
+  padding-top: 8px;
+  border-top: 1px solid var(--ap-faint);
+}
+.oe-facts dt {
+  color: var(--ap-muted);
+  font-size: 14px;
+}
+.oe-facts dd {
+  margin: 2px 0 0;
+}
+.oe-sources {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  font-size: 13px;
+}
+.oe-sources a {
+  color: var(--ap-muted);
+}
+.oe-tag {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--ap-faint);
+  border-radius: 3px;
+  color: var(--ap-muted);
+  font-size: 12px;
+  vertical-align: 1px;
+}
+.oe-model .oe-basis {
+  display: block;
+  margin-top: 2px;
+  color: var(--ap-muted);
+  font-size: 14px;
+}
+
 /* --------------------------------------------------------------- Fuss */
 .oe-foot {
   max-width: 1440px;
@@ -392,6 +488,13 @@
   .oe-head {
     flex-wrap: wrap;
     padding: 12px 16px;
+  }
+  .oe-picker {
+    flex-basis: 100%;
+    order: 3;
+  }
+  .oe-facts dl {
+    grid-template-columns: minmax(0, 1fr);
   }
   .oe-brand span {
     display: block;

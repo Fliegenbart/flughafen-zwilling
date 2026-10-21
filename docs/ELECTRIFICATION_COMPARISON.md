@@ -181,6 +181,51 @@ Ergebnisse werden angezeigt. Der Elektroanteil wird deterministisch mit
 Groesste-Reste-Verteilung auf Busse (20), Gepaeckschlepper (35),
 Flugzeugschlepper (10) und Bodenstromgeraete (35) verteilt.
 
+## Echte Flughaefen
+
+Neben dem erfundenen Beispielflughafen rechnet das Modell das ganze Vorfeld echter
+deutscher Flughaefen (`backend/app/exchange/airport_model.py`). Grundlage ist je
+Flughafen ein Steckbrief `backend/app/exchange/data/airports/<IATA>.json`
+(Schema `airport_spec.py`), erstellt aus einer gegengeprueften Recherche
+oeffentlicher Quellen. Jede Zahl, die die Rechnung treibt, traegt Begruendung und
+Quellen; Annahmen sind als solche markiert.
+
+- Flugplan: Abfluege an einem typischen Tag im Spitzenmonat (nur gewerblich, ohne
+  allgemeine Luftfahrt), verteilt nach 24 Stundengewichten fuer Abfluege und
+  Ankuenfte. Die Profile sind aus veroeffentlichten Eckdaten konstruiert
+  (Nachtruhe, Wellen, Spitzenzeiten, Frachtnacht), kein echter Flugplan.
+- Einsaetze je Flug: Abdeckung je Fahrzeugklasse aus dem Steckbrief, z. B. Busse
+  nur an Aussenpositionen, mobile Bodenstromgeraete nur ohne festen 400-Hz-Strom.
+- Flotte: vom Modell bemessen (`scripts/size_airport_fleets.py`). Je Klasse die
+  kleinste Flotte, die das Profil mit Dieselfahrzeugen puenktlich schafft, dazu
+  derselbe Puffer wie im Beispielflughafen (dort Busse 3,3x, Gepaeckschlepper 2,2x,
+  Flugzeugschlepper 1,4x, Bodenstromgeraete 2,3x der Mindestflotte). Ladepunkte im
+  selben Verhaeltnis. Akku, Energie je Einsatz und Ladeleistung wie im Beispiel.
+- "Anschluss" heisst hier **Reserve fuers Vorfeld**: die Leistung, die das
+  Flughafennetz fuer das Laden auf dem Vorfeld und im Parkhaus bereitstellt. Die
+  uebrige Last und die Photovoltaik des Flughafens stecken schon darin; das Modell
+  rechnet keine Grundlast und keine Flughafen-PV. Fast alle grossen Flughaefen
+  betreiben ein eigenes Netz, die Frage ist deshalb intern.
+- Raster und Obergrenze wachsen mit der Groesse (25, 50 oder 100 kW), ebenso die
+  Speicherstufen. Die Vorab-Tabelle je Flughafen liegt in `data/atlas/<IATA>.json`
+  (`make_electrification_atlas.py --airport FRA`) und gilt nur, solange die
+  modellrelevanten Steckbriefwerte gleich sind (Fingerabdruck in `reference_id`).
+- Die groesseren Welten (bis 1.500 Fahrzeuge je Klasse, 80.000 Einsaetze) gibt es
+  nur in `trusted_scale()` fuer serverseitig erzeugte Flughafenmodelle. Alles, was
+  von aussen kommt (Projekte, Varianten, Muenchen-Endpunkte), behaelt die bisherigen
+  Grenzen.
+- SIL-Laeufe gibt es weiter nur fuer den Beispielflughafen.
+
+Schnittstellen: `GET /api/v1/demo/airports` (Steckbriefe mit Fakten und
+Modellannahmen, nur Flughaefen mit Tabelle), `GET /demo/electrification/atlas?airport=FRA`,
+`POST /demo/electrification` mit `airport`.
+
+Kundenseite: Auswahl im Kopf (`?flughafen=FRA`). Die Reserve ist zuerst offen; die
+rote Linie zeigt dann den Bedarf mit Lademanagement, und der Satz nennt nur den
+Bedarf je Stufe. Erst eine eingetragene Reserve fuehrt zu "reicht" oder "reicht
+nicht". Parkhaus anfangs aus, weil es bei echten Flughaefen auf einer groben
+Annahme beruht (je oeffentlichem Ladepunkt ein Vorgang am Tag).
+
 ## Modellgrenzen
 
 Die neue Engine `airport_electrification_v1` erweitert den bestehenden

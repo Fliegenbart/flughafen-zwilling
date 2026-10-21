@@ -1,0 +1,130 @@
+{
+ "id": "TST",
+ "name": "Test",
+ "full_name": "Testflughafen",
+ "as_of": "2026-10",
+ "departures_per_day": 420,
+ "departures_basis": {
+  "text": "Testwert fuer die Entwicklung",
+  "sources": [],
+  "assumption": true
+ },
+ "departures_by_hour": [
+  1,
+  0,
+  0,
+  0,
+  0,
+  2,
+  8,
+  9,
+  7,
+  6,
+  5,
+  5,
+  6,
+  6,
+  5,
+  5,
+  6,
+  7,
+  7,
+  6,
+  5,
+  4,
+  2,
+  1
+ ],
+ "arrivals_by_hour": [
+  2,
+  0,
+  0,
+  0,
+  0,
+  1,
+  4,
+  6,
+  7,
+  6,
+  5,
+  5,
+  6,
+  6,
+  5,
+  5,
+  6,
+  7,
+  7,
+  7,
+  6,
+  6,
+  5,
+  3
+ ],
+ "profile_basis": {
+  "text": "Testprofil mit Morgenwelle",
+  "sources": [],
+  "assumption": true
+ },
+ "coverage_pct": {
+  "bus": 40,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 40
+ },
+ "coverage_basis": {
+  "text": "Testabdeckung fuer die Entwicklung",
+  "sources": [],
+  "assumption": true
+ },
+ "electric_share_now_pct": 30,
+ "electric_share_basis": {
+  "text": "Testanteil fuer die Entwicklung",
+  "sources": [],
+  "assumption": true
+ },
+ "parking_sessions_per_day": 150,
+ "parking_basis": {
+  "text": "Test Ladepunkte im Parkhaus",
+  "sources": [],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Aa",
+   "value": "1",
+   "source": "https://example.org"
+  },
+  {
+   "label": "Bb",
+   "value": "2",
+   "source": "https://example.org"
+  },
+  {
+   "label": "Cc",
+   "value": "3",
+   "source": "https://example.org"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 37,
+   "baggage_tractor": 49,
+   "pushback_tug": 16,
+   "gpu": 35
+  },
+  "chargers": {
+   "bus": 15,
+   "baggage_tractor": 17,
+   "pushback_tug": 7,
+   "gpu": 14
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 11, baggage_tractor 22, pushback_tug 11, gpu 15), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

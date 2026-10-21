@@ -15,6 +15,7 @@ const atlas = (
   },
   peaks: { "50|500|40": uncontrolled },
   gridMaxKw: 8000,
+  gridStepKw: 25,
 });
 const at = (kw: number, s: Partial<Settings> = {}) => ({
   ...START,

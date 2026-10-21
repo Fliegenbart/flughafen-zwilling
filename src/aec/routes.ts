@@ -76,9 +76,10 @@ function writeEinstellung(p: URLSearchParams, e: Einstellung | undefined) {
 }
 
 export type Route =
-  | { page: "start"; einstellung?: Einstellung }
+  /** flughafen: echter Flughafen (IATA), ohne Angabe der Beispielflughafen. */
+  | { page: "start"; einstellung?: Einstellung; flughafen?: string }
   /** Fuer Fachleute: dieselbe Rechnung wie auf der Startseite, ausfuehrlich begruendet. */
-  | { page: "fachleute"; einstellung?: Einstellung }
+  | { page: "fachleute"; einstellung?: Einstellung; flughafen?: string }
   /** Altwerkzeuge (Vergleich mit Messdaten-Uebergabe, eigene Projekte); nirgends verlinkt. */
   | { page: "labor" }
   | { page: "bibliothek"; werkstatt?: "simulation" }
@@ -114,8 +115,10 @@ export function parseRoute(search: string): Route {
   const p = new URLSearchParams(search);
   const werkstatt = p.get("werkstatt");
   const einstellung = readEinstellung(p);
-  if (p.get("seite") === "fachleute")
-    return einstellung ? { page: "fachleute", einstellung } : { page: "fachleute" };
+  const raw = p.get("flughafen")?.toUpperCase() ?? "";
+  const flughafen = /^[A-Z]{3}$/.test(raw) ? raw : undefined;
+  const extra = { ...(einstellung ? { einstellung } : {}), ...(flughafen ? { flughafen } : {}) };
+  if (p.get("seite") === "fachleute") return { page: "fachleute", ...extra };
   if (p.get("seite") === "labor") return { page: "labor" };
   if (p.get("seite") === "bibliothek")
     return werkstatt === "simulation" ? { page: "bibliothek", werkstatt } : { page: "bibliothek" };
@@ -142,15 +145,17 @@ export function parseRoute(search: string): Route {
       ...(frage === null && !isWerkstatt(werkstatt) ? { auto: true as const } : {}),
     };
   }
-  return einstellung ? { page: "start", einstellung } : { page: "start" };
+  return { page: "start", ...extra };
 }
 
 export function toSearch(route: Route): string {
   const p = new URLSearchParams();
   if (route.page === "start") {
+    if (route.flughafen) p.set("flughafen", route.flughafen);
     writeEinstellung(p, route.einstellung);
   } else if (route.page === "fachleute") {
     p.set("seite", "fachleute");
+    if (route.flughafen) p.set("flughafen", route.flughafen);
     writeEinstellung(p, route.einstellung);
   } else if (route.page === "labor") {
     p.set("seite", "labor");
