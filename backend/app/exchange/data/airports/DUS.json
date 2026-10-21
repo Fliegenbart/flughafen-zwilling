@@ -79,10 +79,16 @@
   "assumption": false
  },
  "coverage_pct": {
-  "bus": 34.0,
+  "bus": 35,
   "baggage_tractor": 100.0,
   "pushback_tug": 100.0,
-  "gpu": 33.0
+  "gpu": 34,
+  "belt_loader": 100,
+  "stairs": 35,
+  "loader": 10,
+  "catering": 40,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "An Gebäudepositionen sind Fluggastbrücke und feste 400-Hz-Anlage Pflicht (Benutzungsordnung, Entgeltordnung). Auf Vorfeldpositionen fahren die Fluggäste mit dem Bus, Strom liefert ein mobiles Bodenstromgerät: Die APU muss nach dem Parken aus und darf erst 30 Minuten vor der geplanten Off-Block-Zeit wieder laufen. Der Flughafen hat 26 Gebäude- und 70 Vorfeldpositionen. Die Flugauskunft nennt je Flug die Position: Am 20. und 21.10.2026 standen 33 % der Abflüge und 35 % der Ankünfte auf Vorfeldpositionen, in der Abflugwelle um 6 Uhr gut die Hälfte. Daher Bus 34 %, mobiles Bodenstromgerät 33 % der Abflüge. Annahme: Zwei Tage im Oktober stehen für den Spitzenmonat, niemand geht zu Fuß zum Flugzeug. Gepäckschlepper 100 %. Pushback 100 %: Nose-in-Positionen dürfen nur mit Schlepper verlassen werden, andere Positionsarten sind nicht beziffert.",
@@ -92,6 +98,27 @@
    "https://e-pflicht.ub.uni-duesseldorf.de/download/pdf/389268",
    "https://www.dus.com/de-de/fliegen/abflug",
    "https://www.dus.com/de-de/fliegen/ankunft"
+  ],
+  "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Treppen wie Busse (Vorfeldpositionen). Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (10 %). Catering einmal je Abflug (40 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote. Bus 35 % und Bodenstrom 34 % gelten jetzt für Schmalrumpfflüge (Großraum siehe unten).",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {
+  "bus": 10,
+  "gpu": 10,
+  "stairs": 10
+ },
+ "widebody_share_pct": 2.5,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "DUS-Verkehrszahlen 2024: 4.108 Langstreckenbewegungen, am Spitzentag rund 6 Großraumabflüge von 247, also 2,5 % (Destatis 2022: 2,5 %). Großraum an Gebäudepositionen mit Brücke und 400 Hz, daher Bus und GPU für Großraum je 10 % (Annahme).",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
   ],
   "assumption": true
  },
@@ -169,19 +196,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 20,
-   "baggage_tractor": 31,
+   "bus": 40,
+   "baggage_tractor": 38,
    "pushback_tug": 16,
-   "gpu": 26
+   "gpu": 24,
+   "belt_loader": 41,
+   "stairs": 18,
+   "loader": 11,
+   "catering": 21,
+   "lavatory": 12,
+   "water": 9
   },
   "chargers": {
-   "bus": 8,
-   "baggage_tractor": 11,
+   "bus": 16,
+   "baggage_tractor": 14,
    "pushback_tug": 7,
-   "gpu": 11
+   "gpu": 10,
+   "belt_loader": 41,
+   "stairs": 18,
+   "loader": 6,
+   "catering": 11,
+   "lavatory": 6,
+   "water": 5
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 6, baggage_tractor 14, pushback_tug 11, gpu 11), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 12, baggage_tractor 17, pushback_tug 11, gpu 10, belt_loader 27, stairs 12, loader 7, catering 13, lavatory 7, water 6), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

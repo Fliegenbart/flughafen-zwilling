@@ -80,7 +80,13 @@
   "bus": 40,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 75
+  "gpu": 75,
+  "belt_loader": 100,
+  "stairs": 68,
+  "loader": 5,
+  "catering": 40,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Bus: Anteil nicht veröffentlicht. Belegt: 37 Abstellpositionen, davon 6 gebäudenah mit 4 Fluggastbrücken in Betrieb, dazu 3 Positionen mit Zugang zu Fuß für Low-Cost-Airlines wie Ryanair und Wizz Air; alle übrigen Positionen werden per Vorfeldbus bedient. Brückenpositionen kosten 15 % Zuschlag auf das Startentgelt. Im August 2026 entfielen 28 % der Abflüge auf Ryanair und Wizz Air, 22 % auf Lufthansa, KLM, Air France und Turkish Airlines. Annahme: Low-Cost zu Fuß, Drehkreuzflüge meist an der Brücke, rund drei Viertel der übrigen Flüge per Bus, zusammen rund 40 %. Schlepper und Pushback: 100 %, nicht anders belegt. GPU: Festen 400-Hz-Strom haben die 4 Fluggastbrücken; 4 stationäre E-Bodenstromgeräte kamen 2025 hinzu, ihr Standort ist nicht veröffentlicht. Annahme: rund ein Viertel der Abflüge an Brücken, also 75 % mit mobilem Gerät; stehen die stationären Geräte außen, sinkt der Anteil.",
@@ -89,6 +95,23 @@
    "https://cdn0.scrvt.com/c6cfa56ea5ccf7ccabf7e13a538ca691/422d8c962eb45e5b/67f778936821/251215_Entgeltordnung_2026_DE.pdf",
    "https://www.airport-nuernberg.de/de/flugplanhistorie",
    "https://www.aerotelegraph.com/ticker/nuernberg-airport-ersetzt-diesel-aggregate-durch-klimafreundliche/y55flrk"
+  ],
+  "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Treppen an Bus- und den Walk-Boarding-Positionen für Low-Cost (28 % der Abflüge), Annahme 68 %. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (5 %). Catering einmal je Abflug (40 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote.",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {},
+ "widebody_share_pct": 0.5,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "Destatis (über 175 t): 2019 0,31 %, 2022 0,61 %, also unter einem Flug am Tag; 0,5 %.",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
   ],
   "assumption": true
  },
@@ -179,19 +202,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 7,
+   "bus": 14,
    "baggage_tractor": 7,
    "pushback_tug": 3,
-   "gpu": 10
+   "gpu": 10,
+   "belt_loader": 9,
+   "stairs": 8,
+   "loader": 3,
+   "catering": 4,
+   "lavatory": 2,
+   "water": 3
   },
   "chargers": {
-   "bus": 3,
+   "bus": 6,
    "baggage_tractor": 3,
    "pushback_tug": 2,
-   "gpu": 4
+   "gpu": 4,
+   "belt_loader": 9,
+   "stairs": 8,
+   "loader": 2,
+   "catering": 2,
+   "lavatory": 1,
+   "water": 2
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 2, baggage_tractor 3, pushback_tug 2, gpu 4), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 4, baggage_tractor 3, pushback_tug 2, gpu 4, belt_loader 6, stairs 5, loader 2, catering 2, lavatory 1, water 2), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

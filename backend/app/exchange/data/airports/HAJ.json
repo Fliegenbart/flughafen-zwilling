@@ -81,13 +81,36 @@
   "bus": 48,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 50
+  "gpu": 50,
+  "belt_loader": 100,
+  "stairs": 50,
+  "loader": 5,
+  "catering": 40,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Positionen: 20 Terminalpositionen mit Fluggastbrücken und 20–21 Positionen am Vorfeldrand für Linien- und Charterverkehr. An den Brücken stellt der Flughafen stationären Bodenstrom bereit; dort sind bordeigene Aggregate dann unzulässig (Benutzungsordnung, Anhang B Nr. 5 und 8). Rund 50 % der Positionen haben also keinen festen Bodenstrom, daraus gpu 50. Fluggäste an Vorfeldrandpositionen fahren per Bus (3 Abflug-Bus-Gates). Wie sich die Abflüge auf die Positionen verteilen, ist nicht veröffentlicht. Annahme: wie die Positionen, abzüglich weniger Nur-Frachtflüge ohne Busse, daraus bus 48. Werden Brückenpositionen bevorzugt belegt, liegen bus und gpu niedriger. Pushback 100 %: Nose-in-Positionen dürfen nur mit Schlepperhilfe verlassen werden (Benutzungsordnung 2.4); ob Vorfeldrandpositionen ohne Pushback auskommen, ist nicht veröffentlicht. Gepäckschlepper 100 %.",
   "sources": [
    "https://www.hannover-airport.de/unternehmen-airport/das-unternehmen/hannover-airport-kompakt/",
    "https://www.hannover-airport.de/fileadmin/downloads/B2B_und_Gesch%C3%A4ftskunden/Entgelte_und_AGB/AGB_und_Entgelttabellen/Flughafenbenutzungsordnung_Dez2024.pdf"
+  ],
+  "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Treppen an den Vorfeldrand-Positionen, Annahme 50 %. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (5 %). Catering einmal je Abflug (40 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote.",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {},
+ "widebody_share_pct": 0.5,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "Destatis (über 175 t): 2019 0,31 %, 2022 0,64 % (überwiegend Charter); 0,5 %.",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
   ],
   "assumption": true
  },
@@ -164,19 +187,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 10,
+   "bus": 20,
    "baggage_tractor": 11,
    "pushback_tug": 5,
-   "gpu": 12
+   "gpu": 12,
+   "belt_loader": 15,
+   "stairs": 9,
+   "loader": 3,
+   "catering": 7,
+   "lavatory": 4,
+   "water": 3
   },
   "chargers": {
-   "bus": 4,
+   "bus": 8,
    "baggage_tractor": 4,
    "pushback_tug": 2,
-   "gpu": 5
+   "gpu": 5,
+   "belt_loader": 15,
+   "stairs": 9,
+   "loader": 2,
+   "catering": 4,
+   "lavatory": 2,
+   "water": 2
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 3, baggage_tractor 5, pushback_tug 3, gpu 5), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 6, baggage_tractor 5, pushback_tug 3, gpu 5, belt_loader 10, stairs 6, loader 2, catering 4, lavatory 2, water 2), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

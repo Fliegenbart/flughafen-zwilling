@@ -183,3 +183,20 @@ def test_several_vehicles_per_flight_and_widebody_values():
     assert all(m.aircraft == "wide" and m.energy_kwh == 9.5 for v in wide for m in v)
     share = len(wide) / len(by_flight)
     assert 0.1 < share < 0.3
+
+
+def test_measured_day_ignores_rounding_but_not_a_real_shortfall():
+    from types import SimpleNamespace
+    result = SimpleNamespace(
+        kpis=SimpleNamespace(mission_count=1, missions_on_time=1, background_unserved_kwh=0,
+                             fleet_energy_balance_error_kwh=0,
+                             storage_energy_balance_error_kwh=0),
+        energy=SimpleNamespace(charging_unmet_kwh=0, battery_initial_kwh=0, battery_final_kwh=0,
+                               battery_cycle_start_kwh=100, battery_cycle_end_kwh=99.995,
+                               battery_cycle_absorbable_kwh=0),
+        terminal_vehicles=[dict(electric=True, initial_kwh=255, final_kwh=200,
+                                cycle_start_kwh=255.0, cycle_end_kwh=254.9997)])
+    assert connection_checks(result)["feasible"]
+    result.terminal_vehicles[0]["cycle_end_kwh"] = 254.9
+    result.energy.battery_cycle_end_kwh = 99.5
+    assert connection_checks(result)["reasons"] == ["vehicle_recharge", "storage_recharge"]

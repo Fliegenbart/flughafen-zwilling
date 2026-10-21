@@ -81,7 +81,13 @@
   "bus": 32,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 100
+  "gpu": 100,
+  "belt_loader": 100,
+  "stairs": 92,
+  "loader": 0,
+  "catering": 20,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Das Vorfeld hat 8 Abstellpositionen; Fluggäste gehen zu Fuß zum Flugzeug oder fahren per Bus (Wikipedia). Fluggastbrücken nennt keine Quelle. Wie sich die Abflüge auf Bus und Fußweg verteilen, ist nicht veröffentlicht. Annahme: Standardwert 35 % der Passagierflüge per Bus; rund 8 % der Abflüge sind Frachtflüge der Airest ohne Busse (Flugplan Oktober 2026), daraus bus 32. Festen 400-Hz-Bodenstrom an den Positionen belegt keine Quelle; der Flughafen versorgt die Flugzeuge mit 10 batteriebetriebenen Bodenstromgeräten (e-GPUs), daraus gpu 100 (Annahme). Schlepper und Pushback: 100 % (Annahme, keine Angaben zu Positionen ohne Pushback).",
@@ -91,6 +97,23 @@
    "https://www.avionio.com/de/airport/fkb/departures"
   ],
   "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Keine Fluggastbrücken; Treppen bei allen Passagierflügen (rund 92 % der Abflüge, Rest Fracht). Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (0 %). Catering einmal je Abflug (20 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote.",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {},
+ "widebody_share_pct": 0,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "Destatis (über 175 t): 2–7 Bewegungen im Jahr, also 0 %.",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
+  ],
+  "assumption": false
  },
  "electric_share_now_pct": null,
  "electric_share_basis": {
@@ -156,19 +179,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 4,
+   "bus": 7,
    "baggage_tractor": 5,
    "pushback_tug": 3,
-   "gpu": 7
+   "gpu": 7,
+   "belt_loader": 6,
+   "stairs": 6,
+   "loader": 0,
+   "catering": 4,
+   "lavatory": 2,
+   "water": 2
   },
   "chargers": {
-   "bus": 2,
+   "bus": 3,
    "baggage_tractor": 2,
    "pushback_tug": 2,
-   "gpu": 3
+   "gpu": 3,
+   "belt_loader": 6,
+   "stairs": 6,
+   "loader": 0,
+   "catering": 2,
+   "lavatory": 1,
+   "water": 1
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 1, baggage_tractor 2, pushback_tug 2, gpu 3), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 2, baggage_tractor 2, pushback_tug 2, gpu 3, belt_loader 4, stairs 4, loader 0, catering 2, lavatory 1, water 1), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

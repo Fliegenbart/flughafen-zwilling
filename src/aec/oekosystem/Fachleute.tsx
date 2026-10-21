@@ -13,7 +13,7 @@ import LoadChart from "../arbeitsplatz/LoadChart";
 import { dec1, int } from "../model/format";
 import { CurveWaiting, curveFor, REASONS, type Rechnung } from "./kurve";
 import Levers from "./Levers";
-import { AirportModel, AirportPicker, fleetTotal } from "./Steckbrief";
+import { AirportModel, AirportPicker, FLEET_NAMES, fleetTotal } from "./Steckbrief";
 import {
   ANSCHLUSS,
   answer,
@@ -26,13 +26,6 @@ import {
   type Stage,
 } from "./stufen";
 import { useOekosystem } from "./useOekosystem";
-
-const FLEET_NAMES: Record<string, string> = {
-  bus: "Vorfeldbusse",
-  baggage_tractor: "Gepäckschlepper",
-  pushback_tug: "Flugzeugschlepper",
-  gpu: "Bodenstromgeräte",
-};
 
 type Row = {
   id: Rechnung;
@@ -87,6 +80,7 @@ type FleetConfig = {
   charger_kw: number;
   battery_capacity_kwh: number;
   mission_energy_kwh: number;
+  wide_mission_energy_kwh?: number;
   initial_soc_pct: number;
 };
 type PowerConfig = {
@@ -415,7 +409,12 @@ export default function Fachleute() {
                           <td>{int(f.vehicles)}</td>
                           <td>{counted ? int(counted.electric) : "…"}</td>
                           <td>{int(f.battery_capacity_kwh)} kWh</td>
-                          <td>{dec1(f.mission_energy_kwh)} kWh</td>
+                          <td>
+                            {dec1(f.mission_energy_kwh)} kWh
+                            {profile?.widebody_share_pct && f.wide_mission_energy_kwh
+                              ? `, Großraum ${dec1(f.wide_mission_energy_kwh)} kWh`
+                              : ""}
+                          </td>
                           <td>
                             {int(f.chargers)} × {kw(f.charger_kw)}
                           </td>
@@ -527,13 +526,13 @@ export default function Fachleute() {
                     : ""}
                 </li>
                 <li>
-                  Gerechnet werden vier Fahrzeugklassen: Busse, Gepäckschlepper, Flugzeugschlepper
-                  und mobile Bodenstromgeräte. Weitere Geräte wie Förderbänder, Hubwagen oder Pkw
-                  fehlen, ihr Ladebedarf kommt dazu.
+                  Gerechnet werden zehn Gerätearten vom Vorfeldbus bis zum Frischwasserwagen. Crew-
+                  und Kleinbusse, Pkw und Schlepps zur Parkposition fehlen, ihr Ladebedarf kommt
+                  dazu.
                 </li>
                 <li>
-                  Energie je Einsatz gilt für Kurz- und Mittelstreckenflugzeuge. Großraumflugzeuge
-                  brauchen mehr, an Drehkreuzen liegt der echte Bedarf deshalb höher.
+                  Großraumflugzeuge rechnet das Modell mit eigenen Werten. Der Winter mit Heizung in
+                  Bussen und Kälte im Akku fehlt noch.
                 </li>
                 <li>Nichts davon ist mit dem Flughafen abgestimmt.</li>
               </>
@@ -547,8 +546,9 @@ export default function Fachleute() {
               </li>
             )}
             <li>
-              Akkus und Energie je Einsatz stammen für Gepäckschlepper, Flugzeugschlepper und
-              Bodenstromgeräte aus He et al. (2026), für Vorfeldbusse sind sie angenommen.
+              Energie je Einsatz stammt aus Messungen (Fraport-Busse, Vorfeldgeräte in Stuttgart),
+              Herstellerangaben und Physik, nicht aus Diesel-Lastfaktoren. Wie oft Catering-,
+              Toiletten- und Wasserwagen kommen, ist angenommen.
             </li>
             <li>
               Lademanagement kennt den Einsatzplan im Voraus und plant 15 % Reserve auf den

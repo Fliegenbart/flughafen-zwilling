@@ -17,7 +17,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 # Umgebungsvariable nur fuer Tests und Vorbereitung ausserhalb des Repositorys.
 AIRPORTS_DIR = Path(os.environ.get("TWIN_AIRPORTS_DIR")
                     or Path(__file__).resolve().parent / "data" / "airports")
-FLEET_KINDS = ("bus", "baggage_tractor", "pushback_tug", "gpu")
+FLEET_KINDS = ("bus", "baggage_tractor", "pushback_tug", "gpu", "belt_loader", "stairs",
+               "loader", "catering", "lavatory", "water")
 # Ladevorgaenge je Ladepunkt und Tag, wenn der Flughafen keine Zahl nennt (Recherche 10/2026:
 # AC in Gaeste- und Urlaubsparkhaeusern rund 0,2 Reisende + 0,1 Tagesgaeste, Schnelllader 1,5).
 AC_SESSIONS_PER_POINT = 0.3
@@ -90,7 +91,18 @@ class AirportSpec(BaseModel):
     arrivals_by_hour: list[float] = Field(min_length=24, max_length=24)
     profile_basis: Basis
     coverage_pct: dict[str, float]
+    # Abweichende Abdeckung fuer Grossraumflugzeuge (z. B. seltener Bus, oefter Bruecke).
+    wide_coverage_pct: dict[str, float] = Field(default_factory=dict)
     coverage_basis: Basis
+    # Begruendung fuer Treppen und die weiteren Abfertigungsgeraete (Paket 3).
+    equipment_basis: Basis
+    # Anteil Grossraumflugzeuge an den Passagierfluegen bzw. an den Frachtfluegen (Prozent).
+    widebody_share_pct: float = Field(ge=0, le=100)
+    freight_widebody_share_pct: float = Field(default=0, ge=0, le=100)
+    widebody_basis: Basis
+    # Frachtanteil je Ortsstunde (0..1), wo nachts viel Fracht fliegt; ohne Angabe keine Fracht.
+    freight_share_by_hour: list[float] | None = Field(default=None, min_length=24, max_length=24)
+    freight_basis: Basis | None = None
     electric_share_now_pct: float | None = Field(default=None, ge=0, le=100)
     electric_share_basis: Basis
     parking_sessions_per_day: int = Field(ge=0, le=2000)
@@ -122,10 +134,26 @@ class AirportSpec(BaseModel):
             raise ValueError(f"Abdeckung fuer genau {FLEET_KINDS} in Prozent")
         return value
 
+    @field_validator("wide_coverage_pct")
+    @classmethod
+    def wide_coverage(cls, value: dict[str, float]) -> dict[str, float]:
+        if not set(value) <= set(FLEET_KINDS) or any(not 0 <= v <= 100 for v in value.values()):
+            raise ValueError("Grossraum-Abdeckung nur fuer bekannte Klassen in Prozent")
+        return value
+
+    @field_validator("freight_share_by_hour")
+    @classmethod
+    def freight_shares(cls, value: list[float] | None) -> list[float] | None:
+        if value is not None and any(not 0 <= v <= 1 for v in value):
+            raise ValueError("Frachtanteil je Stunde zwischen 0 und 1")
+        return value
+
     @model_validator(mode="after")
     def reserve_needs_basis(self) -> AirportSpec:
         if (self.reserve_kw_public is None) != (self.reserve_basis is None):
             raise ValueError("Oeffentliche Reserve nur mit Begruendung")
+        if (self.freight_share_by_hour is None) != (self.freight_basis is None):
+            raise ValueError("Frachtanteil nur mit Begruendung")
         if sum(n for *_, n in self.parking_sessions()) != self.parking_sessions_per_day:
             raise ValueError("parking_sessions_per_day passt nicht zu den Ladepunkten")
         return self

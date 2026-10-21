@@ -80,10 +80,16 @@
   "assumption": false
  },
  "coverage_pct": {
-  "bus": 35,
+  "bus": 37,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 40
+  "gpu": 43,
+  "belt_loader": 100,
+  "stairs": 37,
+  "loader": 20,
+  "catering": 80,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "bus 35 ist eine Annahme (Standardwert); eine Busquote veröffentlicht der Flughafen nicht. Die Infrastruktur stützt die Größenordnung: Terminal 2 hat 55 gebäudenahe Positionen, davon 27 am Satelliten, der rund 30 % der Bewegungen im T2-System abwickelt. Das Vorfeld West vor Terminal 1 hat 60 Positionen, die Fluggäste per Bus erreichen; seit April 2026 bietet der T1-Pier 12 gebäudenahe Positionen. AeroGround betreibt 95 große Vorfeldbusse. Reine Frachtflüge spielen kaum eine Rolle, 89 % der Fracht fliegt als Beiladung. gpu 40 (Annahme): Die 64 PCA-Anlagen an den gebäudenahen Positionen liefern Bodenstrom. Abflüge von Außen- und Frachtpositionen brauchen ein mobiles Gerät; 5 Punkte Zuschlag decken Positionen ohne feste Versorgung ab. baggage_tractor und pushback_tug: 100, eine abweichende Quote ist nicht veröffentlicht.",
@@ -94,6 +100,27 @@
    "https://www.munich-airport.de/_b/0000000000000039238972bb69c102a5/statistischer-jahresbericht-2025.pdf",
    "https://www.munich-airport.de/_b/0000000000000043012574bb6a8ebd6a/umwelterklaerung-fmg-2026.pdf",
    "https://www.lobbyregister.bundestag.de/media/64/be/814626/FMG_Integrierter_Bericht_2025.pdf"
+  ],
+  "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Treppen wie Busse. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (20 %). Catering einmal je Abflug (80 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote. Bus 37 % und Bodenstrom 43 % gelten jetzt für Schmalrumpfflüge (Großraum siehe unten).",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {
+  "bus": 15,
+  "gpu": 15,
+  "stairs": 15
+ },
+ "widebody_share_pct": 10,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "FMG-Jahresbericht 2025: 34.700 Langstreckenbewegungen, rund 51 Großraumabflüge am Spitzentag (505 Abflüge), also 10 %. Großraum steht meist an Gebäudepositionen mit Brücke und PCA (64 Anlagen), daher Bus und mobiles Bodenstromgerät für Großraum je 15 % (Annahme); Schmalrumpf so gesetzt, dass die Gesamtquote bleibt.",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
   ],
   "assumption": true
  },
@@ -190,19 +217,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 50,
-   "baggage_tractor": 88,
-   "pushback_tug": 23,
-   "gpu": 38
+   "bus": 97,
+   "baggage_tractor": 125,
+   "pushback_tug": 26,
+   "gpu": 47,
+   "belt_loader": 116,
+   "stairs": 50,
+   "loader": 38,
+   "catering": 60,
+   "lavatory": 21,
+   "water": 14
   },
   "chargers": {
-   "bus": 20,
-   "baggage_tractor": 31,
-   "pushback_tug": 10,
-   "gpu": 16
+   "bus": 39,
+   "baggage_tractor": 43,
+   "pushback_tug": 11,
+   "gpu": 19,
+   "belt_loader": 116,
+   "stairs": 50,
+   "loader": 19,
+   "catering": 30,
+   "lavatory": 11,
+   "water": 7
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 15, baggage_tractor 40, pushback_tug 16, gpu 16), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 29, baggage_tractor 57, pushback_tug 18, gpu 20, belt_loader 77, stairs 33, loader 25, catering 38, lavatory 13, water 9), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

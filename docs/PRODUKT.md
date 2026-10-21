@@ -74,17 +74,17 @@ Das Modell ist ein unkalibrierter Methodenprototyp (siehe `AGENTS.md`). Das steh
 einmal, klar und ruhig da, nicht in jedem Satz. Vorab-Rechnungen sind echte
 Modellrechnungen, keine Schätzungen. Der Beispielflughafen ist erfunden.
 
-## Stand am 16.10.2026 und was fehlt
+## Stand am 22.10.2026 und was fehlt
 
 | Teil | Stand | Lücke zum Steckbrief |
 | --- | --- | --- |
 | Stufe 1 Ladeinfrastruktur | ohne jede Steuerung gerechnet (höchste Netzlast) | – |
-| Stufen 2–3 (Lademanagement, Speicher) | Rechnung steht (`airport_electrification_v3`), vorab für alle Reglerstellungen gerechnet | Speicherregel ist einfach (lädt unter 80 % des Anschlusses aus dem Netz nach, muss am Ende voll sein); an 263 von 2.640 Stellungen mit Speicher, meist bei viel Parkhaus, senkt der Speicher den Bedarf nicht (157 davon brauchen sogar mehr). Die Treppe schaltet Stufe 3 dann ab, statt eine höhere Zahl zu zeigen |
+| Stufen 2–3 (Lademanagement, Speicher) | Rechnung steht (`airport_electrification_v4`), vorab für alle Reglerstellungen gerechnet: Ladeplanung mit echtem Ladestand und 15 % Reserve, eingeschwungener mittlerer Tag, Speicher lädt aus freier Leistung und bleibt aus, wenn er nichts bringt (nie mehr Anschluss als ohne) | Ladeplanung kennt den Einsatzplan im Voraus; größere Verspätungen und Winter fehlen |
 | Stufe 4 Photovoltaik | Regler (0 bis 4.000 kWp), wirkt auf alle Stufen | noch keine eigene Stufe der Treppe |
-| Stufe 5 Parkhaus | Regler (0 bis 200 Ladevorgänge am Tag) | Parkhaus wird nicht vorausgeplant, nur am vollen Anschluss gleichmäßig mit gedrosselt; kein gemeinsames Lademanagement mit dem Vorfeld |
+| Stufe 5 Parkhaus | Regler (Beispiel 0 bis 200, Flughäfen aus den Ladepunkten); Reisende, Tagesgäste, Schnelllader; mit Lademanagement gemeinsam mit dem Vorfeld gesteuert, jede Frist eingehalten | Anteile der Nutzergruppen und Vorgänge je Ladepunkt sind Annahmen |
 | Stufe 6 Netzausbau | als Satz und rotes Schild unter der Treppe | – |
 | Kundensicht | Startseite: ein Satz, Treppe, Kurve, „So geht es weiter“. Seite für Fachleute unter `?seite=fachleute`: dieselbe Rechnung, ausführlich begründet, von der Startseite verlinkt. Die Reglerstellung steht in der Adresse | eigenes Kundenprojekt noch nicht an die Treppe angeschlossen |
-| Echte Flughäfen | 15 deutsche Flughäfen aus öffentlichen Quellen: Steckbrief, Tagesprofil, Flotte aus dem Modell, eigene Vorab-Tabelle; „Reserve fürs Vorfeld“ statt Anschluss, zuerst offen | Tagesprofile bei 12 Flughäfen aus dem veröffentlichten Flugplan ausgezählt, bei 3 (BER, CGN, LEJ) aus Eckdaten konstruiert; nur vier Fahrzeugklassen mit Kurz- und Mittelstrecken-Verbrauch; nicht mit den Flughäfen abgestimmt |
+| Echte Flughäfen | 15 deutsche Flughäfen aus öffentlichen Quellen: Steckbrief, Tagesprofil, Flotte aus dem Modell, eigene Vorab-Tabelle; „Reserve fürs Vorfeld“ statt Anschluss, zuerst offen | Tagesprofile bei 12 Flughäfen aus dem veröffentlichten Flugplan ausgezählt, bei 3 (BER, CGN, LEJ) aus Eckdaten konstruiert; zehn Fahrzeugklassen mit Großraum- und Frachtflügen, aber ohne Kleinbusse, Pkw und Winter; Flotte aus dem Modell, nicht der Bestand; nicht mit den Flughäfen abgestimmt |
 | Altwerkzeuge | Messdaten-Übergabe, SIL-Läufe, eigene Projekte unter `?seite=labor`, nirgends aus der Kundensicht verlinkt | – |
 | PDF, Präsentationsmodus | Taste P, eine A4-Seite als Handout | – |
 | Kosten | nicht enthalten | erst nach Preisfreigabe durch E.ON |

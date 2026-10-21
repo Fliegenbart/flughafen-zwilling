@@ -12,6 +12,9 @@ from ..munich.coupled_world import steady_cycle
 GRID_STEP_KW = 25
 GRID_MAX_KW = 8000
 ENERGY_TOLERANCE_KWH = 1e-5
+# Messtag (v4): Rundungsreste beim Laden bis genau zum Ladeziel summieren sich ueber den Tag;
+# 0,01 kWh je Fahrzeug bzw. Speicher ist weit unter jeder Messgenauigkeit.
+CYCLE_TOLERANCE_KWH = 0.01
 
 
 def minimum_energy_bound(world: CoupledWorld) -> float:
@@ -65,17 +68,24 @@ def connection_checks(result: CoupledResult) -> dict:
     if k.background_unserved_kwh > ENERGY_TOLERANCE_KWH:
         reasons.append("background_supply")
     # v4: Ende des Messtags gegen seinen Anfang (eingeschwungen), sonst Ende gegen Start.
-    if sum(max(0, v.get('cycle_start_kwh', v['initial_kwh'])
-               - v.get('cycle_end_kwh', v['final_kwh']))
-           for v in result.terminal_vehicles if v['electric']) > ENERGY_TOLERANCE_KWH:
+    electric = [v for v in result.terminal_vehicles if v['electric']]
+    if any('cycle_start_kwh' in v for v in electric):
+        short = any(v['cycle_start_kwh'] - v['cycle_end_kwh'] > CYCLE_TOLERANCE_KWH
+                    for v in electric)
+    else:
+        short = sum(max(0, v['initial_kwh'] - v['final_kwh'])
+                    for v in electric) > ENERGY_TOLERANCE_KWH
+    if short:
         reasons.append("vehicle_recharge")
     storage_start = getattr(e, 'battery_cycle_start_kwh', None)
+    tolerance = ENERGY_TOLERANCE_KWH
     if storage_start is None:
         storage_start, storage_end = e.battery_initial_kwh, e.battery_final_kwh
     else:
         # Fehlbetrag, den ein voll gewordener Speicher ausgleicht (siehe coupled_simulator).
         storage_end = e.battery_cycle_end_kwh + (e.battery_cycle_absorbable_kwh or 0)
-    if storage_end + ENERGY_TOLERANCE_KWH < storage_start:
+        tolerance = CYCLE_TOLERANCE_KWH
+    if storage_end + tolerance < storage_start:
         reasons.append("storage_recharge")
     if max(k.fleet_energy_balance_error_kwh, k.storage_energy_balance_error_kwh) > 1e-6:
         reasons.append("energy_balance")

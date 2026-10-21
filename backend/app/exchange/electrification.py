@@ -370,22 +370,26 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
             "Synthetischer Vorfeldbereich, kein Modell des gesamten Muenchner Flughafens.",
             "180 Ankunfts- und 180 Abflugabfertigungen pro Tag; "
             "drei wiederholte Tage mit durchlaufendem SOC.",
-            "Flotte, Einsatzfenster, 14 GPU-Ladepunkte, 250 kW Grundlast, "
-            "500 kWp PV (Faktor 0,2) und 40 Parkvorgaenge/Tag sind Annahmen.",
-            "Einsatzenergie und Batteriegroesse fuer Gepaeckschlepper, Flugzeugschlepper "
-            "und Bodenstromgeraete: He et al. (2026), Tabelle 1, Narrow-body.",
+            "Flotte in zehn Klassen, Einsatzfenster, Ladepunkte, 250 kW Grundlast, "
+            "500 kWp PV (Faktor 0,2) und Parkvorgaenge sind Annahmen.",
+            "Energie je Einsatz aus Messungen (Fraport-Busse, Stuttgart) und Herstellerangaben "
+            "(ITW, Goldhofer, Charlatte, Kamag), keine Diesel-Lastfaktoren; zwei Busse je Flug.",
             "Gleiche Einsatzzeiten fuer elektrische und nicht-elektrische Fahrzeuge.",
             "Keine Betankung, Kraftstoffkosten oder Emissionen nicht-elektrischer Fahrzeuge.",
             "Anschlussbedarf = erste erfolgreiche Stufe im 25-kW-Raster, "
             "keine exakte Mindestleistung oder Anschlusszusage.",
-            "Erfolg: alle Aufgaben rechtzeitig, Grundlast und Parken versorgt, "
-            "Anfangsladung jedes Fahrzeugs und des Speichers am Ende wiederhergestellt.",
-            "Speicher startet mit 50 %, Fahrzeuge mit 85 %; keine geliehene Anfangsenergie, "
-            "aber kein saisonaler oder zyklischer Jahresnachweis.",
+            "Erfolg: alle Aufgaben rechtzeitig, Grundlast und Parkhaus versorgt; am Ende des "
+            "mittleren Tages sind Fahrzeuge und Speicher mindestens so voll wie an seinem Anfang.",
+            "Speicher startet mit 50 %, Fahrzeuge mit 85 %; gemessen wird der eingeschwungene "
+            "mittlere Tag, kein saisonaler oder Jahresnachweis.",
             "Kein Kosten-, ROI-, Netzschutz- oder Lastflussnachweis.",
             "Gleiche Fahrzeugzuordnung je Auftrag, kein Ausweichen auf Dieselfahrzeuge.",
-            "Vorausschauende Energieplanung mit vollstaendig bekanntem Einsatzplan; "
-            "Heuristik, keine optimale Loesung oder Prognose realer Verspaetungen.",
+            "Vorausschauende Energieplanung mit bekanntem Einsatzplan, echtem Ladestand und "
+            "15 % Planreserve; Heuristik, keine optimale Loesung, keine grossen Verspaetungen.",
+            "Speicher laedt aus der freien Leistung am Anschluss; senkt er den Bedarf nicht, "
+            "bleibt er aus.",
+            "Parkhaus nach Nutzergruppen (Reisende, Tagesgaeste, Schnelllader); mit "
+            "Lademanagement gesteuert, Schnelllader nie gedrosselt.",
             "Direktes Laden ist ebenfalls am vorhandenen Netzanschluss begrenzt.",
             "Ohne Steuerung (uncontrolled): gleiche Flotte, kein Anschluss bremst; Bedarf = "
             "hoechste Netzlast in drei Tagen, auf 25 kW aufgerundet.",
@@ -426,10 +430,12 @@ def _airport_limitations(airport: str) -> list[str]:
         "uebrige Last und die Photovoltaik des Flughafens sind darin schon enthalten.",
         "Flotte aus dem Modell bemessen (kleinste puenktliche Dieselflotte plus Puffer des "
         "Beispielflughafens); keine Angabe des Flughafens.",
-        "Akku, Energie je Einsatz und Ladeleistung wie im Beispielflughafen (He et al. 2026, "
-        "Kurz- und Mittelstrecke; Busse angenommen). Grossraumflugzeuge brauchen mehr.",
-        "Nur vier Fahrzeugklassen (Busse, Gepaeck- und Flugzeugschlepper, mobile "
-        "Bodenstromgeraete); weitere Geraete und Pkw kommen im echten Betrieb dazu.",
+        f"Zehn Fahrzeugklassen mit Energie je Einsatz aus Messungen und Herstellerangaben, "
+        f"getrennt fuer Schmal- und Grossraumflugzeuge ({spec.widebody_share_pct:g} % "
+        f"Grossraum)" + ("; Frachtfluege ohne Bus, Treppe und Catering."
+                         if spec.freight_share_by_hour else "."),
+        "Nicht enthalten: Crew- und Kleinbusse, Pkw, Schlepps zur Parkposition, Enteisung "
+        "und Winterbetrieb.",
         f"Anschlussbedarf = erste erfolgreiche Stufe im {step}-kW-Raster, keine Anschlusszusage.",
         "Erfolg: alle Einsaetze bis zur Frist erledigt, Parkhaus versorgt, Fahrzeuge und "
         "Speicher am Ende wieder geladen.",

@@ -198,16 +198,26 @@ def build_world(
         published = int((datetime.fromisoformat(entry.scheduled_utc) - origin).total_seconds() / 60)
         if not 0 <= published < day_minutes:
             raise ValueError("Flugplaneintrag liegt nicht im UTC-Verkehrstag")
-        # v4: Grossraumflugzeug je Flug zufaellig (fester Seed) nach dem Anteil des Flughafens.
-        aircraft = "wide" if config.widebody_share_pct and int(canonical_hash({
-            "entry": entry.entry_id, "aircraft": "wide", "seed": seed,
-        })[:16], 16) / 2**64 * 100 < config.widebody_share_pct else "narrow"
+        # v4: Fracht- oder Passagierflug nach dem Frachtanteil der Ortsstunde, dann Grossraum
+        # nach dem Anteil des Flughafens (je Gruppe), beides zufaellig mit festem Seed.
+        def draw(name: str, entry_id: str = entry.entry_id) -> float:
+            return int(canonical_hash({
+                "entry": entry_id, name: True, "seed": seed,
+            })[:16], 16) / 2**64 * 100
+
+        hour = datetime.fromisoformat(entry.scheduled_local).hour
+        freight = bool(config.freight_share_by_hour) and (
+            draw("freight") < config.freight_share_by_hour[hour] * 100)
+        wide_share = (config.freight_widebody_share_pct if freight
+                      else config.widebody_share_pct)
+        aircraft = "wide" if wide_share and draw("aircraft_wide") < wide_share else "narrow"
         for fleet in config.fleets:
             serves = fleet.serves or (
                 "departure" if fleet.kind in {"pushback_tug", "gpu"} else "both")
             if serves != "both" and entry.direction != serves:
                 continue
-            energy, service, lead, allowance, units, coverage_pct = fleet.for_aircraft(aircraft)
+            energy, service, lead, allowance, units, coverage_pct = fleet.for_aircraft(
+                aircraft, freight)
             coverage = int(canonical_hash({
                 "entry": entry.entry_id, "kind": fleet.kind, "seed": seed,
             })[:16], 16) / 2**64 * 100
@@ -229,7 +239,7 @@ def build_world(
                     kind=fleet.kind, direction=entry.direction, published_min=published,
                     release_min=release, deadline_min=deadline,
                     duration_min=service, return_min=fleet.return_min, energy_kwh=energy,
-                    aircraft="wide" if aircraft == "wide" else None,
+                    aircraft="wide" if aircraft == "wide" else None, freight=freight,
                 ))
     missions.sort(key=lambda m: (m.release_min, m.deadline_min, m.mission_id))
     if not missions:

@@ -119,9 +119,9 @@ export default function OekosystemCheck() {
               <p className={profile ? "oe-answer oe-answer--scoped" : "oe-answer"}>{sentence}</p>
               {profile ? (
                 <p className="oe-scope">
-                  Das Modell rechnet mit {int(modelFleet(profile))} Fahrzeugen auf dem Vorfeld und
-                  dem Verbrauch für Kurz- und Mittelstrecke. Weitere Geräte und Großraumflugzeuge
-                  kommen im echten Betrieb dazu.
+                  Das Modell rechnet mit {int(modelFleet(profile))} Fahrzeugen in zehn Gerätearten
+                  auf dem Vorfeld, Großraumflugzeuge eingeschlossen. Kleinbusse, Pkw und
+                  Winterbetrieb kommen im echten Betrieb dazu.
                 </p>
               ) : null}
               <Treppe

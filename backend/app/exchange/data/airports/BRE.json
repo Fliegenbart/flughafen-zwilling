@@ -81,7 +81,13 @@
   "bus": 35,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 50
+  "gpu": 50,
+  "belt_loader": 100,
+  "stairs": 60,
+  "loader": 5,
+  "catering": 40,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Gepäckschlepper 100 % und Pushback 100 % (Standardwerte): Laut FBO dürfen Flugzeuge Nose-in-Positionen nur mit Schlepperhilfe verlassen; wie viele Abflüge ohne Pushback auskommen, ist nicht veröffentlicht. Busse 35 % (Annahme): Das Hauptterminal hat 5 Fluggastbrücken bei 18 Gates (A01–A14, B01–B04), für Terminal 2 sieht das Flugplatzhandbuch Walk-Deboarding vor. Im Wochenflugplan 21.–27.10.2026 entfallen 48 % der Abflüge auf Netzwerkairlines, 24 % auf Ryanair und 28 % auf Urlaubs- und Charterairlines. Wie viele Flüge per Bus abgefertigt werden, ist nicht veröffentlicht. Bodenstromgeräte 50 % (Annahme): Stationären Bodenstrom stellt der Flughafen an den Fluggastbrücken und den nördlichen Außenpositionen bereit (Anhang A, Stand 2019), mobile Geräte bietet er als Leistung an. Die Zahl der Positionen mit festem Anschluss ist nicht veröffentlicht.",
@@ -94,6 +100,23 @@
    "https://www.bremen-airport.com/fluginfo/fluege/wochenflugplan"
   ],
   "assumption": true
+ },
+ "equipment_basis": {
+  "text": "5 Fluggastbrücken bei 18 Gates, Walk-Deboarding an Terminal 2; Treppen Annahme 60 %. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (5 %). Catering einmal je Abflug (40 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote.",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {},
+ "widebody_share_pct": 0,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "Destatis (über 175 t): 13–14 Bewegungen im Jahr, also 0 %.",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
+  ],
+  "assumption": false
  },
  "electric_share_now_pct": 32,
  "electric_share_basis": {
@@ -171,19 +194,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 7,
+   "bus": 14,
    "baggage_tractor": 9,
    "pushback_tug": 3,
-   "gpu": 5
+   "gpu": 5,
+   "belt_loader": 11,
+   "stairs": 8,
+   "loader": 3,
+   "catering": 4,
+   "lavatory": 2,
+   "water": 2
   },
   "chargers": {
-   "bus": 3,
+   "bus": 6,
    "baggage_tractor": 4,
    "pushback_tug": 2,
-   "gpu": 2
+   "gpu": 2,
+   "belt_loader": 11,
+   "stairs": 8,
+   "loader": 2,
+   "catering": 2,
+   "lavatory": 1,
+   "water": 1
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 2, baggage_tractor 4, pushback_tug 2, gpu 2), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 4, baggage_tractor 4, pushback_tug 2, gpu 2, belt_loader 7, stairs 5, loader 2, catering 2, lavatory 1, water 1), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

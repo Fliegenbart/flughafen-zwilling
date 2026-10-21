@@ -83,7 +83,13 @@
   "bus": 55,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 25
+  "gpu": 25,
+  "belt_loader": 100,
+  "stairs": 55,
+  "loader": 10,
+  "catering": 40,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Gepäck-/Frachtschlepper 100 %: Jeder Flug braucht Gepäck- oder Frachttransport. Pushback 100 %: Die FSG-Tochter SAG schiebt die Flugzeuge zurück; Ausnahmen sind nicht veröffentlicht. Bus 55 % (Annahme): Stuttgart hat 8 Fluggastbrücken (je 4 an Terminal 1 und 3), die übrigen Gates sind Busgates. Bei 6–8 Umläufen je Brücke und Tag fertigen die Brücken 37–49 % der rund 130 Abflüge ab; Frachtflüge (rund 1 % der Abflüge laut Flugplantafel) brauchen keinen Bus. Daraus folgen 50–62 % mit Bus, angesetzt sind 55 %. GPU 25 % (Annahme): 75 % der Passagier-Abstellpositionen haben stationären 400-Hz-Bodenstrom (Stand 09/2024); auf dem Fracht-Vorfeld sind seit 2026 alle Positionen ans Netz angeschlossen. Angesetzt: Der Anteil der Positionen ohne festen Bodenstrom entspricht dem Anteil der Abflüge mit mobilem Gerät.",
@@ -95,6 +101,23 @@
    "https://www.avionio.com/en/airport/str/departures"
   ],
   "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Treppen wie Busse. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (10 %). Catering einmal je Abflug (40 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote.",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {},
+ "widebody_share_pct": 0,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "Destatis 2019 0,61 % fast nur durch Delta Atlanta (B767), die Strecke ist seit 27.10.2024 eingestellt; seitdem keine planmäßige Langstrecke, daher 0 %.",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
+  ],
+  "assumption": false
  },
  "electric_share_now_pct": null,
  "electric_share_basis": {
@@ -177,19 +200,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 17,
+   "bus": 34,
    "baggage_tractor": 18,
    "pushback_tug": 8,
-   "gpu": 10
+   "gpu": 10,
+   "belt_loader": 24,
+   "stairs": 17,
+   "loader": 3,
+   "catering": 8,
+   "lavatory": 5,
+   "water": 5
   },
   "chargers": {
-   "bus": 7,
+   "bus": 14,
    "baggage_tractor": 7,
    "pushback_tug": 4,
-   "gpu": 4
+   "gpu": 4,
+   "belt_loader": 24,
+   "stairs": 17,
+   "loader": 2,
+   "catering": 4,
+   "lavatory": 3,
+   "water": 3
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 5, baggage_tractor 8, pushback_tug 5, gpu 4), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 10, baggage_tractor 8, pushback_tug 5, gpu 4, belt_loader 16, stairs 11, loader 2, catering 5, lavatory 3, water 3), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

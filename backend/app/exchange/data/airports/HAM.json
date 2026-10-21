@@ -81,7 +81,13 @@
   "bus": 35,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 30
+  "gpu": 30,
+  "belt_loader": 100,
+  "stairs": 40,
+  "loader": 10,
+  "catering": 40,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Gepäckschlepper und Pushback: 100 %, eine Ausnahme ist nicht belegt. Busse 35 % (Annahme): Die Pier hat 15 Fluggastbrücken, davon 2 doppelte, und 4 Walk-in-Positionen; die Vorfelder 1 und 2 haben 44 gewerbliche Positionen (33 + 11). An allen übrigen Positionen fahren die Fluggäste mit dem Bus. Schon die Morgenwelle mit 24 Abflügen pro Stunde übersteigt die 19 Pier-Positionen. Welche Gates Busgates sind, ist nicht veröffentlicht. Reine Frachtflüge zieht die Rechnung nicht ab, weil keine Zahl veröffentlicht ist. Bodenstromgeräte 30 % (Annahme): Die Brückenpositionen erhalten Strom und klimatisierte Luft aus dem eigenen BHKW. Bei der Erneuerung von Vorfeld 1 erhielt der Großteil der Außenpositionen eine feste Stromversorgung. Für Vorfeld 2 ist nichts veröffentlicht. Nach Positionen gezählt fehlt ein fester Anschluss an etwa 25 bis 45 %; da Pier-Positionen öfter belegt sind, gelten 30 %.",
@@ -91,6 +97,27 @@
    "https://www.aerotelegraph.com/hamburg-arbeitet-an-stromversorgung-auf-dem-vorfeld",
    "https://hamburg-business.com/en/news/renewal-hamburg-airports-apron-complete-after-four-year-build",
    "https://www.hamburg-airport.de/de/abfliegen-ankommen/abflug"
+  ],
+  "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Treppen an Bus- und den 4 Walk-in-Positionen, Annahme 40 %. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (10 %). Catering einmal je Abflug (40 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote.",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {
+  "bus": 10,
+  "gpu": 10,
+  "stairs": 10
+ },
+ "widebody_share_pct": 1.5,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "Destatis (über 175 t): 2019 1,5 %, 2022 2,2 %; heute vor allem zwei tägliche Emirates-Umläufe an einer Position mit 3 Brücken, daher 1,5 %. Großraum Bus und GPU je 10 % (Annahme).",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
   ],
   "assumption": true
  },
@@ -168,19 +195,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 20,
+   "bus": 40,
    "baggage_tractor": 25,
    "pushback_tug": 10,
-   "gpu": 19
+   "gpu": 19,
+   "belt_loader": 32,
+   "stairs": 20,
+   "loader": 6,
+   "catering": 11,
+   "lavatory": 10,
+   "water": 5
   },
   "chargers": {
-   "bus": 8,
+   "bus": 16,
    "baggage_tractor": 9,
    "pushback_tug": 4,
-   "gpu": 8
+   "gpu": 8,
+   "belt_loader": 32,
+   "stairs": 20,
+   "loader": 3,
+   "catering": 6,
+   "lavatory": 5,
+   "water": 3
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 6, baggage_tractor 11, pushback_tug 7, gpu 8), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 12, baggage_tractor 11, pushback_tug 7, gpu 8, belt_loader 21, stairs 13, loader 4, catering 7, lavatory 6, water 3), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

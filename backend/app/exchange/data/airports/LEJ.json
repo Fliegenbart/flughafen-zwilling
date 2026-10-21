@@ -79,10 +79,16 @@
   "assumption": true
  },
  "coverage_pct": {
-  "bus": 18,
+  "bus": 50,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 100
+  "gpu": 100,
+  "belt_loader": 100,
+  "stairs": 55,
+  "loader": 5,
+  "catering": 40,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Bus: nicht veröffentlicht, wie viele Flüge per Bus abgefertigt werden. Belegt sind 25 Abstellpositionen und 6 Fluggastbrücken der Flughafengesellschaft; das DHL-Vorfeld bietet Platz für bis zu 65 Flugzeuge. Frachtflüge haben keine Fluggäste: 2025 gab es laut Landesregierung 49.634 Frachtbewegungen bei 65.684 Bewegungen im Linien- und Charterverkehr (ADV). Annahme: Frachtflüge verteilen sich gleichmäßig übers Jahr (im Mittel 68 Abflüge pro Tag), Passagierflüge wie die Fluggäste (Oktober 14,2 % des Jahres). Für Oktober 2025 ergibt das rund 68 Fracht- und 37 Passagierabflüge pro Tag, also 35 % Passagierflüge. Annahme: etwa die Hälfte der Passagierflüge fährt mit dem Bus, 0,35 × 0,5 ≈ 18 %. Schlepper: 100 %. Pushback: 100 %, nicht anders belegt. GPU: fester 400-Hz-Strom an Positionen ist nicht veröffentlicht, Annahme 100 %.",
@@ -93,6 +99,54 @@
    "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf",
    "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf"
   ],
+  "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Treppen an Bus- und gebäudenahen Positionen ohne Brücke, Annahme 55 % der Passagierflüge. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (5 %). Catering einmal je Abflug (40 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote. Bus 50 % und Bodenstrom 100 % gelten jetzt für Passagierflüge (Fracht siehe unten).",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {},
+ "widebody_share_pct": 0,
+ "freight_widebody_share_pct": 30,
+ "widebody_basis": {
+  "text": "Destatis (über 175 t): 2019 16,1 %, 2022 22,0 % aller Bewegungen mit nur 6.000–13.000 Fluggästen, also reine Frachter (DHL, AeroLogic). Passagier-Großraum 0 %, Frachter rund 30 % Großraum (2025 weniger Frachtbewegungen bei gleich vielen Großraumfrachtern).",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
+  ],
+  "assumption": true
+ },
+ "freight_share_by_hour": [
+  0.95,
+  0.95,
+  0.95,
+  0.95,
+  0.95,
+  0.95,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.95,
+  0.95
+ ],
+ "freight_basis": {
+  "text": "Oktober 2025 rund 68 Fracht- und 37 Passagierabflüge am Tag (65 % Fracht); 73 % der Frachtbewegungen liegen zwischen 22 und 6 Uhr (Landesregierung 2025). Annahme: nachts 95 % der Flüge Fracht, tagsüber 34 %; das ergibt die 65 %. Frachtflüge brauchen keinen Bus, keine Treppe, kein Catering und keinen Wasser- oder Toilettenwagen.",
+  "sources": [],
   "assumption": true
  },
  "electric_share_now_pct": null,
@@ -219,19 +273,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 10,
-   "baggage_tractor": 18,
+   "bus": 14,
+   "baggage_tractor": 38,
    "pushback_tug": 6,
-   "gpu": 21
+   "gpu": 47,
+   "belt_loader": 24,
+   "stairs": 6,
+   "loader": 23,
+   "catering": 5,
+   "lavatory": 4,
+   "water": 2
   },
   "chargers": {
-   "bus": 4,
-   "baggage_tractor": 7,
+   "bus": 6,
+   "baggage_tractor": 14,
    "pushback_tug": 3,
-   "gpu": 9
+   "gpu": 19,
+   "belt_loader": 24,
+   "stairs": 6,
+   "loader": 12,
+   "catering": 3,
+   "lavatory": 2,
+   "water": 1
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 3, baggage_tractor 8, pushback_tug 4, gpu 9), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 4, baggage_tractor 17, pushback_tug 4, gpu 20, belt_loader 16, stairs 4, loader 15, catering 3, lavatory 2, water 1), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

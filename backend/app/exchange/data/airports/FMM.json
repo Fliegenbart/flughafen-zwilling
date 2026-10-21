@@ -83,7 +83,13 @@
   "bus": 35,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 75
+  "gpu": 75,
+  "belt_loader": 100,
+  "stairs": 100,
+  "loader": 0,
+  "catering": 20,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Vorfeld: 6 Abstellpositionen, ab Herbst 2026 zusammen 8 (airliners.de, 09.06.2026). Zu Fuß erreichbar sind heute 2 Positionen direkt vor dem Terminal, nach dem Umbau 4 (Schwäbische Zeitung 04.02.2026, Pressemitteilung 28.08.2026); an den übrigen fahren Erdgas-Vorfeldbusse. Der Busanteil der Flüge ist nicht veröffentlicht. Nach Positionen wären es 50 %; zu Fuß erreichbare Positionen dürften bevorzugt belegt werden, daher Annahme bus 35 (Standardwert). gpu: Die 2 neuen Positionen erhalten Bodenstrom aus den eigenen Solaranlagen. Annahme: fest installiert, alle Positionen gleich oft belegt, daraus 75; bei bevorzugter Belegung der neuen Positionen weniger. Sonst liefern mobile Geräte den Strom (seit 2025 4 eGPUs, dazu Diesel-GPUs mit GTL). Keine Fracht. Schlepper und Pushback: 100 % (Annahme, keine Angaben zu Positionen ohne Pushback).",
@@ -94,6 +100,23 @@
    "https://www.memmingen-airport.de/wp-content/uploads/2025/05/Nachhaltigkeitsbericht_FMM_2024_FINAL_WEB_ES-NEW.pdf"
   ],
   "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Keine Fluggastbrücken; Treppen bei allen Flügen. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (0 %). Catering einmal je Abflug (20 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote.",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {},
+ "widebody_share_pct": 0,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "Destatis (über 175 t): keine Bewegung 2019 und 2022, also 0 %.",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
+  ],
+  "assumption": false
  },
  "electric_share_now_pct": 43,
  "electric_share_basis": {
@@ -179,19 +202,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 7,
+   "bus": 14,
    "baggage_tractor": 7,
    "pushback_tug": 2,
-   "gpu": 7
+   "gpu": 7,
+   "belt_loader": 8,
+   "stairs": 8,
+   "loader": 0,
+   "catering": 4,
+   "lavatory": 2,
+   "water": 2
   },
   "chargers": {
-   "bus": 3,
+   "bus": 6,
    "baggage_tractor": 3,
    "pushback_tug": 1,
-   "gpu": 3
+   "gpu": 3,
+   "belt_loader": 8,
+   "stairs": 8,
+   "loader": 0,
+   "catering": 2,
+   "lavatory": 1,
+   "water": 1
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 2, baggage_tractor 3, pushback_tug 1, gpu 3), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 4, baggage_tractor 3, pushback_tug 1, gpu 3, belt_loader 5, stairs 5, loader 0, catering 2, lavatory 1, water 1), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

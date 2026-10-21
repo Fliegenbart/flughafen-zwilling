@@ -6,15 +6,22 @@
 import { useEffect, useRef } from "react";
 import type { AirportProfile, Basis } from "../api/electrification";
 import { useNav } from "../context";
-import { int } from "../model/format";
+import { dec1, int } from "../model/format";
 import { kw } from "./stufen";
 import { keepPresentationAcrossSwitch } from "./usePresentation";
 
-const FLEET_NAMES: Record<string, string> = {
+/** Fahrzeugklassen des Modells (backend electrification_reference.CLASSES). */
+export const FLEET_NAMES: Record<string, string> = {
   bus: "Vorfeldbusse",
   baggage_tractor: "Gepäckschlepper",
   pushback_tug: "Flugzeugschlepper",
   gpu: "Bodenstromgeräte",
+  belt_loader: "Förderbänder",
+  stairs: "Passagiertreppen",
+  loader: "Container-Hublader",
+  catering: "Catering-Hubwagen",
+  lavatory: "Toilettenwagen",
+  water: "Frischwasserwagen",
 };
 
 const host = (url: string) => {
@@ -168,8 +175,21 @@ export function AirportModel({ profile }: { profile: AirportProfile }) {
       </Item>
       <Item title="Tagesprofil" basis={profile.profile_basis} />
       <Item title="Einsätze je Flug" basis={profile.coverage_basis}>
-        {`${coverage} der Flüge`}
+        {`${coverage} der Schmalrumpf-Passagierflüge, je Flug zwei Busse`}
       </Item>
+      <Item title="Weitere Geräte" basis={profile.equipment_basis}>
+        {`Förderbänder, Treppen, Hublader, Catering-, Toiletten- und Wasserwagen`}
+      </Item>
+      <Item title="Großraumflugzeuge" basis={profile.widebody_basis}>
+        {profile.freight_basis
+          ? `${dec1(profile.widebody_share_pct)} % der Passagierflüge, ${dec1(profile.freight_widebody_share_pct)} % der Frachtflüge`
+          : `${dec1(profile.widebody_share_pct)} % der Flüge`}
+      </Item>
+      {profile.freight_basis ? (
+        <Item title="Frachtflüge" basis={profile.freight_basis}>
+          vor allem nachts, ohne Bus, Treppe und Catering
+        </Item>
+      ) : null}
       <Item title="Flotte im Modell" basis={profile.fleet.basis}>
         {`${fleet}. Aus dem Modell bemessen, nicht der echte Bestand. Wo veröffentlicht, ist der echte Bestand größer, auch innerhalb dieser Klassen`}
       </Item>

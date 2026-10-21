@@ -1,6 +1,7 @@
 """Ein echter Flughafen im Elektrifizierungsmodell: Flugplan, Flotte und Raster aus dem Steckbrief.
 
-Gerechnet wird das ganze Vorfeld (vier Fahrzeugklassen) an einem typischen Tag im Spitzenmonat.
+Gerechnet wird das ganze Vorfeld (zehn Fahrzeugklassen, Schmal- und Grossraumflugzeuge,
+Passagier- und Frachtfluege) an einem typischen Tag im Spitzenmonat.
 "Anschluss" heisst hier: die Leistung, die das Flughafennetz fuer das Laden bereitstellt
 (Reserve fuer das Vorfeld, inklusive Laden im Parkhaus). Die uebrige Last des Flughafens ist darin
 schon abgezogen, deshalb rechnet das Modell keine Grundlast und keine Flughafen-PV mit.
@@ -131,12 +132,18 @@ def airport_config(spec: AirportSpec, vehicles: dict[str, int] | None = None,
             "vehicles": vehicles[fleet.kind],
             "chargers": (chargers or {})[fleet.kind] if chargers else fleet.chargers,
             "coverage_pct": spec.coverage_pct[fleet.kind],
+            "wide_coverage_pct": spec.wide_coverage_pct.get(fleet.kind,
+                                                            fleet.wide_coverage_pct),
         }))
     with trusted_scale():
         return CoupledConfig(
             fleets=fleets, repeat_days=3,
-            # Nachtverkehr: Einsaetze vor Mitternacht und nach dem dritten Tag abdecken.
-            warmup_min=90, drain_min=120,
+            # Nachtverkehr: Einsaetze vor Mitternacht (Grossraum-Bodenstrom bis gut 2 h vor dem
+            # Abflug) und nach dem dritten Tag abdecken.
+            warmup_min=150, drain_min=120,
+            widebody_share_pct=spec.widebody_share_pct,
+            freight_share_by_hour=spec.freight_share_by_hour,
+            freight_widebody_share_pct=spec.freight_widebody_share_pct,
             power=PowerConfig(
                 background_load_kw=0, chp_output_kw=0, pv_capacity_kwp=0, pv_peak_factor=0.2,
                 parking_sessions=spec.parking_sessions_per_day,

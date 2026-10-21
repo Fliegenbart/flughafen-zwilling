@@ -182,7 +182,14 @@ export type AirportProfile = {
   departures_basis: Basis;
   profile_basis: Basis;
   coverage_pct: Record<string, number>;
+  wide_coverage_pct?: Record<string, number>;
   coverage_basis: Basis;
+  equipment_basis: Basis;
+  widebody_share_pct: number;
+  freight_widebody_share_pct: number;
+  widebody_basis: Basis;
+  freight_share_by_hour?: number[] | null;
+  freight_basis?: Basis | null;
   electric_share_now_pct: number | null;
   electric_share_basis: Basis;
   parking_sessions_per_day: number;

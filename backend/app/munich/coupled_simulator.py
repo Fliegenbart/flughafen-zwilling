@@ -459,8 +459,9 @@ def simulate_coupled(
         if cycle_end == world.end_min:
             cycle_final = {v.id: v.energy for v in electric_fleet}
             energy.battery_cycle_end_kwh = energy.battery_final_kwh
-        energy.vehicle_recharge_deficit_kwh = clean(math.fsum(max(
-            0, cycle_energy[v.id] - cycle_final[v.id]) for v in electric_fleet))
+        # Rundungsreste unter 0,01 kWh je Fahrzeug zaehlen nicht (grid_sizing.CYCLE_TOLERANCE_KWH).
+        energy.vehicle_recharge_deficit_kwh = clean(math.fsum(
+            gap for v in electric_fleet if (gap := cycle_energy[v.id] - cycle_final[v.id]) > 0.01))
         # Ein Speicher, der am Messtag voll wurde, pendelt sich unter dem Anfangsstand ein, wenn
         # er den Fehlbetrag bei vollem Speicher noch haette aufnehmen koennen (gleicher Verlauf,
         # nur tiefer, bis er wieder voll ist) und dabei die Reserve nicht erreicht.

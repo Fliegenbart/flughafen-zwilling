@@ -1,3 +1,95 @@
+# Anschlussvergleich v4: eingeschwungen, gesteuert, ganzes Vorfeld
+
+Seit dem Modell-Paket 1+3 (Oktober 2026) rechnen Startseite und Fachleute-Seite mit
+`airport_electrification_v4`. v3 bleibt fuer eingefrorene Laeufe unveraendert erhalten
+(Abschnitte weiter unten). Grundlage sind zwei gegengepruefte Recherchen (Verbrauch je Einsatz,
+Parkhaus, weitere Geraete, Grossraum, Fracht); jede Zahl unten traegt ihre Herkunft.
+
+## Was sich in v4 aendert
+
+- **Speicher**: laedt aus allem, was am Anschluss in derselben Minute frei bleibt (bisher nur
+  bis 80 % des Anschlusses), und entlaedt nur ueber Anschluss plus PV. Die Stufe mit Speicher
+  wird nur bis zum Bedarf ohne Speicher gesucht; besteht der laufende Speicher dort nicht, bleibt
+  er aus (`storage_mode: "off"`, rechnet genau wie ohne Speicher). Mit Speicher braucht es damit
+  nie mehr Anschluss als ohne.
+- **Ladeplanung** (`known_duty_soc_feedback_v2`): rechnet mit dem echten Ladestand statt mit
+  dem nominal verbrauchten Anteil und plant 15 % Reserve auf kuenftige Einsaetze
+  (`charging_plan.PLAN_MARGIN`). Die v3-Planung scheiterte schon bei 10 % Verbrauchsabweichung
+  an jeder Anschlussgroesse.
+- **Eingeschwungener Messtag** (`coupled_world.steady_cycle`): Erfolg misst sich am mittleren der
+  drei Tage. Tag 1 schwingt vom Startstand ein, Tag 3 laeuft normal weiter, damit das Rechenende
+  nichts verzerrt. Fahrzeuge und Speicher muessen am Ende des Messtags mindestens so voll sein
+  wie an seinem Anfang. Ein Speicher, der am Messtag voll wurde, darf einen Fehlbetrag haben,
+  den er bei vollem Speicher noch haette aufnehmen koennen, solange er dabei die Reserve nicht
+  erreicht: Er pendelt sich dann knapp darunter ein (per Fixpunkt-Test bestaetigt). Die
+  Energie-Untergrenze der Suche zaehlt nur Arbeit, die ganz im Messtag liegt.
+- **Parkhaus** nach Nutzergruppen: Reisende (Ankunft 2-3 h vor dem Abflug, Frist bis 24 h,
+  15-30 kWh), Tagesgaeste (2 h vorher, 10-16 h, 5-20 kWh) und Schnelllader (75 kW, Frist =
+  Ladezeit + 5 min, nie verschoben oder gedrosselt). Mit Lademanagement laedt jeder Vorgang
+  mindestens die gleichmaessige Rate bis zu seiner Frist und fuellt darueber freie Leistung nach
+  Vorfeld, Schnellladern und Speicher. Ohne Steuerung laedt jedes Auto sofort.
+- **Zehn Fahrzeugklassen** statt vier, mehrere Fahrzeuge je Flug, eigene Werte fuer
+  Grossraumflugzeuge und Frachtfluege (siehe Tabelle).
+
+## Erfolgsvertrag v4
+
+Eine Anschlussstufe besteht, wenn alle Einsaetze bis zu ihrer Frist erledigt sind, die
+Grundlast versorgt ist, jeder Parkvorgang mit Frist im Horizont voll ist (Fristen nach dem
+Rechenende werden nicht geprueft) und am Messtag Fahrzeuge und Speicher eingeschwungen sind.
+Die unabhaengigen Energiebilanzen muessen stimmen.
+
+## Fahrzeugklassen und Verbrauch (v4)
+
+Energie je Einsatz akkuseitig. "je Flug" = Fahrzeuge je Flugrichtung (Catering, Toiletten-
+und Wasserwagen nur beim Abflug). Grossraumwerte in Klammern. Die Werte aus He et al. (2026)
+beruhen auf Nennleistung mal Diesel-Lastfaktor und sind fuer Elektrogeraete 3- bis 5-mal zu
+hoch; uebernommen sind dort nur Akkugroessen und Einsatzzeiten.
+
+| Klasse | je Flug | kWh je Einsatz | Service + Rueckweg | Akku / Laden | Herkunft |
+| --- | --- | --- | --- | --- | --- |
+| Vorfeldbus | 2 (4) | 6,5 (6,5) | 15 + 10 min | 300 kWh / 80 kW | Fraport-Messung (Hess et al. 2023), 70 Plaetze je Bus |
+| Gepaeckschlepper | 1 (3) | 2,5 (3,0) | 20 (35) + 5 min | 50 / 22 | CARB/SMF-Messung, Physik |
+| Flugzeugschlepper | 1 | 3,0 (8,0) | 10 (15) + 10 min | 72 / 80 | Physik, Mototok, Goldhofer PHOENIX E |
+| Bodenstromgeraet | 1 (2) | 16 (42,5) | 40 (100) + 5 min | 160 / 50 | ITW GSE 7400, EUROCONTROL-Bodenzeiten |
+| Foerderband | 2 (1) | 1,0 (1,5) | 20 (30) + 5 min | 30 / 11 | Physik, Charlatte, EPRI, Stuttgart |
+| Passagiertreppe | 2 (2) | 1,0 (1,3) | 20 (30) + 5 min | 30 / 6 | Stuttgart-Messung (3,26 kWh/Bh) |
+| Container-Hublader | 2 (2) | 1,5 (3,5) | 15 (30) + 5 min | 65 / 22 | Physik, Trepel, AeroGround-Gegenprobe |
+| Catering-Hubwagen | 1 (2) | 10 (12) | 25 (40) + 30 min | 120 / 22 | Kamag ECW, Physik |
+| Toilettenwagen | 1 | 2,5 (4,0) | 10 (20) + 15 min | 40 / 12 | Charlatte, AeroGround-Gegenprobe |
+| Frischwasserwagen | 1 | 2,0 (3,0) | 10 (15) + 15 min | 40 / 12 | Physik, AeroGround-Gegenprobe |
+
+Abdeckung je Flughafen im Steckbrief (`coverage_pct`, `wide_coverage_pct`): Busse und Treppen
+nur ohne Fluggastbruecke, mobiler Bodenstrom nur ohne feste 400-Hz-Anlage, Hublader bei
+Schmalrumpf nur mit Containern (Drehkreuz 20 %, sonst 0-10 %), Catering 20-80 %, Toiletten-
+wagen 60 %, Frischwasser 40 % der Schmalrumpf-Abfluege, Grossraum immer. Frachtfluege (CGN,
+LEJ; Anteil je Ortsstunde im Steckbrief) bekommen keinen Bus, keine Treppe, kein Catering,
+keinen Toiletten- oder Wasserwagen und immer mobilen Bodenstrom. Grossraumanteil an
+Passagierfluegen am Spitzentag (Destatis, Betreiberzahlen): FRA 22 %, MUC 10 %, DUS 2,5 %,
+BER 2 %, HAM 1,5 %, NUE und HAJ 0,5 %, sonst 0; an Frachtfluegen CGN 50 %, LEJ 30 %.
+
+Flotte: kleinste puenktliche Dieselflotte je Klasse mal Puffer; fuer die vier bisherigen
+Klassen der Puffer der alten Referenz (Busse 3,3x, Gepaeck 2,2x, Schlepper 1,4x, Bodenstrom
+2,3x), fuer die neuen 1,5x. In MUC ergibt das 97 Busse und 47 Bodenstromgeraete (AeroGround
+2025: 95 und 53). Ladepunkte: Baender und Treppen 1 je Fahrzeug (langsam am Abstellplatz),
+die uebrigen neuen Klassen 1 je 2 Fahrzeuge, die bisherigen wie in der Referenz.
+
+Gegenprobe: Auf den Umfang der AeroGround-Flotte zurueckgerechnet (dort fahren Pushback,
+Catering, Wasser- und Toilettenwagen nicht elektrisch) ergibt das Modell rund 20-26 kWh Strom
+je Abfertigung netzseitig; gemessen sind 25,9 (Umwelterklaerung 2025, mit unsicherem
+Nenner). Mit nur den alten vier Klassen waeren es 17-20 kWh.
+
+## Grenzen v4
+
+- Ein typischer Tag im Spitzenmonat; Winter (Heizung, kalter Akku) und Spitzentage fehlen.
+- Crew- und Kleinbusse, Pkw, Schlepps zur Parkposition, Enteisung und Betankung fehlen.
+- Frachter: Hauptdeck-Ladung ist nur ueber Hublader und Grossraum-Gepaeckzuege angenaehert.
+- Bus und mobiler Bodenstrom werden je Klasse unabhaengig gelost, nicht als gemeinsame
+  Aussenposition.
+- Anteile fuer Catering, Toiletten- und Wasserwagen sowie Container bei Schmalrumpf sind
+  Annahmen ohne veroeffentlichte Quote.
+
+---
+
 # Anschlussvergleich v3: vorausschauend laden, fair vergleichen
 
 Die aktuelle Startseite nutzt `airport_electrification_v3`. Sie prueft die

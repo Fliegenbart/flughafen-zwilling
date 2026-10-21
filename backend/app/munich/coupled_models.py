@@ -96,20 +96,27 @@ class FleetSpec(StrictModel):
                                                    exclude_if=lambda value: value is None)
     wide_coverage_pct: float | None = Field(default=None, ge=0, le=100,
                                             exclude_if=lambda value: value is None)
+    # Reine Frachtfluege: Abdeckung der Klasse (z. B. 0 fuer Busse); ohne Angabe wie Passagiere.
+    freight_coverage_pct: float | None = Field(default=None, ge=0, le=100,
+                                               exclude_if=lambda value: value is None)
 
-    def for_aircraft(self, aircraft: str) -> tuple[float, int, int, int, int, float]:
+    def for_aircraft(self, aircraft: str, freight: bool = False,
+                     ) -> tuple[float, int, int, int, int, float]:
         """(Energie, Servicezeit, Vorlauf Abflug, Zeitfenster Ankunft, Fahrzeuge je Flug,
-        Abdeckung) fuer Schmal- oder Grossraumflugzeuge."""
+        Abdeckung) fuer Schmal- oder Grossraumflugzeuge, Passagier- oder Frachtflug."""
         wide = aircraft == "wide"
 
         def pick(narrow, wide_value):
             return wide_value if wide and wide_value is not None else narrow
+        coverage = pick(self.coverage_pct, self.wide_coverage_pct)
+        if freight and self.freight_coverage_pct is not None:
+            coverage = self.freight_coverage_pct
         return (pick(self.mission_energy_kwh, self.wide_mission_energy_kwh),
                 pick(self.service_duration_min, self.wide_service_duration_min),
                 pick(self.departure_lead_min, self.wide_departure_lead_min),
                 pick(self.arrival_allowance_min, self.wide_arrival_allowance_min),
                 pick(self.units_per_flight, self.wide_units_per_flight),
-                pick(self.coverage_pct, self.wide_coverage_pct))
+                coverage)
 
     @model_validator(mode="after")
     def validate_physics(self) -> FleetSpec:
@@ -254,9 +261,17 @@ class CoupledConfig(StrictModel):
     # Engine v4: Anteil der Fluege mit Grossraumflugzeug (zufaellig je Flug, fester Seed).
     widebody_share_pct: float = Field(default=0, ge=0, le=100,
                                       exclude_if=lambda value: value == 0)
+    # Engine v4: Anteil Frachtfluege je Ortsstunde (0..1) und ihr Grossraumanteil.
+    freight_share_by_hour: list[float] | None = Field(
+        default=None, min_length=24, max_length=24, exclude_if=lambda value: value is None)
+    freight_widebody_share_pct: float = Field(default=0, ge=0, le=100,
+                                              exclude_if=lambda value: value == 0)
 
     @model_validator(mode="after")
     def unique_fleets(self) -> CoupledConfig:
+        if self.freight_share_by_hour is not None and any(
+                not 0 <= s <= 1 for s in self.freight_share_by_hour):
+            raise ValueError("Frachtanteil je Stunde zwischen 0 und 1")
         if len({f.kind for f in self.fleets}) != len(self.fleets):
             raise ValueError("Fahrzeugklasse mehrfach definiert")
         if sum(f.vehicles for f in self.fleets) > limit("fleet_total"):
@@ -283,6 +298,7 @@ class Mission(StrictModel):
     energy_kwh: float = Field(gt=0)
     service_day: int = Field(default=0, ge=0, le=2, exclude_if=lambda value: value == 0)
     aircraft: Aircraft | None = Field(default=None, exclude_if=lambda value: value is None)
+    freight: bool = Field(default=False, exclude_if=lambda value: not value)
 
 
 class ParkingJob(StrictModel):

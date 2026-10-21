@@ -80,10 +80,16 @@
   "assumption": false
  },
  "coverage_pct": {
-  "bus": 42,
+  "bus": 52,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 33
+  "gpu": 38,
+  "belt_loader": 100,
+  "stairs": 52,
+  "loader": 20,
+  "catering": 80,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Bus: 2014 fertigte Fraport 44,7 % der Passagierflüge auf Vorfeldpositionen ab; Passagierflüge waren 93,2 % aller Flüge, Frachtflugzeuge stehen grundsätzlich nicht am Gebäude (Antwort der Landesregierung, Drs. 19/1585). 44,7 % × 93,2 % = 42 %; mit dem heutigen Passagieranteil (625 von 664 Abflügen, 94 %) ebenfalls 42 %. Neuere Werte sind nicht veröffentlicht; Terminal 3 (seit April 2026) kann den Anteil verschieben. Gepäck- und Frachtschlepper: 100. Pushback: 100; Fraport nennt Durchroll-Positionen, die Flugzeuge ohne Schlepper vorwärts verlassen, ihr Anteil ist nicht veröffentlicht. GPU: 2024 hatten rund 67 % der 255 Positionen festen 400-Hz-Bodenstrom, also rund 33 % ohne; bis 2026 wollte Fraport etwa zwölf weitere Positionen ausrüsten, der Anteil ohne kann heute also niedriger sein. Bus- und GPU-Anteil übertragen ältere Werte und sind Annahmen.",
@@ -91,6 +97,27 @@
    "https://kleineanfragen.de/hessen/19/1585-nutzung-der-fluggastbruecken-am-frankfurter-flughafen",
    "https://www.fraport.com/de/newsroom/pressemitteilungen/2024/q1/flughafen-frankfurt-modernisiert-bodenstromversorgung-.html",
    "https://www.fraport.com/de/newsroom/pressemitteilungen/2026/q4/-fraport-erhaelt-weitere-foerdermittel-fuer--emissionsfreie-bode.html"
+  ],
+  "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Treppen wie Busse (keine Walk-Boarding-Positionen). Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (20 %). Catering einmal je Abflug (80 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote. Bus 52 % und Bodenstrom 38 % gelten jetzt für Schmalrumpfflüge (Großraum siehe unten).",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {
+  "bus": 8,
+  "gpu": 15,
+  "stairs": 8
+ },
+ "widebody_share_pct": 22,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "Destatis (Flüge über 175 t): 2019 21,4 %, 2022 24,7 % aller gewerblichen Bewegungen; mit dem Spitzentag (664 Abflüge) rund 148 Großraumabflüge, also 22 %, Frachter eingeschlossen. 2014 standen nur 10,3 % der schweren Passagierflüge auf dem Vorfeld (Drs. 19/1585), daher Großraum Bus 8 %, mobiles Bodenstromgerät 15 % (rund 67 % der Positionen haben feste 400-Hz-Anlagen). Schmalrumpf so gesetzt, dass die Gesamtquote (Bus 42 %, GPU 33 %) bleibt.",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
   ],
   "assumption": true
  },
@@ -183,19 +210,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 64,
-   "baggage_tractor": 86,
-   "pushback_tug": 25,
-   "gpu": 52
+   "bus": 130,
+   "baggage_tractor": 162,
+   "pushback_tug": 26,
+   "gpu": 73,
+   "belt_loader": 110,
+   "stairs": 56,
+   "loader": 53,
+   "catering": 80,
+   "lavatory": 24,
+   "water": 18
   },
   "chargers": {
-   "bus": 26,
-   "baggage_tractor": 30,
-   "pushback_tug": 10,
-   "gpu": 21
+   "bus": 52,
+   "baggage_tractor": 56,
+   "pushback_tug": 11,
+   "gpu": 30,
+   "belt_loader": 110,
+   "stairs": 56,
+   "loader": 27,
+   "catering": 40,
+   "lavatory": 12,
+   "water": 9
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 19, baggage_tractor 39, pushback_tug 17, gpu 22), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 39, baggage_tractor 74, pushback_tug 18, gpu 31, belt_loader 73, stairs 37, loader 35, catering 51, lavatory 15, water 12), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }
