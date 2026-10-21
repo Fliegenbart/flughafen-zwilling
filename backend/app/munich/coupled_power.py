@@ -91,25 +91,35 @@ class PowerBalance:
             "parking": p.parking_transformer_kva * p.power_factor,
         }
         allocations: dict[str, float] = {}
+        # Schnelllader (Engine v4, Sektor "fast") wie Last: zuerst, nie verschoben oder gedrosselt.
+        for r in requests:
+            if r.sector == "fast":
+                power = min(r.kw, min(limits["parking"], available) * p.transformer_efficiency)
+                allocations[r.id] = power
+                upstream = power / p.transformer_efficiency
+                limits["parking"] -= upstream
+                available -= upstream
+        flexible = [r for r in requests if r.sector != "fast"]
         if policy == "mission_priority":
-            for r in sorted(requests, key=lambda r: (r.deadline, r.sector != "apron", r.id)):
+            for r in sorted(flexible, key=lambda r: (r.deadline, r.sector != "apron", r.id)):
                 power = min(r.kw, min(limits[r.sector], available) * p.transformer_efficiency)
                 allocations[r.id] = power
                 upstream = power / p.transformer_efficiency
                 limits[r.sector] -= upstream
                 available -= upstream
         else:
-            totals = {s: math.fsum(r.kw for r in requests if r.sector == s) for s in limits}
-            for r in requests:
+            totals = {s: math.fsum(r.kw for r in flexible if r.sector == s) for s in limits}
+            shares: dict[str, float] = {}
+            for r in flexible:
                 factor = (min(1, limits[r.sector] * p.transformer_efficiency / totals[r.sector])
                           if totals[r.sector] else 1)
-                allocations[r.id] = r.kw * factor
-            upstream = math.fsum(allocations.values()) / p.transformer_efficiency
+                shares[r.id] = r.kw * factor
+            upstream = math.fsum(shares.values()) / p.transformer_efficiency
             scale = min(1, available / upstream) if upstream else 1
-            allocations = {key: value * scale for key, value in allocations.items()}
+            allocations.update({key: value * scale for key, value in shares.items()})
         # fsum: exakt gerundet, unabhaengig von der Zuteilungsreihenfolge der Regel.
         apron = math.fsum(allocations[r.id] for r in requests if r.sector == "apron")
-        parking = math.fsum(allocations[r.id] for r in requests if r.sector == "parking")
+        parking = math.fsum(allocations[r.id] for r in requests if r.sector in ("parking", "fast"))
         apron_up, parking_up = apron / p.transformer_efficiency, parking / p.transformer_efficiency
         loss = apron_up + parking_up - apron - parking
         demand = served + apron_up + parking_up

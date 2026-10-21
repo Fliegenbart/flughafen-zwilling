@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from ..munich.charging_plan import duty_hash
 from ..munich.coupled_models import CYCLIC_ENGINE_VERSION, trusted_scale
 from ..munich.coupled_simulator import simulate_coupled
-from ..munich.coupled_world import build_world
+from ..munich.coupled_world import build_world, scale_parking
 from .airport_model import (
     AIRPORT_MODEL_VERSION,
     airport_config,
@@ -137,6 +137,10 @@ def prepare_electrification(request: ElectrificationRequest, solution: Solution,
         fleet.electric_vehicles = count
     config.power.grid_import_limit_kw = request.grid_import_limit_kw
     config.power.pv_capacity_kwp = request.pv_kwp
+    if (config.power.parking_groups is not None
+            and request.parking_sessions != config.power.parking_sessions):
+        config.power.parking_groups = scale_parking(config.power.parking_groups,
+                                                    request.parking_sessions)
     config.power.parking_sessions = request.parking_sessions
     config.power.battery_capacity_kwh = request.storage_kwh if solution == "managed_storage" else 0
     running = bool(config.power.battery_capacity_kwh) and storage_on

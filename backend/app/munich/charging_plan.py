@@ -120,9 +120,10 @@ class EnergyEnvelopePlan:
                    for f in world.config.fleets}
         p = world.config.power
         parking_profile = [0.0] * horizon
-        # v4: das Parkhaus weicht dem Vorfeld aus (gesteuert, siehe coupled_simulator), es wird
-        # deshalb nicht als feste Last vorhergesagt.
-        for job in ([] if self.cyclic else world.parking_jobs):
+        # v4: das Parkhaus weicht dem Vorfeld aus (gesteuert, siehe coupled_simulator) und wird
+        # deshalb nicht als feste Last vorhergesagt; nur Schnelllader laden sofort.
+        for job in ([j for j in world.parking_jobs if j.group == "dc"] if self.cyclic
+                    else world.parking_jobs):
             remaining = job.energy_kwh
             for offset in range(max(0, job.release_min - self.start),
                                 min(horizon, job.deadline_min - self.start)):

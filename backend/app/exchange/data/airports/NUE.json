@@ -102,14 +102,37 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 32,
+ "parking_sessions_per_day": 14,
  "parking_basis": {
-  "text": "Laut Parktarif-Seite des Flughafens: 20 Typ-2-Ladepunkte mit bis zu 11 kW in den Parkhäusern P2 (6), P3 (6) und P5 (8), dazu am Vorplatz 1 AC-Säule mit 22 kW und 2 DC-Säulen mit 150 kW sowie am CCN 3 AC-Säulen mit 22 kW, je 2 Ladepunkte pro Säule (12). 20 + 12 = 32. Annahme: ein Ladevorgang je Punkt und Tag.",
+  "text": "20 Typ-2-Ladepunkte mit bis zu 11 kW in P2, P3 und P5. Am Vorplatz und am CCN 8 AC-Punkte, nach 4 Stunden fällt eine Blockiergebühr an. Am Vorplatz 2 Schnellladesäulen mit je 2 Punkten (insgesamt 150 kW je Säule), Blockiergebühr nach 1 Stunde. Schnelllader laden mit 75 kW je Auto und werden nie verschoben. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt.",
   "sources": [
-   "https://www.airport-nuernberg.de/de/parktarife"
+   "https://www.airport-nuernberg.de/de/parktarife",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Parkhäuser P2, P3, P5",
+   "kind": "ac",
+   "count": 20,
+   "kw": 11
+  },
+  {
+   "label": "Vorplatz und CCN (4 Stunden)",
+   "kind": "ac",
+   "count": 8,
+   "kw": 11,
+   "max_dwell_min": 240
+  },
+  {
+   "label": "Schnelllader am Vorplatz (1 Stunde)",
+   "kind": "dc",
+   "count": 4,
+   "kw": 75,
+   "max_dwell_min": 60
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

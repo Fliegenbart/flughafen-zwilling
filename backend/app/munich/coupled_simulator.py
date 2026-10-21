@@ -73,16 +73,21 @@ PARKING_GUARD_MIN = 30
 
 def _steered_parking(minute: int, world: CoupledWorld, remaining: list[float],
                      apron: list[ChargeRequest], supply: PowerBalance) -> list[ChargeRequest]:
-    """Gesteuertes Parkhaus (Engine v4 mit Lademanagement): jeder Vorgang laedt mindestens die
-    gleichmaessige Rate, mit der er seine Frist (minus Puffer) noch schafft; darueber fuellt er
-    die freie Leistung nach Vorfeld und Speicher, frueheste Frist zuerst."""
+    """Gesteuertes Parkhaus (Engine v4 mit Lademanagement): Schnelllader laden sofort voll. Jeder
+    andere Vorgang laedt mindestens die gleichmaessige Rate, mit der er seine Frist (minus Puffer)
+    noch schafft; darueber fuellt er die freie Leistung nach Vorfeld, Schnellladern und Speicher,
+    frueheste Frist zuerst."""
     efficiency = world.config.power.charging_efficiency
     active = sorted((job.deadline_min, i) for i, job in enumerate(world.parking_jobs)
                     if job.release_min <= minute < job.deadline_min and remaining[i] > EPS)
     if not active:
         return []
-    room = supply.parking_room(minute, math.fsum(r.kw for r in apron))
-    out = []
+    out = [ChargeRequest(world.parking_jobs[i].id, "fast",
+                         min(world.parking_jobs[i].charger_kw, remaining[i] / DT_H / efficiency),
+                         deadline)
+           for deadline, i in active if world.parking_jobs[i].group == "dc"]
+    active = [(deadline, i) for deadline, i in active if world.parking_jobs[i].group != "dc"]
+    room = supply.parking_room(minute, math.fsum(r.kw for r in apron + out))
     plan = {}
     for deadline, i in active:
         job = world.parking_jobs[i]
@@ -272,8 +277,8 @@ def simulate_coupled(
             for i, job in enumerate(world.parking_jobs):
                 if job.release_min <= minute < job.deadline_min and remaining[i] > EPS:
                     requests.append(ChargeRequest(
-                        job.id, "parking", min(job.charger_kw, remaining[i] / DT_H / efficiency),
-                        job.deadline_min,
+                        job.id, "fast" if job.group == "dc" else "parking",
+                        min(job.charger_kw, remaining[i] / DT_H / efficiency), job.deadline_min,
                     ))
         allocation, row = supply.step(minute, requests, policy)
         # Angefragte Ladeleistung (Fahrzeugseite) fuer "fehlende kW"; reine Zusatzspalte.
@@ -442,8 +447,12 @@ def simulate_coupled(
         energy_wait_share_pct=share(energy_wait_total, energy_wait_total + resource_wait_total),
         bottleneck=bottleneck, model_warnings=warnings,
     )
+    # v4: Fristen nach dem Horizontende sind nicht pruefbar (der Vorgang laedt bis zum Ende).
+    checked = [not cyclic or job.deadline_min <= world.end_min for job in world.parking_jobs]
     parking = [{**job.model_dump(), "delivered_kwh": job.energy_kwh - remaining[i],
-                "unmet_kwh": remaining[i], "ready_at_min": ready.get(i), "deadline_met": i in ready}
+                "unmet_kwh": remaining[i] if checked[i] else 0.0, "ready_at_min": ready.get(i),
+                "deadline_met": i in ready,
+                **({} if checked[i] else {"deadline_after_horizon": True})}
                for i, job in enumerate(world.parking_jobs)]
     energy = supply.kpis
     if cyclic:
@@ -470,7 +479,7 @@ def simulate_coupled(
     # Fleet demand is endogenous and reported separately in coupled_kpis.
     energy.charging_requested_kwh = sum(job.energy_kwh for job in world.parking_jobs)
     energy.charging_delivered_kwh = sum(row["delivered_kwh"] for row in parking)
-    energy.charging_unmet_kwh = sum(remaining)
+    energy.charging_unmet_kwh = sum(r for r, c in zip(remaining, checked) if c)
     energy.parking_session_count = len(parking)
     energy.parking_ready_count = len(ready)
     energy.background_unserved_kwh = clean(energy.background_unserved_kwh)

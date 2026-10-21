@@ -120,6 +120,23 @@ def default_fleets() -> list[FleetSpec]:
     ]
 
 
+ParkingGroupKind = Literal["traveler", "day", "dc"]
+
+
+class ParkingGroup(StrictModel):
+    """Eine Nutzergruppe im Parkhaus (Engine v4): Reisende mit Frist bis 24 h, Tagesgaeste mit
+    Rueckkehr am selben Tag, Schnelllader (kurz, nie verschoben oder gedrosselt)."""
+    group: ParkingGroupKind
+    sessions: int = Field(ge=0)
+    charger_kw: float = Field(gt=0, le=400)
+    # Hoechste Standzeit am Ladepunkt (z. B. Blockiergebuehr oder Zeitgrenze des Betreibers).
+    max_dwell_min: int | None = Field(default=None, ge=15, le=1440,
+                                      exclude_if=lambda value: value is None)
+    # Ankuenfte je Ortsstunde; ohne Angabe aus den Fluegen der Welt abgeleitet.
+    arrival_by_hour: list[float] | None = Field(default=None, min_length=24, max_length=24,
+                                                exclude_if=lambda value: value is None)
+
+
 class PowerConfig(StrictModel):
     grid_import_limit_kw: float = Field(default=3500, ge=0, le=100000)
     grid_export_limit_kw: float = Field(default=2000, ge=0, le=100000)
@@ -145,6 +162,9 @@ class PowerConfig(StrictModel):
     )
     parking_sessions: int = Field(default=200, ge=0)
     parking_charger_kw: float = Field(default=11, gt=0, le=150)
+    # Engine v4: Parkhaus nach Nutzergruppen; None = Standardaufteilung der parking_sessions.
+    parking_groups: list[ParkingGroup] | None = Field(default=None, max_length=12,
+                                                      exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def valid_storage(self) -> PowerConfig:
@@ -160,6 +180,10 @@ class PowerConfig(StrictModel):
             self.battery_capacity_kwh <= 0 or self.battery_power_kw <= 0
         ):
             raise ValueError("Netzladung des Speichers benoetigt Kapazitaet und Leistung")
+        if self.parking_groups is not None and (
+            sum(g.sessions for g in self.parking_groups) != self.parking_sessions
+        ):
+            raise ValueError("Parkhaus-Gruppen passen nicht zur Zahl der Ladevorgaenge")
         return self
 
 
@@ -227,6 +251,8 @@ class ParkingJob(StrictModel):
     deadline_min: int
     energy_kwh: float = Field(gt=0)
     charger_kw: float = Field(gt=0)
+    # Engine v4: Nutzergruppe; "dc" (Schnelllader) wird nie verschoben oder gedrosselt.
+    group: ParkingGroupKind | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class CoupledWorld(StrictModel):

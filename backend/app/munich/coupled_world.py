@@ -5,6 +5,7 @@ import hashlib
 import json
 import random
 from datetime import datetime, timedelta, timezone
+from math import ceil
 from zoneinfo import ZoneInfo
 
 from .coupled_models import (
@@ -17,6 +18,7 @@ from .coupled_models import (
     CoupledConfig,
     CoupledWorld,
     Mission,
+    ParkingGroup,
     ParkingJob,
 )
 from .flightplan import FlightPlanSnapshot, verify_snapshot
@@ -48,6 +50,102 @@ def steady_cycle(world: CoupledWorld) -> tuple[int, int]:
     if world.end_min - world.start_min < 2 * 1440:
         return world.start_min, world.end_min
     return world.end_min - 2 * 1440, world.end_min - 1440
+
+
+# Parkhaus (Engine v4), Annahmen aus der Recherche 10/2026 (docs/ELECTRIFICATION_COMPARISON.md):
+# Lademenge je Gruppe (kWh, gleichverteilt), Fristen der Tagesgaeste, Anteil Reisender, die
+# am selben Tag zurueckkommen, und die Standardaufteilung ohne Angaben des Flughafens.
+PARKING_ENERGY_KWH = {"traveler": (15, 30), "day": (5, 20), "dc": (20, 35)}
+PARKING_DAY_DWELL_MIN = (600, 720, 840, 960)
+PARKING_SAME_DAY_SHARE = 0.3
+PARKING_DEFAULT_SPLIT = (("traveler", 2), ("day", 1))
+
+
+def _hours(plan: FlightPlanSnapshot, directions: set[str]) -> list[float]:
+    weights = [0.0] * 24
+    for row in plan.rows:
+        if row.direction in directions:
+            weights[datetime.fromisoformat(row.scheduled_local).hour] += 1
+    return weights
+
+
+def parking_arrivals(departures: list[float], arrivals: list[float]) -> dict[str, list[float]]:
+    """Ankuenfte im Parkhaus je Ortsstunde aus den Flugbewegungen: Reisende 2-3 h vor dem
+    Abflug, Tagesgaeste 2 h vorher, Schnelllader mit allen Fluggaesten."""
+    return {
+        "traveler": [departures[(h + 2) % 24] + departures[(h + 3) % 24] for h in range(24)],
+        "day": [departures[(h + 2) % 24] for h in range(24)],
+        "dc": [departures[h] + arrivals[h] for h in range(24)],
+    }
+
+
+def scale_parking(groups: list[ParkingGroup], total: int) -> list[ParkingGroup]:
+    """Gruppen auf eine andere Zahl von Ladevorgaengen je Tag, Anteile gleich."""
+    counts = _split(total, [(str(i), g.sessions) for i, g in enumerate(groups)]) if total else []
+    return [g.model_copy(update={"sessions": n}) for g, (_, n) in zip(groups, counts) if n]
+
+
+def _split(total: int, parts: list[tuple[str, float]]) -> list[tuple[str, int]]:
+    """Ganze Vorgaenge nach groessten Resten, Summe genau total."""
+    weight = sum(w for _, w in parts)
+    raw = [(name, total * w / weight) for name, w in parts]
+    counts = [int(r) for _, r in raw]
+    order = sorted(range(len(raw)), key=lambda i: (-(raw[i][1] - counts[i]), i))
+    for i in order[:total - sum(counts)]:
+        counts[i] += 1
+    return [(name, n) for (name, _), n in zip(raw, counts)]
+
+
+def parking_jobs_v4(plan: FlightPlanSnapshot, config: CoupledConfig, seed: int, midnight,
+                    origin, start_min: int, end_min: int) -> list[ParkingJob]:
+    """Parkvorgaenge nach Nutzergruppen, jeden Tag gleich, ueber den ganzen Horizont.
+
+    Reisende kommen 2-3 h vor ihrem Abflug (Frist hoechstens 24 h), Tagesgaeste 2 h vorher
+    (Frist 10-16 h), Schnelllader mit Fluggaesten (Frist = Ladezeit + 5 min). Ankunftsminuten
+    zufaellig (fester Seed), damit sich Vorgaenge auch ueberlagern koennen. Der erste Tag beginnt
+    ohne Autos vom Vortag (er dient dem Einschwingen); Fristen nach dem Horizontende bleiben
+    stehen, werden aber nicht geprueft (coupled_simulator).
+    """
+    p = config.power
+    groups = p.parking_groups
+    if groups is None:
+        groups = [ParkingGroup(group=name, sessions=n, charger_kw=p.parking_charger_kw)
+                  for name, n in _split(p.parking_sessions, list(PARKING_DEFAULT_SPLIT)) if n]
+    derived = parking_arrivals(_hours(plan, {"departure"}), _hours(plan, {"arrival"}))
+    rng = random.Random(f"coupled-parking-v4:{seed}")
+    efficiency = p.charging_efficiency
+    templates = []
+    for g in groups:
+        weights = g.arrival_by_hour or derived[g.group]
+        if g.sessions and sum(weights) <= 0:
+            raise ValueError("Parkhaus-Gruppe ohne Ankunftsstunden")
+        low, high = PARKING_ENERGY_KWH[g.group]
+        for _ in range(g.sessions):
+            minute = rng.choices(range(24), weights)[0] * 60 + rng.randrange(60)
+            energy = rng.randint(low, high)
+            if g.group == "dc":
+                dwell = ceil(60 * energy / (g.charger_kw * efficiency)) + 5
+            elif g.group == "day":
+                dwell = rng.choice(PARKING_DAY_DWELL_MIN)
+            else:
+                dwell = 720 if rng.random() < PARKING_SAME_DAY_SHARE else 1440
+            if g.max_dwell_min:
+                dwell = min(dwell, g.max_dwell_min)
+            # Nur was in der Standzeit ladbar ist (mit Luft fuer geteilte Leistung).
+            energy = min(energy, 0.9 * g.charger_kw * efficiency * dwell / 60)
+            templates.append((g.group, minute, dwell, energy, g.charger_kw))
+    jobs = []
+    for day in range(config.repeat_days):
+        for i, (group, minute, dwell, energy, kw) in enumerate(templates):
+            release = local_clock_minute(midnight, origin, day * 1440 + minute)
+            if not start_min <= release < end_min:
+                continue
+            jobs.append(ParkingJob(
+                id=f"P-{group}-{i + 1:04d}-day-{day + 1}", release_min=release,
+                deadline_min=release + dwell, energy_kwh=round(energy, 6), charger_kw=kw,
+                group=group,
+            ))
+    return jobs
 
 
 def build_world(
@@ -134,7 +232,7 @@ def build_world(
         def window(clock_min: int) -> int:
             return local_clock_minute(midnight, origin, clock_min)
     parking = []
-    for i in range(config.power.parking_sessions):
+    for i in range(0 if engine_version == CYCLIC_ENGINE_VERSION else config.power.parking_sessions):
         release, deadline = rng.choice([0, 30, 60, 90]), rng.choice([540, 600, 720, 840])
         parking.append(ParkingJob(
             id=f"P44-{i + 1:03d}", release_min=window(release), deadline_min=window(deadline),
@@ -209,6 +307,10 @@ def build_world(
         end_min = day_minutes + config.drain_min
         warnings.append("Identische Referenztage mit durchlaufenden Fahrzeug-/Speicherzustaenden; "
                         "kein taeglicher SOC-Neustart und kein Jahresnachweis.")
+    if engine_version == CYCLIC_ENGINE_VERSION:
+        parking = parking_jobs_v4(plan, config, seed, midnight, origin, start_min, end_min)
+        warnings.append("Parkhaus nach Nutzergruppen (Reisende, Tagesgaeste, Schnelllader); "
+                        "Ankuenfte, Standzeiten und Lademengen sind belegte Annahmen.")
     payload = {
         "engine_version": engine_version, "seed": seed,
         "source_plan_sha256": plan.content_sha256, "config": config.model_dump(mode="json"),

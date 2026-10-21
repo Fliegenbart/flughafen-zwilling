@@ -105,15 +105,24 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 71,
+ "parking_sessions_per_day": 21,
  "parking_basis": {
-  "text": "Laut Nachhaltigkeitserklärung 2024 bietet der Flughafen Besuchern 71 Ladeplätze in vier Parkhäusern und der Tiefgarage der Verwaltung. Die Parken-Seite nennt 2026 Ladesäulen in P3, P5, P7, P8 und auf P25 sowie Schnellladepunkte bis 75 kW auf P12, aber keine Anzahl; diese Punkte sind nicht zusätzlich gezählt. Annahme: ein Ladevorgang je Ladepunkt und Tag, also 71. Die 108 Ladepunkte für Fahrzeuge und Geräte des Flughafens und seiner Partner zählen nicht dazu.",
+  "text": "Laut Nachhaltigkeitserklärung 2024 gibt es 71 Ladeplätze für Besucher (Typ 2, Leistung nicht veröffentlicht). Die Schnelllader am Kurzzeitparkplatz P12 (bis 75 kW) fehlen, ihre Zahl ist nicht veröffentlicht. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt.",
   "sources": [
    "https://www.dus.com/-/media/dus/konzern/nachhaltigkeit/nachhaltigkeitsbericht/dnk_2024_flughafen-duesseldorf-gmbh_2.ashx?force-download=1",
-   "https://www.dus.com/de-de/parken/informationen"
+   "https://www.dus.com/de-de/parken/informationen",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Parkhäuser P3, P5, P7, P8, P25",
+   "kind": "ac",
+   "count": 71,
+   "kw": 11
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

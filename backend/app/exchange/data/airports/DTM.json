@@ -110,14 +110,15 @@
  },
  "parking_sessions_per_day": 0,
  "parking_basis": {
-  "text": "Im Parkhaus P1 gibt es zwei öffentliche AC-Ladepunkte (22 kW); laut Flughafen sind sie derzeit nicht in Betrieb. Im Ladesäulenregister der Bundesnetzagentur (Stand 1.9.2026) ist am Flughafen kein Ladepunkt gemeldet. Daher 0 Ladevorgänge pro Tag. Laufen die zwei Punkte wieder, ergeben sich mit einem Vorgang je Punkt und Tag 2. Ein öffentlicher Schnellladepark eines externen Betreibers auf dem Parkplatz vor dem Verwaltungsgebäude ist angekündigt (Aufsichtsrat 20.3.2026); Größe und Termin sind nicht veröffentlicht.",
+  "text": "Die zwei AC-Ladepunkte im Parkhaus P1 sind laut Flughafen derzeit nicht in Betrieb, das Ladesäulenregister nennt am Flughafen keinen Punkt. Das Parkhaus lädt im Modell deshalb nicht.",
   "sources": [
    "https://www.dortmund-airport.com/de/parken",
    "https://data.bundesnetzagentur.de/Bundesnetzagentur/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenregister_BNetzA_2026-09-01.csv",
    "https://cdn0.scrvt.com/airportdtm/6f94c05104476d89/e7d6e06928e1/2026-03-20-aufsichtsratssitzung.pdf"
   ],
-  "assumption": false
+  "assumption": true
  },
+ "parking_points": [],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

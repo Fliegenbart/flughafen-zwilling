@@ -101,15 +101,82 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 84,
+ "parking_sessions_per_day": 30,
  "parking_basis": {
-  "text": "Laut Geschäftsbericht 2025 hat der Flughafen 80 AC-Ladepunkte und 4 Schnellladesäulen. 60 der AC-Punkte (bis 22 kW) stehen seit 2024 in Parkhaus 1, weitere kamen 2025 in den Parkhäusern 2 und 3 hinzu. 80 + 4 = 84. Annahme: alle öffentlich zugänglich, ein Ladevorgang je Punkt und Tag. Die 55 öffentlichen Ladepunkte im geplanten Mitarbeiterparkhaus P5 sind nicht enthalten.",
+  "text": "Laut Geschäftsbericht 2025 hat der Flughafen 80 AC-Ladepunkte (60 davon mit 22 kW in Parkhaus 1) und 4 Schnellladesäulen. Schnelllader laden mit 75 kW je Auto und werden nie verschoben. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt. Die 55 Ladepunkte im geplanten Mitarbeiterparkhaus P5 fehlen.",
   "sources": [
    "https://www.lobbyregister.bundestag.de/media/07/3f/763003/Geschaeftsbericht_2025.pdf",
-   "https://www.electrive.net/2024/09/18/flughafen-koeln-bonn-bietet-60-neue-ac-ladepunkte/"
+   "https://www.electrive.net/2024/09/18/flughafen-koeln-bonn-bietet-60-neue-ac-ladepunkte/",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Parkhäuser 1 bis 3",
+   "kind": "ac",
+   "count": 80,
+   "kw": 11
+  },
+  {
+   "label": "Schnellladesäulen",
+   "kind": "dc",
+   "count": 4,
+   "kw": 75
+  }
+ ],
+ "passenger_departures_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  12.6,
+  9.1,
+  7.1,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  5.1,
+  5.5,
+  3.5,
+  0
+ ],
+ "passenger_arrivals_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1.1,
+  2.6,
+  4.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  7,
+  9.5,
+  14,
+  0
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

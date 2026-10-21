@@ -101,14 +101,23 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 10,
+ "parking_sessions_per_day": 3,
  "parking_basis": {
-  "text": "Öffentlich laden lässt sich laut Flughafen nur im Parkhaus P3: 10 Ladepunkte (Typ 2, bis 22 kW, nicht reservierbar). Für andere Parkhäuser und Parkplätze nennt der Flughafen keine Ladepunkte. Annahme: ein Ladevorgang je Punkt und Tag, also 10.",
+  "text": "Öffentlich laden lässt sich laut Flughafen nur im Parkhaus P3: 10 Ladepunkte (Typ 2, bis 22 kW). Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt.",
   "sources": [
-   "https://ber.berlin-airport.de/de/parken/e-ladesaeulen.html"
+   "https://ber.berlin-airport.de/de/parken/e-ladesaeulen.html",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Parkhaus P3",
+   "kind": "ac",
+   "count": 10,
+   "kw": 11
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

@@ -101,14 +101,15 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 2,
+ "parking_sessions_per_day": 0,
  "parking_basis": {
-  "text": "Das Ladesäulenregister der Bundesnetzagentur (Stand 01.09.2026) nennt am Flughafen eine Ladeeinrichtung mit 2 AC-Ladepunkten (je 22 kW) eines Carsharing-Anbieters am Parkplatz vor dem Terminal, Parkraum nur für Kunden und Besucher. Weitere öffentliche Ladepunkte auf den Flughafenparkplätzen sind dort nicht eingetragen. Annahme: ein Ladevorgang je Punkt und Tag, also 2.",
+  "text": "Am Flughafen gibt es laut Ladesäulenregister nur 2 AC-Ladepunkte eines Carsharing-Anbieters. Sie laden dessen Flotte, nicht die Autos von Reisenden; das Parkhaus lädt im Modell deshalb nicht.",
   "sources": [
    "https://data.bundesnetzagentur.de/Bundesnetzagentur/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenregister_BNetzA_2026-09-01.csv"
   ],
   "assumption": true
  },
+ "parking_points": [],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

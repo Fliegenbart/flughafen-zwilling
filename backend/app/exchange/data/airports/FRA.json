@@ -105,17 +105,38 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 222,
+ "parking_sessions_per_day": 86,
  "parking_basis": {
-  "text": "Öffentliche Ladepunkte für Pkw an Parkflächen: Parkhaus Terminal 3 100 (Umwelterklärung 2025; das Visual Fact Book nennt dort insgesamt 173), Parkhaus Gateway Gardens (Holiday Parking Nord) 65, Terminal 1 P2 Reihe 1406 41 Plätze, Ladepark Nord am Terminal 1 16 Schnellladepunkte (Ausbauziel Ende 2025). Summe 222. Die buchbaren eParking-Plätze in T1 P4 und T2 P8 sind ohne Zahl veröffentlicht und fehlen, der Wert ist daher eine Untergrenze. Annahme: ein Ladevorgang je Ladepunkt und Tag.",
+  "text": "Öffentliche AC-Ladepunkte: Parkhaus Terminal 3 100, Gateway Gardens 65, Terminal 1 P2 Reihe 1406 41 (16 davon mit 3,7 kW). Dazu der Ladepark Nord mit 16 Schnellladepunkten, von Fraport selbst betrieben. Schnelllader laden mit 75 kW je Auto und werden nie verschoben. Die buchbaren eParking-Plätze in T1 P4 und T2 P8 sind ohne Zahl veröffentlicht und fehlen. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt.",
   "sources": [
    "https://www.fraport.com/content/dam/fraport-company/documents/investoren/termine-und-publikationen/nachhaltigkeitsbericht/Fraport_Umwelterkl%C3%A4rung_2025.pdf/_jcr_content/renditions/original.media_file.download_attachment.file/Fraport_Umwelterkl%C3%A4rung_2025.pdf",
    "https://www.frankfurt-airport.com/en/transport-and-parking/parking-offers/charging-stations.html",
    "https://www.frankfurt-airport.com/de/anreise-parken/parkangebot/holiday-parking.html",
-   "https://www.fraport.com/de/newsroom/pressemitteilungen/2025/q2/ladeinfrastruktur-fuer-e-fahrzeuge-waechst-weiter.html"
+   "https://www.fraport.com/de/newsroom/pressemitteilungen/2025/q2/ladeinfrastruktur-fuer-e-fahrzeuge-waechst-weiter.html",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Parkhaus T3, Gateway Gardens, T1 P2",
+   "kind": "ac",
+   "count": 190,
+   "kw": 11
+  },
+  {
+   "label": "T1 P2 Reihe 1406 (3,7 kW)",
+   "kind": "ac",
+   "count": 16,
+   "kw": 3.7
+  },
+  {
+   "label": "Ladepark Nord (Fraport)",
+   "kind": "dc",
+   "count": 16,
+   "kw": 75
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

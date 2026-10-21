@@ -52,7 +52,9 @@ def reference_id_for(airport: str | None) -> str:
     spec = load_spec(airport)
     model = spec.model_dump(include={"departures_per_day", "departures_by_hour",
                                      "arrivals_by_hour", "coverage_pct",
-                                     "parking_sessions_per_day", "fleet"})
+                                     "parking_sessions_per_day", "parking_points",
+                                     "passenger_departures_by_hour",
+                                     "passenger_arrivals_by_hour", "fleet"})
     model["fleet"] = {k: v for k, v in (model["fleet"] or {}).items() if k != "basis"}
     # Fahrzeugdaten kommen aus dem Beispielflughafen: aendert der sich, gilt die Tabelle nicht mehr.
     model["reference"] = [REFERENCE_ID, _canonical_hash(reference_config().model_dump(mode="json"))]

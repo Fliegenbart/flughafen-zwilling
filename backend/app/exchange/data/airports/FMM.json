@@ -106,15 +106,33 @@
  },
  "parking_sessions_per_day": 20,
  "parking_basis": {
-  "text": "Rund 20 öffentliche Ladepunkte: 10 an der E-Tankstelle an der Terminalzufahrt (2 Säulen mit je 215 kW, 8 Fahrzeuge gleichzeitig) und 10 E-Ladeplätze unter der PV-Überdachung am Mietwagen- und Airport Service Center (P1). Annahme: ein Ladevorgang je Punkt und Tag, also 20. Gegenprobe: Der Flughafen meldet für die E-Tankstelle 15 Ladevorgänge pro Tag (2025) und für die Säulen am Mietwagencenter 4 pro Tag (2023; laut Website rund 6). Nicht gezählt sind Ladepunkte im Sicherheitsbereich und auf Mitarbeiterparkplätzen. Ein Parkhaus mit rund 1.800 Stellplätzen soll ab 2029 gebaut werden.",
+  "text": "Der Flughafen meldet für seine E-Tankstelle (2 Säulen mit je 215 kW, 8 Autos gleichzeitig) 15 Ladevorgänge am Tag (2025); gerechnet als Schnellladen mit 75 kW je Auto. Am Mietwagencenter P1 laden laut Flughafen 4 bis 6 Autos am Tag, höchstens 2 Stunden. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht.  Nicht gezählt sind Ladepunkte im Sicherheitsbereich und auf Mitarbeiterparkplätzen. Ein Parkhaus mit rund 1.800 Stellplätzen soll ab 2029 gebaut werden.",
   "sources": [
    "https://www.memmingen-airport.de/an-abreise/parken/",
    "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/elektromobilitaet/",
    "https://www.memmingen-airport.de/wp-content/uploads/2025/05/Nachhaltigkeitsbericht_FMM_2024_FINAL_WEB_ES-NEW.pdf",
-   "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/"
+   "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
-  "assumption": true
+  "assumption": false
  },
+ "parking_points": [
+  {
+   "label": "E-Tankstelle an der Terminalzufahrt",
+   "kind": "dc",
+   "count": 10,
+   "kw": 75,
+   "sessions_per_day": 15
+  },
+  {
+   "label": "P1 am Mietwagen- und Service-Center",
+   "kind": "ac",
+   "count": 10,
+   "kw": 11,
+   "sessions_per_day": 5,
+   "max_dwell_min": 120
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

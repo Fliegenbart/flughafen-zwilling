@@ -100,15 +100,24 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 72,
+ "parking_sessions_per_day": 19,
  "parking_basis": {
-  "text": "72 öffentliche Ladepunkte an Parkhäusern: 64 Stellplätze an 32 AC-Ladesäulen (22 kW) in Parkhaus 1 und 3 sowie 8 DC-Schnellladepunkte (bis 400 kW) im Ladepark an Parkhaus 2. Annahme: ein Ladevorgang je Punkt und Tag, also 72. Nicht gezählt sind 27 Ladesäulen für Dienstwagen und die Schnelllader an einer Tankstelle am Standort.",
+  "text": "64 AC-Ladepunkte (22 kW) in Parkhaus 1 und 3. Der Schnellladepark von enercity an Parkhaus 2 (8 Punkte bis 400 kW) hat vermutlich einen eigenen Netzanschluss und zählt deshalb nicht zur Reserve des Flughafens. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt. Nicht gezählt sind 27 Ladesäulen für Dienstwagen und die Schnelllader an einer Tankstelle am Standort.",
   "sources": [
    "https://www.hannover-airport.de/fileadmin/bilder/Unternehmen_Airport/Verantwortung_und_Umwelt/Umwelterklaerung_2025_Gesamte_Datei.pdf",
-   "https://www.hannover-airport.de/parken/"
+   "https://www.hannover-airport.de/parken/",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Parkhaus 1 und 3",
+   "kind": "ac",
+   "count": 64,
+   "kw": 11
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

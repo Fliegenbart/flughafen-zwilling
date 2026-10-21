@@ -105,14 +105,23 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 168,
+ "parking_sessions_per_day": 50,
  "parking_basis": {
-  "text": "Der Flughafen bietet im Parkhaus P4, Ebene 0, 168 Stellplätze mit Ladepunkt an (Bereich G 129, Bereich W 39), Wechselstrom bis 3,7 kW. Annahme: ein Ladevorgang je Punkt und Tag, also 168. Nicht enthalten sind Ladepunkte nur für Carsharing und ein angekündigter Schnellladepark eines Drittbetreibers, dessen Inbetriebnahme nicht bestätigt ist.",
+  "text": "Im Parkhaus P4 gibt es 168 Stellplätze mit Ladepunkt, höchstens 3,7 kW, Laden kostenlos. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt. Nicht enthalten sind Ladepunkte nur für Carsharing und ein angekündigter Schnellladepark eines Drittbetreibers, dessen Inbetriebnahme nicht bestätigt ist.",
   "sources": [
-   "https://hamburg-airport.de/en/plan-book/e-fahrzeuge-aufladen-77570"
+   "https://hamburg-airport.de/en/plan-book/e-fahrzeuge-aufladen-77570",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Parkhaus P4, Ebene 0",
+   "kind": "ac",
+   "count": 168,
+   "kw": 3.7
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

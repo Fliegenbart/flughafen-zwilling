@@ -106,16 +106,25 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 4,
+ "parking_sessions_per_day": 1,
  "parking_basis": {
-  "text": "Der Flughafen nannte 2014 vier Ladestationen im Parkhaus. OpenStreetMap verzeichnet dort eine Ladestation mit zwei Säulen, der Eintrag stammt ebenfalls aus 2014/15. Eine aktuelle Zahl ist nicht veröffentlicht, die Parkseiten (Stand 2026) erwähnen kein Laden. Annahme: 4 öffentliche Ladepunkte mit je einem Ladevorgang pro Tag, also 4. Zum Vergleich: P1, P2 und P3 haben zusammen 4.800 Stellplätze.",
+  "text": "Der Flughafen nannte 2014 vier Ladestationen im Parkhaus; eine aktuelle Zahl und die Leistung sind nicht veröffentlicht. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt.",
   "sources": [
    "https://www.bremen-airport.com/fileadmin/user_upload/Downloadcenter/Allgemeine_Informationen/AIR_RZ_131221-Umweltbericht-Ansicht.pdf",
    "https://www.openstreetmap.org/node/3045322784",
-   "https://www.bremen-airport.com/am-flughafen/anreise-parken/parken/parken/allgemeine-infos-und-anreise-706"
+   "https://www.bremen-airport.com/am-flughafen/anreise-parken/parken/parken/allgemeine-infos-und-anreise-706",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Parkhaus (Stand 2014)",
+   "kind": "ac",
+   "count": 4,
+   "kw": 11
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

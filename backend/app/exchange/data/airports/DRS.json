@@ -102,15 +102,24 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 14,
+ "parking_sessions_per_day": 1,
  "parking_basis": {
-  "text": "14 öffentliche Ladepunkte am Flughafen: 12 Schnellladepunkte (HPC, bis 400 kW) von EnBW südöstlich des Parkplatzes P2, in Betrieb seit Dezember 2025 und erweiterbar auf 40; dazu 2 Ladepunkte von SachsenEnergie an der Terminaladresse Wilhelmine-Reichard-Ring 1 (Ladesäulenregister der Bundesnetzagentur). Annahme: ein Ladevorgang je Punkt und Tag, also 14. Nicht gezählt sind 8 Ladepunkte auf dem Werksgelände der Elbe Flugzeugwerke (Grenzstraße 1) und nicht öffentliche Wallboxen.",
+  "text": "2 AC-Ladepunkte von SachsenEnergie. Der Schnellladepark von EnBW (12 Punkte bis 400 kW) dient auch dem Fernverkehr an A4 und A13 und hat vermutlich einen eigenen Netzanschluss; er zählt deshalb nicht zur Reserve des Flughafens. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt.",
   "sources": [
    "https://www.dresden-airport.de/parken/e-auto-laden/",
-   "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenkarte/start.html"
+   "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenkarte/start.html",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "SachsenEnergie",
+   "kind": "ac",
+   "count": 2,
+   "kw": 11
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

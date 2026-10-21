@@ -108,14 +108,29 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 94,
+ "parking_sessions_per_day": 35,
  "parking_basis": {
-  "text": "Am Flughafen gibt es knapp 100 öffentlich zugängliche Pkw-Ladepunkte, davon 6 Schnellladepunkte (Stand 02/2025). Angesetzt sind 94 Punkte: Eine nicht amtliche Drittzählung ergibt 88 Normal- und 6 Schnellladepunkte. Annahme: ein Ladevorgang je Punkt und Tag. Nicht enthalten sind 4 E-Lkw-Ladepunkte für Speditionen und die nicht öffentlichen Ladepunkte für Mitarbeiter- und Betriebsfahrzeuge.",
+  "text": "Knapp 100 öffentlich zugängliche Ladepunkte, davon 6 Schnellladepunkte (Stand 02/2025); Leistung nicht veröffentlicht. Schnelllader laden mit 75 kW je Auto und werden nie verschoben. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt.",
   "sources": [
-   "https://www.electrive.net/2025/02/22/erste-ladestationen-fuer-e-lkw-am-flughafen-stuttgart/"
+   "https://www.electrive.net/2025/02/22/erste-ladestationen-fuer-e-lkw-am-flughafen-stuttgart/",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Parkhäuser",
+   "kind": "ac",
+   "count": 88,
+   "kw": 11
+  },
+  {
+   "label": "Schnellladepunkte",
+   "kind": "dc",
+   "count": 6,
+   "kw": 75
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

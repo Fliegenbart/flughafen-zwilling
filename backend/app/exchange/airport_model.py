@@ -12,7 +12,8 @@ from datetime import date
 from functools import lru_cache
 from math import ceil
 
-from ..munich.coupled_models import CoupledConfig, PowerConfig, trusted_scale
+from ..munich.coupled_models import CoupledConfig, ParkingGroup, PowerConfig, trusted_scale
+from ..munich.coupled_world import parking_arrivals
 from ..munich.flightplan import parse_pages
 from .airport_spec import FLEET_KINDS, AirportSpec, load_spec
 from .demo import _HEADER, _airport_code, _canonical_hash
@@ -102,6 +103,19 @@ def storage_axis(spec: AirportSpec) -> list[int]:
     return sorted({int(round(s * k / 500) * 500) for s in STORAGE_STEPS})
 
 
+def parking_groups(spec: AirportSpec) -> list[ParkingGroup]:
+    """Parkhaus je Standort und Nutzergruppe; Ankuenfte folgen den Passagierfluegen."""
+    arrival = parking_arrivals(spec.passenger_departures_by_hour or spec.departures_by_hour,
+                               spec.passenger_arrivals_by_hour or spec.arrivals_by_hour)
+    out = []
+    for i, group, sessions in spec.parking_sessions():
+        point = spec.parking_points[i]
+        out.append(ParkingGroup(group=group, sessions=sessions, charger_kw=point.kw,
+                                max_dwell_min=point.max_dwell_min,
+                                arrival_by_hour=arrival[group]))
+    return out
+
+
 def airport_config(spec: AirportSpec, vehicles: dict[str, int] | None = None,
                    chargers: dict[str, int] | None = None) -> CoupledConfig:
     """Konfiguration fuer das ganze Vorfeld; Flotte aus dem Steckbrief oder ausdruecklich."""
@@ -126,6 +140,7 @@ def airport_config(spec: AirportSpec, vehicles: dict[str, int] | None = None,
             power=PowerConfig(
                 background_load_kw=0, chp_output_kw=0, pv_capacity_kwp=0, pv_peak_factor=0.2,
                 parking_sessions=spec.parking_sessions_per_day,
+                parking_groups=parking_groups(spec),
                 grid_import_limit_kw=grid_raster(spec)[1],
                 # Kein Trafo-Deckel vor der Reserve: gefragt ist, was das Netz bereitstellt.
                 apron_transformer_kva=200000,

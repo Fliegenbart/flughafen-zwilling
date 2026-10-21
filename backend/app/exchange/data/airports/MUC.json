@@ -106,16 +106,37 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 442,
+ "parking_sessions_per_day": 135,
  "parking_basis": {
-  "text": "Die FMG betrieb Ende 2025 im öffentlichen Bereich rund 390 AC- und 2 DC-Ladepunkte, davon 275 im Ladepark P44. Im Parkhaus P8 (geöffnet seit 1.9.2026) entstehen im ersten Schritt bis zu 50 Ladepunkte; sie sind voll eingerechnet. Summe: 442. Annahme: ein Ladevorgang je Ladepunkt und Tag.",
+  "text": "Die FMG betrieb Ende 2025 rund 390 AC- und 2 DC-Ladepunkte, 275 davon im Ladepark P44 (11 kW, Langzeitparken möglich). Im Parkhaus P8 kommen bis zu 50 dazu. Schnelllader laden mit 75 kW je Auto und werden nie verschoben. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt.",
   "sources": [
    "https://www.munich-airport.de/_b/0000000000000043012574bb6a8ebd6a/umwelterklaerung-fmg-2026.pdf",
    "https://www.munich-airport.com/presse-neues-parkhaus-p8-am-flughafen-muenchen-eroeffnet-43059920",
-   "https://www.electrive.net/2025/09/17/flughafen-muenchen-bietet-138-ac-ladesaeulen-im-gaeste-parkhaus/"
+   "https://www.electrive.net/2025/09/17/flughafen-muenchen-bietet-138-ac-ladesaeulen-im-gaeste-parkhaus/",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Ladepark P44 und weitere Parkhäuser",
+   "kind": "ac",
+   "count": 390,
+   "kw": 11
+  },
+  {
+   "label": "Parkhaus P8 (erster Schritt)",
+   "kind": "ac",
+   "count": 50,
+   "kw": 11
+  },
+  {
+   "label": "Schnelllader der FMG",
+   "kind": "dc",
+   "count": 2,
+   "kw": 75
+  }
+ ],
  "reserve_kw_public": 40000,
  "reserve_basis": {
   "text": "Für das geplante 3. Stromnetz nennt die FMG in ihrer Ausschreibung den Ansatz, rund 40 MW für künftige E-Mobilität vorzuhalten, dazu rund 50 MWp Photovoltaik und ein neues 110/20-kV-Umspannwerk mit zwei Transformatoren zu je 80 MVA. Laut Integriertem Bericht 2025 kostet das Projekt 246 Mio. Euro, der Bau beginnt 2027 und endet bis Ende 2029. Der Wert gilt für die gesamte E-Mobilität am Campus, nicht nur für die Vorfeldflotte.",
