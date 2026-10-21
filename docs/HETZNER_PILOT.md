@@ -1,6 +1,46 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 16.10.2026 (einfacher Messdatenablauf)
+## Aktiver Release vom 21.10.2026 (Kundenseite nach Steckbrief)
+
+Code-Release `386b088e92c8b51e3f5153c159b2913b1808c4ae`, PR #41 (baut auf #40 auf),
+aus `/opt/airport-releases/386b088`. Gepruefter Remote-Commit, sauberer Worktree,
+CI fuer #41 erfolgreich (Backend, Frontend, Snapshots). Ruecknahmeziel:
+`/opt/airport-releases/2c594ab`, SHA `2c594ab5d7c05ebb2876f7c604c0d49a471e5fcd`.
+
+Neu: Startseite nach `docs/PRODUKT.md` (Satz, Treppe der Bausteine, Netzlast ueber
+drei Tage, Praesentationsmodus, A4-Handout). Stufe 1 rechnet Laden ohne Steuerung.
+Die Regler antworten aus der vorab gerechneten Tabelle
+`backend/app/exchange/data/electrification_atlas.json` (im Image). Die alte
+Vergleichsseite liegt unter `?seite=fachleute`.
+
+Ablauf: Images gebaut, waehrend die alte Version lief. Danach nur `twin-core`
+gestoppt, Volume gesichert, neue Version gestartet. Netze `10.253.250.0/24` und
+`10.253.251.0/24` vorher geprueft, nur vom eigenen Projekt belegt.
+
+Offline-Sicherung:
+
+- `/opt/airport-backups/pre-386b088-20261021T133838Z.tar.gz`
+- 2.691 Dateien; 68.922.109 Bytes; Modus 0600
+- SHA256 `7bf31bad9091533956091dc03d04b09c0891dc848503453876631d7127274112`
+- Pruefkopie entpackt, MD5 aller Dateien identisch (`LC_ALL=C sort`), Pruefkopie entfernt.
+
+Abnahme:
+
+- Lokal 375 Backend- und 227 Frontend-Tests; Lint, Typecheck, Ruff, Build.
+- HTTPS: `/health` ok, Build `386b088` im Vergleich, Tabelle mit 2.860 Stellungen
+  und 220 Werten ohne Steuerung, Vergleich 50 %/1.500 kW in 5,7 s
+  (ohne Steuerung 1.625 kW, direkt 875, vorausschauend 800, mit Speicher 675).
+  368 Runs und 9 Projekte nach dem Neustart vorhanden.
+- Smokes ueber HTTPS bestanden: `smoke_electrification.py` (prueft Werte aus der
+  Tabelle jetzt gegen den Endpunkt `/demo/electrification/atlas`),
+  `smoke_public_simulation.py`, `smoke_demo.py --planner --all-cases`,
+  `smoke_flexlab.py`, `smoke_munich.py`.
+- Live-Browser 1.440 px: Treppe, Kurve, keine Konsolenfehler, kein Ueberlauf.
+- Ein gesunder Backend-Prozess, keine Neustarts, keine Tracebacks oder 5xx im
+  Logfenster. HTTP leitet auf HTTPS um. Die oeffentliche Demo bleibt oeffentlich;
+  keine fremden Stacks, Auth-Einstellungen oder Netze geaendert.
+
+## Release vom 16.10.2026 (einfacher Messdatenablauf)
 
 Code-Release `2c594ab5d7c05ebb2876f7c604c0d49a471e5fcd`, PR #40, aus
 `/opt/airport-releases/2c594ab`. Gepruefter Remote-Commit, sauberer Worktree,
