@@ -102,9 +102,10 @@ describe("Seite für Fachleute", () => {
     expect(basis.getByText(/Photovoltaik: 2.000 kWp/)).toHaveTextContent(
       /höchstens 20 % der Nennleistung/,
     );
-    expect(basis.getByText(/Parkhaus: 100 Autos am Tag laden mit je 11\skW/)).toHaveTextContent(
-      /zwischen 0 und 1:30 Uhr.*gleichmäßig gedrosselt/,
+    expect(basis.getByText(/Parkhaus: 100 Ladevorgänge am Tag/)).toHaveTextContent(
+      /je Auto bis zu 11\skW.*Reisende kommen zwei bis drei Stunden vor ihrem Abflug.*wenn Leistung frei ist/,
     );
+    expect(screen.getByText(/Der mittlere der drei Tage trägt sich selbst/)).toBeVisible();
     expect(basis.getByText(/je 60 Abflüge zwischen 6 und 9/)).toHaveTextContent(/180 am Tag/);
     expect(screen.getByRole("heading", { name: "Wann ein Anschluss reicht" })).toBeVisible();
     expect(screen.getByText(/bis zu seiner Frist erledigt/)).toBeVisible();

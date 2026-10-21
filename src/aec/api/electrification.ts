@@ -15,6 +15,8 @@ export type ElectrificationInputs = {
 };
 export type ElectrificationVariant = Preview & {
   solution: Solution;
+  /** Nur mit Speicher: "off", wenn er hier nichts senkt und deshalb ausbleibt. */
+  storage_mode?: "on" | "off";
   checks: { feasible: boolean; reasons: string[] };
   grid_sizing: {
     status: "feasible" | "not_found" | "resource_infeasible";

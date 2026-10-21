@@ -102,3 +102,84 @@ def test_comparison_reports_whether_the_storage_runs(monkeypatch):
     storage = data["variants"][2]
     assert storage["storage_mode"] == "off"
     assert storage["metrics"]["peak_grid_kw"] == data["variants"][1]["metrics"]["peak_grid_kw"]
+
+
+def test_car_park_follows_departures_by_user_group():
+    _, _, _, world, _ = prepare_electrification(ElectrificationRequest(
+        electric_share_pct=0, grid_import_limit_kw=800, parking_sessions=90), "managed")
+    first_day = [j for j in world.parking_jobs if j.id.endswith("day-1")]
+    groups = {g: sum(j.group == g for j in first_day) for g in ("traveler", "day", "dc")}
+    assert groups == {"traveler": 60, "day": 30, "dc": 0}
+    # Beispielflughafen: Abflugwellen ab 6, 12, 18 Uhr; Reisende kommen 2-3 h vorher.
+    hours = {(j.release_min % 1440) // 60 for j in first_day if j.group == "traveler"}
+    assert hours <= {3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19}
+    assert all(j.deadline_min - j.release_min in (720, 1440) for j in first_day
+               if j.group == "traveler")
+
+
+def test_fast_chargers_are_served_first_and_never_shifted():
+    from app.munich.coupled_models import ParkingGroup
+    request = ElectrificationRequest(electric_share_pct=0, grid_import_limit_kw=400,
+                                     parking_sessions=40)
+    plan, config, policy, _, _ = prepare_electrification(request, "direct")
+    config.power.parking_groups = [
+        ParkingGroup(group="dc", sessions=10, charger_kw=75),
+        ParkingGroup(group="traveler", sessions=30, charger_kw=11)]
+    from app.munich.coupled_models import CYCLIC_ENGINE_VERSION
+    from app.munich.coupled_world import build_world
+    world = build_world(plan, config, 42, CYCLIC_ENGINE_VERSION)
+    result = simulate_coupled(world, plan, "uncontrolled", capture_traces=False)
+    fast = [p for p in result.parking if p["group"] == "dc" and "deadline_after_horizon" not in p]
+    assert fast and all(p["deadline_met"] for p in fast)
+    # Am Anschluss gedrosselt wird nur das uebrige Parkhaus, nie der Schnelllader.
+    from app.munich.coupled_power import ChargeRequest, PowerBalance
+    world.config.power.grid_import_limit_kw = 80
+    world.config.power.background_load_kw = 0
+    world.config.power.pv_capacity_kwp = 0
+    balance = PowerBalance(world)
+    requests = [ChargeRequest("fast", "fast", 75, 10)] + [
+        ChargeRequest(f"ac{i}", "parking", 11, 600) for i in range(3)]
+    allocation, _ = balance.step(world.start_min, requests, "lookahead")
+    assert allocation["fast"] == pytest.approx(75)
+    assert sum(allocation[f"ac{i}"] for i in range(3)) == pytest.approx(80 * 0.98 - 75)
+
+
+def test_steered_car_park_fills_free_power_and_keeps_every_deadline():
+    inputs = dict(electric_share_pct=0, grid_import_limit_kw=425, storage_kwh=0, pv_kwp=0,
+                  parking_sessions=200)
+    _, steered = run("managed", **inputs)
+    _, capped = run("direct", **inputs)
+    assert connection_checks(steered)["feasible"]
+    assert "parking_deadlines" in connection_checks(capped)["reasons"]
+    assert max(r["grid_import_kw"] for r in steered.series) <= 425 + 1e-6
+
+
+def test_deadlines_after_the_horizon_are_not_checked():
+    world, result = run("direct", electric_share_pct=0, grid_import_limit_kw=8000,
+                        parking_sessions=40)
+    late = [p for p in result.parking if p.get("deadline_after_horizon")]
+    assert late and all(p["deadline_min"] > world.end_min for p in late)
+    assert all(p["unmet_kwh"] == 0 for p in late)
+    assert result.energy.charging_unmet_kwh < 1e-9
+
+
+def test_several_vehicles_per_flight_and_widebody_values():
+    from app.munich.coupled_models import CYCLIC_ENGINE_VERSION
+    from app.munich.coupled_world import build_world
+    plan, config, _, _, _ = prepare_electrification(ElectrificationRequest(), "direct")
+    bus = next(f for f in config.fleets if f.kind == "bus")
+    bus.units_per_flight, bus.wide_units_per_flight = 2, 3
+    bus.wide_mission_energy_kwh = 9.5
+    config.widebody_share_pct = 20
+    world = build_world(plan, config, 42, CYCLIC_ENGINE_VERSION)
+    buses = [m for m in world.missions if m.kind == "bus" and m.service_day == 0]
+    by_flight = {}
+    for m in buses:
+        by_flight.setdefault(m.source_entry_id, []).append(m)
+    sizes = {len(v) for v in by_flight.values()}
+    assert sizes == {2, 3}
+    assert len({m.mission_id for m in world.missions}) == len(world.missions)
+    wide = [v for v in by_flight.values() if len(v) == 3]
+    assert all(m.aircraft == "wide" and m.energy_kwh == 9.5 for v in wide for m in v)
+    share = len(wide) / len(by_flight)
+    assert 0.1 < share < 0.3

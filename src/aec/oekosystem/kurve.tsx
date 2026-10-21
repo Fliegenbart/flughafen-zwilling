@@ -7,8 +7,8 @@ export const REASONS: Record<string, string> = {
   service_deadlines: "nicht alle Einsätze werden rechtzeitig fertig",
   parking_deadlines: "im Parkhaus werden nicht alle Autos voll",
   background_supply: "der übrige Flughafen bekommt nicht genug Strom",
-  vehicle_recharge: "die Fahrzeuge sind am Ende nicht wieder geladen",
-  storage_recharge: "der Speicher ist am Ende nicht wieder geladen",
+  vehicle_recharge: "die Fahrzeuge kommen am mittleren Tag nicht wieder auf ihren Stand",
+  storage_recharge: "der Speicher kommt am mittleren Tag nicht wieder auf seinen Stand",
   energy_balance: "die Energiebilanz geht nicht auf",
 };
 
