@@ -139,6 +139,8 @@ export type Atlas = {
   gridMaxKw: number;
   /** Raster der Anschlusssuche: 25 kW beim Beispiel, bei grossen Flughaefen groeber. */
   gridStepKw: number;
+  /** Fahrzeuge je Klasse im Modell; leer, wenn der Server sie nicht nennt. */
+  fleet: Record<string, number>;
 };
 
 export async function getAtlas(airport: string | null, signal?: AbortSignal): Promise<Atlas> {
@@ -149,6 +151,7 @@ export async function getAtlas(airport: string | null, signal?: AbortSignal): Pr
     peaks?: Atlas["peaks"];
     grid_max_kw?: number;
     grid_step_kw?: number;
+    fleet?: Record<string, number>;
   }>(
     `/demo/electrification/atlas${airport ? `?airport=${encodeURIComponent(airport)}` : ""}`,
     { signal },
@@ -162,6 +165,7 @@ export async function getAtlas(airport: string | null, signal?: AbortSignal): Pr
     peaks: raw.peaks,
     gridMaxKw: raw.grid_max_kw ?? 8000,
     gridStepKw: raw.grid_step_kw ?? 25,
+    fleet: raw.fleet ?? {},
   };
 }
 

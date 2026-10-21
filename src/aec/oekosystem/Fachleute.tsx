@@ -13,7 +13,7 @@ import LoadChart from "../arbeitsplatz/LoadChart";
 import { dec1, int } from "../model/format";
 import { CurveWaiting, curveFor, REASONS, type Rechnung } from "./kurve";
 import Levers from "./Levers";
-import { AirportModel, AirportPicker } from "./Steckbrief";
+import { AirportModel, AirportPicker, fleetTotal } from "./Steckbrief";
 import {
   ANSCHLUSS,
   answer,
@@ -539,8 +539,11 @@ export default function Fachleute() {
               </>
             ) : (
               <li>
-                Der Beispielflughafen ist erfunden: ein Vorfeldabschnitt mit 100 Fahrzeugen, kein
-                ganzer Flughafen.
+                Der Beispielflughafen ist erfunden: ein Vorfeldabschnitt
+                {atlas && fleetTotal(atlas.fleet)
+                  ? ` mit ${int(fleetTotal(atlas.fleet))} Fahrzeugen`
+                  : ""}
+                , kein ganzer Flughafen.
               </li>
             )}
             <li>

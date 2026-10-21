@@ -25,9 +25,12 @@ const host = (url: string) => {
   }
 };
 
-/** Fahrzeuge, die das Modell fuer den Flughafen rechnet (vier Klassen). */
-export const modelFleet = (profile: AirportProfile) =>
-  Object.values(profile.fleet.vehicles).reduce((a, b) => a + b, 0);
+/** Summe der Fahrzeuge je Klasse. */
+export const fleetTotal = (fleet: Record<string, number>) =>
+  Object.values(fleet).reduce((a, b) => a + b, 0);
+
+/** Fahrzeuge, die das Modell fuer den Flughafen rechnet. */
+export const modelFleet = (profile: AirportProfile) => fleetTotal(profile.fleet.vehicles);
 
 // Nach einem Wechsel bekommt die neu aufgebaute Auswahl den Fokus zurueck (Tastatur).
 let focusAfterSwitch = false;

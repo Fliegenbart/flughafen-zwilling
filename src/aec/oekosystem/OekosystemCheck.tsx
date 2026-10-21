@@ -11,7 +11,7 @@ import LoadChart from "../arbeitsplatz/LoadChart";
 import { CurveWaiting, curveFor } from "./kurve";
 import Levers from "./Levers";
 import { int } from "../model/format";
-import { AirportFacts, AirportPicker, modelFleet } from "./Steckbrief";
+import { AirportFacts, AirportPicker, fleetTotal, modelFleet } from "./Steckbrief";
 import Treppe from "./Treppe";
 import { ANSCHLUSS, answer, kw, lineFor, RESERVE, type StageId } from "./stufen";
 import { useOekosystem } from "./useOekosystem";
@@ -184,7 +184,7 @@ export default function OekosystemCheck() {
             ? `Modellrechnung aus öffentlichen Daten für alle Abflüge von ${profile.name} an einem typischen Tag im Spitzenmonat, drei Tage gerechnet. Nicht mit dem Flughafen abgestimmt und nicht an Messungen abgeglichen.`
             : airport
               ? "Modellrechnung aus öffentlichen Daten. Nicht mit dem Flughafen abgestimmt."
-              : "Beispielflughafen, erfunden: 100 Fahrzeuge im Vorfeld, 180 Abflüge am Tag, drei Tage gerechnet. Die Werte stammen aus Literatur und Annahmen, das Modell ist nicht an Messungen kalibriert."}
+              : `Beispielflughafen, erfunden: ${atlas && fleetTotal(atlas.fleet) ? `${int(fleetTotal(atlas.fleet))} Fahrzeuge` : "Fahrzeuge"} im Vorfeld, 180 Abflüge am Tag, drei Tage gerechnet. Die Werte stammen aus Messungen, Herstellerangaben und Annahmen, das Modell ist nicht an einem Flughafen kalibriert.`}
         </p>
         <Link
           to={{ page: "fachleute", ...here, ...(einstellung ? { einstellung } : {}) }}

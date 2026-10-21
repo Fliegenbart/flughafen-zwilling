@@ -114,6 +114,14 @@ def atlas_sizes(share: int, storage: float, pv: float, parking: int,
     return out
 
 
+def fleet_for(airport: str | None) -> dict[str, int]:
+    """Fahrzeuge je Klasse im Modell (fuer den Hinweis 'N von M Fahrzeugen')."""
+    if airport is None:
+        return {f.kind: f.vehicles for f in reference_config().fleets}
+    spec = load_spec(airport)
+    return dict(spec.fleet.vehicles) if spec.fleet else {}
+
+
 def public_atlas(airport: str | None = None) -> dict:
     """Kompakte Tabelle fuer den Browser: je Stellung der Bedarf der drei Ladeloesungen in kW,
     dazu je Flotte, PV und Parkhaus der Bedarf ganz ohne Steuerung (peaks)."""
@@ -121,6 +129,7 @@ def public_atlas(airport: str | None = None) -> dict:
     if data is None or not data.get("peaks"):
         return {"available": False}
     return {
+        "fleet": fleet_for(airport),
         "available": True, "engine_version": data["engine_version"],
         "reference_id": data["reference_id"], "grid_step_kw": data["grid_step_kw"],
         "airport": airport,
