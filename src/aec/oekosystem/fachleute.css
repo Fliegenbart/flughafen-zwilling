@@ -1,0 +1,262 @@
+/*
+ * Seite fuer Fachleute: gleiche Sprache wie die Startseite (oekosystem.css), dichter gesetzt.
+ * Tabellen statt Karten, weil Fachleute Zeilen vergleichen.
+ */
+.oe-answer--small {
+  max-width: 36ch;
+  margin-bottom: 28px;
+  font-size: 26px;
+}
+.oe-fach .oe-main > section + section {
+  margin-top: 40px;
+}
+a.oe-tool {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.oe-h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 600;
+}
+.oe-lede {
+  max-width: 68ch;
+  margin: 0 0 14px;
+  color: var(--ap-muted);
+}
+
+/* ------------------------------------------------------ Vier Rechnungen */
+.oe-calc {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+.oe-calc thead th {
+  padding: 0 12px 8px;
+  border-bottom: 1px solid var(--ap-faint);
+  color: var(--ap-muted);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+}
+.oe-calc thead th:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+.oe-calc tbody tr {
+  border-bottom: 1px solid var(--ap-faint);
+}
+.oe-calc tbody tr[data-selected] {
+  background: var(--oe-panel);
+  box-shadow: inset 3px 0 0 var(--ap-ink);
+}
+.oe-calc tbody th {
+  padding: 0;
+  font-weight: inherit;
+  text-align: left;
+}
+.oe-calc__pick {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  width: 100%;
+  padding: 12px 12px 12px 10px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.oe-calc__pick:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.oe-calc__pick:focus-visible {
+  outline: 3px solid var(--ap-focus);
+  outline-offset: -3px;
+}
+.oe-calc__name {
+  display: grid;
+  gap: 2px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.oe-calc__name small {
+  max-width: 60ch;
+  color: var(--ap-muted);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.oe-sign--ghost {
+  border: 1.5px dashed var(--ap-faint);
+  background: none;
+}
+.oe-calc__need,
+.oe-calc__said {
+  padding: 12px;
+  text-align: right;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.oe-calc__need {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.oe-calc__need[data-over] {
+  color: var(--ap-stop);
+}
+.oe-calc__said {
+  padding-top: 15px;
+  color: var(--ap-muted);
+  white-space: normal;
+  min-width: 11ch;
+}
+.oe-calc__said[data-ok="true"] {
+  color: var(--ap-go);
+  font-weight: 600;
+}
+.oe-calc__said[data-ok="false"] {
+  color: var(--ap-stop);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------- Kennzahlen der Rechnung */
+.oe-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 32px;
+  margin: 12px 0 0;
+}
+.oe-figures div {
+  border-top: 1px solid var(--ap-faint);
+  padding-top: 8px;
+}
+.oe-figures dt {
+  color: var(--ap-muted);
+  font-size: 14px;
+}
+.oe-figures dd {
+  margin: 2px 0 0;
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------ Annahmen, Grenzen, Quellen */
+.oe-fach__more {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 36px 56px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px 32px 8px;
+  border-top: 1px solid var(--ap-faint);
+}
+.oe-fach__more section:first-child {
+  grid-column: 1 / -1;
+}
+.oe-fach__more h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 600;
+}
+.oe-list {
+  max-width: 72ch;
+  margin: 0;
+  padding-left: 1.2em;
+  line-height: 1.5;
+}
+.oe-list li + li {
+  margin-top: 6px;
+}
+.oe-fleet {
+  width: 100%;
+  max-width: 920px;
+  margin-bottom: 18px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.oe-fleet caption {
+  margin-bottom: 8px;
+  color: var(--ap-muted);
+  font-size: 14px;
+  text-align: left;
+}
+.oe-fleet th,
+.oe-fleet td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ap-faint);
+  text-align: right;
+}
+.oe-fleet th:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+.oe-fleet thead th {
+  color: var(--ap-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+.oe-fleet tbody th {
+  font-weight: 600;
+}
+
+@media screen and (max-width: 960px) {
+  .oe-fach__more {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 24px 16px 8px;
+  }
+  .oe-figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* Schmal: Name ueber die ganze Breite, darunter Bedarf und Urteil nebeneinander. */
+  .oe-calc thead {
+    display: none;
+  }
+  .oe-calc tbody tr {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+  }
+  .oe-calc tbody th {
+    grid-column: 1 / -1;
+  }
+  .oe-calc__need {
+    padding: 0 12px 12px 52px;
+    text-align: left;
+  }
+  .oe-calc__said {
+    min-width: 0;
+    padding: 0 12px 12px;
+    text-align: right;
+  }
+  .oe-fleet {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media print {
+  .oe-fach__more {
+    display: block;
+    padding: 12px 0 0;
+  }
+  .oe-fach__more section {
+    margin-bottom: 14px;
+    break-inside: avoid;
+  }
+  .oe-fach__more h2 {
+    font-size: 15px;
+  }
+  .oe-calc__pick {
+    padding: 6px 4px;
+  }
+  .oe-figures dd {
+    font-size: 16px;
+  }
+}

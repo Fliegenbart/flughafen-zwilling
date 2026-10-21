@@ -44,6 +44,29 @@ export type Stage = {
 export const nearest = (values: number[], v: number) =>
   values.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a), values[0]!);
 
+/** Anschluss-Regler: 250 bis 5.000 kW in 25-kW-Schritten. */
+export const CONNECTION = { min: 250, max: 5000, step: 25 } as const;
+
+/** Eine Stellung aus der Adresse auf die gerechneten Werte setzen. */
+export function snap(atlas: Atlas, s: Settings): Settings {
+  const c = Math.round(s.grid_import_limit_kw / CONNECTION.step) * CONNECTION.step;
+  return {
+    electric_share_pct: nearest(atlas.axes.electric_share_pct, s.electric_share_pct),
+    grid_import_limit_kw: Math.min(CONNECTION.max, Math.max(CONNECTION.min, c)),
+    storage_kwh: nearest(atlas.axes.storage_kwh, s.storage_kwh),
+    pv_kwp: nearest(atlas.axes.pv_kwp, s.pv_kwp),
+    parking_sessions: nearest(atlas.axes.parking_sessions, s.parking_sessions),
+  };
+}
+
+/** Nur was vom Start abweicht, kommt in die Adresse. */
+export function changedFromStart(s: Settings): Partial<Settings> | undefined {
+  const out = Object.fromEntries(
+    (Object.keys(s) as (keyof Settings)[]).filter((k) => s[k] !== START[k]).map((k) => [k, s[k]]),
+  );
+  return Object.keys(out).length ? out : undefined;
+}
+
 export const atlasKey = (s: Settings) =>
   `${s.electric_share_pct}|${s.storage_kwh}|${s.pv_kwp}|${s.parking_sessions}`;
 

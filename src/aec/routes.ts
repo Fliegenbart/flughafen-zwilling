@@ -45,10 +45,42 @@ const WERKSTATT: Werkstatt[] = [...MUNICH_STEPS, "flexlab", "simulation"];
 export type LabWerkstatt = "pilot" | "flexlab";
 const isLabWerkstatt = (v: string | null): v is LabWerkstatt => v === "pilot" || v === "flexlab";
 
+/** Reglerstellung der Kundenseite in der Adresse, damit Links und Lesezeichen sie behalten. */
+export type Einstellung = Partial<{
+  electric_share_pct: number;
+  grid_import_limit_kw: number;
+  storage_kwh: number;
+  pv_kwp: number;
+  parking_sessions: number;
+}>;
+const EINSTELLUNG: [keyof Einstellung, string][] = [
+  ["electric_share_pct", "anteil"],
+  ["grid_import_limit_kw", "anschluss"],
+  ["storage_kwh", "speicher"],
+  ["pv_kwp", "pv"],
+  ["parking_sessions", "parkhaus"],
+];
+
+function readEinstellung(p: URLSearchParams): Einstellung | undefined {
+  const out: Einstellung = {};
+  for (const [key, param] of EINSTELLUNG) {
+    const raw = p.get(param);
+    const value = raw === null || raw.trim() === "" ? NaN : Number(raw);
+    if (Number.isFinite(value) && value >= 0) out[key] = value;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+function writeEinstellung(p: URLSearchParams, e: Einstellung | undefined) {
+  for (const [key, param] of EINSTELLUNG) if (e?.[key] !== undefined) p.set(param, String(e[key]));
+}
+
 export type Route =
-  | { page: "start" }
-  /** Fuer Fachleute: der ausfuehrliche Vergleich, Messdaten-Uebergabe und eigene Projekte. */
-  | { page: "fachleute" }
+  | { page: "start"; einstellung?: Einstellung }
+  /** Fuer Fachleute: dieselbe Rechnung wie auf der Startseite, ausfuehrlich begruendet. */
+  | { page: "fachleute"; einstellung?: Einstellung }
+  /** Altwerkzeuge (Vergleich mit Messdaten-Uebergabe, eigene Projekte); nirgends verlinkt. */
+  | { page: "labor" }
   | { page: "bibliothek"; werkstatt?: "simulation" }
   /** Pruefbereich: Pruefauftraege, Messdaten und Modellabgleich eines Projekts. */
   | { page: "lab"; projekt: string; werkstatt?: LabWerkstatt; run?: string }
@@ -81,7 +113,10 @@ const WERKSTATT_HOME: Record<Exclude<Werkstatt, LabWerkstatt>, Question> = {
 export function parseRoute(search: string): Route {
   const p = new URLSearchParams(search);
   const werkstatt = p.get("werkstatt");
-  if (p.get("seite") === "fachleute") return { page: "fachleute" };
+  const einstellung = readEinstellung(p);
+  if (p.get("seite") === "fachleute")
+    return einstellung ? { page: "fachleute", einstellung } : { page: "fachleute" };
+  if (p.get("seite") === "labor") return { page: "labor" };
   if (p.get("seite") === "bibliothek")
     return werkstatt === "simulation" ? { page: "bibliothek", werkstatt } : { page: "bibliothek" };
   const projekt = p.get("projekt");
@@ -107,13 +142,18 @@ export function parseRoute(search: string): Route {
       ...(frage === null && !isWerkstatt(werkstatt) ? { auto: true as const } : {}),
     };
   }
-  return { page: "start" };
+  return einstellung ? { page: "start", einstellung } : { page: "start" };
 }
 
 export function toSearch(route: Route): string {
   const p = new URLSearchParams();
-  if (route.page === "fachleute") {
+  if (route.page === "start") {
+    writeEinstellung(p, route.einstellung);
+  } else if (route.page === "fachleute") {
     p.set("seite", "fachleute");
+    writeEinstellung(p, route.einstellung);
+  } else if (route.page === "labor") {
+    p.set("seite", "labor");
   } else if (route.page === "bibliothek") {
     p.set("seite", "bibliothek");
     if (route.werkstatt) p.set("werkstatt", route.werkstatt);

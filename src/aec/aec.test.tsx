@@ -405,8 +405,21 @@ describe("Oberfläche", () => {
     expect(parseRoute("?projekt=p1&frage=varianten&krise=gibtsnicht")).not.toHaveProperty("krise");
   });
 
-  it("lässt sich auf der Seite für Fachleute ein Projekt anlegen", async () => {
-    openApp("?seite=fachleute");
+  it("trägt die Reglerstellung in der Adresse und verwirft Unsinn", () => {
+    const route = parseRoute("?anteil=80&anschluss=2000&pv=abc&parkhaus=-5");
+    expect(route).toEqual({
+      page: "start",
+      einstellung: { electric_share_pct: 80, grid_import_limit_kw: 2000 },
+    });
+    expect(toSearch(route)).toBe("?anteil=80&anschluss=2000");
+    const fach = parseRoute("?seite=fachleute&speicher=0");
+    expect(fach).toEqual({ page: "fachleute", einstellung: { storage_kwh: 0 } });
+    expect(toSearch(fach)).toBe("?seite=fachleute&speicher=0");
+    expect(parseRoute("?seite=labor")).toEqual({ page: "labor" });
+  });
+
+  it("lässt sich im Labor ein Projekt anlegen", async () => {
+    openApp("?seite=labor");
     fireEvent.click(screen.getByText("Eigene Projekte und weitere Untersuchungen"));
     expect(
       screen.getByRole("heading", {

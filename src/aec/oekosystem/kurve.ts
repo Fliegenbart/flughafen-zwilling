@@ -1,0 +1,76 @@
+/** Was die Kurve einer Stufe zeigt und welcher Satz darueber steht. */
+import type { ElectrificationComparison } from "../api/electrification";
+import { resultFromExact, type LiveBasis, type LiveResult } from "../model/livePower";
+import type { StageId } from "./stufen";
+
+export const REASONS: Record<string, string> = {
+  service_deadlines: "nicht alle Einsätze werden rechtzeitig fertig",
+  parking_deadlines: "im Parkhaus werden nicht alle Autos voll",
+  background_supply: "der übrige Flughafen bekommt nicht genug Strom",
+  vehicle_recharge: "die Fahrzeuge sind am Ende nicht wieder geladen",
+  storage_recharge: "der Speicher ist am Ende nicht wieder geladen",
+  energy_balance: "die Energiebilanz geht nicht auf",
+};
+
+/** Ohne Steuerung bremst nichts: was ueber dem Anschluss liegt, ist Ueberlast (rot im Diagramm). */
+export function againstConnection(basis: LiveBasis, connectionKw: number): LiveResult {
+  const load = basis.gridImportKw ?? [];
+  return resultFromExact({
+    ...basis,
+    gridCapKw: load.map(() => connectionKw),
+    gridImportKw: load.map((v) => Math.min(v, connectionKw)),
+    requestedKw: load.map((v) => Math.max(0, v - connectionKw)),
+    deliveredKw: load.map(() => 0),
+    batteryKw: load.map(() => 0),
+  });
+}
+
+export type Rechnung = StageId | "direct";
+export type Note = { text: string; tone: "ok" | "stop" };
+
+/** Kurve, Vergleichslinie und Satz fuer eine Rechnung; null, solange der Server rechnet. */
+export function curveFor(
+  data: ElectrificationComparison | null,
+  which: Rechnung,
+  connectionKw: number,
+): {
+  result: LiveResult;
+  base: LiveResult;
+  departures: ElectrificationComparison["variants"][number]["departures"];
+  note: Note;
+} | null {
+  const uncontrolled = data?.uncontrolled;
+  if (!data || !uncontrolled) return null;
+  const base = againstConnection(uncontrolled.basis, connectionKw);
+  if (which === "uncontrolled")
+    return {
+      result: base,
+      base,
+      departures: uncontrolled.departures,
+      note: base.shortfalls.length
+        ? {
+            tone: "stop",
+            text: "Ohne Steuerung liegen die Ladespitzen über Ihrem Anschluss. Das wäre Überlast.",
+          }
+        : { tone: "ok", text: "Der Anschluss trägt auch ungesteuertes Laden." },
+    };
+  const variant = data.variants.find((v) => v.solution === which);
+  if (!variant) return null;
+  const result = resultFromExact(variant.basis);
+  return {
+    result,
+    base,
+    departures: variant.departures,
+    note: variant.checks.feasible
+      ? {
+          tone: "ok",
+          text: result.shortfalls.length
+            ? "Ladespitzen über dem Anschluss werden verschoben, alle Einsätze bleiben pünktlich."
+            : "Der Anschluss reicht an allen drei Tagen.",
+        }
+      : {
+          tone: "stop",
+          text: `Hier reicht der Anschluss nicht: ${REASONS[variant.checks.reasons[0] ?? ""] ?? "das Modell findet keine Lösung"}.`,
+        },
+  };
+}
