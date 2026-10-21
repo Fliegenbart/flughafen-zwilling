@@ -55,11 +55,17 @@ export default function LoadChart({
   today,
   departures,
   changed,
+  note,
+  formatCap = powerText,
 }: {
   result: LiveResult;
   today: LiveResult;
   departures: DepartureBin[];
   changed: boolean;
+  /** Eigener Satz ueber der Kurve statt "fehlen bis zu" (z. B. wenn gedeckeltes Laden erlaubt ist). */
+  note?: { text: string; tone: "ok" | "stop" };
+  /** Leistungsformat der Anschlusslinie, passend zur umgebenden Seite. */
+  formatCap?: (kw: number) => string;
 }) {
   const [box, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
@@ -109,11 +115,14 @@ export default function LoadChart({
       <svg
         width={width}
         height={H + DEP_H}
+        viewBox={`0 0 ${width} ${H + DEP_H}`}
         role="img"
         aria-label={
-          worst
-            ? `Von ${timeLabel(worst.start)} bis ${timeLabel(worst.end)} Uhr fehlen bis zu ${powerText(worst.maxMissingKw)}.`
-            : clearText
+          note
+            ? note.text
+            : worst
+              ? `Von ${timeLabel(worst.start)} bis ${timeLabel(worst.end)} Uhr fehlen bis zu ${powerText(worst.maxMissingKw)}.`
+              : clearText
         }
         onPointerMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
@@ -141,9 +150,21 @@ export default function LoadChart({
           y={y(capNow) - 8}
           textAnchor="end"
         >
-          Netzanschluss {powerText(capNow)}
+          Netzanschluss {formatCap(capNow)}
         </text>
-        {worst ? (
+        {note ? (
+          note.tone === "ok" ? (
+            <text className="ap-chart__ok" x={PAD.left} y={PAD.top - 22}>
+              {note.text}
+            </text>
+          ) : (
+            <g className="ap-chart__note">
+              <text x={PAD.left} y={PAD.top - 22}>
+                {note.text}
+              </text>
+            </g>
+          )
+        ) : worst ? (
           <g className="ap-chart__note">
             <line x1={x(worst.start)} x2={x(worst.end)} y1={PAD.top - 14} y2={PAD.top - 14} />
             <text x={x(worst.start)} y={PAD.top - 22}>

@@ -405,8 +405,8 @@ describe("Oberfläche", () => {
     expect(parseRoute("?projekt=p1&frage=varianten&krise=gibtsnicht")).not.toHaveProperty("krise");
   });
 
-  it("lässt sich auf der Startseite ein Projekt anlegen", async () => {
-    openApp();
+  it("lässt sich auf der Seite für Fachleute ein Projekt anlegen", async () => {
+    openApp("?seite=fachleute");
     fireEvent.click(screen.getByText("Eigene Projekte und weitere Untersuchungen"));
     expect(
       screen.getByRole("heading", {

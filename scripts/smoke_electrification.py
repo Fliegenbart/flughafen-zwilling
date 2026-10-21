@@ -24,6 +24,9 @@ def main():
         with urllib.request.urlopen(request, timeout=120) as response:
             return json.load(response)
 
+    # Auf dem Raster antwortet der Vergleich aus der vorab gerechneten Tabelle (ohne Pruefspur);
+    # dann muessen die Werte genau der veroeffentlichten Tabelle entsprechen.
+    atlas = call('/demo/electrification/atlas')
     contracts = []
     for share in (0, 50, 100):
         inputs = {'electric_share_pct': share, 'grid_import_limit_kw': 2000, 'storage_kwh': 2000}
@@ -56,10 +59,18 @@ def main():
             assert sizing['required_grid_kw'] % 25 == 0
             assert sizing['step_kw'] == 25
             assert variant['metadata']['planning']['duty_roster_hash'] == contract['duty_roster_hash']
-            assert sizing['evaluations'][-1]['checks']['feasible']
-            assert all(not e['checks']['feasible'] for e in sizing['evaluations'][:-1])
+            if sizing.get('source') == 'atlas':
+                index = ['direct', 'managed', 'managed_storage'].index(variant['solution'])
+                assert atlas['entries'][f'{share}|2000|500|40'][index] == sizing['required_grid_kw']
+            else:
+                assert sizing['evaluations'][-1]['checks']['feasible']
+                assert all(not e['checks']['feasible'] for e in sizing['evaluations'][:-1])
             if share == 0:
                 assert variant['metrics']['apron_charged_kwh'] == 0
+        free = result['uncontrolled']['grid_sizing']
+        assert free['required_grid_kw'] % 25 == 0
+        assert free['required_grid_kw'] >= variants[0]['grid_sizing']['required_grid_kw']
+        assert atlas['peaks'][f'{share}|500|40'] == free['required_grid_kw']
         print(json.dumps({'share': share, 'comparison_id': result['comparison_id'],
                           'requirements_kw': [v['grid_sizing']['required_grid_kw'] for v in variants],
                           'metrics': [v['metrics'] for v in variants]}))

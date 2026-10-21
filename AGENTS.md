@@ -1,5 +1,8 @@
 # Arbeitskontext
 
+- **Zuerst `docs/PRODUKT.md` lesen.** Der Steckbrief legt fest, wofür das Kundenwerkzeug
+  da ist (Vertrieb E.ON Drive, Ökosystem Stufe für Stufe, live am Beamer) und was nicht
+  in die Kundensicht gehört. Änderungen an der Kundensicht müssen der Kernfrage dienen.
 - Airport Twin Core ist der primaere Arbeitsbereich; Default-URL zeigt Flughafen.
 - FlexLab Workbench ist separat unter `?workspace=flexlab` voll erhalten.
 - Keine Domaene stillschweigend ersetzen. Fachlichen Wechsel vorab deutlich
