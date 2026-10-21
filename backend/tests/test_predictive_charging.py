@@ -27,7 +27,7 @@ def test_fixed_duties_do_not_depend_on_grid_policy_or_drive_share():
         _, _, _, world, _ = reference(share, grid, solution)
         rosters.append(duty_roster(world))
     assert rosters[0] == rosters[1] == rosters[2]
-    assert len(rosters[0]) == 2499
+    assert len(rosters[0]) == 6729
     assert all(d.start_min + d.duration_min <= d.deadline_min for d in rosters[0])
 
 

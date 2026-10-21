@@ -133,7 +133,7 @@ def test_repeated_day_carries_batteries_instead_of_resetting_them():
     assert all(v['final_kwh'] >= v['initial_kwh'] - 1e-6
                for v in result.terminal_vehicles)
     assert all(f.initial_soc_pct == 85 for f in config.fleets)
-    assert all(f.departure_lead_min <= 55 for f in config.fleets)
+    assert {f.kind: f.departure_lead_min for f in config.fleets}["gpu"] == 55
 
 
 def test_mixed_reference_uses_both_drive_types_not_electric_first_dispatch():
@@ -148,8 +148,11 @@ def test_mixed_reference_uses_both_drive_types_not_electric_first_dispatch():
 def test_documented_narrowbody_energy_parameters_are_used():
     _, config, _, _, _ = prepare_electrification(ElectrificationRequest(), 'direct')
     specs = {f.kind: f for f in config.fleets}
-    for kind, energy, battery in [('baggage_tractor', 7.7, 50),
-                                  ('pushback_tug', 15.6, 72), ('gpu', 50.6, 160)]:
+    # Messungen und Herstellerangaben statt He-Diesel-Lastfaktoren (docs/ELECTRIFICATION_COMPARISON.md).
+    for kind, energy, battery in [('bus', 6.5, 300), ('baggage_tractor', 2.5, 50),
+                                  ('pushback_tug', 3.0, 72), ('gpu', 16.0, 160),
+                                  ('belt_loader', 1.0, 30), ('stairs', 1.0, 30),
+                                  ('catering', 10.0, 120)]:
         assert specs[kind].mission_energy_kwh == energy
         assert specs[kind].battery_capacity_kwh == battery
 
@@ -182,7 +185,7 @@ def test_saved_run_cannot_pass_by_borrowing_starting_vehicle_energy(client):
     # Puenktlich allein reicht nicht: der Messtag muss die Fahrzeuge wieder so voll machen,
     # wie er sie vorgefunden hat (eingeschwungen), sonst lebt der Betrieb vom Startstand.
     from test_demo_materialization import _completed
-    inputs = {'electric_share_pct': 50, 'grid_import_limit_kw': 650,
+    inputs = {'electric_share_pct': 50, 'grid_import_limit_kw': 450,
               'storage_kwh': 2000, 'solution': 'managed'}
     created = client.post('/api/v1/demo/electrification/runs', json=inputs)
     assert created.status_code == 202, created.text

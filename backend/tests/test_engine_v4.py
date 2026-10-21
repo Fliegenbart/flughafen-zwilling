@@ -69,7 +69,7 @@ def test_measured_day_is_the_middle_day_and_checks_its_own_start():
 def test_absorbed_storage_shortfall_is_a_real_steady_state(monkeypatch):
     """Was als ausgleichbar gilt, muss sich bestaetigen: startet der Speicher den Messtag auf
     seinem Endstand, kommt er genau dorthin zurueck."""
-    inputs = dict(electric_share_pct=50, grid_import_limit_kw=650, storage_kwh=2000)
+    inputs = dict(electric_share_pct=100, grid_import_limit_kw=625, storage_kwh=2000)
     world, result = run(**inputs)
     e = result.energy
     assert connection_checks(result)["feasible"]
