@@ -263,6 +263,19 @@
 .oe .ap-chart__miss--neutral {
   fill: var(--ap-faint);
 }
+/* Offene Reserve: Die Linie ist nur der Bedarf mit Lademanagement, keine Grenze, also nicht rot. */
+.oe-treppe[data-open] .oe-stage__limit {
+  background: var(--ap-ink);
+}
+.oe-treppe[data-open] .oe-treppe__limitlabel {
+  color: var(--ap-ink);
+}
+.oe .ap-chart--neutral .ap-chart__limit {
+  stroke: var(--ap-ink);
+}
+.oe .ap-chart--neutral .ap-chart__limitlabel {
+  fill: var(--ap-ink);
+}
 .oe-stage__limit {
   position: absolute;
   top: -10px;

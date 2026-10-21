@@ -123,7 +123,7 @@ export default function LoadChart({
   const hp = hover != null ? pts[Math.min(pts.length - 1, Math.round(hover / STEP))] : null;
 
   return (
-    <figure className="ap-chart" ref={box}>
+    <figure className={overflow ? "ap-chart ap-chart--neutral" : "ap-chart"} ref={box}>
       <svg
         width={width}
         height={H + DEP_H}

@@ -363,8 +363,8 @@ export default function Fachleute() {
                     {airport
                       ? "Schwarz: was Vorfeld und Parkhaus zum Laden aus dem Netz brauchen"
                       : "Schwarz: was das Vorfeld, das Parkhaus und der übrige Flughafen aus dem Netz brauchen"}
-                    {current !== "uncontrolled" ? ", grau zum Vergleich ohne Steuerung" : ""}. Rote
-                    Linie: {line.chart}.
+                    {current !== "uncontrolled" ? ", grau zum Vergleich ohne Steuerung" : ""}.{" "}
+                    {line.overload ? "Rote Linie" : "Dunkle Linie"}: {line.chart}.
                   </p>
                 ) : null}
               </section>

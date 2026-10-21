@@ -49,7 +49,11 @@ export default function Treppe({
   const last = [...stages].reverse().find((s) => !s.inactive)!;
   const missing = last.needKw !== null ? last.needKw - connectionKw : null;
   return (
-    <figure className="oe-treppe" aria-label={`${line.need} je Baustein`}>
+    <figure
+      className="oe-treppe"
+      data-open={line.overload ? undefined : true}
+      aria-label={`${line.need} je Baustein`}
+    >
       <div className="oe-treppe__row oe-treppe__head" aria-hidden="true">
         <span />
         <span />
