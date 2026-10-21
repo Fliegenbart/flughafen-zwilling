@@ -192,10 +192,10 @@ Quellen; Annahmen sind als solche markiert.
 
 - Flugplan: Abfluege an einem typischen Tag im Spitzenmonat (nur gewerblich, ohne
   allgemeine Luftfahrt), verteilt nach 24 Stundengewichten fuer Abfluege und
-  Ankuenfte. Bei FRA, MUC, DUS, HAM, STR, HAJ, NUE und DRS sind die Gewichte aus der
-  oeffentlichen Flugplanauskunft ausgezaehlt (Stand Oktober 2026, Frachtfluege dort
-  teils nicht enthalten); bei BER, CGN, LEJ, BRE, DTM, FMM und FKB aus Eckdaten
-  konstruiert (Nachtruhe, Wellen, Spitzenzeiten, Frachtnacht).
+  Ankuenfte. Bei FRA, MUC, DUS, HAM, STR, HAJ, NUE, DRS, BRE, DTM, FMM und FKB sind
+  die Gewichte aus dem veroeffentlichten Flugplan ausgezaehlt (einige Tage bis eine
+  Woche im Oktober 2026, Frachtfluege dort teils nicht enthalten); bei BER, CGN und
+  LEJ aus Eckdaten konstruiert (Laermberichte, Nachtruhe, Frachtnacht).
 - Umfang: vier Fahrzeugklassen mit Verbrauchswerten fuer Kurz- und Mittelstrecke.
   Weitere Geraete, Pkw und der Mehrbedarf von Grossraumflugzeugen fehlen; an
   Drehkreuzen liegt der echte Bedarf deshalb hoeher. Die Seite sagt das bei jedem

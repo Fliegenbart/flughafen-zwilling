@@ -76,6 +76,7 @@ export function useOekosystem(page: Page) {
   const [airport] = useState(() => airportOf(route, page));
   const [atlas, setAtlas] = useState<Atlas | null>(shared.atlases.get(atlasId(airport)) ?? null);
   const [airports, setAirports] = useState<AirportProfile[] | null>(shared.airports);
+  const [airportsFailed, setAirportsFailed] = useState(false);
   const [loadError, setLoadError] = useState("");
   const profile = airport ? (airports?.find((a) => a.id === airport) ?? null) : null;
   const base = useMemo(
@@ -114,8 +115,8 @@ export function useOekosystem(page: Page) {
         setAirports(list);
       })
       .catch(() => {
-        // Ohne Liste bleibt nur der Beispielflughafen waehlbar.
-        if (!controller.signal.aborted) setAirports([]);
+        // Ohne Liste bleibt nur der Beispielflughafen waehlbar; ein gewaehlter Flughafen meldet das.
+        if (!controller.signal.aborted) setAirportsFailed(true);
       });
     return () => controller.abort();
   }, []);
@@ -136,6 +137,8 @@ export function useOekosystem(page: Page) {
   }, [airport]);
 
   const unknownAirport = !!airport && !!airports && !profile;
+  const listError =
+    !!airport && airportsFailed ? "Die Liste der Flughäfen ließ sich nicht laden." : "";
 
   // Die Stellung steht in der Adresse: Link weitergeben, Seite neu laden, Stellung bleibt.
   useEffect(() => {
@@ -195,7 +198,11 @@ export function useOekosystem(page: Page) {
     profile,
     airports: airports ?? [],
     atlas,
-    loadError: unknownAirport ? "Diesen Flughafen gibt es hier noch nicht." : loadError,
+    loadError: unknownAirport
+      ? "Diesen Flughafen gibt es hier noch nicht."
+      : listError || loadError,
+    /** Liste noch unterwegs: Kopf und Ueberschrift sagen dann nichts ueber das Beispiel. */
+    airportsLoading: airports === null && !airportsFailed,
     /** Vor dem Laden die Startstellung des Beispiels; Seiten zeigen dann "wird geladen". */
     settings: settings ?? { ...START, airport },
     ready: !!settings,

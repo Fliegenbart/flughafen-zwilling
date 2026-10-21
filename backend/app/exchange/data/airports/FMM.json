@@ -77,7 +77,7 @@
    "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/",
    "https://www.airliners.de/flughafen-memmingen-erweitert-vorfeld-baut-wendeflaeche-groessere-maschinen/88257"
   ],
-  "assumption": true
+  "assumption": false
  },
  "coverage_pct": {
   "bus": 35,
@@ -125,7 +125,7 @@
   },
   {
    "label": "Abflüge pro Tag im Spitzenmonat",
-   "value": "Rund 34 im Linien- und Charterverkehr (August 2025: 2.137 Bewegungen an+ab); keine Luftfracht",
+   "value": "rund 34 im August 2025, Linie und Charter, keine Luftfracht",
    "source": "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf"
   },
   {

@@ -76,7 +76,7 @@
    "https://www.dortmund-airport.com/de/nachbarn/betriebszeiten",
    "https://cdn0.scrvt.com/airportdtm/80d405e92c16be38/709af8c3f3bb/FBO-DTM-gueltig-ab-09.02.2026.pdf"
   ],
-  "assumption": true
+  "assumption": false
  },
  "coverage_pct": {
   "bus": 0,
@@ -128,7 +128,7 @@
   },
   {
    "label": "Abflüge pro Tag im Spitzenmonat",
-   "value": "Rund 29 im Linien- und Charterverkehr (August 2026: 1.825 Bewegungen an+ab)",
+   "value": "rund 29 im August 2026, Linie und Charter",
    "source": "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf"
   },
   {

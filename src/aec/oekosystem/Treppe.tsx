@@ -49,7 +49,7 @@ export default function Treppe({
   const last = [...stages].reverse().find((s) => !s.inactive)!;
   const missing = last.needKw !== null ? last.needKw - connectionKw : null;
   return (
-    <figure className="oe-treppe" aria-label="Benötigter Anschluss je Baustein">
+    <figure className="oe-treppe" aria-label={`${line.need} je Baustein`}>
       <div className="oe-treppe__row oe-treppe__head" aria-hidden="true">
         <span />
         <span />
@@ -64,7 +64,9 @@ export default function Treppe({
         {stages.map((s) => {
           // Eine abgeschaltete Stufe zeigt keine Zahl: Sie wuerde im Termin nicht gebaut.
           const need = s.inactive ? null : s.needKw;
-          const over = need !== null && need > connectionKw;
+          const above = need !== null && need > connectionKw;
+          // Ueber einer offenen Reserve liegt kein Mangel, nur Mehrbedarf ohne Steuerung (grau).
+          const over = above && line.overload;
           return (
             <li key={s.id}>
               <button
@@ -88,9 +90,11 @@ export default function Treppe({
                         className="oe-stage__fill"
                         style={{ width: pct(Math.min(need, connectionKw)) }}
                       />
-                      {over ? (
+                      {above ? (
                         <span
-                          className="oe-stage__over"
+                          className={
+                            over ? "oe-stage__over" : "oe-stage__over oe-stage__over--neutral"
+                          }
                           style={{ left: pct(connectionKw), width: pct(need - connectionKw) }}
                         />
                       ) : null}

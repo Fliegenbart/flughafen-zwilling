@@ -30,25 +30,25 @@ describe("Echter Flughafen", () => {
     ).toBeVisible();
     expect(
       screen.getByText(
-        /^Ohne Steuerung bräuchte das Vorfeld in Teststadt 1.850\skW Reserve, mit Lademanagement 950\skW, mit Speicher 900\skW\.$/,
+        /^Ohne Steuerung bräuchte das Vorfeld in Teststadt 2.400\skW Reserve, mit Lademanagement 1.200\skW, mit Speicher 1.100\skW\.$/,
       ),
     ).toBeVisible();
-    expect(screen.getByText(/Mit Lademanagement nötig 950\skW/)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Gerechnet sind 137 Busse, Schlepper und Bodenstromgeräte im Modell/),
-    ).toBeVisible();
+    expect(screen.getByText(/Mit Lademanagement nötig 1.200\skW/)).toBeInTheDocument();
+    expect(screen.getByText(/Das Modell rechnet mit 137 Fahrzeugen auf dem Vorfeld/)).toBeVisible();
     expect(screen.getByText("offen")).toBeVisible();
     expect(
       screen.getByRole("slider", { name: "Elektrische Fahrzeuge im Vorfeld" }),
-    ).toHaveAttribute("aria-valuetext", "30 %");
+    ).toHaveAttribute("aria-valuetext", "50\u00a0%");
     expect(
-      screen.getByText(/41 von 137 Fahrzeugen im Modell fahren elektrisch, heute rund 32 %/),
+      screen.getByText(
+        /69 von 137 Fahrzeugen im Modell fahren elektrisch; veröffentlicht: rund 32 % der Flughafenflotte/,
+      ),
     ).toBeVisible();
     expect(screen.queryByRole("slider", { name: "Photovoltaik" })).toBeNull();
     await waitFor(() => expect(bodies.length).toBeGreaterThan(0));
     expect(bodies[0]).toEqual({
-      electric_share_pct: 30,
-      grid_import_limit_kw: 950,
+      electric_share_pct: 50,
+      grid_import_limit_kw: 1200,
       storage_kwh: 4500,
       pv_kwp: 0,
       parking_sessions: 0,
@@ -59,23 +59,31 @@ describe("Echter Flughafen", () => {
         name: "Ohne Steuerung liegen die Ladespitzen über dem Bedarf mit Lademanagement.",
       }),
     ).toBeInTheDocument();
+    // Ohne eingetragene Reserve ist das kein Mangel: grau statt rot, keine Ueberlast-Schraffur.
+    expect(document.querySelector(".ap-chart__miss--neutral")).not.toBeNull();
+    expect(document.querySelector(".oe-stage__over--neutral")).not.toBeNull();
+    expect(document.querySelector(".oe-stage__value[data-over]")).toBeNull();
   });
 
   it("trägt die Reserve ein und urteilt erst dann", async () => {
     serve({ airports: true });
     open("?flughafen=TST");
-    fireEvent.click(await screen.findByRole("button", { name: /Reserve eintragen/ }));
+    const enter = await screen.findByRole("button", { name: /Reserve eintragen/ });
+    enter.focus();
+    fireEvent.click(enter);
     const reserve = screen.getByRole("slider", { name: "Reserve fürs Vorfeld" });
-    expect(reserve).toHaveValue("950");
+    expect(reserve).toHaveValue("1200");
+    expect(reserve).toHaveFocus();
     expect(
       screen.getByText(
-        /^Ungesteuertes Laden würde Ihre Reserve von 950\skW überlasten\. Mit Lademanagement reicht sie, ohne mehr Reserve\.$/,
+        /^Ungesteuertes Laden bräuchte mehr als Ihre Reserve von 1.200\skW\. Mit Lademanagement reicht sie\.$/,
       ),
     ).toBeVisible();
-    await waitFor(() => expect(window.location.search).toBe("?flughafen=TST&anschluss=950"));
-    fireEvent.change(reserve, { target: { value: "800" } });
+    await waitFor(() => expect(window.location.search).toBe("?flughafen=TST&anschluss=1200"));
+    fireEvent.change(reserve, { target: { value: "1000" } });
     expect(screen.getByText(/^Ihre Reserve muss um 100\skW größer werden/)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Reserve offen lassen" }));
+    expect(screen.getByRole("button", { name: /Reserve eintragen/ })).toHaveFocus();
     expect(screen.getByText(/^Ohne Steuerung bräuchte das Vorfeld in Teststadt/)).toBeVisible();
     await waitFor(() => expect(window.location.search).toBe("?flughafen=TST"));
   });
@@ -100,7 +108,9 @@ describe("Echter Flughafen", () => {
     serve({ airports: true });
     open("?flughafen=TST");
     const facts = (
-      await screen.findByRole("heading", { name: "Flughafen Teststadt in Zahlen" })
+      await screen.findByRole("heading", {
+        name: "Das berichten öffentliche Quellen über Teststadt",
+      })
     ).closest("section")!;
     expect(within(facts).getByText("Nachtruhe").nextSibling).toHaveTextContent("23 bis 6 Uhr");
     expect(within(facts).getAllByRole("link")[0]).toHaveAttribute(
@@ -133,11 +143,30 @@ describe("Echter Flughafen", () => {
     );
   });
 
-  it("meldet einen unbekannten Flughafen", async () => {
+  it("meldet einen unbekannten Flughafen und lässt zurück zum Beispiel wechseln", async () => {
     serve({ airports: true });
     open("?flughafen=XYZ");
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /Diesen Flughafen gibt es hier noch nicht|vorab gerechneten Werte fehlen/,
     );
+    const picker = await screen.findByRole("combobox", { name: "Flughafen" });
+    expect(picker).toHaveValue("XYZ");
+    fireEvent.change(picker, { target: { value: "" } });
+    expect(await screen.findByText(/Ihren Anschluss von 1.500\skW überlasten/)).toBeVisible();
+  });
+
+  it("sagt ehrlich, wenn nur die Flughafenliste fehlt", async () => {
+    serve({ airports: true });
+    const stub = fetch as unknown as (url: string, init?: RequestInit) => Promise<Response>;
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
+      url.endsWith("/demo/airports")
+        ? Promise.resolve(new Response("", { status: 500 }))
+        : stub(url, init),
+    );
+    open("?flughafen=TST");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Die Liste der Flughäfen ließ sich nicht laden.",
+    );
+    expect(screen.queryByText("Beispielflughafen, erfunden")).toBeNull();
   });
 });

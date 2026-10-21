@@ -41,7 +41,7 @@ type Row = {
   name: string;
   /** Fuer Ueberschriften: "Netzlast ueber drei Tage mit Lademanagement". */
   with: string;
-  how: (s: Settings) => string;
+  how: (s: Settings, line: Line) => string;
 };
 const ROWS: Row[] = [
   {
@@ -57,8 +57,8 @@ const ROWS: Row[] = [
     sign: null,
     name: "Einfache Leistungsbegrenzung",
     with: "mit einfacher Leistungsbegrenzung",
-    how: () =>
-      "Wie ohne Steuerung, aber alle Ladepunkte werden gleichmäßig gedrosselt, sobald der Anschluss voll ist. Zum Vergleich, nicht auf der Übersicht.",
+    how: (_, line) =>
+      `Wie ohne Steuerung, aber alle Ladepunkte werden gleichmäßig gedrosselt, sobald ${line.nomLower} ausgeschöpft ist. Zum Vergleich, nicht auf der Übersicht.`,
   },
   {
     id: "managed",
@@ -73,9 +73,9 @@ const ROWS: Row[] = [
     sign: 3,
     name: "+\u00a0Speicher",
     with: "mit Lademanagement und Speicher",
-    how: (s) =>
+    how: (s, line) =>
       s.storage_kwh
-        ? `Lademanagement mit ${dec1(s.storage_kwh / 1000)} MWh Speicher und ${kw(s.storage_kwh / 2)} Leistung. Er lädt aus dem Netz nach, solange weniger als 80 % des Anschlusses genutzt werden.`
+        ? `Lademanagement mit ${dec1(s.storage_kwh / 1000)} MWh Speicher und ${kw(s.storage_kwh / 2)} Leistung. Er lädt aus dem Netz nach, solange weniger als 80 % ${line.gen} genutzt werden.`
         : "Kein Speicher eingestellt.",
   },
 ];
@@ -155,6 +155,7 @@ export default function Fachleute() {
     airport,
     profile,
     airports,
+    airportsLoading,
     atlas,
     loadError,
     settings,
@@ -193,7 +194,12 @@ export default function Fachleute() {
     <div className="ap oe oe-fach">
       <header className="oe-head">
         <p className="oe-brand">Airport Energy Check</p>
-        <AirportPicker airports={airports} current={airport} page="fachleute" />
+        <AirportPicker
+          airports={airports}
+          current={airport}
+          loading={airportsLoading}
+          page="fachleute"
+        />
         <Link
           to={{ page: "start", ...here, ...(einstellung ? { einstellung } : {}) }}
           className="oe-tool"
@@ -224,8 +230,8 @@ export default function Fachleute() {
         )}
         <section className="oe-main" aria-labelledby="oe-question">
           <h1 id="oe-question">
-            {profile
-              ? `Wie viel Reserve braucht das Vorfeld in ${profile.name}, und warum?`
+            {airport
+              ? `Wie viel Reserve braucht das Vorfeld${profile ? ` in ${profile.name}` : ""}, und warum?`
               : "Wie viel Anschluss braucht das Vorfeld, und warum?"}
           </h1>
           {loadError ? (
@@ -274,7 +280,7 @@ export default function Fachleute() {
                       const description =
                         off && settings.storage_kwh
                           ? `${dec1(settings.storage_kwh / 1000)} MWh Speicher senken hier den Bedarf nicht.`
-                          : r.how(settings);
+                          : r.how(settings, line);
                       return (
                         <tr key={r.id} data-selected={current === r.id || undefined}>
                           <th scope="row" abbr={r.name}>
@@ -320,7 +326,7 @@ export default function Fachleute() {
                   </tbody>
                 </table>
                 <p className="oe-note">
-                  Benötigter Anschluss ist die kleinste Stufe im 25-kW-Raster bis{" "}
+                  {line.need} ist die kleinste Stufe im {int(atlas.gridStepKw)}-kW-Raster bis{" "}
                   {kw(atlas.gridMaxKw)}, bei der alle Bedingungen weiter unten erfüllt sind. Ohne
                   Steuerung ist es die höchste Netzlast, aufgerundet.
                 </p>
@@ -339,6 +345,11 @@ export default function Fachleute() {
                     note={curve.note}
                     formatCap={kw}
                     capLabel={line.chart}
+                    overflow={
+                      line.overload
+                        ? undefined
+                        : { neutral: true, label: "über dem Bedarf mit Lademanagement" }
+                    }
                     result={curve.result}
                     today={curve.base}
                     departures={curve.departures}
@@ -349,10 +360,11 @@ export default function Fachleute() {
                 )}
                 {curve ? (
                   <p className="oe-note">
-                    Schwarz: was das Vorfeld, das Parkhaus und der übrige Flughafen aus dem Netz
-                    brauchen
+                    {airport
+                      ? "Schwarz: was Vorfeld und Parkhaus zum Laden aus dem Netz brauchen"
+                      : "Schwarz: was das Vorfeld, das Parkhaus und der übrige Flughafen aus dem Netz brauchen"}
                     {current !== "uncontrolled" ? ", grau zum Vergleich ohne Steuerung" : ""}. Rote
-                    Linie: Ihr Anschluss.
+                    Linie: {line.chart}.
                   </p>
                 ) : null}
               </section>
@@ -454,7 +466,7 @@ export default function Fachleute() {
                   Parkhaus: {int(settings.parking_sessions)} Autos am Tag laden mit je{" "}
                   {kw(config.power.parking_charger_kw)}. Sie kommen zwischen 0 und 1:30 Uhr und
                   brauchen 20 bis 45 kWh bis zur Abfahrt zwischen 9 und 14 Uhr. Das Parkhaus wird
-                  nicht vorausgeplant. Ist der Anschluss voll, wird es wie alle Ladepunkte
+                  nicht vorausgeplant. Ist {line.nomLower} ausgeschöpft, wird es wie alle Ladepunkte
                   gleichmäßig gedrosselt.
                 </li>
                 <li>
@@ -502,8 +514,10 @@ export default function Fachleute() {
                 <li>
                   {profile.profile_basis.assumption
                     ? `Das Tagesprofil ist aus veröffentlichten Eckdaten gebaut, nicht aus dem echten Flugplan von ${profile.name}.`
-                    : `Das Tagesprofil ist aus dem veröffentlichten Flugplan von ${profile.name} ausgezählt und auf einen typischen Tag im Spitzenmonat skaliert. Frachtflüge und Tagesschwankungen können fehlen.`}{" "}
-                  Gerechnet wird ein typischer Tag im Spitzenmonat.
+                    : `Das Tagesprofil ist aus dem veröffentlichten Flugplan von ${profile.name} ausgezählt und auf einen typischen Tag im Spitzenmonat skaliert. Frachtflüge und Tagesschwankungen können fehlen.`}
+                  {profile.profile_basis.assumption
+                    ? " Das Modell rechnet einen typischen Tag im Spitzenmonat."
+                    : ""}
                 </li>
                 <li>
                   Gerechnet werden vier Fahrzeugklassen: Busse, Gepäckschlepper, Flugzeugschlepper
@@ -624,8 +638,7 @@ function Figures({
       ["Im Parkhaus nicht geladen", `${dec1(m.parking_unmet_kwh)} kWh`],
     ];
     if (row.id === "managed_storage")
-      remark =
-        "Der Speicher lädt nach, solange weniger als 80 % der Leistung an der roten Linie genutzt sind. Deshalb kann die höchste Netzlast hier über dem Bedarf liegen.";
+      remark = `Der Speicher lädt nach, solange weniger als 80 % ${line.gen} genutzt sind. Deshalb kann die höchste Netzlast hier über ${line.need === "Benötigter Anschluss" ? "dem benötigten Anschluss" : "der benötigten Reserve"} liegen.`;
   }
   return (
     <section aria-labelledby="oe-figures-title">

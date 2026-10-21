@@ -16,7 +16,7 @@ from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION
 from .airport_model import AIRPORT_MODEL_VERSION, grid_raster, storage_axis
 from .airport_spec import load_spec
 from .demo import _canonical_hash
-from .electrification_reference import REFERENCE_ID
+from .electrification_reference import REFERENCE_ID, reference_config
 from .grid_sizing import GRID_MAX_KW, GRID_STEP_KW
 
 ATLAS_PATH = Path(__file__).resolve().parent / "data" / "electrification_atlas.json"
@@ -54,6 +54,8 @@ def reference_id_for(airport: str | None) -> str:
                                      "arrivals_by_hour", "coverage_pct",
                                      "parking_sessions_per_day", "fleet"})
     model["fleet"] = {k: v for k, v in (model["fleet"] or {}).items() if k != "basis"}
+    # Fahrzeugdaten kommen aus dem Beispielflughafen: aendert der sich, gilt die Tabelle nicht mehr.
+    model["reference"] = [REFERENCE_ID, _canonical_hash(reference_config().model_dump(mode="json"))]
     return f"{AIRPORT_MODEL_VERSION}:{airport}:{_canonical_hash(model)[:16]}"
 
 

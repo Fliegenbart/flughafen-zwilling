@@ -1,4 +1,5 @@
 /** Die Regler: was der Flughafen hat und welche Bausteine dazukommen. */
+import { useEffect, useRef } from "react";
 import type { AirportProfile, Atlas } from "../api/electrification";
 import { dec1, int } from "../model/format";
 import { connectionRange, kw, type Settings } from "./stufen";
@@ -13,6 +14,7 @@ type Lever = {
 };
 
 function Slider({
+  inputRef,
   id,
   label,
   text,
@@ -32,6 +34,7 @@ function Slider({
   step: number;
   hint?: string;
   onChange: (v: number) => void;
+  inputRef?: React.Ref<HTMLInputElement>;
 }) {
   return (
     <div className="oe-lever">
@@ -42,6 +45,7 @@ function Slider({
         {text}
       </output>
       <input
+        ref={inputRef}
         id={id}
         type="range"
         min={min}
@@ -102,6 +106,15 @@ export default function Levers({
   const total = airport ? Object.values(airport.fleet.vehicles).reduce((a, b) => a + b, 0) : 100;
   const range = connectionRange(atlas, settings.airport);
   const set = (key: keyof Settings, v: number | null) => onChange({ ...settings, [key]: v });
+  // Beim Umschalten der Reserve verschwindet der gedrueckte Knopf: Fokus dorthin, wo es weitergeht.
+  const focusNext = useRef<"slider" | "button" | null>(null);
+  const reserveSlider = useRef<HTMLInputElement>(null);
+  const reserveButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (focusNext.current === "slider") reserveSlider.current?.focus();
+    if (focusNext.current === "button") reserveButton.current?.focus();
+    focusNext.current = null;
+  });
 
   const share: Lever = {
     key: "electric_share_pct",
@@ -110,7 +123,7 @@ export default function Levers({
     hint: (v) =>
       `${int(Math.round((total * v) / 100))} von ${int(total)} Fahrzeugen${airport ? " im Modell" : ""} fahren elektrisch` +
       (airport?.electric_share_now_pct != null
-        ? `, heute rund ${int(airport.electric_share_now_pct)} %`
+        ? `; veröffentlicht: rund ${int(airport.electric_share_now_pct)} % der Flughafenflotte`
         : ""),
   };
   const blocks: Lever[] = [
@@ -165,10 +178,12 @@ export default function Levers({
             </span>
             <span className="oe-lever__value">offen</span>
             <button
+              ref={reserveButton}
               type="button"
               className="oe-tool oe-lever__set"
               aria-describedby="oe-reserve-label"
               onClick={() => {
+                focusNext.current = "slider";
                 // Start beim Bedarf mit Lademanagement, aufs Raster des Reglers gerundet.
                 const start = managedNeedKw ?? range.min;
                 const snapped = Math.round(start / range.step) * range.step;
@@ -184,6 +199,7 @@ export default function Levers({
         ) : (
           <>
             <Slider
+              inputRef={reserveSlider}
               id="oe-grid_import_limit_kw"
               label={airport ? "Reserve fürs Vorfeld" : "Netzanschluss heute"}
               text={kw(connection)}
@@ -200,7 +216,10 @@ export default function Levers({
               <button
                 type="button"
                 className="oe-link"
-                onClick={() => set("grid_import_limit_kw", null)}
+                onClick={() => {
+                  focusNext.current = "button";
+                  set("grid_import_limit_kw", null);
+                }}
               >
                 Reserve offen lassen
               </button>

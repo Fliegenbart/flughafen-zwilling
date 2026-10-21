@@ -31,6 +31,7 @@ from .electrification import (
     ElectrificationRunRequest,
     compare_electrification,
     prepare_electrification,
+    require_table,
 )
 from .electrification_atlas import public_atlas
 from .live import PreviewRequest, preview
@@ -862,6 +863,7 @@ def create_router(storage, lab_service, plans, base_dir: Path | None = None,
 
     @router.post("/demo/electrification")
     def electrification_comparison(body: ElectrificationRequest) -> dict:
+        require_table(body)
         return compare_electrification(body)
 
     @router.get("/demo/electrification/atlas")

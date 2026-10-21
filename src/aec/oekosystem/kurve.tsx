@@ -26,7 +26,7 @@ export function againstConnection(basis: LiveBasis, connectionKw: number): LiveR
 }
 
 export type Rechnung = StageId | "direct";
-export type Note = { text: string; tone: "ok" | "stop" };
+export type Note = { text: string; tone: "ok" | "stop" | "neutral" };
 
 /** Kurve, Vergleichslinie und Satz fuer eine Rechnung; null, solange der Server rechnet. */
 export function curveFor(
@@ -50,7 +50,8 @@ export function curveFor(
       departures: uncontrolled.departures,
       note: base.shortfalls.length
         ? {
-            tone: "stop",
+            // Bei offener Reserve ist die Linie nur der Bedarf mit Lademanagement: keine Ueberlast.
+            tone: line.overload ? "stop" : "neutral",
             text: `Ohne Steuerung liegen die Ladespitzen über ${line.yourDat}.${line.overload ? " Das wäre Überlast." : ""}`,
           }
         : { tone: "ok", text: `${line.nom} trägt auch ungesteuertes Laden.` },

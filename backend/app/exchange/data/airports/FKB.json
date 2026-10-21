@@ -75,7 +75,7 @@
    "https://de.wikipedia.org/wiki/Nachtflugverbot",
    "https://bnn.de/mittelbaden/buehl/rheinmuenster/investitionen-in-luftverkehrs-infrastruktur-ist-auch-am-baden-airpark-unumgaenglich"
   ],
-  "assumption": true
+  "assumption": false
  },
  "coverage_pct": {
   "bus": 32,
@@ -119,7 +119,7 @@
   },
   {
    "label": "Abflüge pro Tag im Spitzenmonat",
-   "value": "Rund 27 im Linien- und Charterverkehr (August 2026: 1.701 Bewegungen an+ab)",
+   "value": "rund 27 im August 2026, Linie und Charter",
    "source": "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf"
   },
   {

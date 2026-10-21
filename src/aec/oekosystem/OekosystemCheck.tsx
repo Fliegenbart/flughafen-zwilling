@@ -23,6 +23,7 @@ export default function OekosystemCheck() {
     airport,
     profile,
     airports,
+    airportsLoading,
     atlas,
     loadError,
     settings,
@@ -64,7 +65,12 @@ export default function OekosystemCheck() {
     <div className="ap oe" data-presenting={presenting || undefined}>
       <header className="oe-head">
         <p className="oe-brand">Airport Energy Check</p>
-        <AirportPicker airports={airports} current={airport} page="start" />
+        <AirportPicker
+          airports={airports}
+          current={airport}
+          loading={airportsLoading}
+          page="start"
+        />
         <button
           type="button"
           ref={toggleRef}
@@ -94,8 +100,8 @@ export default function OekosystemCheck() {
         )}
         <section className="oe-main" aria-labelledby="oe-question">
           <h1 id="oe-question">
-            {profile
-              ? `Wie viel Reserve braucht das Vorfeld in ${profile.name}, wenn es elektrisch fährt?`
+            {airport
+              ? `Wie viel Reserve braucht das Vorfeld${profile ? ` in ${profile.name}` : ""}, wenn es elektrisch fährt?`
               : "Reicht der Anschluss, wenn das Vorfeld elektrisch fährt?"}
           </h1>
           {loadError ? (
@@ -110,12 +116,12 @@ export default function OekosystemCheck() {
             </p>
           ) : (
             <>
-              <p className="oe-answer">{sentence}</p>
+              <p className={profile ? "oe-answer oe-answer--scoped" : "oe-answer"}>{sentence}</p>
               {profile ? (
                 <p className="oe-scope">
-                  Gerechnet sind {int(modelFleet(profile))} Busse, Schlepper und Bodenstromgeräte im
-                  Modell, mit Verbrauch für Kurz- und Mittelstrecke. Weitere Geräte und
-                  Großraumflugzeuge kommen im echten Betrieb dazu.
+                  Das Modell rechnet mit {int(modelFleet(profile))} Fahrzeugen auf dem Vorfeld und
+                  dem Verbrauch für Kurz- und Mittelstrecke. Weitere Geräte und Großraumflugzeuge
+                  kommen im echten Betrieb dazu.
                 </p>
               ) : null}
               <Treppe
@@ -141,6 +147,11 @@ export default function OekosystemCheck() {
                     note={curve.note}
                     formatCap={kw}
                     capLabel={line.chart}
+                    overflow={
+                      line.overload
+                        ? undefined
+                        : { neutral: true, label: "über dem Bedarf mit Lademanagement" }
+                    }
                     result={curve.result}
                     today={curve.base}
                     departures={curve.departures}
@@ -165,13 +176,15 @@ export default function OekosystemCheck() {
         </section>
       </div>
 
-      <Weiter onPrint={() => window.print()} disabled={!stages} />
+      <Weiter onPrint={() => window.print()} disabled={!stages} airport={!!airport} />
 
       <footer className="oe-foot">
         <p>
           {profile
-            ? `Modellrechnung aus öffentlichen Daten: das ganze Vorfeld von ${profile.name} an einem typischen Tag im Spitzenmonat, drei Tage gerechnet. Nicht mit dem Flughafen abgestimmt und nicht an Messungen abgeglichen.`
-            : "Beispielflughafen, erfunden: 100 Fahrzeuge im Vorfeld, 180 Abflüge am Tag, drei Tage gerechnet. Die Werte stammen aus Literatur und Annahmen, das Modell ist nicht an Messungen kalibriert."}
+            ? `Modellrechnung aus öffentlichen Daten für alle Abflüge von ${profile.name} an einem typischen Tag im Spitzenmonat, drei Tage gerechnet. Nicht mit dem Flughafen abgestimmt und nicht an Messungen abgeglichen.`
+            : airport
+              ? "Modellrechnung aus öffentlichen Daten. Nicht mit dem Flughafen abgestimmt."
+              : "Beispielflughafen, erfunden: 100 Fahrzeuge im Vorfeld, 180 Abflüge am Tag, drei Tage gerechnet. Die Werte stammen aus Literatur und Annahmen, das Modell ist nicht an Messungen kalibriert."}
         </p>
         <Link
           to={{ page: "fachleute", ...here, ...(einstellung ? { einstellung } : {}) }}

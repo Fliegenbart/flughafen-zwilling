@@ -112,7 +112,11 @@ def public_airports() -> list[dict]:
 
     out = []
     for airport in available_airports():
-        spec = load_spec(airport)
+        try:
+            spec = load_spec(airport)
+        except (KeyError, ValueError):
+            # Eine fehlerhafte Datei darf die Liste der anderen Flughaefen nicht verhindern.
+            continue
         if spec.fleet is None or load_atlas(airport) is None:
             continue
         out.append(spec.model_dump(mode="json"))

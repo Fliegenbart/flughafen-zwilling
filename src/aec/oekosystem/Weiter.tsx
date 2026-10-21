@@ -1,5 +1,14 @@
 /** Wie es nach dem Termin weitergeht: Seite zum Mitnehmen, eigene Daten, Messung. */
-export default function Weiter({ onPrint, disabled }: { onPrint: () => void; disabled: boolean }) {
+export default function Weiter({
+  onPrint,
+  disabled,
+  airport = false,
+}: {
+  onPrint: () => void;
+  disabled: boolean;
+  /** Echter Flughafen: gerechnet ist schon er, aber aus oeffentlichen Daten. */
+  airport?: boolean;
+}) {
   return (
     <section className="oe-weiter" aria-labelledby="oe-weiter-title">
       <h2 id="oe-weiter-title">So geht es weiter</h2>
@@ -14,8 +23,9 @@ export default function Weiter({ onPrint, disabled }: { onPrint: () => void; dis
         <li>
           <h3>Mit Ihren Daten rechnen</h3>
           <p>
-            Ein typischer Flugplan, die Fahrzeugliste mit Ladepunkten und der Netzanschluss. Dann
-            rechnen wir Ihren Flughafen statt des Beispiels.
+            {airport
+              ? "Ein typischer Flugplan, die Fahrzeugliste mit Ladepunkten und die Reserve im Flughafennetz. Dann rechnen wir mit Ihren Werten statt mit öffentlichen Daten und Annahmen."
+              : "Ein typischer Flugplan, die Fahrzeugliste mit Ladepunkten und der Netzanschluss. Dann rechnen wir Ihren Flughafen statt des Beispiels."}
           </p>
         </li>
         <li>

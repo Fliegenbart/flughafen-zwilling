@@ -69,17 +69,16 @@ export function connectionRange(atlas: Atlas, airport: string | null) {
   return { min: step, max: Math.min(atlas.gridMaxKw, Math.ceil(top / step) * step), step };
 }
 
-/** Startstellung je Flughafen: heutiger Elektroanteil, Reserve offen, mittlerer Speicher,
+/** Startstellung je Flughafen: 50 % elektrisch, Reserve offen, mittlerer Speicher,
  * Parkhaus aus (zuschaltbar). */
 export function baseFor(airport: string | null, profile: AirportProfile | null, atlas: Atlas) {
   if (!airport || !profile) return START;
   const storage = atlas.axes.storage_kwh;
   return {
     airport,
-    electric_share_pct: nearest(
-      atlas.axes.electric_share_pct,
-      profile.electric_share_now_pct ?? 50,
-    ),
+    // Wie beim Beispiel 50 %: Veroeffentlichte Anteile gelten fuer anders abgegrenzte Flotten
+    // (oft mit Pkw), nicht fuer die vier Klassen des Modells.
+    electric_share_pct: nearest(atlas.axes.electric_share_pct, 50),
     grid_import_limit_kw: null,
     storage_kwh: storage[Math.min(3, storage.length - 1)]!,
     pv_kwp: 0,
@@ -145,25 +144,22 @@ export function inputsFor(s: Settings, connectionKw: number): ElectrificationInp
 export type Words = {
   noun: string;
   your: string;
-  yourAcc: string;
-  it: string;
-  without: string;
+  /** Ohne Steuerung zu viel, mit Lademanagement reicht es. */
+  over: (c: string) => string;
   grow: (by: string) => string;
 };
 export const ANSCHLUSS: Words = {
   noun: "Anschluss",
   your: "Ihr Anschluss",
-  yourAcc: "Ihren Anschluss",
-  it: "er",
-  without: "ohne Netzausbau",
+  over: (c) =>
+    `Ungesteuertes Laden würde Ihren Anschluss von ${c} überlasten. Mit Lademanagement reicht er, ohne Netzausbau.`,
   grow: (by) => `Ihr Anschluss muss um ${by} wachsen, auch mit allen Bausteinen.`,
 };
 export const RESERVE: Words = {
   noun: "Reserve",
   your: "Ihre Reserve",
-  yourAcc: "Ihre Reserve",
-  it: "sie",
-  without: "ohne mehr Reserve",
+  over: (c) =>
+    `Ungesteuertes Laden bräuchte mehr als Ihre Reserve von ${c}. Mit Lademanagement reicht sie.`,
   grow: (by) => `Ihre Reserve muss um ${by} größer werden, auch mit allen Bausteinen.`,
 };
 
@@ -243,8 +239,7 @@ export function answer(
       ? `${words.your} von ${c} reicht schon heute. Mit allen Bausteinen bleiben ${kw(room)} frei für weiteres Wachstum.`
       : `${words.your} von ${c} reicht auch ohne Lademanagement.`;
   }
-  if (enough?.id === "managed")
-    return `Ungesteuertes Laden würde ${words.yourAcc} von ${c} überlasten. Mit Lademanagement reicht ${words.it}, ${words.without}.`;
+  if (enough?.id === "managed") return words.over(c);
   if (enough?.id === "managed_storage")
     return `Erst mit Lademanagement und Speicher reicht ${words.your} von ${c}.`;
   return words.grow(kw(top.needKw - connectionKw));
@@ -259,6 +254,9 @@ export type Line = {
   nomLower: string;
   dat: string;
   yourDat: string;
+  gen: string;
+  /** "Benoetigter Anschluss" bzw. "Benoetigte Reserve" (Spalten, Vorlesetext der Treppe). */
+  need: string;
   /** Liegt die Last ueber der Linie, ist das echte Ueberlast (nicht bei offener Reserve). */
   overload: boolean;
   /** Satz unter der Treppe, wenn auch alle Bausteine nicht reichen; null bei offener Reserve. */
@@ -274,6 +272,8 @@ export function lineFor(airport: string | null, open: boolean): Line {
       nomLower: "der Anschluss",
       dat: "dem Anschluss",
       yourDat: "Ihrem Anschluss",
+      gen: "Ihres Anschlusses",
+      need: "Benötigter Anschluss",
       overload: true,
       more: (by) => `Netzausbau: Der Anschluss braucht ${by} mehr, auch mit allen Bausteinen.`,
     };
@@ -285,6 +285,8 @@ export function lineFor(airport: string | null, open: boolean): Line {
       nomLower: "diese Leistung",
       dat: "dem Bedarf mit Lademanagement",
       yourDat: "dem Bedarf mit Lademanagement",
+      gen: "der mit Lademanagement nötigen Leistung",
+      need: "Benötigte Reserve",
       overload: false,
       more: null,
     };
@@ -295,6 +297,8 @@ export function lineFor(airport: string | null, open: boolean): Line {
     nomLower: "die Reserve",
     dat: "der Reserve",
     yourDat: "Ihrer Reserve",
+    gen: "Ihrer Reserve",
+    need: "Benötigte Reserve",
     overload: true,
     more: (by) => `Mehr Reserve: Das Vorfeld braucht ${by} mehr, auch mit allen Bausteinen.`,
   };

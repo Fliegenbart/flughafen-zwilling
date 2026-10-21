@@ -75,7 +75,7 @@
    "https://www.bremen-airport.com/fluginfo/fluege/wochenflugplan",
    "https://www.bremen-airport.com/fileadmin/user_upload/FBO_01.10.2026.pdf"
   ],
-  "assumption": true
+  "assumption": false
  },
  "coverage_pct": {
   "bus": 35,
@@ -125,8 +125,8 @@
    "source": "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf"
   },
   {
-   "label": "Abflüge pro Tag im Juli 2025",
-   "value": "Rund 27 im Linien- und Charterverkehr (1.684 Bewegungen ÷ 2 ÷ 31 Tage)",
+   "label": "Abflüge pro Tag im Spitzenmonat",
+   "value": "rund 27 im Juli 2025, Linie und Charter",
    "source": "https://www.adv.aero/wp-content/uploads/2015/11/07.2025-ADV-Monatsstatistik.pdf"
   },
   {

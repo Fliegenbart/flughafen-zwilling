@@ -256,6 +256,13 @@
 .oe-stage__over {
   background: repeating-linear-gradient(-45deg, var(--ap-stop) 0 6px, #e8a29c 6px 10px);
 }
+/* Mehrbedarf ueber einer offenen Reserve: kein Mangel, deshalb grau statt rot. */
+.oe-stage__over--neutral {
+  background: repeating-linear-gradient(-45deg, var(--ap-muted) 0 6px, var(--ap-faint) 6px 10px);
+}
+.oe .ap-chart__miss--neutral {
+  fill: var(--ap-faint);
+}
 .oe-stage__limit {
   position: absolute;
   top: -10px;
@@ -316,6 +323,18 @@
 }
 .oe-curve__note[data-tone="stop"] {
   color: var(--ap-stop);
+}
+.oe-curve__note[data-tone="neutral"] {
+  color: var(--ap-ink);
+}
+/* Nur fuer Vorlesesoftware. */
+.oe-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .oe-note {
   margin: 6px 0 0;
@@ -399,9 +418,12 @@
   text-decoration: underline;
   cursor: pointer;
 }
+.oe-answer--scoped {
+  margin-bottom: 10px;
+}
 .oe-scope {
   max-width: 68ch;
-  margin: -18px 0 28px;
+  margin: 0 0 28px;
   color: var(--ap-muted);
   font-size: 15px;
 }
@@ -497,7 +519,13 @@
   }
   .oe-picker {
     flex-basis: 100%;
+    flex-wrap: wrap;
     order: 3;
+  }
+  .oe-picker select {
+    flex: 1 1 12rem;
+    min-width: 0;
+    width: 100%;
   }
   .oe-facts dl {
     grid-template-columns: minmax(0, 1fr);
@@ -627,6 +655,15 @@
   }
   .oe-main h1 {
     font-size: 14px;
+  }
+  .oe-scope {
+    margin: 0 0 10px;
+    font-size: 11px;
+  }
+  .oe-picker select {
+    border: 0;
+    padding: 0;
+    appearance: none;
   }
   .oe-answer {
     max-width: none;

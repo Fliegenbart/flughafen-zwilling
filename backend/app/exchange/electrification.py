@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from collections import OrderedDict
 from contextlib import AbstractContextManager, nullcontext
 from functools import lru_cache
 from math import ceil
@@ -20,7 +21,6 @@ from .airport_model import (
     airport_config,
     airport_day,
     grid_raster,
-    storage_axis,
 )
 from .airport_spec import load_spec
 from .demo import (
@@ -28,7 +28,7 @@ from .demo import (
     DEMO_WAIT_SECONDS,
     _canonical_hash,
 )
-from .electrification_atlas import atlas_sizes
+from .electrification_atlas import atlas_sizes, load_atlas
 from .electrification_reference import REFERENCE_ID, SOURCES, reference_config, reference_day
 from .grid_sizing import (
     GRID_MAX_KW,
@@ -68,8 +68,7 @@ class ElectrificationRequest(BaseModel):
             raise ValueError("Unbekannter Flughafen") from None
         if spec.fleet is None:
             raise ValueError("Flotte des Flughafens noch nicht bemessen")
-        if (self.grid_import_limit_kw > grid_raster(spec)[1]
-                or self.storage_kwh > max(storage_axis(spec))):
+        if self.grid_import_limit_kw > grid_raster(spec)[1]:
             raise ValueError("Wert ausserhalb des Flughafenmodells")
         return self
 
@@ -82,6 +81,23 @@ class ElectrificationRunRequest(ElectrificationRequest):
         if self.airport is not None:
             raise ValueError("Laeufe gibt es nur fuer den Beispielflughafen")
         return self
+
+
+def require_table(request: ElectrificationRequest) -> None:
+    """Oeffentliche Anfragen fuer echte Flughaefen nur auf Stellungen der Vorab-Tabelle.
+
+    Sonst suchte der Server live nach dem Anschluss, und eine einzelne Anfrage koennte die
+    oeffentliche Demo minutenlang sperren (grosse Welten unter dem gemeinsamen Lock). Interne
+    Rechnungen (Tabelle erzeugen, Flotte bemessen) gehen nicht ueber diese Pruefung.
+    """
+    if request.airport is None:
+        return
+    if load_atlas(request.airport) is None:
+        raise HTTPException(status_code=422, detail="Fuer diesen Flughafen liegt keine Tabelle vor")
+    if atlas_sizes(request.electric_share_pct, request.storage_kwh, request.pv_kwp,
+                   request.parking_sessions, request.airport) is None:
+        raise HTTPException(status_code=422,
+                            detail="Stellung liegt nicht auf der Tabelle des Flughafens")
 
 
 def _scope(airport: str | None) -> AbstractContextManager:
@@ -187,7 +203,7 @@ def size_solution(solution: Solution, electric_share_pct: int, storage_kwh: floa
                              lower_bound_kw=minimum_energy_bound(world))
 
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize=64)
 def uncontrolled_need(electric_share_pct: int, pv_kwp: float = 500,
                       parking_sessions: int = 40, airport: str | None = None) -> dict:
     """Anschluss fuer Laden ganz ohne Steuerung: kein Anschluss bremst, jedes Fahrzeug laedt
@@ -237,7 +253,17 @@ def _size_solutions(electric_share_pct: int, storage_kwh: float, pv_kwp: float =
     return answers
 
 
+# Fertige Vergleiche je Stellung (gross, deshalb wenige). Echte Flughaefen rechnen sonst bei
+# jedem Aufruf drei bis vier volle Simulationen unter dem gemeinsamen Lock.
+_RESULTS: OrderedDict[str, dict] = OrderedDict()
+_RESULTS_KEEP = 16
+
+
 def compare_electrification(request: ElectrificationRequest) -> dict:
+    key = request.model_dump_json()
+    if key in _RESULTS:
+        _RESULTS.move_to_end(key)
+        return {**_RESULTS[key], "compute_ms": 0}
     if not _SIMULATION_LOCK.acquire(timeout=DEMO_WAIT_SECONDS):
         raise HTTPException(status_code=429, detail="Demo ausgelastet. Vergleich erneut versuchen.")
     started = perf_counter()
@@ -293,10 +319,11 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
             })
         uncontrolled = uncontrolled_need(request.electric_share_pct, request.pv_kwp,
                                          request.parking_sessions, request.airport)
+        reference = _reference_info(request.airport)
     finally:
         scope.__exit__(None, None, None)
         _SIMULATION_LOCK.release()
-    return {
+    result = {
         "inputs": request.model_dump(), "comparison_contract": contract, "variants": variants,
         "uncontrolled": uncontrolled,
         "comparison_id": _canonical_hash({"contract": contract, "inputs": request.model_dump(),
@@ -305,7 +332,7 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
         "build_commit": os.environ.get("TWIN_BUILD_GIT_COMMIT", "local-unversioned"),
         "compute_ms": round((perf_counter() - started) * 1000),
         "evidence_level": "synthetic_uncalibrated",
-        "reference": _reference_info(request.airport),
+        "reference": reference,
         "sources": SOURCES,
         "limitations": _airport_limitations(request.airport) if request.airport else [
             "Synthetischer Vorfeldbereich, kein Modell des gesamten Muenchner Flughafens.",
@@ -332,6 +359,10 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
             "hoechste Netzlast in drei Tagen, auf 25 kW aufgerundet.",
         ],
     }
+    _RESULTS[key] = result
+    while len(_RESULTS) > _RESULTS_KEEP:
+        _RESULTS.popitem(last=False)
+    return result
 
 
 def _reference_info(airport: str | None) -> dict:

@@ -102,6 +102,30 @@ def test_atlas_of_an_airport_is_checked_against_its_spec(tst, tmp_path):
     assert electrification_atlas.load_atlas("TST") is None
 
 
+def test_public_requests_only_hit_the_table(client, tst):  # noqa: F811
+    body = {"airport": "TST", "electric_share_pct": 30, "grid_import_limit_kw": 600,
+            "storage_kwh": 0, "pv_kwp": 0, "parking_sessions": 0}
+    # Ohne Tabelle rechnet die oeffentliche Seite nicht live (das wuerde die Demo sperren).
+    assert client.post("/api/v1/demo/electrification", json=body).status_code == 422
+    axes = electrification_atlas.axes_for("TST")
+    step, top = electrification_atlas.raster_for("TST")
+    entries = {f"{s}|{st}|0|{pk}": [["feasible", 600]] * 3
+               for s in axes["electric_share_pct"] for st in axes["storage_kwh"]
+               for pk in axes["parking_sessions"]}
+    electrification_atlas.path_for("TST").write_text(json.dumps({
+        "engine_version": "airport_electrification_v3",
+        "reference_id": electrification_atlas.reference_id_for("TST"),
+        "grid_step_kw": step, "grid_max_kw": top, "axes": axes, "entries": entries,
+        "peaks": {f"{s}|0|{pk}": ["feasible", 900] for s in axes["electric_share_pct"]
+                  for pk in axes["parking_sessions"]}}))
+    _clear()
+    off_axis = {**body, "storage_kwh": 1234}
+    assert client.post("/api/v1/demo/electrification", json=off_axis).status_code == 422
+    assert client.post("/api/v1/demo/electrification",
+                       json={**body, "pv_kwp": 500}).status_code == 422
+    assert [a["id"] for a in client.get("/api/v1/demo/airports").json()] == ["TST"]
+
+
 def test_airport_list_only_offers_computed_airports(client, tst):  # noqa: F811
     assert client.get("/api/v1/demo/airports").json() == []
     assert client.get("/api/v1/demo/electrification/atlas?airport=XYZ").status_code == 404
