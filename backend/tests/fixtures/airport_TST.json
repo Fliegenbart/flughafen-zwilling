@@ -89,6 +89,14 @@
   "sources": [],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Testparkhaus",
+   "kind": "ac",
+   "count": 500,
+   "kw": 11
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [

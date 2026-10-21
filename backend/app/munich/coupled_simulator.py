@@ -479,7 +479,7 @@ def simulate_coupled(
     # Fleet demand is endogenous and reported separately in coupled_kpis.
     energy.charging_requested_kwh = sum(job.energy_kwh for job in world.parking_jobs)
     energy.charging_delivered_kwh = sum(row["delivered_kwh"] for row in parking)
-    energy.charging_unmet_kwh = sum(r for r, c in zip(remaining, checked) if c)
+    energy.charging_unmet_kwh = clean(sum(r for r, c in zip(remaining, checked) if c))
     energy.parking_session_count = len(parking)
     energy.parking_ready_count = len(ready)
     energy.background_unserved_kwh = clean(energy.background_unserved_kwh)

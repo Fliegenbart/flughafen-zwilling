@@ -155,13 +155,13 @@ def kinds() -> tuple[str, ...]:
 
 def _on_time_by_kind(plan, config: CoupledConfig, seed: int) -> dict[str, bool]:
     """Schafft jede Klasse alle Einsaetze rechtzeitig? Ohne Strom (0 % elektrisch)."""
-    from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION
+    from ..munich.coupled_models import CYCLIC_ENGINE_VERSION
     from ..munich.coupled_simulator import simulate_coupled
     from ..munich.coupled_world import build_world
 
-    world = build_world(plan, config, seed, PREDICTIVE_ENGINE_VERSION)
+    world = build_world(plan, config, seed, CYCLIC_ENGINE_VERSION)
     result = simulate_coupled(world, plan, "uncontrolled", capture_traces=False)
-    done: dict[str, bool] = {kind: True for kind in FLEET_KINDS}
+    done: dict[str, bool] = {f.kind: True for f in config.fleets}
     for task in result.kpis.readiness_by_task:
         if task.missions_on_time != task.mission_count:
             done[task.kind] = False
@@ -171,26 +171,27 @@ def _on_time_by_kind(plan, config: CoupledConfig, seed: int) -> dict[str, bool]:
 def minimal_fleet(plan, config: CoupledConfig, seed: int, upper: dict[str, int]) -> dict[str, int]:
     """Kleinste Flotte je Klasse, die alle Einsaetze rechtzeitig schafft (Bisektion, alle Klassen
     gleichzeitig; ohne Elektrofahrzeuge beeinflussen sich die Klassen nicht)."""
-    lo = {kind: 0 for kind in FLEET_KINDS}
-    hi = dict(upper)
-    from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION
+    from ..munich.coupled_models import CYCLIC_ENGINE_VERSION
     from ..munich.coupled_world import build_world
 
+    kinds = [f.kind for f in config.fleets]
+    lo = {kind: 0 for kind in kinds}
+    hi = {kind: upper[kind] for kind in kinds}
     with trusted_scale():
         # Klassen ohne Einsaetze (z. B. keine Vorfeldbusse bei Walk-Boarding) brauchen 0.
-        used = {m.kind for m in build_world(plan, config, seed, PREDICTIVE_ENGINE_VERSION).missions}
-        for kind in FLEET_KINDS:
+        used = {m.kind for m in build_world(plan, config, seed, CYCLIC_ENGINE_VERSION).missions}
+        for kind in kinds:
             if kind not in used:
                 hi[kind] = 0
-        while any(hi[k] - lo[k] > 1 for k in FLEET_KINDS):
-            mid = {k: (lo[k] + hi[k]) // 2 if hi[k] - lo[k] > 1 else hi[k] for k in FLEET_KINDS}
+        while any(hi[k] - lo[k] > 1 for k in kinds):
+            mid = {k: (lo[k] + hi[k]) // 2 if hi[k] - lo[k] > 1 else hi[k] for k in kinds}
             trial = config.model_copy(update={"fleets": [
                 f.model_copy(update={"vehicles": mid[f.kind], "electric_vehicles": 0,
                                      "chargers": 0})
                 for f in config.fleets]})
             trial = CoupledConfig.model_validate(trial.model_dump())
             done = _on_time_by_kind(plan, trial, seed)
-            for k in FLEET_KINDS:
+            for k in kinds:
                 if hi[k] - lo[k] <= 1:
                     continue
                 if done[k]:

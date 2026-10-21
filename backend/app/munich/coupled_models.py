@@ -49,7 +49,10 @@ LEGACY_ENGINE_VERSIONS = ("airport_coupled_v1",)
 EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2", "airport_electrification_v1",
                         "airport_electrification_v2", "airport_electrification_v3",
                         "airport_electrification_v4"]
-FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu"]
+FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu",
+                    # Weitere Abfertigungsgeraete (Engine v4, Paket 3).
+                    "belt_loader", "stairs", "loader", "catering", "lavatory", "water"]
+Aircraft = Literal["narrow", "wide"]
 CoupledPolicy = Literal["uncontrolled", "mission_priority", "lookahead"]
 
 
@@ -76,6 +79,37 @@ class FleetSpec(StrictModel):
     departure_buffer_min: int = Field(default=10, ge=0, le=60)
     arrival_allowance_min: int = Field(default=30, ge=1, le=180)
     coverage_pct: float = Field(default=35, ge=0, le=100)
+    # Engine v4 (alle optional, ohne Angabe wie bisher): welche Flugrichtung die Klasse bedient,
+    # wie viele Fahrzeuge je Flug fahren und was fuer Grossraumflugzeuge anders ist.
+    serves: Literal["both", "arrival", "departure"] | None = Field(
+        default=None, exclude_if=lambda value: value is None)
+    units_per_flight: int = Field(default=1, ge=1, le=6, exclude_if=lambda value: value == 1)
+    wide_units_per_flight: int | None = Field(default=None, ge=0, le=8,
+                                              exclude_if=lambda value: value is None)
+    wide_mission_energy_kwh: float | None = Field(default=None, gt=0, le=500,
+                                                  exclude_if=lambda value: value is None)
+    wide_service_duration_min: int | None = Field(default=None, ge=1, le=240,
+                                                  exclude_if=lambda value: value is None)
+    wide_departure_lead_min: int | None = Field(default=None, ge=1, le=240,
+                                                exclude_if=lambda value: value is None)
+    wide_arrival_allowance_min: int | None = Field(default=None, ge=1, le=240,
+                                                   exclude_if=lambda value: value is None)
+    wide_coverage_pct: float | None = Field(default=None, ge=0, le=100,
+                                            exclude_if=lambda value: value is None)
+
+    def for_aircraft(self, aircraft: str) -> tuple[float, int, int, int, int, float]:
+        """(Energie, Servicezeit, Vorlauf Abflug, Zeitfenster Ankunft, Fahrzeuge je Flug,
+        Abdeckung) fuer Schmal- oder Grossraumflugzeuge."""
+        wide = aircraft == "wide"
+
+        def pick(narrow, wide_value):
+            return wide_value if wide and wide_value is not None else narrow
+        return (pick(self.mission_energy_kwh, self.wide_mission_energy_kwh),
+                pick(self.service_duration_min, self.wide_service_duration_min),
+                pick(self.departure_lead_min, self.wide_departure_lead_min),
+                pick(self.arrival_allowance_min, self.wide_arrival_allowance_min),
+                pick(self.units_per_flight, self.wide_units_per_flight),
+                pick(self.coverage_pct, self.wide_coverage_pct))
 
     @model_validator(mode="after")
     def validate_physics(self) -> FleetSpec:
@@ -91,14 +125,16 @@ class FleetSpec(StrictModel):
             raise ValueError("Ladeziel muss oberhalb der Reserve liegen")
         if self.initial_soc_pct < self.reserve_soc_pct:
             raise ValueError("Flotten-Start-SOC liegt unter der Reserve")
-        if self.mission_energy_kwh > self.battery_capacity_kwh * (
-            self.charge_target_soc_pct - self.reserve_soc_pct
-        ) / 100:
-            raise ValueError("Mission benoetigt mehr Energie als oberhalb der Reserve ladbar")
-        if self.departure_lead_min - self.departure_buffer_min < self.service_duration_min:
-            raise ValueError("Abflug-Servicefenster ist kuerzer als der angenommene Einsatz")
-        if self.arrival_allowance_min < self.service_duration_min:
-            raise ValueError("Ankunfts-Servicefenster ist kuerzer als der angenommene Einsatz")
+        for aircraft in ("narrow", "wide"):
+            energy, service, lead, allowance, _, _ = self.for_aircraft(aircraft)
+            if energy > self.battery_capacity_kwh * (
+                self.charge_target_soc_pct - self.reserve_soc_pct
+            ) / 100:
+                raise ValueError("Mission benoetigt mehr Energie als oberhalb der Reserve ladbar")
+            if lead - self.departure_buffer_min < service:
+                raise ValueError("Abflug-Servicefenster ist kuerzer als der angenommene Einsatz")
+            if allowance < service:
+                raise ValueError("Ankunfts-Servicefenster ist kuerzer als der angenommene Einsatz")
         return self
 
 
@@ -207,7 +243,7 @@ class StressEvent(StrictModel):
 
 class CoupledConfig(StrictModel):
     power: PowerConfig = Field(default_factory=PowerConfig)
-    fleets: list[FleetSpec] = Field(default_factory=default_fleets, min_length=1, max_length=4)
+    fleets: list[FleetSpec] = Field(default_factory=default_fleets, min_length=1, max_length=10)
     warmup_min: int = Field(default=120, ge=0, le=240)
     drain_min: int = Field(default=240, ge=0, le=480)
     shared_group_policy: Literal["reject_unresolved", "independent_entries_assumption"] = (
@@ -215,6 +251,9 @@ class CoupledConfig(StrictModel):
     )
     stress_events: list[StressEvent] = Field(default_factory=list, max_length=20)
     repeat_days: int = Field(default=1, ge=1, le=3, exclude_if=lambda value: value == 1)
+    # Engine v4: Anteil der Fluege mit Grossraumflugzeug (zufaellig je Flug, fester Seed).
+    widebody_share_pct: float = Field(default=0, ge=0, le=100,
+                                      exclude_if=lambda value: value == 0)
 
     @model_validator(mode="after")
     def unique_fleets(self) -> CoupledConfig:
@@ -243,6 +282,7 @@ class Mission(StrictModel):
     return_min: int = Field(ge=0)
     energy_kwh: float = Field(gt=0)
     service_day: int = Field(default=0, ge=0, le=2, exclude_if=lambda value: value == 0)
+    aircraft: Aircraft | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ParkingJob(StrictModel):

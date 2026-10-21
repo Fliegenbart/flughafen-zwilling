@@ -22,7 +22,8 @@ def csv_text(rows: list[dict]) -> str:
     output = StringIO(newline="")
     if not rows:
         return "no_rows\r\n"
-    writer = csv.DictWriter(output, fieldnames=list(rows[0]))
+    # Zeilen koennen optionale Felder tragen (z. B. Grossraum, Frist nach Horizontende).
+    writer = csv.DictWriter(output, fieldnames=list(dict.fromkeys(k for row in rows for k in row)))
     writer.writeheader()
     for row in rows:
         payload = {}

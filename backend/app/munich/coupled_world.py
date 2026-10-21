@@ -198,27 +198,39 @@ def build_world(
         published = int((datetime.fromisoformat(entry.scheduled_utc) - origin).total_seconds() / 60)
         if not 0 <= published < day_minutes:
             raise ValueError("Flugplaneintrag liegt nicht im UTC-Verkehrstag")
+        # v4: Grossraumflugzeug je Flug zufaellig (fester Seed) nach dem Anteil des Flughafens.
+        aircraft = "wide" if config.widebody_share_pct and int(canonical_hash({
+            "entry": entry.entry_id, "aircraft": "wide", "seed": seed,
+        })[:16], 16) / 2**64 * 100 < config.widebody_share_pct else "narrow"
         for fleet in config.fleets:
-            if entry.direction == "arrival" and fleet.kind in {"pushback_tug", "gpu"}:
+            serves = fleet.serves or (
+                "departure" if fleet.kind in {"pushback_tug", "gpu"} else "both")
+            if serves != "both" and entry.direction != serves:
                 continue
+            energy, service, lead, allowance, units, coverage_pct = fleet.for_aircraft(aircraft)
             coverage = int(canonical_hash({
                 "entry": entry.entry_id, "kind": fleet.kind, "seed": seed,
             })[:16], 16) / 2**64 * 100
-            if coverage >= fleet.coverage_pct:
+            if coverage >= coverage_pct:
                 continue
-            release = (published if entry.direction == "arrival"
-                       else published - fleet.departure_lead_min)
-            deadline = (published + fleet.arrival_allowance_min if entry.direction == "arrival"
+            release = published if entry.direction == "arrival" else published - lead
+            deadline = (published + allowance if entry.direction == "arrival"
                         else published - fleet.departure_buffer_min)
             if release < start_min or deadline + fleet.return_min > end_min:
                 raise ValueError("Modell-Horizont deckt Servicefenster/Rueckkehr nicht ab")
-            missions.append(Mission(
-                mission_id=f"{fleet.kind}-{entry.entry_id}", source_entry_id=entry.entry_id,
-                kind=fleet.kind, direction=entry.direction, published_min=published,
-                release_min=release, deadline_min=deadline,
-                duration_min=fleet.service_duration_min, return_min=fleet.return_min,
-                energy_kwh=fleet.mission_energy_kwh,
-            ))
+            for unit in range(units):
+                # Mehrere Fahrzeuge je Flug (z. B. Busse): eigene Kennung ab dem zweiten.
+                missions.append(Mission(
+                    mission_id=(f"{fleet.kind}-{entry.entry_id}" if unit == 0 else
+                                f"{fleet.kind}-" + canonical_hash({
+                                    "entry": entry.entry_id, "kind": fleet.kind,
+                                    "unit": unit})[:16]),
+                    source_entry_id=entry.entry_id,
+                    kind=fleet.kind, direction=entry.direction, published_min=published,
+                    release_min=release, deadline_min=deadline,
+                    duration_min=service, return_min=fleet.return_min, energy_kwh=energy,
+                    aircraft="wide" if aircraft == "wide" else None,
+                ))
     missions.sort(key=lambda m: (m.release_min, m.deadline_min, m.mission_id))
     if not missions:
         raise ValueError("Keine modellierten Auftraege; Einsatzabdeckung pruefen")
