@@ -127,14 +127,85 @@ export function comparison(body: Record<string, number>, feasible = true) {
 }
 
 export const bodies: Record<string, number>[] = [];
+const basis = (text: string, assumption = false) => ({
+  text,
+  sources: assumption ? [] : ["https://example.org/quelle"],
+  assumption,
+});
+/** Erfundener Testflughafen "TST" mit dem Aufbau eines echten Steckbriefs. */
+export const TEST_AIRPORT = {
+  id: "TST",
+  name: "Teststadt",
+  full_name: "Flughafen Teststadt",
+  as_of: "2026-10",
+  departures_per_day: 420,
+  departures_basis: basis("420 Abflüge an einem typischen Tag im August"),
+  profile_basis: basis("Morgenwelle 6 bis 8 Uhr, Nachtruhe 23 bis 6 Uhr", true),
+  coverage_pct: { bus: 40, baggage_tractor: 100, pushback_tug: 100, gpu: 40 },
+  coverage_basis: basis("60 Prozent der Positionen mit festem 400-Hz-Strom"),
+  electric_share_now_pct: 32,
+  electric_share_basis: basis("Rund ein Drittel der Abfertigungsflotte fährt elektrisch"),
+  parking_sessions_per_day: 150,
+  parking_basis: basis("150 öffentliche Ladepunkte, je ein Vorgang am Tag", true),
+  reserve_kw_public: null,
+  reserve_basis: null,
+  facts: [
+    { label: "Passagiere 2025", value: "21 Mio.", source: "https://example.org/passagiere" },
+    { label: "Nachtruhe", value: "23 bis 6 Uhr", source: "https://example.org/nacht" },
+    { label: "Stromnetz", value: "eigenes Verteilnetz", source: "https://example.org/netz" },
+  ],
+  fleet: {
+    vehicles: { bus: 37, baggage_tractor: 49, pushback_tug: 16, gpu: 35 },
+    chargers: { bus: 15, baggage_tractor: 17, pushback_tug: 7, gpu: 14 },
+    basis: basis("Aus dem Modell bemessen", true),
+  },
+};
+const TEST_AXES = {
+  electric_share_pct: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+  storage_kwh: [0, 1000, 2500, 4500, 7000, 9500, 14000],
+  pv_kwp: [0],
+  parking_sessions: [0, 150],
+};
+const TEST_ENTRIES: Record<string, [number | null, number | null, number | null]> = {
+  "30|4500|0|0": [1000, 950, 900],
+  "30|0|0|0": [1000, 950, 950],
+  "50|4500|0|0": [1300, 1200, 1100],
+  "30|4500|0|150": [1600, 1500, 1400],
+};
+const TEST_PEAKS: Record<string, number | null> = {
+  "30|0|0": 1850,
+  "50|0|0": 2400,
+  "30|0|150": 3500,
+};
+
 export function serve({
   atlas = true,
   feasible = true,
   failCompare = () => false,
-}: { atlas?: boolean; feasible?: boolean; failCompare?: () => boolean } = {}) {
+  airports = false,
+}: {
+  atlas?: boolean;
+  feasible?: boolean;
+  failCompare?: () => boolean;
+  /** Mit Testflughafen "TST" in der Auswahl. */
+  airports?: boolean;
+} = {}) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith("/demo/airports"))
+        return new Response(JSON.stringify(airports ? [TEST_AIRPORT] : []));
+      if (url.endsWith("/demo/electrification/atlas?airport=TST"))
+        return new Response(
+          JSON.stringify({
+            available: true,
+            axes: TEST_AXES,
+            entries: TEST_ENTRIES,
+            peaks: TEST_PEAKS,
+            grid_max_kw: 28000,
+            grid_step_kw: 50,
+          }),
+        );
       if (url.endsWith("/demo/electrification/atlas"))
         return new Response(
           JSON.stringify(

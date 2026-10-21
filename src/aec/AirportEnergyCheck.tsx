@@ -121,9 +121,9 @@ export default function AirportEnergyCheck({ basePath }: { basePath: string }) {
         </a>
         <main id="aec-main" tabIndex={-1}>
           {route.page === "start" ? (
-            <OekosystemCheck />
+            <OekosystemCheck key={route.flughafen ?? "beispiel"} />
           ) : route.page === "fachleute" ? (
-            <Fachleute />
+            <Fachleute key={route.flughafen ?? "beispiel"} />
           ) : route.page === "labor" ? (
             <Home />
           ) : (

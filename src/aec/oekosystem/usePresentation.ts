@@ -1,6 +1,7 @@
 /**
  * Praesentationsmodus fuer den Beamer: groessere Schrift, nur das Noetige, Vollbild wo der Browser
- * es erlaubt. Taste P schaltet um, Esc beendet. Der Zustand haengt nur an dieser Seite.
+ * es erlaubt. Taste P schaltet um, Esc beendet. Ein Flughafenwechsel baut die Seite neu auf;
+ * Modus und Vollbild gehen dabei mit (keepPresentationAcrossSwitch).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -9,8 +10,18 @@ const typing = (el: EventTarget | null) =>
   (el.isContentEditable || ["INPUT", "SELECT", "TEXTAREA"].includes(el.tagName)) &&
   !(el instanceof HTMLInputElement && el.type === "range");
 
+// Ueber den Neuaufbau beim Flughafenwechsel hinweg (AirportEnergyCheck setzt den Flughafen als key).
+let lastOn = false;
+let switching = false;
+
+/** Vor einem Flughafenwechsel: Praesentationsmodus und Vollbild in die neue Seite mitnehmen. */
+export function keepPresentationAcrossSwitch() {
+  switching = true;
+}
+
 export function usePresentation() {
-  const [on, setOn] = useState(false);
+  // Nicht hier zuruecksetzen: Die alte Seite raeumt erst nach diesem Render auf.
+  const [on, setOn] = useState(() => switching && lastOn);
   /** Der Schalter bleibt im Modus sichtbar; dorthin geht der Fokus, wenn sein Ort verschwindet. */
   const toggleRef = useRef<HTMLButtonElement>(null);
 
@@ -50,10 +61,20 @@ export function usePresentation() {
     if (!el || el === document.body || el.getClientRects().length === 0) toggleRef.current?.focus();
   }, [on]);
 
-  // Beim Verlassen der Seite kein Vollbild zuruecklassen.
+  useEffect(() => {
+    lastOn = on;
+  }, [on]);
+
+  // Laeuft nach dem Aufraeumen der alten Seite: Der Wechsel ist abgeschlossen.
+  useEffect(() => {
+    switching = false;
+  }, []);
+
+  // Beim Verlassen der Seite kein Vollbild zuruecklassen, ausser beim Flughafenwechsel.
   useEffect(
     () => () => {
-      if (document.fullscreenElement) void document.exitFullscreen?.().catch(() => undefined);
+      if (!switching && document.fullscreenElement)
+        void document.exitFullscreen?.().catch(() => undefined);
     },
     [],
   );

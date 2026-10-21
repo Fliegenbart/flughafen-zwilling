@@ -1,0 +1,182 @@
+{
+ "id": "FRA",
+ "name": "Frankfurt",
+ "full_name": "Flughafen Frankfurt am Main",
+ "as_of": "2026-10",
+ "departures_per_day": 664,
+ "departures_basis": {
+  "text": "Spitzenmonat 2026 bisher ist der September: Fraport meldet 40.539 Starts und Landungen in 30 Tagen, also 40.539 / 30 / 2 = 676 Abflüge pro Tag (Mai 667, Juni rund 656, Juli 666, August 661 pro Tag). Linien- und Charterverkehr einschließlich Fracht machte laut ADV im August 2026 98,2 % aller Bewegungen aus (40.249 von 40.968; 2025: 97,7 %); der Rest ist nicht gewerblicher und sonstiger gewerblicher Verkehr. 676 × 0,982 = 664 Abflüge pro Tag. Den August-Anteil übertragen wir auf September, die ADV-Zahlen für September liegen noch nicht vor. Gegenprobe: Der öffentliche Flugplan zeigt für den 21. bis 23.10.2026 im Mittel 625 Passagierabflüge pro Tag ohne Lufthansa-Zugverbindungen; Frachtflüge sind dort nicht enthalten.",
+  "sources": [
+   "https://www.fraport.com/de/newsroom/pressemitteilungen/2026/verkehrszahlen/fraport---verkehrszahlen-im-september-2026.html",
+   "https://www.fraport.com/de/newsroom/pressemitteilungen/2026/verkehrszahlen/fraport-verkehrszahlen-im-august-2026--fracht-waechst-in-frankfu.html",
+   "https://www.fraport.com/en/newsroom/press-releases/2026/traffic-figures/fraport-traffic-figures---july-2026--passenger-numbers-and-freig.html",
+   "https://www.fraport.com/en/newsroom/press-releases/2026/traffic-figures/may-2026--frankfurt-back-on-passenger-growth-track.html",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/06.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf",
+   "https://www.frankfurt-airport.com/en/flights-and-transfer/departures.html"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  8.3,
+  12.7,
+  24.0,
+  41.3,
+  41.7,
+  53.0,
+  41.0,
+  48.0,
+  49.3,
+  46.0,
+  27.3,
+  40.3,
+  33.0,
+  14.7,
+  27.3,
+  45.0,
+  49.0,
+  23.0,
+  0
+ ],
+ "arrivals_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  16.0,
+  23.0,
+  49.0,
+  48.0,
+  48.3,
+  30.3,
+  43.0,
+  42.0,
+  32.7,
+  21.3,
+  41.0,
+  40.3,
+  19.3,
+  35.0,
+  46.3,
+  49.7,
+  19.0,
+  19.0,
+  0
+ ],
+ "profile_basis": {
+  "text": "Belegt: Von 23 bis 5 Uhr sind planmäßige Flüge verboten (BVerwG 2012), diese Stunden haben das Gewicht 0. Die Gewichte sind ausgezählt aus dem öffentlichen Flugplan der Fraport-Flugsuche für den 21. bis 23.10.2026 (Sommerflugplan wie im September): Passagierflüge je Ortsstunde nach planmäßiger Abflug- bzw. Ankunftszeit, Mittel der drei Tage, ohne Lufthansa-Zugverbindungen. Abflüge mit Abfahrt vom Stand 4:45–4:50 Uhr (Start nach 5 Uhr) zählen zur Stunde 5. Wellen: Abflüge um 10, 12–14 und 20–21 Uhr, Ankünfte um 7–9 und 19–20 Uhr. Gegenprobe: Die stärkste Abflugstunde (10 Uhr) hat im Flugplan 53 Abflüge, hochgerechnet 56; die stärkste Stunde insgesamt (20 Uhr) kommt hochgerechnet auf rund 101 Bewegungen, unter dem Koordinationseckwert von 104. Angenommen: Frachtflüge folgen demselben Profil, und Oktober-Werktage stehen für den Spitzenmonat.",
+  "sources": [
+   "https://www.frankfurt-airport.com/en/flights-and-transfer/departures.html",
+   "https://www.bverwg.de/de/pm/2012/33",
+   "https://www.fraport.com/content/dam/fraport-company/documents/investoren/termine-und-publikationen/nachhaltigkeitsbericht/Fraport_Umwelterkl%C3%A4rung_2025.pdf/_jcr_content/renditions/original.media_file.download_attachment.file/Fraport_Umwelterkl%C3%A4rung_2025.pdf"
+  ],
+  "assumption": false
+ },
+ "coverage_pct": {
+  "bus": 42,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 33
+ },
+ "coverage_basis": {
+  "text": "Bus: 2014 fertigte Fraport 44,7 % der Passagierflüge auf Vorfeldpositionen ab; Passagierflüge waren 93,2 % aller Flüge, Frachtflugzeuge stehen grundsätzlich nicht am Gebäude (Antwort der Landesregierung, Drs. 19/1585). 44,7 % × 93,2 % = 42 %; mit dem heutigen Passagieranteil (625 von 664 Abflügen, 94 %) ebenfalls 42 %. Neuere Werte sind nicht veröffentlicht; Terminal 3 (seit April 2026) kann den Anteil verschieben. Gepäck- und Frachtschlepper: 100. Pushback: 100; Fraport nennt Durchroll-Positionen, die Flugzeuge ohne Schlepper vorwärts verlassen, ihr Anteil ist nicht veröffentlicht. GPU: 2024 hatten rund 67 % der 255 Positionen festen 400-Hz-Bodenstrom, also rund 33 % ohne; bis 2026 wollte Fraport etwa zwölf weitere Positionen ausrüsten, der Anteil ohne kann heute also niedriger sein. Bus- und GPU-Anteil übertragen ältere Werte und sind Annahmen.",
+  "sources": [
+   "https://kleineanfragen.de/hessen/19/1585-nutzung-der-fluggastbruecken-am-frankfurter-flughafen",
+   "https://www.fraport.com/de/newsroom/pressemitteilungen/2024/q1/flughafen-frankfurt-modernisiert-bodenstromversorgung-.html",
+   "https://www.fraport.com/de/newsroom/pressemitteilungen/2026/q4/-fraport-erhaelt-weitere-foerdermittel-fuer--emissionsfreie-bode.html"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": 28,
+ "electric_share_basis": {
+  "text": "Fraport meldet Ende 2025 845 Elektrofahrzeuge, rund 28 % der eigenen Fahrzeugflotte am Standort Frankfurt (alle Fahrzeugarten einschließlich Pkw; das Visual Fact Book nennt 28 % für die Bodenverkehrsdienst-Flotte). Darunter sind 2 Busse, 50 Gepäckschlepper, 312 kleine Schlepper, 3 Flugzeugschlepper und 8 GPU. Im Oktober 2026 meldet Fraport, dass die Zahl der batterieelektrischen GPU mit zwei geförderten Neuanschaffungen auf 18 steigt. Fahrzeuge von Swissport, Lufthansa und anderen Firmen auf dem Vorfeld sind nicht enthalten.",
+  "sources": [
+   "https://www.fraport.com/content/dam/fraport-company/documents/newsroom/infografiken/de/online/Infografik%20Elektromobilit%C3%A4t%2026.pdf/_jcr_content/renditions/original.media_file.download_attachment.file/Infografik%20Elektromobilit%C3%A4t%2026.pdf",
+   "https://www.fraport.com/content/dam/fraport-company/documents/investoren/termine-und-publikationen/nachhaltigkeitsbericht/Fraport_Umwelterkl%C3%A4rung_2025.pdf/_jcr_content/renditions/original.media_file.download_attachment.file/Fraport_Umwelterkl%C3%A4rung_2025.pdf",
+   "https://www.fraport.com/content/dam/fraport-company/documents/investoren/termine-und-publikationen/visual-fact-book/Visual%20Fact%20Book%202025.pdf/_jcr_content/renditions/original.media_file.download_attachment.file/Visual%20Fact%20Book%202025.pdf",
+   "https://www.fraport.com/de/newsroom/pressemitteilungen/2026/q4/-fraport-erhaelt-weitere-foerdermittel-fuer--emissionsfreie-bode.html"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 222,
+ "parking_basis": {
+  "text": "Öffentliche Ladepunkte für Pkw an Parkflächen: Parkhaus Terminal 3 100 (Umwelterklärung 2025; das Visual Fact Book nennt dort insgesamt 173), Parkhaus Gateway Gardens (Holiday Parking Nord) 65, Terminal 1 P2 Reihe 1406 41 Plätze, Ladepark Nord am Terminal 1 16 Schnellladepunkte (Ausbauziel Ende 2025). Summe 222. Die buchbaren eParking-Plätze in T1 P4 und T2 P8 sind ohne Zahl veröffentlicht und fehlen, der Wert ist daher eine Untergrenze. Annahme: ein Ladevorgang je Ladepunkt und Tag.",
+  "sources": [
+   "https://www.fraport.com/content/dam/fraport-company/documents/investoren/termine-und-publikationen/nachhaltigkeitsbericht/Fraport_Umwelterkl%C3%A4rung_2025.pdf/_jcr_content/renditions/original.media_file.download_attachment.file/Fraport_Umwelterkl%C3%A4rung_2025.pdf",
+   "https://www.frankfurt-airport.com/en/transport-and-parking/parking-offers/charging-stations.html",
+   "https://www.frankfurt-airport.com/de/anreise-parken/parkangebot/holiday-parking.html",
+   "https://www.fraport.com/de/newsroom/pressemitteilungen/2025/q2/ladeinfrastruktur-fuer-e-fahrzeuge-waechst-weiter.html"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "63,2 Mio. (+2,6 % gegenüber 2024)",
+   "source": "https://www.fraport.com/en/newsroom/press-releases/2026/traffic-figures/fraport-traffic-figures-2025.html"
+  },
+  {
+   "label": "Flugbewegungen (September 2026)",
+   "value": "40.539 Starts und Landungen, im Mittel rund 676 Abflüge pro Tag",
+   "source": "https://www.fraport.com/de/newsroom/pressemitteilungen/2026/verkehrszahlen/fraport---verkehrszahlen-im-september-2026.html"
+  },
+  {
+   "label": "Nachtruhe",
+   "value": "23–5 Uhr keine planmäßigen Flüge; 22–23 und 5–6 Uhr im Jahresmittel höchstens 133 planmäßige Flüge je Nacht",
+   "source": "https://www.bverwg.de/de/pm/2012/33"
+  },
+  {
+   "label": "Bodenverkehrsdienste (Rampe)",
+   "value": "Fraport rund 96 %, Swissport rund 4 % der Flugbewegungen (2025); 400-Hz-Bodenstrom und Fluggastbrücken stellt allein Fraport",
+   "source": "https://www.fraport.com/content/dam/fraport-company/documents/investoren/termine-und-publikationen/visual-fact-book/Visual%20Fact%20Book%202025.pdf/_jcr_content/renditions/original.media_file.download_attachment.file/Visual%20Fact%20Book%202025.pdf"
+  },
+  {
+   "label": "Elektrofahrzeuge heute",
+   "value": "845 E-Fahrzeuge, rund 28 % der Fraport-Flotte am Standort, darunter 312 kleine Schlepper, 50 Gepäckschlepper und 2 Busse (Stand Dezember 2025)",
+   "source": "https://www.fraport.com/content/dam/fraport-company/documents/newsroom/infografiken/de/online/Infografik%20Elektromobilit%C3%A4t%2026.pdf/_jcr_content/renditions/original.media_file.download_attachment.file/Infografik%20Elektromobilit%C3%A4t%2026.pdf"
+  },
+  {
+   "label": "Bodenstrom für Flugzeuge",
+   "value": "252 Parkpositionen, bis 2030 alle mit festem Bodenstrom oder batterieelektrischem GPU; mit zwei geförderten Geräten steigt die Zahl der E-GPU auf 18, bis 2029 auf 22",
+   "source": "https://www.fraport.com/de/newsroom/pressemitteilungen/2026/q4/-fraport-erhaelt-weitere-foerdermittel-fuer--emissionsfreie-bode.html"
+  },
+  {
+   "label": "Photovoltaik",
+   "value": "17,4 MWp vertikale PV an der Startbahn West (seit Frühjahr 2026 in Betrieb) und 3,6 MWp auf dem Parkhaus Terminal 3",
+   "source": "https://www.fraport.com/content/dam/fraport-company/documents/investoren/termine-und-publikationen/nachhaltigkeitsbericht/Fraport_Umwelterkl%C3%A4rung_2025.pdf/_jcr_content/renditions/original.media_file.download_attachment.file/Fraport_Umwelterkl%C3%A4rung_2025.pdf"
+  },
+  {
+   "label": "Stromnetz",
+   "value": "Fraport betreibt am Flughafen ein eigenes geschlossenes Verteilernetz nach § 110 EnWG",
+   "source": "https://bundesnetzagentur.de/DE/Beschlusskammern/1_GZ/BK4-GZ/2022/BK4-22-0084/Stellungnahmen/BK4-22-0084_Stellungnahme_Fraport.pdf"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 64,
+   "baggage_tractor": 86,
+   "pushback_tug": 25,
+   "gpu": 52
+  },
+  "chargers": {
+   "bus": 26,
+   "baggage_tractor": 30,
+   "pushback_tug": 10,
+   "gpu": 21
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 19, baggage_tractor 39, pushback_tug 17, gpu 22), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

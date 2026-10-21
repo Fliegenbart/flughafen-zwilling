@@ -10,6 +10,8 @@ export type ElectrificationInputs = {
   pv_kwp?: number;
   /** Ladevorgaenge im Parkhaus am Tag; ohne Angabe 40. */
   parking_sessions?: number;
+  /** Echter Flughafen (IATA); ohne Angabe der erfundene Beispielflughafen. */
+  airport?: string | null;
 };
 export type ElectrificationVariant = Preview & {
   solution: Solution;
@@ -81,7 +83,7 @@ export async function compareElectrification(inputs: ElectrificationInputs, sign
   );
   if (
     !raw.comparison_id ||
-    raw.comparison_contract?.total_vehicles !== 100 ||
+    !(raw.comparison_contract?.total_vehicles > 0) ||
     !Array.isArray(raw.variants) ||
     raw.variants.length !== 3 ||
     raw.reference?.days !== 3 ||
@@ -133,16 +135,23 @@ export type Atlas = {
   /** Schluessel "Anteil|PV|Parkhaus": Bedarf in kW ganz ohne Steuerung. */
   peaks: Record<string, number | null>;
   gridMaxKw: number;
+  /** Raster der Anschlusssuche: 25 kW beim Beispiel, bei grossen Flughaefen groeber. */
+  gridStepKw: number;
 };
 
-export async function getAtlas(signal?: AbortSignal): Promise<Atlas> {
+export async function getAtlas(airport: string | null, signal?: AbortSignal): Promise<Atlas> {
   const raw = await request<{
     available: boolean;
     axes?: Atlas["axes"];
     entries?: Atlas["entries"];
     peaks?: Atlas["peaks"];
     grid_max_kw?: number;
-  }>("/demo/electrification/atlas", { signal }, { timeoutMs: 20000 });
+    grid_step_kw?: number;
+  }>(
+    `/demo/electrification/atlas${airport ? `?airport=${encodeURIComponent(airport)}` : ""}`,
+    { signal },
+    { timeoutMs: 20000 },
+  );
   if (!raw.available || !raw.axes || !raw.entries || !raw.peaks)
     throw new Error("Die vorab gerechneten Werte fehlen auf dem Server.");
   return {
@@ -150,5 +159,35 @@ export async function getAtlas(signal?: AbortSignal): Promise<Atlas> {
     entries: raw.entries,
     peaks: raw.peaks,
     gridMaxKw: raw.grid_max_kw ?? 8000,
+    gridStepKw: raw.grid_step_kw ?? 25,
   };
+}
+
+/** Begruendung eines Steckbriefwerts: eigene Worte, oeffentliche Quellen, ggf. Annahme. */
+export type Basis = { text: string; sources: string[]; assumption: boolean };
+
+/** Steckbrief eines echten Flughafens (backend/app/exchange/airport_spec.py). */
+export type AirportProfile = {
+  id: string;
+  name: string;
+  full_name: string;
+  as_of: string;
+  departures_per_day: number;
+  departures_basis: Basis;
+  profile_basis: Basis;
+  coverage_pct: Record<string, number>;
+  coverage_basis: Basis;
+  electric_share_now_pct: number | null;
+  electric_share_basis: Basis;
+  parking_sessions_per_day: number;
+  parking_basis: Basis;
+  reserve_kw_public: number | null;
+  reserve_basis: Basis | null;
+  facts: { label: string; value: string; source: string }[];
+  fleet: { vehicles: Record<string, number>; chargers: Record<string, number>; basis: Basis };
+};
+
+export async function getAirports(signal?: AbortSignal): Promise<AirportProfile[]> {
+  const raw = await request<AirportProfile[]>("/demo/airports", { signal }, { timeoutMs: 20000 });
+  return Array.isArray(raw) ? raw.filter((a) => a && typeof a.id === "string" && a.fleet) : [];
 }

@@ -1,9 +1,36 @@
 """Explicit modelling assumptions, never an inferred FMG fleet or aircraft rotation."""
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+# Grenzen fuer alles, was von aussen kommt (Projekte, Varianten, Muenchen-Endpunkte). Nur die
+# serverseitigen Flughafenmodelle (exchange/airport_model.py) rechnen in trusted_scale() groesser.
+_TRUSTED_SCALE: ContextVar[bool] = ContextVar("trusted_scale", default=False)
+LIMITS = {"vehicles": 200, "fleet_total": 300, "bus_chargers": 50, "transformer_kva": 20000,
+          "battery_power_kw": 20000, "parking_sessions": 275, "missions": 10000,
+          "parking_jobs": 825}
+TRUSTED_LIMITS = {"vehicles": 1500, "fleet_total": 4000, "bus_chargers": 500,
+                  "transformer_kva": 200000, "battery_power_kw": 200000,
+                  "parking_sessions": 2000, "missions": 80000, "parking_jobs": 6000}
+
+
+def limit(name: str) -> int:
+    return (TRUSTED_LIMITS if _TRUSTED_SCALE.get() else LIMITS)[name]
+
+
+@contextmanager
+def trusted_scale() -> Iterator[None]:
+    """Groessere Modelle nur fuer serverseitig erzeugte Flughafenwelten."""
+    token = _TRUSTED_SCALE.set(True)
+    try:
+        yield
+    finally:
+        _TRUSTED_SCALE.reset(token)
 
 # Szenario-/Summary-Domaene bleibt stabil; die Engine-Version beschreibt den Rechenweg.
 COUPLED_DOMAIN = "airport_coupled_v1"
@@ -26,11 +53,11 @@ class StrictModel(BaseModel):
 
 class FleetSpec(StrictModel):
     kind: FleetKind
-    vehicles: int = Field(default=20, ge=0, le=200)
+    vehicles: int = Field(default=20, ge=0)
     # None preserves the original all-electric v2 model and its serialized hashes.
-    electric_vehicles: int | None = Field(default=None, ge=0, le=200,
+    electric_vehicles: int | None = Field(default=None, ge=0,
                                          exclude_if=lambda value: value is None)
-    chargers: int = Field(default=8, ge=0, le=200)
+    chargers: int = Field(default=8, ge=0)
     battery_capacity_kwh: float = Field(default=300, gt=0, le=1000)
     initial_soc_pct: float = Field(default=50, ge=0, le=100)
     reserve_soc_pct: float = Field(default=10, ge=0, lt=100)
@@ -46,9 +73,13 @@ class FleetSpec(StrictModel):
 
     @model_validator(mode="after")
     def validate_physics(self) -> FleetSpec:
+        if max(self.vehicles, self.electric_vehicles or 0, self.chargers) > limit("vehicles"):
+            raise ValueError(f"Hoechstens {limit('vehicles')} Fahrzeuge bzw. Ladepunkte je Klasse")
         if self.electric_vehicles is not None and self.electric_vehicles > self.vehicles:
             raise ValueError("Elektrofahrzeuge duerfen die Gesamtflotte nicht uebersteigen")
-        if self.chargers > self.vehicles or (self.kind == "bus" and self.chargers > 50):
+        if self.chargers > self.vehicles or (
+            self.kind == "bus" and self.chargers > limit("bus_chargers")
+        ):
             raise ValueError("Ladepunkte passen nicht zur modellierten Flotte/Referenzgrenze")
         if self.charge_target_soc_pct <= self.reserve_soc_pct:
             raise ValueError("Ladeziel muss oberhalb der Reserve liegen")
@@ -90,13 +121,13 @@ class PowerConfig(StrictModel):
     chp_output_kw: float = Field(default=18000, ge=0, le=100000)
     pv_capacity_kwp: float = Field(default=7000, ge=0, le=100000)
     pv_peak_factor: float = Field(default=0.55, ge=0, le=1)
-    apron_transformer_kva: float = Field(default=4500, gt=0, le=20000)
-    parking_transformer_kva: float = Field(default=2500, gt=0, le=20000)
+    apron_transformer_kva: float = Field(default=4500, gt=0)
+    parking_transformer_kva: float = Field(default=2500, gt=0)
     power_factor: float = Field(default=0.95, ge=0.01, le=1)
     transformer_efficiency: float = Field(default=0.98, ge=0.5, le=1)
     charging_efficiency: float = Field(default=0.92, ge=0.01, le=1)
     battery_capacity_kwh: float = Field(default=0, ge=0, le=50000)
-    battery_power_kw: float = Field(default=1000, ge=0, le=20000)
+    battery_power_kw: float = Field(default=1000, ge=0)
     battery_initial_soc_pct: float = Field(default=50, ge=0, le=100)
     battery_reserve_pct: float = Field(default=10, ge=0, le=100)
     battery_efficiency: float = Field(default=0.95, ge=0.01, le=1)
@@ -106,11 +137,17 @@ class PowerConfig(StrictModel):
     battery_grid_charge_below_kw: float | None = Field(
         default=None, ge=0, le=100000, exclude_if=lambda value: value is None,
     )
-    parking_sessions: int = Field(default=200, ge=0, le=275)
+    parking_sessions: int = Field(default=200, ge=0)
     parking_charger_kw: float = Field(default=11, gt=0, le=150)
 
     @model_validator(mode="after")
     def valid_storage(self) -> PowerConfig:
+        if max(self.apron_transformer_kva, self.parking_transformer_kva) > limit("transformer_kva"):
+            raise ValueError("Transformator ausserhalb der Modellgrenze")
+        if self.battery_power_kw > limit("battery_power_kw"):
+            raise ValueError("Speicherleistung ausserhalb der Modellgrenze")
+        if self.parking_sessions > limit("parking_sessions"):
+            raise ValueError("Zu viele Parkhaus-Ladevorgaenge fuer das Modell")
         if self.battery_initial_soc_pct < self.battery_reserve_pct:
             raise ValueError("Speicher-Start-SOC liegt unter der Reserve")
         if self.battery_grid_charge_below_kw is not None and (
@@ -153,8 +190,8 @@ class CoupledConfig(StrictModel):
     def unique_fleets(self) -> CoupledConfig:
         if len({f.kind for f in self.fleets}) != len(self.fleets):
             raise ValueError("Fahrzeugklasse mehrfach definiert")
-        if sum(f.vehicles for f in self.fleets) > 300:
-            raise ValueError("Maximal 300 modellierte Fahrzeuge")
+        if sum(f.vehicles for f in self.fleets) > limit("fleet_total"):
+            raise ValueError(f"Maximal {limit('fleet_total')} modellierte Fahrzeuge")
         return self
 
 
@@ -195,10 +232,16 @@ class CoupledWorld(StrictModel):
     day_minutes: int
     start_min: int
     end_min: int
-    missions: list[Mission] = Field(min_length=1, max_length=10000)
-    parking_jobs: list[ParkingJob] = Field(max_length=825)
+    missions: list[Mission] = Field(min_length=1)
+    parking_jobs: list[ParkingJob]
     warnings: list[str]
     world_hash: str
+
+    @model_validator(mode="after")
+    def bounded(self) -> CoupledWorld:
+        if len(self.missions) > limit("missions") or len(self.parking_jobs) > limit("parking_jobs"):
+            raise ValueError("Welt ausserhalb der Modellgrenzen")
+        return self
 
 
 class TaskReadiness(StrictModel):

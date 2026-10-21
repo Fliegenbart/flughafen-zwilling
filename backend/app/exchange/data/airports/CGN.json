@@ -1,0 +1,176 @@
+{
+ "id": "CGN",
+ "name": "Köln/Bonn",
+ "full_name": "Flughafen Köln/Bonn (Köln Bonn Airport)",
+ "as_of": "2026-10",
+ "departures_per_day": 170.0,
+ "departures_basis": {
+  "text": "ADV-Monatsstatistik August 2026: 10.538 Flugbewegungen im Linien- und Charterverkehr (Starts und Landungen, Passagier- und Frachtflüge). 10.538 / 2 / 31 = 170,0 Abflüge pro Tag. August ist der stärkste Monat 2026 bisher: Juli 2026 ergibt aus den kumulierten Werten (Januar bis August 67.085, Januar bis Juni 46.092) 10.455 Bewegungen, rund 169 pro Tag. Juli 2025 hatte ebenfalls 10.538, Oktober 2025 10.472 (rund 169). Nicht gezählt: nicht-gewerblicher Verkehr (865) und sonstige gewerbliche Flüge (121). Enthalten sind die nächtlichen Vollfrachter der Integratoren; ob sie ihre Flugzeuge selbst abfertigen, ist nicht veröffentlicht. Starts und Landungen sind je zur Hälfte angesetzt.",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/06.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/07.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  3.5,
+  11.5,
+  17,
+  9,
+  5,
+  6,
+  12.6,
+  9.1,
+  7.1,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  5.1,
+  5.5,
+  3.5,
+  3
+ ],
+ "arrivals_by_hour": [
+  21,
+  8.5,
+  2.5,
+  1,
+  1,
+  0.5,
+  1.1,
+  2.6,
+  4.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  7,
+  9.5,
+  14,
+  24
+ ],
+ "profile_basis": {
+  "text": "Belegt: 24-Stunden-Betrieb ohne Nachtflugverbot, daher keine Stunde mit null. Nachts läuft der Integrator-Verkehr; bei Anflügen gibt es zwischen 23 und 2 Uhr einen Engpass, der Eckwert liegt bei 31 Anflügen pro Stunde (GB 2025). UPS (Stand 2017): 39 Flugzeuge pro Nacht, Landungen 23 bis 1 Uhr, Sortierung bis 2:30 Uhr, bis kurz vor 3 Uhr die meisten Maschinen gestartet, letzter Start 5:30 Uhr, ein früher Start Richtung USA um 21:30 Uhr. Eurowings hat 17 Flugzeuge stationiert (Sommer 2025): Abflugwelle am frühen Morgen, Rückkehr am späten Abend. Passagierflüge gibt es auch nachts (2012 rund 6.000 Starts und Landungen pro Jahr zwischen 0 und 5 Uhr). Angenommen: rund 114 Passagier- und 56 Frachtabflüge pro Tag (siehe Abdeckung), Passagierverkehr tagsüber gleichmäßig, Morgenspitze 6 Uhr, Ankunftsspitze 21 bis 23 Uhr, wenig Tagesfracht. Die Stundenwerte sind eine Schätzung.",
+  "sources": [
+   "https://www.lobbyregister.bundestag.de/media/07/3f/763003/Geschaeftsbericht_2025.pdf",
+   "https://www.eurotransport.de/logistik/spedition-und-logistik/ups-nachts-laufen-die-baender-heiss/",
+   "https://www.aerotelegraph.com/ticker/eurowings-stationiert-weiteres-flugzeug-in-koelnbonn/jbqfpq0",
+   "https://www.aerointernational.de/?p=200362",
+   "https://www.airliners.de/koeln-bonn-nachtflug-laermschutzauflagen-dauerhaft/86378"
+  ],
+  "assumption": true
+ },
+ "coverage_pct": {
+  "bus": 35,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 80
+ },
+ "coverage_basis": {
+  "text": "Bus: Belegt sind 113 Parkpositionen (27 gebäudenah, 86 gebäudefern), 12 Fluggastbrücken und 4 von 9 Vorfeldern für Fracht. Für Sommer 2026 nennt der Flughafen rund 200 Türkei-Starts pro Woche als ein Viertel der Gesamtbewegungen. Auf den Passagierverkehr bezogen sind das rund 800 Starts pro Woche, also 114 von 170 Abflügen pro Tag (67 %); das passt zu 1,21 Mio. Fluggästen im August 2026. Annahme: die Hälfte der Passagierflüge fährt per Bus, 0,67 × 0,5 ≈ 35 %. Schlepper und Pushback: 100 %, nicht anders belegt. GPU: An den Fluggastbrücken kommt der Strom aus der Brücke, mobile GPU versorgen die übrigen Positionen. Frachtflüge (33 %) und Busabfertigung (35 %) brauchen also GPU. Annahme: von den gebäudenahen Passagierabflügen (rund 32 %) steht gut die Hälfte an einer Brücke, fest versorgt sind damit rund 20 %, GPU 80 %.",
+  "sources": [
+   "https://www.lobbyregister.bundestag.de/media/07/3f/763003/Geschaeftsbericht_2025.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.aerotelegraph.com/flughafen-koeln-bonn-investiert-in-elektrische-bodenstromaggregate"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": null,
+ "electric_share_basis": {
+  "text": "Kein Anteil veröffentlicht. Der Fuhrpark der Flughafengesellschaft hat über 180 teilweise oder vollständig elektrische Fahrzeuge und Geräte, darunter auch Hybride, Pkw und Transporter; eine Gesamtzahl fehlt. Im Einzelnen: Gepäckschlepper in der Gepäcksortieranlage zu 100 % elektrisch, Gepäckförderbänder zu 50 %, 10 elektrische GPU seit 2024 (15 weitere 2026) und 3 Elektro-Gelenkbusse von mindestens 10 Vorfeldbussen. Die Angaben gelten für die Flotte der Flughafengesellschaft, nicht für Drittabfertiger oder Integratoren.",
+  "sources": [
+   "https://www.lobbyregister.bundestag.de/media/07/3f/763003/Geschaeftsbericht_2025.pdf",
+   "https://www.aerotelegraph.com/flughafen-koeln-bonn-setzt-auf-elektrobusse"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 84,
+ "parking_basis": {
+  "text": "Laut Geschäftsbericht 2025 hat der Flughafen 80 AC-Ladepunkte und 4 Schnellladesäulen. 60 der AC-Punkte (bis 22 kW) stehen seit 2024 in Parkhaus 1, weitere kamen 2025 in den Parkhäusern 2 und 3 hinzu. 80 + 4 = 84. Annahme: alle öffentlich zugänglich, ein Ladevorgang je Punkt und Tag. Die 55 öffentlichen Ladepunkte im geplanten Mitarbeiterparkhaus P5 sind nicht enthalten.",
+  "sources": [
+   "https://www.lobbyregister.bundestag.de/media/07/3f/763003/Geschaeftsbericht_2025.pdf",
+   "https://www.electrive.net/2024/09/18/flughafen-koeln-bonn-bietet-60-neue-ac-ladepunkte/"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Verkehr 2025",
+   "value": "10,06 Mio. Passagiere und 842.377 t Fracht und Luftpost (inkl. Transit)",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag im Spitzenmonat",
+   "value": "rund 170 im August 2026, Passagier- und Frachtflüge",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Nachtbetrieb",
+   "value": "Unbefristete Genehmigung für 24-Stunden-Betrieb; Lärmschutzauflagen für die Nacht gelten bis 2030",
+   "source": "https://www.airliners.de/koeln-bonn-nachtflug-laermschutzauflagen-dauerhaft/86378"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "Marktanteil der Flughafengesellschaft an den Gesamtbewegungen 2025: 52 % (Vorjahr 51 %)",
+   "source": "https://www.lobbyregister.bundestag.de/media/07/3f/763003/Geschaeftsbericht_2025.pdf"
+  },
+  {
+   "label": "Elektrofahrzeuge heute",
+   "value": "über 180 teil- oder vollelektrische Fahrzeuge und Geräte im Fuhrpark der Flughafengesellschaft, darunter 10 E-GPU und 3 E-Busse",
+   "source": "https://www.lobbyregister.bundestag.de/media/07/3f/763003/Geschaeftsbericht_2025.pdf"
+  },
+  {
+   "label": "Photovoltaik",
+   "value": "rund 3,1 MWp der Flughafengesellschaft auf Frachthallen am Campus, Einspeisung ins Stromnetz (Angabe ADV-Projektdatenbank 2024)",
+   "source": "https://www.adv.aero/wp-content/uploads/2024/04/ADV-Projektdatenbank_Klimaschutz_NRW_2024.pdf"
+  },
+  {
+   "label": "Stromnetz",
+   "value": "Umspannwerk seit Februar 2026 in Betrieb, Anschluss an das 110-kV-Netz",
+   "source": "https://www.lobbyregister.bundestag.de/media/07/3f/763003/Geschaeftsbericht_2025.pdf"
+  },
+  {
+   "label": "Klimaziel",
+   "value": "Vorfeldbetrieb bis 2035 auf regenerative Antriebe, Busflotte bis 2027 elektrisch, Net Zero spätestens 2045",
+   "source": "https://www.lobbyregister.bundestag.de/media/07/3f/763003/Geschaeftsbericht_2025.pdf"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 17,
+   "baggage_tractor": 27,
+   "pushback_tug": 8,
+   "gpu": 24
+  },
+  "chargers": {
+   "bus": 7,
+   "baggage_tractor": 10,
+   "pushback_tug": 4,
+   "gpu": 10
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 5, baggage_tractor 12, pushback_tug 5, gpu 10), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

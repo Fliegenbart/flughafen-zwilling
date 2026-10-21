@@ -26,7 +26,7 @@ def test_no_storage_reuses_only_identical_managed_scan(monkeypatch):
 
     electrification._size_solutions.cache_clear()
     monkeypatch.setattr(electrification, "atlas_sizes", lambda *args: None)  # Live-Pfad
-    monkeypatch.setattr(electrification, "_resource_baseline_feasible", lambda: True)
+    monkeypatch.setattr(electrification, "_resource_baseline_feasible", lambda airport=None: True)
     monkeypatch.setattr(electrification, "search_connection", scan)
     try:
         result = electrification._size_solutions(100, 0)

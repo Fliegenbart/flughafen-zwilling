@@ -1,0 +1,181 @@
+{
+ "id": "FMM",
+ "name": "Memmingen",
+ "full_name": "Flughafen Memmingen (Memmingen Airport / Allgäu Airport)",
+ "as_of": "2026-10",
+ "departures_per_day": 34.5,
+ "departures_basis": {
+  "text": "Spitzenmonat seit Anfang 2025 ist der August 2025. Laut ADV-Monatsstatistik hatte Memmingen 2.137 Bewegungen im Linien- und Charterverkehr (an+ab). Rechnung: 2.137 / 2 / 31 = 34,5 Abflüge pro Tag. Zum Vergleich 2025: Juli 2.008, September 2.040 in 30 Tagen (34,0 pro Tag, aus den Kumulwerten), Oktober 2.067, Dezember 1.682; Jahresmittel 21.702 / 2 / 365 = 29,7. 2026 liegt der Verkehr etwas niedriger: Juni 1.988, Juli 1.972 (aus den Kumulwerten), August 2.059 (33,2 pro Tag). Nicht enthalten sind sonstiger gewerblicher Verkehr (August 2025: 448) und nichtgewerblicher Verkehr (553). Luftfracht gibt es nicht (ADV 2025: 0 t). Gegenprobe: 386.854 Fluggäste im Linien- und Charterverkehr im August 2025 ergeben rund 181 je Bewegung, passend zu A320 und B737.",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/07.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/06.2026-ADV-Monatsstatistik.pdf"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  21,
+  10,
+  16,
+  17,
+  10,
+  14,
+  13,
+  22,
+  15,
+  13,
+  10,
+  16,
+  10,
+  6,
+  10,
+  3,
+  0,
+  0
+ ],
+ "arrivals_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  7,
+  11,
+  15,
+  15,
+  15,
+  12,
+  16,
+  18,
+  16,
+  8,
+  13,
+  14,
+  9,
+  14,
+  8,
+  14,
+  1,
+  0
+ ],
+ "profile_basis": {
+  "text": "Belegt: Gewichte = planmäßige Abflüge und Ankünfte je Ortsstunde laut Flugplansuche des Flughafens für die Woche 22.–28.10.2026 (abgerufen am 21.10.2026; bis 24.10. Sommer-, danach Winterflugplan), je 206 Flüge, rund 29 pro Tag. Flugbetrieb nur 6–23 Uhr: planmäßige Starts bis 22 Uhr, planmäßige Landungen bis 22:30 Uhr, für hier stationierte Flugzeuge bis 23 Uhr. Daher Abflüge 22–6 Uhr und Ankünfte 23–6 Uhr mit Gewicht 0. Nachtanteil 2025: 0,20 % aller Bewegungen. Profil: Abflugwelle um 6 Uhr (3 pro Tag, passend zu 3 stationierten Ryanair-Flugzeugen), Tagesplateau mit Spitze um 13 Uhr, letzte Abflüge um 21 Uhr; Rückkehrer 19–22 Uhr. Annahme: Ein Tag im Spitzenmonat August hat dieselbe Form; der Augustflugplan ist nicht mehr abrufbar.",
+  "sources": [
+   "https://www.memmingen-airport.de/planen-buchen/flugplan/",
+   "https://www.memmingen-airport.de/fliegen/abflug-ankunft/",
+   "https://www.memmingen-airport.de/wp-content/uploads/2025/12/Flugbetriebszeiten_Grafik-DE_151225.pdf",
+   "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/",
+   "https://www.airliners.de/flughafen-memmingen-erweitert-vorfeld-baut-wendeflaeche-groessere-maschinen/88257"
+  ],
+  "assumption": false
+ },
+ "coverage_pct": {
+  "bus": 35,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 75
+ },
+ "coverage_basis": {
+  "text": "Vorfeld: 6 Abstellpositionen, ab Herbst 2026 zusammen 8 (airliners.de, 09.06.2026). Zu Fuß erreichbar sind heute 2 Positionen direkt vor dem Terminal, nach dem Umbau 4 (Schwäbische Zeitung 04.02.2026, Pressemitteilung 28.08.2026); an den übrigen fahren Erdgas-Vorfeldbusse. Der Busanteil der Flüge ist nicht veröffentlicht. Nach Positionen wären es 50 %; zu Fuß erreichbare Positionen dürften bevorzugt belegt werden, daher Annahme bus 35 (Standardwert). gpu: Die 2 neuen Positionen erhalten Bodenstrom aus den eigenen Solaranlagen. Annahme: fest installiert, alle Positionen gleich oft belegt, daraus 75; bei bevorzugter Belegung der neuen Positionen weniger. Sonst liefern mobile Geräte den Strom (seit 2025 4 eGPUs, dazu Diesel-GPUs mit GTL). Keine Fracht. Schlepper und Pushback: 100 % (Annahme, keine Angaben zu Positionen ohne Pushback).",
+  "sources": [
+   "https://www.airliners.de/flughafen-memmingen-erweitert-vorfeld-baut-wendeflaeche-groessere-maschinen/88257",
+   "https://www.schwaebische.de/panorama/xxl-umbau-flughafen-memmingen-hat-grosses-vor-4278807",
+   "https://www.memmingen-airport.de/pressemeldung/bauen-fuer-die-zukunft/",
+   "https://www.memmingen-airport.de/wp-content/uploads/2025/05/Nachhaltigkeitsbericht_FMM_2024_FINAL_WEB_ES-NEW.pdf"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": 43,
+ "electric_share_basis": {
+  "text": "Rund 43 % der zu betankenden Fahrzeuge der Flughafen Memmingen GmbH und ihrer Abfertigungstochter ALLgate fahren 2025 elektrisch (2024: rund 40 %, 2021: rund 25 %); Erdgas rund 8 %, synthetischer Diesel rund 6 %. Der Wert gilt für den gesamten Fuhrpark beider Gesellschaften einschließlich Pkw, nicht nur für die Vorfeldgeräte, und ist nicht nach Fahrzeugklassen aufgeteilt. Elektrisch fahren u. a. Flugzeug- und Gepäckschlepper, seit 2025 eGPUs und seit Herbst 2025 zwei Fluggasttreppen. Die Vorfeldbusse fahren mit Erdgas.",
+  "sources": [
+   "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/elektromobilitaet/",
+   "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 20,
+ "parking_basis": {
+  "text": "Rund 20 öffentliche Ladepunkte: 10 an der E-Tankstelle an der Terminalzufahrt (2 Säulen mit je 215 kW, 8 Fahrzeuge gleichzeitig) und 10 E-Ladeplätze unter der PV-Überdachung am Mietwagen- und Airport Service Center (P1). Annahme: ein Ladevorgang je Punkt und Tag, also 20. Gegenprobe: Der Flughafen meldet für die E-Tankstelle 15 Ladevorgänge pro Tag (2025) und für die Säulen am Mietwagencenter 4 pro Tag (2023; laut Website rund 6). Nicht gezählt sind Ladepunkte im Sicherheitsbereich und auf Mitarbeiterparkplätzen. Ein Parkhaus mit rund 1.800 Stellplätzen soll ab 2029 gebaut werden.",
+  "sources": [
+   "https://www.memmingen-airport.de/an-abreise/parken/",
+   "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/elektromobilitaet/",
+   "https://www.memmingen-airport.de/wp-content/uploads/2025/05/Nachhaltigkeitsbericht_FMM_2024_FINAL_WEB_ES-NEW.pdf",
+   "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "3,70 Mio. (3.698.900), +13,9 % gegenüber 2024",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag im Spitzenmonat",
+   "value": "rund 34 im August 2025, Linie und Charter, keine Luftfracht",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Betriebszeit",
+   "value": "Flugbetrieb 6–23 Uhr; planmäßige Starts bis 22 Uhr, planmäßige Landungen bis 22:30 Uhr (Linienflüge aus Drehkreuzen und hier stationierte Flugzeuge bis 23 Uhr)",
+   "source": "https://www.memmingen-airport.de/wp-content/uploads/2025/12/Flugbetriebszeiten_Grafik-DE_151225.pdf"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "ALLgate GmbH, 100-prozentige Tochter der Flughafen Memmingen GmbH (Passagier- und Flugzeugabfertigung)",
+   "source": "https://www.memmingen-airport.de/unternehmen-business/abfertigung/"
+  },
+  {
+   "label": "Vorfeld und Basis",
+   "value": "6 Abstellpositionen, 2 weitere ab Herbst 2026; 3 stationierte Ryanair-Flugzeuge (Stand Juni 2026)",
+   "source": "https://www.airliners.de/flughafen-memmingen-erweitert-vorfeld-baut-wendeflaeche-groessere-maschinen/88257"
+  },
+  {
+   "label": "Elektrofahrzeuge heute",
+   "value": "Rund 43 % der zu betankenden Fahrzeuge von Flughafen und ALLgate einschließlich Pkw (2025); eGPUs seit 2025, 2 E-Fluggasttreppen seit Herbst 2025",
+   "source": "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/elektromobilitaet/"
+  },
+  {
+   "label": "Stromerzeugung am Flughafen",
+   "value": "Biogas-BHKW 1,5 MW und BHKW 0,25 MW elektrisch, speisen bei wenig Wind- und Solarstrom ins Netz ein; PV u. a. 136 kWp an Carport und Service Center",
+   "source": "https://www.memmingen-airport.de/unternehmen-business/greenairportmemmingen/energiemanagement/"
+  },
+  {
+   "label": "Klimaziel",
+   "value": "Scope 1+2 klimaneutral bis spätestens 2045; bis 2030 mindestens −60 % CO2e absolut gegenüber 2019; ACA Level 2",
+   "source": "https://www.memmingen-airport.de/wp-content/uploads/2026/05/Klimaschutz-Grundsatzerklaerung-FMM-2025_2026_deutsch-und-englisch.pdf"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 7,
+   "baggage_tractor": 7,
+   "pushback_tug": 2,
+   "gpu": 7
+  },
+  "chargers": {
+   "bus": 3,
+   "baggage_tractor": 3,
+   "pushback_tug": 1,
+   "gpu": 3
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 2, baggage_tractor 3, pushback_tug 1, gpu 3), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

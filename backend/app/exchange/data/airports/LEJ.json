@@ -1,0 +1,178 @@
+{
+ "id": "LEJ",
+ "name": "Leipzig/Halle",
+ "full_name": "Flughafen Leipzig/Halle (Leipzig/Halle Airport)",
+ "as_of": "2026-10",
+ "departures_per_day": 104.8,
+ "departures_basis": {
+  "text": "ADV-Monatsstatistik Oktober 2025: 6.495 Flugbewegungen im Linien- und Charterverkehr (Starts und Landungen, Passagier- und Frachtflüge). 6.495 / 2 / 31 = 104,8 Abflüge pro Tag. Oktober 2025 hat die meisten Bewegungen der letzten zwölf Monate mit ADV-Zahlen (September 2025 bis August 2026; September 2025 und Juli 2026 aus den kumulierten Werten abgeleitet, rund 96 und 95 pro Tag) und auch die meisten Passagiere (301.493). Oktober 2024 lag nach der Vorjahresveränderung (+3,8 %) bei rund 101 Abflügen pro Tag. Zum Vergleich: August 2026 5.654 Bewegungen, rund 91 pro Tag; Januar bis August 2026 liegt der Linien- und Charterverkehr 2,4 % unter Vorjahr. Nicht gezählt: nicht-gewerblicher Verkehr (472) und sonstige gewerbliche Flüge (113). Der Wert ist ein Monatsmittel über alle Wochentage. Starts und Landungen sind je zur Hälfte angesetzt.",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/06.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  3.5,
+  8.0,
+  12.0,
+  12.0,
+  7.0,
+  2.9,
+  6.4,
+  4.6,
+  3.6,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  3.1,
+  3.5,
+  2.8
+ ],
+ "arrivals_by_hour": [
+  12.0,
+  10.0,
+  5.0,
+  2.0,
+  1.5,
+  2.1,
+  1.36,
+  2.06,
+  2.56,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.73,
+  4.23,
+  9.5,
+  12.5
+ ],
+ "profile_basis": {
+  "text": "Belegt: Fracht fliegt rund um die Uhr, planmäßige Passagierflüge nur von 5:30 bis 23:30 Uhr, daher keine Stunde mit null. 2025 lagen 36.289 von 49.634 Frachtbewegungen (73 %) zwischen 22 und 6 Uhr. Das DHL-Drehkreuz arbeitet in einer Nachtwelle: Ankunft am späten Abend, Sortierung in der Nacht, Abflug am frühen Morgen. Eine Reportage (2013) nennt ab 23:30 Uhr eine Landung etwa alle sechs Minuten und rund zwei Stunden Bodenzeit. Spitzennacht im Sommerhalbjahr: 165 Bewegungen (2023), 163 (2024). Angenommen: rund 68 Fracht- und 37 Passagierabflüge pro Tag (siehe Abdeckung), Frachtankünfte mit Spitze 23 bis 1 Uhr, Frachtabflüge mit Spitze 1 bis 4 Uhr, tagsüber gut 1 Frachtflug pro Stunde; Passagiere als übliches Punkt-zu-Punkt-Profil mit Frühspitze um 6 Uhr. Das Profil ergibt rund 106 Bewegungen zwischen 22 und 6 Uhr, Spitzennächte liegen gut die Hälfte darüber.",
+  "sources": [
+   "https://www.mdf-ag.com/flughafen-leipzig/halle/flughafen-leipzig/halle-gmbh-im-ueberblick/",
+   "https://www.l-iz.de/politik/region/2026/05/gruenen-anfrage-zum-flughafen-leipzig-halle-frachtflug-im-abwind-und-hunderte-leerfluege-655858",
+   "https://aviation.direct/debatte-um-nachtfluglaerm-und-betriebsablaeufe-am-frachtdrehkreuz-leipzig-halle",
+   "https://www.computerwoche.de/article/2749242/leipzig-bei-nacht-im-dhl-hub.html",
+   "https://www.mobilitaet.sachsen.de/download/Bericht_zur_63._Sitzung_Fluglaermkommission_Leipzig_Halle.pdf",
+   "https://mobilitaet.sachsen.de/download/Bericht_65_Sitzung_FLK_LeipzigHalle_barrierefrei.pdf"
+  ],
+  "assumption": true
+ },
+ "coverage_pct": {
+  "bus": 18,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 100
+ },
+ "coverage_basis": {
+  "text": "Bus: nicht veröffentlicht, wie viele Flüge per Bus abgefertigt werden. Belegt sind 25 Abstellpositionen und 6 Fluggastbrücken der Flughafengesellschaft; das DHL-Vorfeld bietet Platz für bis zu 65 Flugzeuge. Frachtflüge haben keine Fluggäste: 2025 gab es laut Landesregierung 49.634 Frachtbewegungen bei 65.684 Bewegungen im Linien- und Charterverkehr (ADV). Annahme: Frachtflüge verteilen sich gleichmäßig übers Jahr (im Mittel 68 Abflüge pro Tag), Passagierflüge wie die Fluggäste (Oktober 14,2 % des Jahres). Für Oktober 2025 ergibt das rund 68 Fracht- und 37 Passagierabflüge pro Tag, also 35 % Passagierflüge. Annahme: etwa die Hälfte der Passagierflüge fährt mit dem Bus, 0,35 × 0,5 ≈ 18 %. Schlepper: 100 %. Pushback: 100 %, nicht anders belegt. GPU: fester 400-Hz-Strom an Positionen ist nicht veröffentlicht, Annahme 100 %.",
+  "sources": [
+   "https://www.mdf-ag.com/flughafen-leipzig/halle/flughafen-leipzig/halle-gmbh-im-ueberblick/",
+   "https://de.wikipedia.org/wiki/DHL_Hub_Leipzig",
+   "https://www.l-iz.de/politik/region/2026/05/gruenen-anfrage-zum-flughafen-leipzig-halle-frachtflug-im-abwind-und-hunderte-leerfluege-655858",
+   "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": null,
+ "electric_share_basis": {
+  "text": "Kein Anteil veröffentlicht, eine Gesamtzahl der Vorfeldflotte fehlt. Laut ESG-Bericht 2024 der Mitteldeutschen Flughafen AG umfasst ihr Pool am Standort Leipzig/Halle 98 elektrisch betriebene Fahrzeuge und Geräte, darunter Pkw, Pushback-Fahrzeuge, Highloader, Schlepper, Gabelstapler, Gepäckförderbänder und Passagiertreppen. Im Mai 2024 gingen 4 Elektro-Vorfeldbusse in Betrieb, die Dieselbusse ersetzen, dazu 3 elektrische Bodenstromgeräte (eGPU). Die Angaben gelten für die Flotte der Flughafengruppe; die Flotte am DHL-Drehkreuz ist darin nicht beziffert.",
+  "sources": [
+   "https://www.mdf-ag.com/media/user_upload/Verantwortung/Downloadbereich/2024/ESG_Fortschrittsbericht_2024.pdf"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 12,
+ "parking_basis": {
+  "text": "Die Flughafen-Website nennt 8 Schnellladepunkte (HPC, bis 400 kW) auf dem Parkplatz P11 vor dem Zentralterminal und 4 Ladepunkte an 2 Säulen unter der Mall bei der Mietwagenrückgabe, alle öffentlich. 8 + 4 = 12. Annahme: ein Ladevorgang je Punkt und Tag. Die mögliche Erweiterung des Schnellladeparks auf bis zu 20 Punkte ist nicht enthalten.",
+  "sources": [
+   "https://www.leipzig-halle-airport.de/parken/e-auto-laden/",
+   "https://www.mdf-ag.com/media/user_upload/Verantwortung/Downloadbereich/2024/ESG_Fortschrittsbericht_2024.pdf"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Verkehr 2025",
+   "value": "2,12 Mio. Passagiere und 1,39 Mio. t Fracht und Luftpost",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag im Spitzenmonat",
+   "value": "rund 105 im Oktober 2025, Passagier- und Frachtflüge",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Betriebszeiten",
+   "value": "Fracht rund um die Uhr; Passagierflüge von 5:30 bis 23:30 Uhr",
+   "source": "https://www.mdf-ag.com/flughafen-leipzig/halle/flughafen-leipzig/halle-gmbh-im-ueberblick/"
+  },
+  {
+   "label": "Frachtflüge in der Nacht (2025)",
+   "value": "36.289 von 49.634 Frachtflugbewegungen (73 %) zwischen 22 und 6 Uhr",
+   "source": "https://www.l-iz.de/politik/region/2026/05/gruenen-anfrage-zum-flughafen-leipzig-halle-frachtflug-im-abwind-und-hunderte-leerfluege-655858"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "PortGround mit ihrer Tochter FSG: Flugzeug-, Passagier- und Frachtabfertigung",
+   "source": "https://www.leipzig-halle-airport.de/aviation-handling/bodenverkehrsdienste/"
+  },
+  {
+   "label": "Elektrofahrzeuge heute",
+   "value": "98 elektrische Fahrzeuge und Geräte der Flughafengruppe am Standort (ESG-Bericht 2024); 2024 gingen 4 E-Vorfeldbusse und 3 E-GPU in Betrieb",
+   "source": "https://www.mdf-ag.com/media/user_upload/Verantwortung/Downloadbereich/2024/ESG_Fortschrittsbericht_2024.pdf"
+  },
+  {
+   "label": "Energie vor Ort",
+   "value": "BHKW mit Gasmotoren (seit 1996) speist ins flughafeninterne Stromnetz; Photovoltaik mit 230 kWp seit 2011",
+   "source": "https://www.mdf-ag.com/umwelt/energiemanagement/"
+  },
+  {
+   "label": "Klimaziel",
+   "value": "Orientierung am ADV-Ziel: CO2 −65 % bis 2030 gegenüber 2010, klimaneutral bis 2045",
+   "source": "https://www.mdf-ag.com/media/user_upload/Verantwortung/Downloadbereich/2024/ESG_Fortschrittsbericht_2024.pdf"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 10,
+   "baggage_tractor": 18,
+   "pushback_tug": 6,
+   "gpu": 21
+  },
+  "chargers": {
+   "bus": 4,
+   "baggage_tractor": 7,
+   "pushback_tug": 3,
+   "gpu": 9
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 3, baggage_tractor 8, pushback_tug 4, gpu 9), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

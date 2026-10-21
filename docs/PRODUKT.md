@@ -84,6 +84,7 @@ Modellrechnungen, keine Schätzungen. Der Beispielflughafen ist erfunden.
 | Stufe 5 Parkhaus | Regler (0 bis 200 Ladevorgänge am Tag) | Parkhaus wird nicht vorausgeplant, nur am vollen Anschluss gleichmäßig mit gedrosselt; kein gemeinsames Lademanagement mit dem Vorfeld |
 | Stufe 6 Netzausbau | als Satz und rotes Schild unter der Treppe | – |
 | Kundensicht | Startseite: ein Satz, Treppe, Kurve, „So geht es weiter“. Seite für Fachleute unter `?seite=fachleute`: dieselbe Rechnung, ausführlich begründet, von der Startseite verlinkt. Die Reglerstellung steht in der Adresse | eigenes Kundenprojekt noch nicht an die Treppe angeschlossen |
+| Echte Flughäfen | 15 deutsche Flughäfen aus öffentlichen Quellen: Steckbrief, Tagesprofil, Flotte aus dem Modell, eigene Vorab-Tabelle; „Reserve fürs Vorfeld“ statt Anschluss, zuerst offen | Tagesprofile bei 12 Flughäfen aus dem veröffentlichten Flugplan ausgezählt, bei 3 (BER, CGN, LEJ) aus Eckdaten konstruiert; nur vier Fahrzeugklassen mit Kurz- und Mittelstrecken-Verbrauch; nicht mit den Flughäfen abgestimmt |
 | Altwerkzeuge | Messdaten-Übergabe, SIL-Läufe, eigene Projekte unter `?seite=labor`, nirgends aus der Kundensicht verlinkt | – |
 | PDF, Präsentationsmodus | Taste P, eine A4-Seite als Handout | – |
 | Kosten | nicht enthalten | erst nach Preisfreigabe durch E.ON |

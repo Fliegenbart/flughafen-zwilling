@@ -1,0 +1,182 @@
+{
+ "id": "STR",
+ "name": "Stuttgart",
+ "full_name": "Flughafen Stuttgart",
+ "as_of": "2026-10",
+ "departures_per_day": 129.7,
+ "departures_basis": {
+  "text": "Spitzenmonat der letzten zwölf veröffentlichten Monate (September 2025 bis August 2026) ist der September 2025. ADV-Monatsstatistik: 7.782 Bewegungen im Linien- und Charterverkehr (Passagiere, Fracht, Post) in 30 Tagen. Rechnung: 7.782 / 2 / 30 = 129,7 Abflüge pro Tag. Vergleich 2025: Mai 7.352, Juni 7.635, Juli 7.651, August 7.887, Oktober 7.501 Bewegungen (118,6; 127,3; 123,4; 127,2; 121,0 Abflüge pro Tag). Nicht enthalten sind sonstige gewerbliche (629) und nicht gewerbliche Bewegungen (918), etwa Taxi- und Privatflüge. 2026 liegt der Verkehr niedriger: Januar bis August −8,0 % zum Vorjahr; August 2026 hatte 7.219 Bewegungen, also 116,4 Abflüge pro Tag. Die Flugplantafel vom 16. bis 20.10.2026 zeigt im Mittel 113 Abflüge pro Tag. Der angesetzte Wert liegt damit rund 10 % über dem Stand 2026.",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2025/10/09.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/05.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/06.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/07.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.avionio.com/en/airport/str/departures"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  20,
+  75,
+  37,
+  12,
+  28,
+  44,
+  27,
+  19,
+  43,
+  43,
+  29,
+  32,
+  33,
+  47,
+  33,
+  27,
+  8,
+  6,
+  0
+ ],
+ "arrivals_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  19,
+  4,
+  18,
+  44,
+  36,
+  29,
+  35,
+  38,
+  31,
+  29,
+  38,
+  46,
+  24,
+  34,
+  18,
+  18,
+  59,
+  32
+ ],
+ "profile_basis": {
+  "text": "Belegt: Planzeiten aller Abflüge und Ankünfte vom 16. bis 20.10.2026 (Fr–Di, Sommerflugplan) laut Flugplantafel von avionio.com, Codeshares einmal gezählt, ohne Geschäfts-, Taxi- und Militärflüge: 563 Abflüge, 552 Ankünfte. Gewicht = Summe der fünf Tage je Ortsstunde. Nachtflugverbot: keine Starts 23–6 Uhr, keine Landungen 23:30 bzw. 24–6 Uhr. Daher 0 von 0 bis 4 Uhr; eine verspätete Landung um 0:20 Uhr ist nicht gezählt. Die ersten Planabflüge um 5:50 Uhr verlassen die Position vor 6 Uhr und starten danach; sie stehen in Stunde 5. Die Morgenwelle 5:50–7 Uhr (17 % der Abflüge, drei Viertel davon Eurowings) kommt von über Nacht abgestellten Flugzeugen; ihre Rückkehr bildet die Ankunftsspitze 22–24 Uhr (16,5 % der Ankünfte). Annahme: Das Muster dieser Herbstwoche gilt auch im Spitzenmonat September.",
+  "sources": [
+   "https://www.avionio.com/en/airport/str/departures",
+   "https://www.avionio.com/en/airport/str/arrivals",
+   "https://www.oeko.de/fileadmin/oekodoc/WP-scale-up-2.pdf"
+  ],
+  "assumption": false
+ },
+ "coverage_pct": {
+  "bus": 55,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 25
+ },
+ "coverage_basis": {
+  "text": "Gepäck-/Frachtschlepper 100 %: Jeder Flug braucht Gepäck- oder Frachttransport. Pushback 100 %: Die FSG-Tochter SAG schiebt die Flugzeuge zurück; Ausnahmen sind nicht veröffentlicht. Bus 55 % (Annahme): Stuttgart hat 8 Fluggastbrücken (je 4 an Terminal 1 und 3), die übrigen Gates sind Busgates. Bei 6–8 Umläufen je Brücke und Tag fertigen die Brücken 37–49 % der rund 130 Abflüge ab; Frachtflüge (rund 1 % der Abflüge laut Flugplantafel) brauchen keinen Bus. Daraus folgen 50–62 % mit Bus, angesetzt sind 55 %. GPU 25 % (Annahme): 75 % der Passagier-Abstellpositionen haben stationären 400-Hz-Bodenstrom (Stand 09/2024); auf dem Fracht-Vorfeld sind seit 2026 alle Positionen ans Netz angeschlossen. Angesetzt: Der Anteil der Positionen ohne festen Bodenstrom entspricht dem Anteil der Abflüge mit mobilem Gerät.",
+  "sources": [
+   "https://de.wikipedia.org/wiki/Flughafen_Stuttgart",
+   "https://www.lobbyregister.bundestag.de/media/c4/46/808042/FSG_Pruefungsbericht_K_2025_final_signiert.pdf",
+   "https://www.aerotelegraph.com/ticker/flughafen-stuttgart-stellte-auf-luftfracht-vorfeld-auf-elektrische/67ey6bg",
+   "https://www.airliners.de/stuttgart-ersetzt-hilfstriebwerke-boden-kabinenluft-netz/90483",
+   "https://www.avionio.com/en/airport/str/departures"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": null,
+ "electric_share_basis": {
+  "text": "Ein aktueller Gesamtanteil für die Vorfeldflotte ist nicht veröffentlicht, daher kein Wert. Belegt ist: Alle Passagierbusse (16 Stück) und alle Gepäckschlepper fahren seit 2018 elektrisch; seit 2024 fährt auch ein 40-m³-Tankwagen elektrisch. Auf dem Fracht-Vorfeld sind seit 2026 die letzten Diesel-Bodenstromaggregate ausgemustert. Der letzte veröffentlichte Gesamtwert, 40 % in den Kern-Abfertigungskategorien von FSG und Drittabfertiger, stammt von Ende 2019 und ist veraltet. Ziel der FSG: vollständig elektrische Vorfeldflotte bis 2030.",
+  "sources": [
+   "https://www.airportcarbonaccreditation.org/stuttgart-airport-reaches-level-4-aligning-carbon-management-ambition-with-global-climate-goals/",
+   "https://www.electrive.net/2023/03/17/flughafen-stuttgart-schafft-30-schwere-e-fahrzeuge-fuer-das-vorfeld-an/",
+   "https://www.oeko.de/fileadmin/oekodoc/WP-scale-up-2.pdf",
+   "https://www.lobbyregister.bundestag.de/media/c4/46/808042/FSG_Pruefungsbericht_K_2025_final_signiert.pdf",
+   "https://www.airliners.de/stuttgart-ersetzt-hilfstriebwerke-boden-kabinenluft-netz/90483"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 94,
+ "parking_basis": {
+  "text": "Am Flughafen gibt es knapp 100 öffentlich zugängliche Pkw-Ladepunkte, davon 6 Schnellladepunkte (Stand 02/2025). Angesetzt sind 94 Punkte: Eine nicht amtliche Drittzählung ergibt 88 Normal- und 6 Schnellladepunkte. Annahme: ein Ladevorgang je Punkt und Tag. Nicht enthalten sind 4 E-Lkw-Ladepunkte für Speditionen und die nicht öffentlichen Ladepunkte für Mitarbeiter- und Betriebsfahrzeuge.",
+  "sources": [
+   "https://www.electrive.net/2025/02/22/erste-ladestationen-fuer-e-lkw-am-flughafen-stuttgart/"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "9.585.033 an- und abfliegende Fluggäste (inkl. Transit), +4,7 % gegenüber 2024",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag im Spitzenmonat",
+   "value": "Rund 130 im September 2025 (7.782 Bewegungen im Linien- und Charterverkehr in 30 Tagen)",
+   "source": "https://www.adv.aero/wp-content/uploads/2025/10/09.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Nachtflugbeschränkung",
+   "value": "Seit den 1970er-Jahren keine Starts von 23 bis 6 Uhr und keine Landungen von 23:30 bzw. 24 Uhr bis 6 Uhr",
+   "source": "https://www.oeko.de/fileadmin/oekodoc/WP-scale-up-2.pdf"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "FSG-Tochter SAG: Gepäck- und Passagiertransport, Ramp, Pushback, Nachtluftpost und Enteisung",
+   "source": "https://www.lobbyregister.bundestag.de/media/c4/46/808042/FSG_Pruefungsbericht_K_2025_final_signiert.pdf"
+  },
+  {
+   "label": "Elektrofahrzeuge heute",
+   "value": "Alle Passagierbusse und Gepäckschlepper fahren seit 2018 elektrisch; seit 2024 auch ein 40-m³-Tankwagen",
+   "source": "https://www.airportcarbonaccreditation.org/stuttgart-airport-reaches-level-4-aligning-carbon-management-ambition-with-global-climate-goals/"
+  },
+  {
+   "label": "Bodenstrom",
+   "value": "400-Hz-Anlagen an 75 % der Passagier-Abstellpositionen (Stand 09/2024)",
+   "source": "https://www.aerotelegraph.com/ticker/flughafen-stuttgart-stellte-auf-luftfracht-vorfeld-auf-elektrische/67ey6bg"
+  },
+  {
+   "label": "Stromnetz",
+   "value": "Eigenes geschlossenes Verteilnetz der FSG; Betreiberin der Anlagen ist die Tochter Flughafen Stuttgart Energie GmbH",
+   "source": "https://www.lobbyregister.bundestag.de/media/c4/46/808042/FSG_Pruefungsbericht_K_2025_final_signiert.pdf"
+  },
+  {
+   "label": "Klimaziel",
+   "value": "STRzero: netto treibhausgasneutral ab 2040; Vorfeldflotte bis 2030 vollständig elektrisch",
+   "source": "https://www.lobbyregister.bundestag.de/media/c4/46/808042/FSG_Pruefungsbericht_K_2025_final_signiert.pdf"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 17,
+   "baggage_tractor": 18,
+   "pushback_tug": 8,
+   "gpu": 10
+  },
+  "chargers": {
+   "bus": 7,
+   "baggage_tractor": 7,
+   "pushback_tug": 4,
+   "gpu": 4
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 5, baggage_tractor 8, pushback_tug 5, gpu 4), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

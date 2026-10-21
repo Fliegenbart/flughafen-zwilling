@@ -1,0 +1,175 @@
+{
+ "id": "BER",
+ "name": "Berlin",
+ "full_name": "Flughafen Berlin Brandenburg Willy Brandt",
+ "as_of": "2026-10",
+ "departures_per_day": 274.7,
+ "departures_basis": {
+  "text": "Spitzenmonat ist der Oktober 2025, gemessen am Tagesschnitt im Linien-, Pauschalreise- und Frachtverkehr (Monatsberichte Januar 2025 bis September 2026). Verkehrsbericht Oktober 2025: 16.495 Linienbewegungen (davon 114 Fracht) + 532 Pauschalreiseflüge + 2 Gelegenheits-Frachtflüge = 17.029 Bewegungen. 17.029 / 2 / 31 Tage = 274,7 Abflüge pro Tag. Nicht enthalten: 465 Tramp- und Anforderungsflüge (3.373 Fluggäste, rund 7 je Bewegung, also überwiegend Geschäftsreiseflüge), 253 sonstige gewerbliche und 807 nichtgewerbliche Bewegungen. Zum Vergleich: September 2025 16.325 / 2 / 30 = 272,1; September 2026 15.997 / 2 / 30 = 266,6; Jahr 2025 176.614 / 2 / 365 = 241,9.",
+  "sources": [
+   "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/ber/verkehrsstatistik-ab-2020/2025/2025-10-verkehrsbericht-oktober.pdf",
+   "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/ber/verkehrsstatistik-ab-2020/2025/2025-09-verkehrsbericht-september.pdf",
+   "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/ber/verkehrsstatistik-ab-2020/2026/2026-09-verkehrsbericht-september.pdf",
+   "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/ber/verkehrsstatistik-ab-2020/2025/2025-12-verkehrsbericht-dezember.pdf"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  1.2,
+  30,
+  22,
+  17,
+  17,
+  17,
+  16,
+  17,
+  17,
+  17,
+  17,
+  18,
+  18,
+  17,
+  16,
+  14,
+  13,
+  12.0,
+  2.5
+ ],
+ "arrivals_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  1.4,
+  6,
+  12,
+  17,
+  19,
+  18,
+  17,
+  17,
+  17,
+  17,
+  17,
+  18,
+  18,
+  18,
+  18,
+  19,
+  19,
+  20.4,
+  9.7
+ ],
+ "profile_basis": {
+  "text": "Belegt (Fluglärm-Monatsbericht Oktober 2025, alle Bewegungen im Monat): 6–22 Uhr 8.786 Starts und 8.284 Landungen; 22–23 Uhr 372 Starts und 633 Landungen, 23–24 Uhr 78 und 302, 5–6 Uhr 38 und 44. Diese Nachtwerte gehen im selben Verhältnis ins Profil ein. 0–5 Uhr gilt Kernruhe ohne planmäßige Flüge, daher 0 (30 Ausnahmen im Monat nicht abgebildet). Abends landen mehr Flugzeuge als starten; sie übernachten und starten früh. Stationiert sind u. a. easyJet 11, Eurowings 9 und Ryanair 7 Flugzeuge (Mai 2026; Ryanair schließt die Basis zum Winter 2026/27). Angenommen ist die Verteilung innerhalb 6–22 Uhr, weil weder eine Stundenstatistik noch Koordinierungseckwerte veröffentlicht sind: Abflugwelle 6–7 Uhr (rund 28 Abflüge), 7–8 Uhr rund 20, danach 15–17 je Stunde, ab 20 Uhr fallend; Landungen ab 6 Uhr steigend, danach 16–19 je Stunde. Rechnerisch übernachten rund 31 Flugzeuge.",
+  "sources": [
+   "https://corporate.berlin-airport.de/content/dam/corporate/de/nachhaltigkeit/umwelt/fluglaermmessungen-stationaer/2025/fluglaermbericht-10-2025.pdf",
+   "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/newsroom/publikationen/fluglaermbericht/2024-fluglaermbericht.pdf",
+   "https://www.aerotelegraph.com/airlines/eurowings-will-luecken-schliessen-die-ryanair-in-berlin-hinterlaesst/gh3ngfk"
+  ],
+  "assumption": true
+ },
+ "coverage_pct": {
+  "bus": 40,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 60
+ },
+ "coverage_basis": {
+  "text": "Bus: Ein Anteil ist nicht veröffentlicht. Von 105 Abstellpositionen haben 25 Fluggastbrücken (Main Pier 16, Pier Süd 9), am Pier Nord liegen 10 Walk-Boarding-Positionen; 70 Positionen haben beides nicht. Angenommen: Kontaktpositionen werden dreimal so oft belegt, also fahren 40 % der Flüge mit Bus (Spanne 33–50 % bei zwei- bis vierfachem Umschlag); Frachtflüge (unter 1 %) vernachlässigt. Gepäckschlepper 100 %. Flugzeugschlepper 100 % als Annahme, Daten zu Positionen ohne Pushback fehlen. GPU: Laut Entgeltordnung gibt es Positionen mit festem 400-Hz-Bodenstrom, an Brückenpositionen „nach Verfügbarkeit“. Wie viele, ist nicht veröffentlicht. Angenommen: die 25 Brückenpositionen haben 400 Hz und fertigen rund 40 % der Abflüge ab, also GPU 60 % (Spanne etwa 35–75 %). Im September 2026 erhielt die FBB drei BMV-Förderbescheide für klimafreundlichen Bodenstrom (Inhalt nicht veröffentlicht).",
+  "sources": [
+   "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/ber/flughafenanlagen-ber.pdf",
+   "https://corporate.berlin-airport.de/content/dam/corporate/no-language/geschaeftspartner/entgelte/entgeltordnung-ber.pdf",
+   "https://corporate.berlin-airport.de/content/dam/corporate/de/geschaeftspartner/entgelte/entgelte-sonstige-leistungen-ber.pdf",
+   "https://www.bmv.de/SharedDocs/DE/Pressemitteilungen/2026/083-bilger-bmv-staerkt-klimafreundliche-infrastruktur-an-deutschen-flughaefen.html"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": null,
+ "electric_share_basis": {
+  "text": "Eine Quote über alle Abfertiger veröffentlicht die FBB nicht, daher kein Wert. Bekannt ist nur der Wert der WISAG Aviation, eines von drei Bodenverkehrsdienstleistern am BER: Sie steigerte 2023 den Elektroanteil ihrer Vorfeldflotte von 40 auf 55 % (u. a. 4 von 7 Pushbacks, die Hälfte der Gepäck- und Frachtschlepper, 1 von 4 Bussen). Für die übrigen Abfertiger und für heute gilt der Wert nicht. Seit 2022 gelten gerätespezifische E-Quoten; laut FBB (Januar 2026) steigen sie „Mitte des kommenden Jahres“.",
+  "sources": [
+   "https://pardok.parlament-berlin.de/starweb/adis/citat/VT/19/SchrAnfr/S19-16455.pdf",
+   "https://www.aerotelegraph.com/flughaefen/nachts-haengen-die-fahrzeuge-des-ber-an-der-dose/z233tt0",
+   "https://corporate.berlin-airport.de/de/unternehmen-presse/presseportal/pressemitteilungen/2026-01-22-level-4-aca.html"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 10,
+ "parking_basis": {
+  "text": "Öffentlich laden lässt sich laut Flughafen nur im Parkhaus P3: 10 Ladepunkte (Typ 2, bis 22 kW, nicht reservierbar). Für andere Parkhäuser und Parkplätze nennt der Flughafen keine Ladepunkte. Annahme: ein Ladevorgang je Punkt und Tag, also 10.",
+  "sources": [
+   "https://ber.berlin-airport.de/de/parken/e-ladesaeulen.html"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "26.050.740 (+2,3 % gegenüber 2024)",
+   "source": "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/ber/verkehrsstatistik-ab-2020/2025/2025-12-verkehrsbericht-dezember.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag im Spitzenmonat",
+   "value": "rund 275 im Oktober 2025, Linie, Pauschalreise und Fracht",
+   "source": "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/ber/verkehrsstatistik-ab-2020/2025/2025-10-verkehrsbericht-oktober.pdf"
+  },
+  {
+   "label": "Nachtruhe",
+   "value": "0–5 Uhr keine regulären Linienflüge; 23:30–24 und 5–5:30 Uhr nur Verspätungen und Verfrühungen",
+   "source": "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/newsroom/publikationen/fluglaermbericht/2024-fluglaermbericht.pdf"
+  },
+  {
+   "label": "Elektrofahrzeuge auf dem Vorfeld",
+   "value": "Abfertiger WISAG Aviation 2023: Elektroanteil ihrer Vorfeldflotte von 40 auf 55 % gesteigert; flughafenweite Quote nicht veröffentlicht",
+   "source": "https://pardok.parlament-berlin.de/starweb/adis/citat/VT/19/SchrAnfr/S19-16455.pdf"
+  },
+  {
+   "label": "Laden auf dem Vorfeld",
+   "value": "127 luftseitige Common-Use-Ladepunkte; Ladehub Vorfeld Delta seit Mai 2025; E-Quoten für Abfertiger seit 2022",
+   "source": "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/newsroom/publikationen/geschaeftsbericht/2025-geschaeftsbericht-barrierefrei.pdf"
+  },
+  {
+   "label": "Photovoltaik",
+   "value": "rund 2,6 MWp in Betrieb (2025); weitere 5,8 MWp auf Freiflächen, Inbetriebnahme Ende 2026 bzw. Anfang 2027 erwartet",
+   "source": "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/newsroom/publikationen/geschaeftsbericht/2025-geschaeftsbericht-barrierefrei.pdf"
+  },
+  {
+   "label": "Stromversorgung",
+   "value": "2023 rund 25 % des Strombedarfs aus eigenen Gas-BHKW, rund 75 % aus dem öffentlichen Netz",
+   "source": "https://corporate.berlin-airport.de/content/dam/corporate/de/unternehmen-presse/fbb/berichte/beihilfeberichterstattung/2024-06-beihilfeberichterstattung.pdf"
+  },
+  {
+   "label": "Klimaziel",
+   "value": "CO2-neutraler Flughafenbetrieb bis spätestens 2045; −65 % bis 2030 gegenüber 2010; seit Januar 2026 ACA Level 4",
+   "source": "https://corporate.berlin-airport.de/de/unternehmen-presse/presseportal/pressemitteilungen/2026-01-22-level-4-aca.html"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 24,
+   "baggage_tractor": 31,
+   "pushback_tug": 12,
+   "gpu": 35
+  },
+  "chargers": {
+   "bus": 10,
+   "baggage_tractor": 11,
+   "pushback_tug": 5,
+   "gpu": 14
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 7, baggage_tractor 14, pushback_tug 8, gpu 15), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

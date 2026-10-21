@@ -51,7 +51,7 @@ describe("Startseite für den Kundentermin", () => {
     expect(screen.getByText(/^Ihr Anschluss muss um 25\skW wachsen/)).toBeVisible();
     expect(screen.getByText(/Netzausbau: Der Anschluss braucht 25\skW mehr/)).toBeVisible();
     fireEvent.change(slider("Photovoltaik"), { target: { value: "3" } });
-    expect(slider("Photovoltaik")).toHaveAttribute("aria-valuetext", "2.000 kWp");
+    expect(slider("Photovoltaik")).toHaveAttribute("aria-valuetext", "2.000\u00a0kWp");
     expect(screen.getByText(/^Erst mit Lademanagement und Speicher reicht/)).toBeVisible();
     fireEvent.change(slider("Photovoltaik"), { target: { value: "1" } });
     fireEvent.change(slider("Elektrische Fahrzeuge im Vorfeld"), { target: { value: "100" } });

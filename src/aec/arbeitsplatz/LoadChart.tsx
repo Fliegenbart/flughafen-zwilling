@@ -58,17 +58,26 @@ export default function LoadChart({
   note,
   formatCap = powerText,
   drawNote = true,
+  capLabel = "Netzanschluss",
+  overflow,
 }: {
   result: LiveResult;
   today: LiveResult;
   departures: DepartureBin[];
   changed: boolean;
   /** Eigener Satz ueber der Kurve statt "fehlen bis zu" (z. B. wenn gedeckeltes Laden erlaubt ist). */
-  note?: { text: string; tone: "ok" | "stop" };
+  note?: { text: string; tone: "ok" | "stop" | "neutral" };
   /** Leistungsformat der Anschlusslinie, passend zur umgebenden Seite. */
   formatCap?: (kw: number) => string;
   /** false: Die Seite setzt den Satz selbst als Text ueber die Kurve (bricht schmal um). */
   drawNote?: boolean;
+  /** Name der roten Linie, z. B. "Reserve" statt "Netzanschluss". */
+  capLabel?: string;
+  /**
+   * Was ueber der Linie liegt: fehlende Leistung (rot, Standard) oder nur ein Mehrbedarf
+   * gegenueber einer Vergleichslinie (grau, mit eigenem Wort in der Anzeige).
+   */
+  overflow?: { neutral: true; label: string };
 }) {
   const [box, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
@@ -114,7 +123,7 @@ export default function LoadChart({
   const hp = hover != null ? pts[Math.min(pts.length - 1, Math.round(hover / STEP))] : null;
 
   return (
-    <figure className="ap-chart" ref={box}>
+    <figure className={overflow ? "ap-chart ap-chart--neutral" : "ap-chart"} ref={box}>
       <svg
         width={width}
         height={H + DEP_H}
@@ -144,7 +153,10 @@ export default function LoadChart({
         ))}
         {changed ? <path className="ap-chart__today" d={line(base, (p) => p.need)} /> : null}
         <path className="ap-chart__cover" d={band((p) => p.cap, coverTop)} />
-        <path className="ap-chart__miss" d={band(coverTop, missTop)} />
+        <path
+          className={overflow ? "ap-chart__miss ap-chart__miss--neutral" : "ap-chart__miss"}
+          d={band(coverTop, missTop)}
+        />
         <path className="ap-chart__need" d={line(pts, (p) => p.need)} />
         <path className="ap-chart__limit" d={line(pts, (p) => p.cap)} />
         <text
@@ -153,7 +165,7 @@ export default function LoadChart({
           y={y(capNow) - 8}
           textAnchor="end"
         >
-          Netzanschluss {formatCap(capNow)}
+          {capLabel} {formatCap(capNow)}
         </text>
         {!drawNote ? null : note ? (
           note.tone === "ok" ? (
@@ -226,7 +238,7 @@ export default function LoadChart({
         {hp
           ? `${timeLabel(hp.m)} Uhr: ${powerText(hp.need)} gebraucht${
               hp.miss > 0.5
-                ? `, ${powerText(hp.miss)} fehlen`
+                ? `, ${powerText(hp.miss)} ${overflow ? overflow.label : "fehlen"}`
                 : hp.cover > 0.5
                   ? `, Batterie gibt ${powerText(hp.cover)}`
                   : ""

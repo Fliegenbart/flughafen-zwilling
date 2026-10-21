@@ -1,0 +1,180 @@
+{
+ "id": "DUS",
+ "name": "Düsseldorf",
+ "full_name": "Flughafen Düsseldorf",
+ "as_of": "2026-10",
+ "departures_per_day": 246.6,
+ "departures_basis": {
+  "text": "Spitzenmonat 2025 nach Tagesmittel ist der September. Ein eigenes ADV-Heft dafür ist nicht abrufbar, deshalb aus ADV-Werten im Linien- und Charterverkehr gerechnet: Januar bis Oktober 129.005 Starts und Landungen, minus Januar bis August 99.191, minus Oktober 15.021 = 14.793. Rechnung: 14.793 / 2 / 30 Tage = 246,6 Abflüge pro Tag. Vergleich: Juli 2025 rund 244, August 2025 rund 243, Oktober 2025 rund 242, August 2026 rund 242. Der Nachtflugreport zählt im September 2026 15.670 Bewegungen aller Verkehrsarten, kaum weniger als im September 2025 (15.740). Kontrolle: Die Abflugtafel des Flughafens zeigt für den 20. bis 24.10.2026 im Mittel 246 Abflüge pro Tag ohne Codeshares. Nicht enthalten sind sonstiger gewerblicher und nicht-gewerblicher Verkehr (etwa Taxi-, Privat- und Schulflüge).",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/07.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.dus.com/-/media/dus/konzern/nachbarn/transparenz/flugbetrieb/betriebszeiten/reports/pnr_2026_09/pnr-09-2026.ashx?force-download=1",
+   "https://www.dus.com/de-de/fliegen/abflug"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  191.0,
+  77.0,
+  56.0,
+  63.0,
+  92.0,
+  70.0,
+  78.0,
+  81.0,
+  67.0,
+  102.0,
+  78.0,
+  49.0,
+  78.0,
+  57.0,
+  67.0,
+  24.0,
+  0.0,
+  0.0
+ ],
+ "arrivals_by_hour": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  21.0,
+  20.0,
+  55.0,
+  75.0,
+  85.0,
+  75.0,
+  74.0,
+  83.0,
+  89.0,
+  52.0,
+  71.0,
+  69.0,
+  75.0,
+  92.0,
+  52.0,
+  99.0,
+  142.0,
+  0.0
+ ],
+ "profile_basis": {
+  "text": "Belegt: Gewichte = planmäßige Abflüge (Off-Block) und Ankünfte (On-Block) je Ortsstunde laut Abflug- und Ankunftstafel des Flughafens, 20. bis 24.10.2026 (letzte Woche des Sommerflugplans), ohne Codeshares und Annullierungen: im Mittel 246 Abflüge und 246 Ankünfte pro Tag, so viele wie im Spitzenmonat. Planmäßige Starts sind nur von 6 bis 22 Uhr erlaubt, Landungen von 6 bis 23 Uhr; die übrigen Stunden stehen auf null. Die rund 6 Abflüge mit Off-Block 5:50 Uhr starten nach 6 Uhr und zählen zur Stunde 6. Abflugwelle um 6 Uhr (rund 38), Landewelle um 21 und 22 Uhr (rund 20 und 28). Kontrolle: Die stärkste Stunde hat etwa 42 Bewegungen nach Planzeit und liegt am Koordinierungseckwert von 43 bis 45; von 22 bis 23 Uhr rund 28 Landungen bei 33 koordinierten. Die Jahresmittel 2024 des Flughafens nach Bahnzeit zeigen dieselben Wellen.",
+  "sources": [
+   "https://www.dus.com/de-de/fliegen/abflug",
+   "https://www.dus.com/de-de/fliegen/ankunft",
+   "https://www.dus.com/de-de/konzern/nachbarn/transparenz/flugbetrieb/betriebszeiten",
+   "https://www.dus.com/-/media/dus/konzern/unternehmen/flughafen-duesseldorf-gmbh/zahlen-und-fakten/verkehrszahlen/dzf-2024-verkehrszahlen.ashx"
+  ],
+  "assumption": false
+ },
+ "coverage_pct": {
+  "bus": 34.0,
+  "baggage_tractor": 100.0,
+  "pushback_tug": 100.0,
+  "gpu": 33.0
+ },
+ "coverage_basis": {
+  "text": "An Gebäudepositionen sind Fluggastbrücke und feste 400-Hz-Anlage Pflicht (Benutzungsordnung, Entgeltordnung). Auf Vorfeldpositionen fahren die Fluggäste mit dem Bus, Strom liefert ein mobiles Bodenstromgerät: Die APU muss nach dem Parken aus und darf erst 30 Minuten vor der geplanten Off-Block-Zeit wieder laufen. Der Flughafen hat 26 Gebäude- und 70 Vorfeldpositionen. Die Flugauskunft nennt je Flug die Position: Am 20. und 21.10.2026 standen 33 % der Abflüge und 35 % der Ankünfte auf Vorfeldpositionen, in der Abflugwelle um 6 Uhr gut die Hälfte. Daher Bus 34 %, mobiles Bodenstromgerät 33 % der Abflüge. Annahme: Zwei Tage im Oktober stehen für den Spitzenmonat, niemand geht zu Fuß zum Flugzeug. Gepäckschlepper 100 %. Pushback 100 %: Nose-in-Positionen dürfen nur mit Schlepper verlassen werden, andere Positionsarten sind nicht beziffert.",
+  "sources": [
+   "https://www.dus.com/-/media/dus/businesspartner/aviation/entgelte-und-regularien/pdf/fbo_2024.ashx?force-download=1",
+   "https://www.dus.com/-/media/dus/businesspartner/aviation/entgelte-und-regularien/pdf/dsseldorf-airport-tariff-regulations-eff-01072026.ashx?force-download=1",
+   "https://e-pflicht.ub.uni-duesseldorf.de/download/pdf/389268",
+   "https://www.dus.com/de-de/fliegen/abflug",
+   "https://www.dus.com/de-de/fliegen/ankunft"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": null,
+ "electric_share_basis": {
+  "text": "Ein Elektroanteil für die gesamte Vorfeldflotte ist nicht veröffentlicht; die Abfertigungsgeräte gehören seit 2012 den Abfertigern, nicht dem Flughafen. Teilwerte: Der Fuhrpark der Flughafen Düsseldorf GmbH (rund 477 Fahrzeuge und Sondergeräte, auch Pkw) fuhr 2024 zu rund 39 % mit Hybrid- oder Elektroantrieb, darunter 2 E-Busse und 22 E-Gepäckschlepper. WISAG meldete 2023 für die zum Start in DUS beschafften Geräte 53 % elektrisch (Ziel 59 % bis Anfang 2024). Für AAS und Wings Handling gibt es keine Angaben. Die Ausschreibung der Abfertigungslizenzen 2021 verlangt jährlich 5 Prozentpunkte mehr E-Fahrzeuge und -Geräte (inklusive Vorfeldbusse), 35 % im Jahr 2029.",
+  "sources": [
+   "https://www.dus.com/-/media/dus/konzern/nachhaltigkeit/nachhaltigkeitsbericht/dnk_2024_flughafen-duesseldorf-gmbh_2.ashx?force-download=1",
+   "https://www.dus.com/de-de/konzern/nachhaltigkeit/klimaneutraler-airport",
+   "https://www.wisag.de/fileadmin/user_upload/wisag-de/newsroom/presse-aviation-20230822-Start_R4G_DUS/Pressemitteilung_WISAG_Aviation_DUS_ReadyForGreen.pdf"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 71,
+ "parking_basis": {
+  "text": "Laut Nachhaltigkeitserklärung 2024 bietet der Flughafen Besuchern 71 Ladeplätze in vier Parkhäusern und der Tiefgarage der Verwaltung. Die Parken-Seite nennt 2026 Ladesäulen in P3, P5, P7, P8 und auf P25 sowie Schnellladepunkte bis 75 kW auf P12, aber keine Anzahl; diese Punkte sind nicht zusätzlich gezählt. Annahme: ein Ladevorgang je Ladepunkt und Tag, also 71. Die 108 Ladepunkte für Fahrzeuge und Geräte des Flughafens und seiner Partner zählen nicht dazu.",
+  "sources": [
+   "https://www.dus.com/-/media/dus/konzern/nachhaltigkeit/nachhaltigkeitsbericht/dnk_2024_flughafen-duesseldorf-gmbh_2.ashx?force-download=1",
+   "https://www.dus.com/de-de/parken/informationen"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Verkehr 2025",
+   "value": "21,0 Mio. Passagiere (+4,9 %); 159.984 Starts und Landungen, davon 149.240 im Linien- und Charterverkehr (im Mittel rund 204 Abflüge pro Tag)",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Verkehr im Tagesverlauf (Mittel 2024)",
+   "value": "Abflugwelle 6 bis 8 Uhr mit 22 bis 24 Starts pro Stunde; Landewelle 21 bis 23 Uhr mit 18 bis 20 Landungen pro Stunde",
+   "source": "https://www.dus.com/-/media/dus/konzern/unternehmen/flughafen-duesseldorf-gmbh/zahlen-und-fakten/verkehrszahlen/dzf-2024-verkehrszahlen.ashx"
+  },
+  {
+   "label": "Nachtregelung",
+   "value": "Planmäßige Starts 6 bis 22 Uhr, Landungen 6 bis 23 Uhr; von 23 bis 6 Uhr keine koordinierten Linien- und Charterflüge",
+   "source": "https://www.dus.com/de-de/konzern/nachbarn/transparenz/flugbetrieb/betriebszeiten"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "Rampe: WISAG, AAS Deutschland und AAS Düsseldorf Ramp; seit Ende 2025 Selbstabfertigung durch Wings Handling (Eurowings); Vorfeldbusse: Flughafentochter Flughafen Düsseldorf Ground Handling",
+   "source": "https://www.dus.com/-/media/dus/konzern/unternehmen/geschaeftsbericht/2025/downloads/dus_gb25_gesamt.ashx"
+  },
+  {
+   "label": "Elektrofahrzeuge heute",
+   "value": "Flughafenfuhrpark 2024: rund 477 Fahrzeuge und Sondergeräte, 39 % mit Hybrid- oder Elektroantrieb, darunter 2 E-Busse und 22 E-Gepäckschlepper",
+   "source": "https://www.dus.com/-/media/dus/konzern/nachhaltigkeit/nachhaltigkeitsbericht/dnk_2024_flughafen-duesseldorf-gmbh_2.ashx?force-download=1"
+  },
+  {
+   "label": "Photovoltaik und Speicher",
+   "value": "16 MW an der Start- und Landebahn (seit Juni 2026), rund 16 % des Jahresstrombedarfs von 93,3 Mio. kWh; dazu werden Stromspeicher bis 25 MWh installiert",
+   "source": "https://www.dus.com/de-de/konzern/presse/medieninformationen/photovoltaik-start--und-landebahn"
+  },
+  {
+   "label": "Stromnetz",
+   "value": "Eigenes Verteilnetz der Flughafen Düsseldorf GmbH: 80 MW Umspannleistung Hoch- auf Mittelspannung, 121,5 km Mittelspannungskabel (Stand Ende 2025)",
+   "source": "https://www.dus.com/-/media/dus/businesspartner/leistungen/energieversorgungsnetz/strukturdaten-31122025.ashx?force-download=1"
+  },
+  {
+   "label": "Klimaziel",
+   "value": "Klimaneutral (Scope 1 und 2) spätestens 2035, Netto-Null 2045; Fuhrpark bis 2030 zu 50 % und bis 2045 vollständig elektrisch",
+   "source": "https://www.dus.com/de-de/konzern/nachhaltigkeit/klimaneutraler-airport"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 20,
+   "baggage_tractor": 31,
+   "pushback_tug": 16,
+   "gpu": 26
+  },
+  "chargers": {
+   "bus": 8,
+   "baggage_tractor": 11,
+   "pushback_tug": 7,
+   "gpu": 11
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 6, baggage_tractor 14, pushback_tug 11, gpu 11), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

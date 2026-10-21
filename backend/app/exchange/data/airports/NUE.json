@@ -1,0 +1,176 @@
+{
+ "id": "NUE",
+ "name": "Nürnberg",
+ "full_name": "Albrecht Dürer Airport Nürnberg (Flughafen Nürnberg)",
+ "as_of": "2026-10",
+ "departures_per_day": 53.9,
+ "departures_basis": {
+  "text": "ADV-Monatsstatistik August 2026: 3.342 Flugbewegungen im Linien- und Charterverkehr (Starts und Landungen). 3.342 / 2 / 31 = 53,9 Abflüge pro Tag. August ist der stärkste bisher veröffentlichte Monat 2026 (Mai 2.962, Juni 2.856, Juli rechnerisch 3.028 aus den kumulierten Werten); September und Oktober 2026 liegen noch nicht vor. 2025 lagen September (rechnerisch 3.271, also 54,5) und Oktober (3.383, also 54,6) rund 1 % über dem August (53,7). Die Flughistorie des Flughafens bestätigt den Wert: 1.664 durchgeführte Abflüge im August 2026, also 53,7 pro Tag. Nicht gezählt: nicht-gewerblicher Verkehr (1.436 Bewegungen) und sonstige gewerbliche Flüge (421), etwa Lufttaxis. Starts und Landungen sind je zur Hälfte angesetzt.",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/05.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/06.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/10.2025-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf",
+   "https://www.airport-nuernberg.de/de/flugplanhistorie"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  78,
+  83,
+  98,
+  88,
+  102,
+  39,
+  130,
+  17,
+  80,
+  79,
+  57,
+  101,
+  86,
+  70,
+  68,
+  73,
+  45,
+  34,
+  146,
+  45,
+  54,
+  23,
+  49,
+  19
+ ],
+ "arrivals_by_hour": [
+  113,
+  167,
+  76,
+  27,
+  9,
+  0,
+  18,
+  29,
+  49,
+  91,
+  97,
+  92,
+  84,
+  78,
+  51,
+  34,
+  70,
+  133,
+  35,
+  55,
+  42,
+  78,
+  125,
+  112
+ ],
+ "profile_basis": {
+  "text": "Belegt: Die Gewichte sind die Zahl der Flüge je Ortsstunde im August 2026 laut Flughistorie des Flughafens, nach planmäßiger Zeit, ohne Annullierungen (1.664 Abflüge, 1.665 Ankünfte). Nürnberg hat kein Nachtflugverbot; von 22 bis 6 Uhr fliegen nur besonders lärmarme Flugzeuge. Ein Drittel der Abflüge liegt zwischen 22 und 6 Uhr, vor allem nach Antalya, Palma und Hurghada; die Antalya-Flüge landen zwischen 22 und 3 Uhr und starten bis 4 Uhr wieder. Von 4 bis 7 Uhr starten vor allem Flugzeuge, die nachts in Nürnberg standen, um 6 Uhr täglich Lufthansa und KLM zu ihren Drehkreuzen. Stärkste Abflugstunde ist 18 Uhr mit 4,7 Abflügen pro Tag, stärkste Ankunftsstunde 1 Uhr mit 5,4. Ein Monatsmittel glättet die Schwankung zwischen den Tagen (42 bis 63 Abflüge).",
+  "sources": [
+   "https://www.airport-nuernberg.de/de/flugplanhistorie",
+   "https://www.airport-nuernberg.de/de/fluglaerm"
+  ],
+  "assumption": false
+ },
+ "coverage_pct": {
+  "bus": 40,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 75
+ },
+ "coverage_basis": {
+  "text": "Bus: Anteil nicht veröffentlicht. Belegt: 37 Abstellpositionen, davon 6 gebäudenah mit 4 Fluggastbrücken in Betrieb, dazu 3 Positionen mit Zugang zu Fuß für Low-Cost-Airlines wie Ryanair und Wizz Air; alle übrigen Positionen werden per Vorfeldbus bedient. Brückenpositionen kosten 15 % Zuschlag auf das Startentgelt. Im August 2026 entfielen 28 % der Abflüge auf Ryanair und Wizz Air, 22 % auf Lufthansa, KLM, Air France und Turkish Airlines. Annahme: Low-Cost zu Fuß, Drehkreuzflüge meist an der Brücke, rund drei Viertel der übrigen Flüge per Bus, zusammen rund 40 %. Schlepper und Pushback: 100 %, nicht anders belegt. GPU: Festen 400-Hz-Strom haben die 4 Fluggastbrücken; 4 stationäre E-Bodenstromgeräte kamen 2025 hinzu, ihr Standort ist nicht veröffentlicht. Annahme: rund ein Viertel der Abflüge an Brücken, also 75 % mit mobilem Gerät; stehen die stationären Geräte außen, sinkt der Anteil.",
+  "sources": [
+   "https://de.wikipedia.org/wiki/Flughafen_N%C3%BCrnberg",
+   "https://cdn0.scrvt.com/c6cfa56ea5ccf7ccabf7e13a538ca691/422d8c962eb45e5b/67f778936821/251215_Entgeltordnung_2026_DE.pdf",
+   "https://www.airport-nuernberg.de/de/flugplanhistorie",
+   "https://www.aerotelegraph.com/ticker/nuernberg-airport-ersetzt-diesel-aggregate-durch-klimafreundliche/y55flrk"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": null,
+ "electric_share_basis": {
+  "text": "Kein Anteil veröffentlicht. Die Angaben gelten für die Fahrzeuge des Flughafenkonzerns; die Bodenverkehrsdienste erbringt vollständig die Konzerntochter AirPart GmbH. Laut Flughafen fahren bereits ein Pushback-Schlepper, Gepäckschlepper, ein PRM-Fahrzeug und weitere Vorfeldfahrzeuge elektrisch; bei Neuanschaffungen setzt er auf Elektromobilität. Im Juli 2025 meldete der Flughafen den Ersatz aller 15 Diesel-Bodenstromaggregate durch elektrische Geräte: 4 stationäre sind installiert, 8 mobile ergänzen sie. Gesamtzahl der Fahrzeuge, Stückzahlen je Art und Antrieb der Vorfeldbusse sind nicht veröffentlicht.",
+  "sources": [
+   "https://www.airport-nuernberg.de/de/nachhaltigkeit",
+   "https://www.aerotelegraph.com/ticker/nuernberg-airport-ersetzt-diesel-aggregate-durch-klimafreundliche/y55flrk",
+   "https://cdn0.scrvt.com/c6cfa56ea5ccf7ccabf7e13a538ca691/0bbc0bc2e2cda33e/bc996c2aa505/Geschaeftsbericht-2025_Fin.pdf"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 32,
+ "parking_basis": {
+  "text": "Laut Parktarif-Seite des Flughafens: 20 Typ-2-Ladepunkte mit bis zu 11 kW in den Parkhäusern P2 (6), P3 (6) und P5 (8), dazu am Vorplatz 1 AC-Säule mit 22 kW und 2 DC-Säulen mit 150 kW sowie am CCN 3 AC-Säulen mit 22 kW, je 2 Ladepunkte pro Säule (12). 20 + 12 = 32. Annahme: ein Ladevorgang je Punkt und Tag.",
+  "sources": [
+   "https://www.airport-nuernberg.de/de/parktarife"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "4,51 Mio. (Rekord, +11,9 % zum Vorjahr) bei 52.918 Starts und Landungen einschließlich nicht-gewerblichem Verkehr",
+   "source": "https://cdn0.scrvt.com/c6cfa56ea5ccf7ccabf7e13a538ca691/0bbc0bc2e2cda33e/bc996c2aa505/Geschaeftsbericht-2025_Fin.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag (August 2026)",
+   "value": "rund 54 im Linien- und Charterverkehr (3.342 Starts und Landungen im Monat)",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Nachtbetrieb",
+   "value": "Nachtflug beschränkt, nicht verboten: von 22 bis 6 Uhr nur besonders lärmarme Flugzeuge der Bonusliste; Starts von 0 bis 5 Uhr kosten in der Regel mehr",
+   "source": "https://www.airport-nuernberg.de/de/fluglaerm"
+  },
+  {
+   "label": "Bodenverkehrsdienste",
+   "value": "vollständig durch die Konzerntochter AirPart GmbH; 16.839 Flugzeugabfertigungen 2025",
+   "source": "https://cdn0.scrvt.com/c6cfa56ea5ccf7ccabf7e13a538ca691/0bbc0bc2e2cda33e/bc996c2aa505/Geschaeftsbericht-2025_Fin.pdf"
+  },
+  {
+   "label": "Elektrofahrzeuge heute",
+   "value": "elektrisch u. a. ein Pushback-Schlepper, Gepäckschlepper, ein PRM-Fahrzeug und weitere Vorfeldfahrzeuge; bei Neuanschaffungen setzt der Flughafen auf Elektromobilität; Stückzahlen nicht veröffentlicht",
+   "source": "https://www.airport-nuernberg.de/de/nachhaltigkeit"
+  },
+  {
+   "label": "Bodenstrom",
+   "value": "Juli 2025: Ersatz aller 15 Diesel-Aggregate durch elektrische Bodenstromgeräte gemeldet, 4 stationäre installiert, 8 mobile ergänzen sie",
+   "source": "https://www.aerotelegraph.com/ticker/nuernberg-airport-ersetzt-diesel-aggregate-durch-klimafreundliche/y55flrk"
+  },
+  {
+   "label": "Photovoltaik und Speicher",
+   "value": "Freiflächen-PV mit rund 13 MWp seit Mitte Juli 2025 am Netz; Batteriespeicher mit 10 MWh für 2026 vorgesehen",
+   "source": "https://cdn0.scrvt.com/c6cfa56ea5ccf7ccabf7e13a538ca691/0bbc0bc2e2cda33e/bc996c2aa505/Geschaeftsbericht-2025_Fin.pdf"
+  },
+  {
+   "label": "Stromnetz",
+   "value": "Netz der Flughafen Nürnberg Energie GmbH: 34,7 MVA Umspannleistung MS/NS, Jahreshöchstlast 2025 rund 3,4 MW (7. August, 10:15 Uhr)",
+   "source": "https://cdn0.scrvt.com/c6cfa56ea5ccf7ccabf7e13a538ca691/53b54b5d792a0ea6/258122a20265/Ver-ffentlichungspflicht_-23cAbs1_3_EnWG_V3_2025.pdf"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 7,
+   "baggage_tractor": 7,
+   "pushback_tug": 3,
+   "gpu": 10
+  },
+  "chargers": {
+   "bus": 3,
+   "baggage_tractor": 3,
+   "pushback_tug": 2,
+   "gpu": 4
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 2, baggage_tractor 3, pushback_tug 2, gpu 4), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

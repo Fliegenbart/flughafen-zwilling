@@ -1,7 +1,7 @@
 /** Was die Kurve einer Stufe zeigt und welcher Satz darueber steht. */
 import type { ElectrificationComparison } from "../api/electrification";
 import { resultFromExact, type LiveBasis, type LiveResult } from "../model/livePower";
-import type { StageId } from "./stufen";
+import { lineFor, type Line, type StageId } from "./stufen";
 
 export const REASONS: Record<string, string> = {
   service_deadlines: "nicht alle Einsätze werden rechtzeitig fertig",
@@ -26,13 +26,14 @@ export function againstConnection(basis: LiveBasis, connectionKw: number): LiveR
 }
 
 export type Rechnung = StageId | "direct";
-export type Note = { text: string; tone: "ok" | "stop" };
+export type Note = { text: string; tone: "ok" | "stop" | "neutral" };
 
 /** Kurve, Vergleichslinie und Satz fuer eine Rechnung; null, solange der Server rechnet. */
 export function curveFor(
   data: ElectrificationComparison | null,
   which: Rechnung,
   connectionKw: number,
+  line: Line = lineFor(null, false),
 ): {
   result: LiveResult;
   base: LiveResult;
@@ -49,10 +50,11 @@ export function curveFor(
       departures: uncontrolled.departures,
       note: base.shortfalls.length
         ? {
-            tone: "stop",
-            text: "Ohne Steuerung liegen die Ladespitzen über Ihrem Anschluss. Das wäre Überlast.",
+            // Bei offener Reserve ist die Linie nur der Bedarf mit Lademanagement: keine Ueberlast.
+            tone: line.overload ? "stop" : "neutral",
+            text: `Ohne Steuerung liegen die Ladespitzen über ${line.yourDat}.${line.overload ? " Das wäre Überlast." : ""}`,
           }
-        : { tone: "ok", text: "Der Anschluss trägt auch ungesteuertes Laden." },
+        : { tone: "ok", text: `${line.nom} trägt auch ungesteuertes Laden.` },
     };
   const variant = data.variants.find((v) => v.solution === which);
   if (!variant) return null;
@@ -65,12 +67,12 @@ export function curveFor(
       ? {
           tone: "ok",
           text: result.shortfalls.length
-            ? "Ladespitzen über dem Anschluss werden verschoben, alle Einsätze bleiben pünktlich."
-            : "Der Anschluss reicht an allen drei Tagen.",
+            ? `Ladespitzen über ${line.dat} werden verschoben, alle Einsätze bleiben pünktlich.`
+            : `${line.nom} reicht an allen drei Tagen.`,
         }
       : {
           tone: "stop",
-          text: `Hier reicht der Anschluss nicht: ${REASONS[variant.checks.reasons[0] ?? ""] ?? "das Modell findet keine Lösung"}.`,
+          text: `Hier reicht ${line.nomLower} nicht: ${REASONS[variant.checks.reasons[0] ?? ""] ?? "das Modell findet keine Lösung"}.`,
         },
   };
 }

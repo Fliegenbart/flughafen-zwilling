@@ -1,6 +1,31 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 21.10.2026 (Fachleute-Seite aufgeräumt)
+## Aktiver Release vom 21.10.2026 (Echte Flughäfen)
+
+Code-Release `b0accdd4f9d71482a988baf8545a669dea4a7166`, PR #44, aus
+`/opt/airport-releases/b0accdd`. CI fuer den Push-Lauf von b0accdd erfolgreich
+(Backend, Frontend, Snapshots). Ruecknahmeziel: `/opt/airport-releases/50b8bec`.
+
+15 deutsche Flughaefen mit eigenem Modell aus oeffentlichen Daten waehlbar
+(`?flughafen=FRA` usw.): Steckbriefe unter `backend/app/exchange/data/airports/`,
+Tabellen unter `backend/app/exchange/data/atlas/`. Oeffentliche Anfragen fuer einen
+Flughafen muessen Tabellenpunkte treffen (sonst 422), Ergebnisse liegen im
+Zwischenspeicher (16 Stellungen). Nicht mit den Flughaefen abgestimmt.
+
+Gleicher Ablauf wie 386b088 (bauen bei laufender Version, nur `twin-core` stoppen,
+sichern, starten). Sicherung `/opt/airport-backups/pre-b0accdd-20261021T162949Z.tar.gz`,
+2.831 Dateien, 70.547.389 Bytes, Modus 0600, SHA256
+`d9d4eab43a02cf23305ba76ea49ed9436fd3a07888f82b53b99fd568a4c20055`, MD5 aller Dateien
+gegen das Volume identisch, Pruefkopie entfernt. Netze vorher geprueft.
+
+Abnahme: alle 15 Flughaefen einmal vorgewaermt, Vergleich ok (erste Rechnung DRS
+1,7 s bis FRA 12 s, danach aus dem Zwischenspeicher); Lademanagement bei seinem
+Tabellenbedarf machbar; Anfrage neben der Tabelle liefert 422. HTTPS `/health` ok,
+`smoke_electrification.py` und `smoke_public_simulation.py` bestanden; Live-Browser
+mit `?flughafen=MUC` ohne Konsolenfehler. Keine Neustarts, keine Fehler im
+Logfenster, `twin-core` 245 MiB von 1 GiB.
+
+## Release vom 21.10.2026 (Fachleute-Seite aufgeräumt)
 
 Code-Release `50b8bece3fe19cb56e07c28ec7b1523d58038798`, PR #43, aus
 `/opt/airport-releases/50b8bec`. CI für #43 erfolgreich. Ruecknahmeziel:

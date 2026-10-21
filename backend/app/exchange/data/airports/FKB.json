@@ -1,0 +1,175 @@
+{
+ "id": "FKB",
+ "name": "Karlsruhe/Baden-Baden",
+ "full_name": "Flughafen Karlsruhe/Baden-Baden (Baden-Airpark)",
+ "as_of": "2026-10",
+ "departures_per_day": 27.4,
+ "departures_basis": {
+  "text": "Spitzenmonat ist der August. Laut ADV-Monatsstatistik August 2026 gab es 1.701 Bewegungen im Linien- und Charterverkehr (an+ab, +7,0 %; laut ADV-Erläuterung einschließlich Fracht- und Postflüge). Rechnung: 1.701 / 2 / 31 = 27,4 Abflüge pro Tag. Zum Vergleich: Juni 2026 1.568, Juli 2026 1.679 (aus den Kumulwerten Januar–Juni 7.394 und Januar–August 10.774), August 2025 1.589. September 2026 ist bei der ADV noch nicht veröffentlicht; laut Flughafenstatistik lag die Passagierzahl im September 2026 (249.941) unter August (277.404). Nicht enthalten sind nicht gewerblicher Verkehr wie die allgemeine Luftfahrt (1.757) und sonstiger gewerblicher Verkehr wie Taxi- und Geschäftsreiseflüge (937 Bewegungen im August 2026). Gegenprobe: Der Flugplan vom 14. bis 21.10.2026 zeigt im Mittel 25,8 Linien-, Charter- und Frachtabflüge pro Tag.",
+  "sources": [
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/06.2026-ADV-Monatsstatistik.pdf",
+   "https://www.adv.aero/wp-content/uploads/2015/11/08.2025-ADV-Monatsstatistik.pdf",
+   "https://www.baden-airpark.de/app/uploads/2024/06/Passagiere_dt.pdf",
+   "https://www.avionio.com/de/airport/fkb/departures"
+  ],
+  "assumption": false
+ },
+ "departures_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  28,
+  9,
+  16,
+  4,
+  12,
+  13,
+  13,
+  15,
+  7,
+  10,
+  16,
+  12,
+  10,
+  5,
+  8,
+  24,
+  4,
+  0
+ ],
+ "arrivals_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  17,
+  9,
+  9,
+  7,
+  21,
+  9,
+  18,
+  7,
+  7,
+  18,
+  8,
+  14,
+  6,
+  2,
+  10,
+  17,
+  19,
+  4
+ ],
+ "profile_basis": {
+  "text": "Belegt: Gewichte = planmäßige Abflüge und Ankünfte je Ortsstunde laut Flugdatenportal avionio, 14.–21.10.2026 (8 Tage, noch Sommerflugplan), nur Linien-, Charter- und Frachtflüge, ohne Geschäftsreise-, Rettungs- und annullierte Flüge: 206 Abflüge, 202 Ankünfte. Morgenwelle 6–7 Uhr (14 % der Abflüge, 3 bis 4 je Tag) durch die stationierten Flugzeuge (laut BNN fünf, Stand August 2025), Tagesplateau, Abendspitze 21–22 Uhr, darunter Frachtflüge der Airest. Ankünfte: Frachtflüge der Airest um 6 Uhr, Rückkehrwelle 20–23 Uhr. Zwischen 23 und 6 Uhr keine planmäßigen Abflüge; die letzten Ankünfte sind für 23:00 Uhr geplant und stehen deshalb in Stunde 23. Nachtflugbeschränkung 23–6 Uhr, verspätete Landungen bis 24 Uhr (laut Wikipedia, amtlich nicht geprüft). Annahme: Im August verteilen sich die Flüge wie im Oktober; der Flugplan des Flughafens war wegen Wartung nicht abrufbar.",
+  "sources": [
+   "https://www.avionio.com/de/airport/fkb/departures",
+   "https://www.avionio.com/de/airport/fkb/arrivals",
+   "https://de.wikipedia.org/wiki/Nachtflugverbot",
+   "https://bnn.de/mittelbaden/buehl/rheinmuenster/investitionen-in-luftverkehrs-infrastruktur-ist-auch-am-baden-airpark-unumgaenglich"
+  ],
+  "assumption": false
+ },
+ "coverage_pct": {
+  "bus": 32,
+  "baggage_tractor": 100,
+  "pushback_tug": 100,
+  "gpu": 100
+ },
+ "coverage_basis": {
+  "text": "Das Vorfeld hat 8 Abstellpositionen; Fluggäste gehen zu Fuß zum Flugzeug oder fahren per Bus (Wikipedia). Fluggastbrücken nennt keine Quelle. Wie sich die Abflüge auf Bus und Fußweg verteilen, ist nicht veröffentlicht. Annahme: Standardwert 35 % der Passagierflüge per Bus; rund 8 % der Abflüge sind Frachtflüge der Airest ohne Busse (Flugplan Oktober 2026), daraus bus 32. Festen 400-Hz-Bodenstrom an den Positionen belegt keine Quelle; der Flughafen versorgt die Flugzeuge mit 10 batteriebetriebenen Bodenstromgeräten (e-GPUs), daraus gpu 100 (Annahme). Schlepper und Pushback: 100 % (Annahme, keine Angaben zu Positionen ohne Pushback).",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Karlsruhe/Baden-Baden_Airport",
+   "https://aviation.direct/modernisierung-der-vorfeldinfrastruktur-am-flughafen-karlsruhe-baden-baden",
+   "https://www.avionio.com/de/airport/fkb/departures"
+  ],
+  "assumption": true
+ },
+ "electric_share_now_pct": null,
+ "electric_share_basis": {
+  "text": "Ein Anteil in Prozent ist nicht veröffentlicht. Die Baden-Airpark GmbH hat im Frühjahr 2026 zehn batteriebetriebene Bodenstromgeräte (e-GPUs) samt Ladeinfrastruktur in Betrieb genommen; sie ersetzen nahezu alle Diesel-Aggregate. Laut Bericht fahren außerdem ein Großteil der Gepäckförderbänder und die Follow-Me-Fahrzeuge elektrisch. Für Gepäckschlepper, Flugzeugschlepper und Vorfeldbusse gibt es keine öffentlichen Angaben.",
+  "sources": [
+   "https://aviation.direct/modernisierung-der-vorfeldinfrastruktur-am-flughafen-karlsruhe-baden-baden",
+   "https://itwgse.com/news/baden-airpark-gmbh-invests-in-electric-ground-power-units-to-reduce-airport-emissions"
+  ],
+  "assumption": false
+ },
+ "parking_sessions_per_day": 2,
+ "parking_basis": {
+  "text": "Das Ladesäulenregister der Bundesnetzagentur (Stand 01.09.2026) nennt am Flughafen eine Ladeeinrichtung mit 2 AC-Ladepunkten (je 22 kW) eines Carsharing-Anbieters am Parkplatz vor dem Terminal, Parkraum nur für Kunden und Besucher. Weitere öffentliche Ladepunkte auf den Flughafenparkplätzen sind dort nicht eingetragen. Annahme: ein Ladevorgang je Punkt und Tag, also 2.",
+  "sources": [
+   "https://data.bundesnetzagentur.de/Bundesnetzagentur/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenregister_BNetzA_2026-09-01.csv"
+  ],
+  "assumption": true
+ },
+ "reserve_kw_public": null,
+ "reserve_basis": null,
+ "facts": [
+  {
+   "label": "Passagiere 2025",
+   "value": "2,26 Mio. (2.257.542), +25,3 % gegenüber 2024",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/12.2025-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Abflüge pro Tag im Spitzenmonat",
+   "value": "rund 27 im August 2026, Linie und Charter",
+   "source": "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf"
+  },
+  {
+   "label": "Nachtflugbeschränkung",
+   "value": "23 bis 6 Uhr; verspätete Landungen bis 24 Uhr nur für Flugzeuge nach Lärmkapitel 3",
+   "source": "https://de.wikipedia.org/wiki/Nachtflugverbot"
+  },
+  {
+   "label": "Stationierte Flugzeuge",
+   "value": "5 (Stand August 2025); 40 Direktziele, davon 13 rein touristisch",
+   "source": "https://bnn.de/mittelbaden/buehl/rheinmuenster/investitionen-in-luftverkehrs-infrastruktur-ist-auch-am-baden-airpark-unumgaenglich"
+  },
+  {
+   "label": "Vorfeld und Boarding",
+   "value": "8 Abstellpositionen, meist für Mittelstreckenjets wie die Boeing 737; Boarding zu Fuß oder per Bus",
+   "source": "https://en.wikipedia.org/wiki/Karlsruhe/Baden-Baden_Airport"
+  },
+  {
+   "label": "Elektrofahrzeuge heute",
+   "value": "10 e-GPUs seit Frühjahr 2026 ersetzen nahezu alle Diesel-Aggregate; Großteil der Förderbänder und Follow-Me-Fahrzeuge elektrisch",
+   "source": "https://aviation.direct/modernisierung-der-vorfeldinfrastruktur-am-flughafen-karlsruhe-baden-baden"
+  },
+  {
+   "label": "Stromerzeugung im Gewerbepark Baden-Airpark",
+   "value": "Biomasse-Anlage der Baden Airpark Energie GmbH, 5,6 MW brutto, Mittelspannung (Netz: E-Werk Netze); im MaStR keine PV und kein Speicher der Baden-Airpark GmbH",
+   "source": "https://www.marktstammdatenregister.de/MaStR/Einheit/EinheitJson/GetErweiterteOeffentlicheEinheitStromerzeugung?filter=Name%20des%20Anlagenbetreibers%20(nur%20Org.)~ct~'Airpark'"
+  },
+  {
+   "label": "Klimaziel",
+   "value": "CO2-neutraler Flughafenbetrieb und Standortversorgung bis 2040; CO2-Ausstoß bis 2030 halbieren (Stand 2022)",
+   "source": "https://baden-airpark.de/app/uploads/2024/06/25_Jahre_FKB.pdf"
+  }
+ ],
+ "fleet": {
+  "vehicles": {
+   "bus": 4,
+   "baggage_tractor": 5,
+   "pushback_tug": 3,
+   "gpu": 7
+  },
+  "chargers": {
+   "bus": 2,
+   "baggage_tractor": 2,
+   "pushback_tug": 2,
+   "gpu": 3
+  },
+  "basis": {
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 1, baggage_tractor 2, pushback_tug 2, gpu 3), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "sources": [],
+   "assumption": true
+  }
+ }
+}

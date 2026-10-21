@@ -3,7 +3,7 @@
  * rote Linie. Was ueber die Linie hinausragt, fehlt. Ein Klick auf eine Stufe zeigt ihre Tageskurve.
  */
 import { dec1 } from "../model/format";
-import { kw, type Stage, type StageId } from "./stufen";
+import { kw, lineFor, type Line, type Stage, type StageId } from "./stufen";
 
 const SUB: Record<StageId, (storageKwh: number, stage: Stage) => string> = {
   uncontrolled: () => "volle Leistung, sobald ein Ladepunkt frei ist, nichts wird gesteuert",
@@ -32,12 +32,15 @@ export default function Treppe({
   storageKwh,
   selected,
   onSelect,
+  line = lineFor(null, false),
 }: {
   stages: Stage[];
   connectionKw: number;
   storageKwh: number;
   selected: StageId;
   onSelect: (s: StageId) => void;
+  /** Wie die rote Linie heisst (Anschluss, Reserve oder Bedarf bei offener Reserve). */
+  line?: Line;
 }) {
   const max = scaleMax(stages, connectionKw);
   const pct = (v: number) => `${Math.min(100, (v / max) * 100)}%`;
@@ -46,13 +49,17 @@ export default function Treppe({
   const last = [...stages].reverse().find((s) => !s.inactive)!;
   const missing = last.needKw !== null ? last.needKw - connectionKw : null;
   return (
-    <figure className="oe-treppe" aria-label="Benötigter Anschluss je Baustein">
+    <figure
+      className="oe-treppe"
+      data-open={line.overload ? undefined : true}
+      aria-label={`${line.need} je Baustein`}
+    >
       <div className="oe-treppe__row oe-treppe__head" aria-hidden="true">
         <span />
         <span />
         <span className="oe-treppe__cell">
           <span className="oe-treppe__limitlabel" style={{ left: pct(connectionKw) }}>
-            Ihr Anschluss {kw(connectionKw)}
+            {line.label} {kw(connectionKw)}
           </span>
         </span>
         <span />
@@ -61,7 +68,9 @@ export default function Treppe({
         {stages.map((s) => {
           // Eine abgeschaltete Stufe zeigt keine Zahl: Sie wuerde im Termin nicht gebaut.
           const need = s.inactive ? null : s.needKw;
-          const over = need !== null && need > connectionKw;
+          const above = need !== null && need > connectionKw;
+          // Ueber einer offenen Reserve liegt kein Mangel, nur Mehrbedarf ohne Steuerung (grau).
+          const over = above && line.overload;
           return (
             <li key={s.id}>
               <button
@@ -85,9 +94,11 @@ export default function Treppe({
                         className="oe-stage__fill"
                         style={{ width: pct(Math.min(need, connectionKw)) }}
                       />
-                      {over ? (
+                      {above ? (
                         <span
-                          className="oe-stage__over"
+                          className={
+                            over ? "oe-stage__over" : "oe-stage__over oe-stage__over--neutral"
+                          }
                           style={{ left: pct(connectionKw), width: pct(need - connectionKw) }}
                         />
                       ) : null}
@@ -116,12 +127,12 @@ export default function Treppe({
         </span>
         <span />
       </div>
-      {missing !== null && missing > 0 ? (
+      {line.more && missing !== null && missing > 0 ? (
         <p className="oe-treppe__grid">
           <span className="oe-sign oe-sign--stop" aria-hidden="true">
             4
           </span>
-          Netzausbau: Der Anschluss braucht {kw(missing)} mehr, auch mit allen Bausteinen.
+          {line.more(kw(missing))}
         </p>
       ) : null}
     </figure>
