@@ -1,11 +1,17 @@
 """Fixed-fleet electrification study: identical demand, three explicit charging choices."""
 from __future__ import annotations
 
+import gzip
+import hashlib
+import json
 import os
+import threading
+import time
 from collections import OrderedDict
 from contextlib import AbstractContextManager, nullcontext
 from functools import lru_cache
 from math import ceil
+from pathlib import Path
 from time import perf_counter
 from typing import Literal
 
@@ -288,6 +294,40 @@ def _size_solutions(electric_share_pct: int, storage_kwh: float, pv_kwp: float =
 # jedem Aufruf drei bis vier volle Simulationen unter dem gemeinsamen Lock.
 _RESULTS: OrderedDict[str, dict] = OrderedDict()
 _RESULTS_KEEP = 16
+# Dauerhafter Zwischenspeicher auf dem Datenvolume (nur wenn gesetzt). Der Dateiname enthaelt
+# Release und Fingerabdruck des Modells: Nach einem Deploy oder einer Modellaenderung gelten alte
+# Rechnungen nicht mehr und werden bei Bedarf neu gerechnet.
+_RESULT_DIR = os.environ.get("TWIN_RESULT_CACHE_DIR")
+
+
+def _result_path(request: ElectrificationRequest) -> Path | None:
+    if not _RESULT_DIR:
+        return None
+    from .electrification_atlas import reference_id_for
+    key = json.dumps([os.environ.get("TWIN_BUILD_GIT_COMMIT", "local"), ENGINE,
+                      reference_id_for(request.airport), request.model_dump_json()])
+    return Path(_RESULT_DIR) / f"{hashlib.sha256(key.encode()).hexdigest()}.json.gz"
+
+
+def _load_result(request: ElectrificationRequest) -> dict | None:
+    path = _result_path(request)
+    try:
+        return json.loads(gzip.decompress(path.read_bytes())) if path else None
+    except (OSError, ValueError):
+        return None
+
+
+def _store_result(request: ElectrificationRequest, result: dict) -> None:
+    path = _result_path(request)
+    if path is None:
+        return
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_bytes(gzip.compress(json.dumps(result, separators=(",", ":")).encode()))
+        tmp.replace(path)
+    except OSError:
+        pass  # Zwischenspeicher ist nur Beschleunigung.
 
 
 def compare_electrification(request: ElectrificationRequest) -> dict:
@@ -295,6 +335,12 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
     if key in _RESULTS:
         _RESULTS.move_to_end(key)
         return {**_RESULTS[key], "compute_ms": 0}
+    stored = _load_result(request)
+    if stored is not None:
+        _RESULTS[key] = stored
+        while len(_RESULTS) > _RESULTS_KEEP:
+            _RESULTS.popitem(last=False)
+        return {**stored, "compute_ms": 0}
     if not _SIMULATION_LOCK.acquire(timeout=DEMO_WAIT_SECONDS):
         raise HTTPException(status_code=429, detail="Demo ausgelastet. Vergleich erneut versuchen.")
     started = perf_counter()
@@ -400,7 +446,42 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
     _RESULTS[key] = result
     while len(_RESULTS) > _RESULTS_KEEP:
         _RESULTS.popitem(last=False)
+    _store_result(request, result)
     return result
+
+
+def start_requests() -> list[ElectrificationRequest]:
+    """Stellungen, mit denen die Seite oeffnet (frontend stufen.ts START und baseFor)."""
+    from .airport_model import storage_axis
+    from .airport_spec import public_airports
+    out = [ElectrificationRequest(electric_share_pct=50, grid_import_limit_kw=1500,
+                                  storage_kwh=2000, pv_kwp=500, parking_sessions=40)]
+    for profile in public_airports():
+        airport = profile["id"]
+        storage = storage_axis(load_spec(airport))[3]
+        sizes = atlas_sizes(50, storage, 0, 0, airport)
+        need = sizes and sizes["managed"]["required_grid_kw"]
+        if need:
+            # Offene Reserve: die Seite rechnet mit dem Bedarf mit Lademanagement.
+            out.append(ElectrificationRequest(electric_share_pct=50, grid_import_limit_kw=need,
+                                              storage_kwh=storage, pv_kwp=0, parking_sessions=0,
+                                              airport=airport))
+    return out
+
+
+def warm_start_positions() -> None:
+    """Startstellungen nach dem Start im Hintergrund rechnen (wartet, wenn die Demo rechnet)."""
+    def run() -> None:
+        for request in start_requests():
+            for _ in range(60):
+                try:
+                    compare_electrification(request)
+                    break
+                except HTTPException:
+                    time.sleep(10)
+                except Exception:  # noqa: BLE001 - Vorwaermen darf den Server nie stoeren
+                    break
+    threading.Thread(target=run, name="warm-start-positions", daemon=True).start()
 
 
 def _reference_info(airport: str | None) -> dict:

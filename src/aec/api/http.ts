@@ -29,7 +29,7 @@ type Options = {
 };
 
 /** Fehler mit der Original-Antwort, falls ein Aufrufer Details braucht. */
-export type ApiError = Error & { body?: unknown };
+export type ApiError = Error & { body?: unknown; status?: number };
 
 function detailText(body: unknown, status: number): string {
   const detail = isObj(body) ? body.detail : undefined;
@@ -73,6 +73,7 @@ export async function request<T>(
     if (!response.ok) {
       const error: ApiError = new Error(translate(detailText(body, response.status)));
       error.body = body;
+      error.status = response.status;
       throw error;
     }
     return body as T;

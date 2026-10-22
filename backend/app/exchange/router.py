@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
 import re
 import sqlite3
 import zipfile
@@ -32,6 +33,7 @@ from .electrification import (
     compare_electrification,
     prepare_electrification,
     require_table,
+    warm_start_positions,
 )
 from .electrification_atlas import public_atlas
 from .live import PreviewRequest, preview
@@ -840,6 +842,8 @@ def create_router(storage, lab_service, plans, base_dir: Path | None = None,
     assets = AssetStore(store)
     variants = VariantService(store, service, enqueue, assets)
     router = APIRouter(prefix="/api/v1", tags=["Airport Energy Check: Austausch (read-only)"])
+    if os.environ.get("TWIN_RESULT_CACHE_DIR"):
+        warm_start_positions()
     role_header = Header(default=None, alias="X-Exchange-Role")
 
     def pid(project_id: str) -> str:
