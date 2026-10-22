@@ -59,7 +59,7 @@ const ROWS: Row[] = [
     name: "Lademanagement",
     with: "mit Lademanagement",
     how: () =>
-      "Plant die Ladezeiten nach dem Einsatzplan und dem echten Ladestand, mit 15 % Reserve auf den Verbrauch: Wer bald fährt, lädt zuerst. Das Parkhaus lädt, wenn Leistung frei ist, und jedes Auto ist bis zur Abfahrt voll. Diesen Wert zeigt die Übersicht.",
+      "Plant die Ladezeiten nach dem Einsatzplan und dem echten Ladestand, mit 15 % Puffer auf den Verbrauch: Wer bald fährt, lädt zuerst. Das Parkhaus lädt, wenn Leistung frei ist, und jedes Auto ist bis zur Abfahrt voll. Diesen Wert zeigt die Übersicht.",
   },
   {
     id: "managed_storage",
@@ -176,7 +176,7 @@ export default function Fachleute() {
     ? `Bei Ihren ${kw(connection)}`
     : reserveOpen
       ? `Bei ${kw(connection)} (mit Lademanagement nötig)`
-      : `Bei Ihrer Reserve von ${kw(connection)}`;
+      : `Bei ${kw(connection)} frei fürs Laden`;
   const entry = atlas?.entries[atlasKey(settings)];
   // Flotte, Grundlast und Quellen haengen nicht an der Stellung: letzte Rechnung genuegt.
   const config = last ? configOf(last) : null;
@@ -225,7 +225,7 @@ export default function Fachleute() {
         <section className="oe-main" aria-labelledby="oe-question">
           <h1 id="oe-question">
             {airport
-              ? `Wie viel Reserve braucht das Vorfeld${profile ? ` in ${profile.name}` : ""}, und warum?`
+              ? `Wie viel Leistung braucht das Vorfeld${profile ? ` in ${profile.name}` : ""}, und warum?`
               : "Wie viel Anschluss braucht das Vorfeld, und warum?"}
           </h1>
           {loadError ? (
@@ -262,7 +262,7 @@ export default function Fachleute() {
                   <thead>
                     <tr>
                       <th scope="col">Rechnung</th>
-                      <th scope="col">{airport ? "Benötigte Reserve" : "Benötigter Anschluss"}</th>
+                      <th scope="col">{airport ? "Nötig fürs Laden" : "Benötigter Anschluss"}</th>
                       <th scope="col">{at}</th>
                     </tr>
                   </thead>
@@ -327,7 +327,9 @@ export default function Fachleute() {
               </section>
 
               <section className="oe-curve" aria-labelledby="oe-curve-title">
-                <h2 id="oe-curve-title">Netzlast über drei Tage {row.with}</h2>
+                <h2 id="oe-curve-title">
+                  {airport ? "Ladelast" : "Netzlast"} über drei Tage {row.with}
+                </h2>
                 {curve ? (
                   <p className="oe-curve__note" data-tone={curve.note.tone} aria-hidden="true">
                     {curve.note.text}
@@ -428,7 +430,7 @@ export default function Fachleute() {
               <ul className="oe-list">
                 {profile ? (
                   <li>
-                    Reserve: die Leistung, die das Flughafennetz für das Laden auf dem Vorfeld und
+                    Frei fürs Laden: die Leistung, die das Flughafennetz für das Laden auf dem Vorfeld und
                     im Parkhaus bereitstellt. Übrige Last und Photovoltaik des Flughafens stecken
                     schon darin, das Modell rechnet sie nicht noch einmal.
                   </li>
@@ -488,7 +490,7 @@ export default function Fachleute() {
 
         <section aria-labelledby="oe-pass-title">
           <h2 id="oe-pass-title">
-            {airport ? "Wann eine Reserve reicht" : "Wann ein Anschluss reicht"}
+            {airport ? "Wann die freie Leistung reicht" : "Wann ein Anschluss reicht"}
           </h2>
           <ul className="oe-list">
             <li>
@@ -552,7 +554,7 @@ export default function Fachleute() {
               Toiletten- und Wasserwagen kommen, ist angenommen.
             </li>
             <li>
-              Lademanagement kennt den Einsatzplan im Voraus und plant 15 % Reserve auf den
+              Lademanagement kennt den Einsatzplan im Voraus und plant 15 % Puffer auf den
               Verbrauch ein. Größere Verspätungen und Wintertage rechnet das Modell noch nicht.
             </li>
             {noGain ? (

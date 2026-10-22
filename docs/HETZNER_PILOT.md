@@ -1,6 +1,16 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 22.10.2026 (Rechenmodell v4, Paket 1 und 3)
+## Aktiver Release vom 22.10.2026 (Kurven-Cache)
+
+Code-Release `2bc92acb38ef89acd1775f09b97c6ca404dfed9b` (Branch codex/kurven-cache, PR #46) aus
+`/opt/airport-releases/2bc92ac`. Ruecknahmeziel: `/opt/airport-releases/44cbdc2`. Fertige Vergleiche
+liegen gzip-komprimiert in `TWIN_RESULT_CACHE_DIR` (`/app/data/electrification-cache`), Schluessel
+aus Commit, Engine, Referenz und Anfrage. Nach dem Start rechnet der Server die 16 Startstellungen
+vor; alle 16 lagen danach im Cache. Die Seite versucht es bei 429 nach 3 s selbst noch einmal.
+Sicherung `/opt/airport-backups/pre-2bc92ac-20261022T073852Z.tar.gz`, 70.544.717 Bytes, SHA256
+`67290a36b23ea49b62a736ae28c62e6512c9603a804dca76b8c1f5738fe05804`, MD5 aller Dateien identisch.
+
+## Release vom 22.10.2026 (Rechenmodell v4, Paket 1 und 3)
 
 Code-Release `44cbdc26cdf7089e90e75a95303a8e73b1040c3e` (Branch codex/modell-paket-1, PR #45) aus
 `/opt/airport-releases/44cbdc2`. Ruecknahmeziel: `/opt/airport-releases/b0accdd`. Engine

@@ -24,7 +24,7 @@ export default function Weiter({
           <h3>Mit Ihren Daten rechnen</h3>
           <p>
             {airport
-              ? "Ein typischer Flugplan, die Fahrzeugliste mit Ladepunkten und die Reserve im Flughafennetz. Dann rechnen wir mit Ihren Werten statt mit öffentlichen Daten und Annahmen."
+              ? "Ein typischer Flugplan, die Fahrzeugliste mit Ladepunkten und die freie Leistung im Flughafennetz. Dann rechnen wir mit Ihren Werten statt mit öffentlichen Daten und Annahmen."
               : "Ein typischer Flugplan, die Fahrzeugliste mit Ladepunkten und der Netzanschluss. Dann rechnen wir Ihren Flughafen statt des Beispiels."}
           </p>
         </li>

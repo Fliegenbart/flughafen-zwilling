@@ -154,7 +154,7 @@ export default function Levers({
   const connection = settings.grid_import_limit_kw;
   const summary = [
     `${share.label}: ${share.show(settings.electric_share_pct)}`,
-    `${airport ? "Reserve fürs Vorfeld" : "Netzanschluss heute"}: ${connection === null ? "offen" : kw(connection)}`,
+    `${airport ? "Frei fürs Laden" : "Netzanschluss heute"}: ${connection === null ? "offen" : kw(connection)}`,
     ...blocks.map((l) => `${l.label}: ${l.show(settings[l.key])}`),
   ];
 
@@ -171,7 +171,7 @@ export default function Levers({
         {connection === null ? (
           <div className="oe-lever">
             <span className="oe-lever__name" id="oe-reserve-label">
-              Reserve fürs Vorfeld
+              Frei fürs Laden
             </span>
             <span className="oe-lever__value">offen</span>
             <button
@@ -189,7 +189,7 @@ export default function Levers({
                 reserveSlider.current?.focus();
               }}
             >
-              Reserve eintragen
+              Wert eintragen
             </button>
             <span className="oe-lever__hint">
               Leistung, die das Flughafennetz für das Laden bereitstellen kann
@@ -200,7 +200,7 @@ export default function Levers({
             <Slider
               inputRef={reserveSlider}
               id="oe-grid_import_limit_kw"
-              label={airport ? "Reserve fürs Vorfeld" : "Netzanschluss heute"}
+              label={airport ? "Frei fürs Laden" : "Netzanschluss heute"}
               text={kw(connection)}
               value={connection}
               min={range.min}
@@ -220,7 +220,7 @@ export default function Levers({
                   reserveButton.current?.focus();
                 }}
               >
-                Reserve offen lassen
+                Offen lassen
               </button>
             ) : null}
           </>
