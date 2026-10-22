@@ -8,6 +8,10 @@ import urllib.request
 from pilot_auth import configure_auth
 
 
+# Beispielflughafen: zehn Fahrzeugklassen (backend electrification_reference.FLEET).
+FLEET_TOTAL = 226
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--base-url', default='http://127.0.0.1:5181')
@@ -33,12 +37,13 @@ def main():
         result = call('/demo/electrification', inputs)
         contract = result['comparison_contract']
         contracts.append(contract)
-        assert contract['total_vehicles'] == 100
-        assert contract['electric_vehicles'] == share
-        assert contract['non_electric_vehicles'] == 100 - share
+        total = contract['total_vehicles']
+        assert total == FLEET_TOTAL
+        assert contract['electric_vehicles'] == (total * share + 50) // 100
+        assert contract['non_electric_vehicles'] == total - contract['electric_vehicles']
         assert result['reference']['days'] == 3
         assert result['reference']['resource_baseline_feasible']
-        assert result['engine_version'] == 'airport_electrification_v3'
+        assert result['engine_version'] == 'airport_electrification_v4'
         assert contract['fixed_vehicle_assignments'] is True
         assert len(contract['duty_roster_hash']) == 64
         variants = result['variants']
@@ -90,7 +95,7 @@ def main():
         assert record['summary']['coupled_kpis'] == variants[2]['coupled_kpis']
         assert record['summary']['energy_world_hash'] == variants[2]['world_hash']
         evidence = call('/runs/' + status['run_id'] + '/artifacts/coupled-evidence.json')
-        assert len(evidence['terminal_vehicles']) == 100
+        assert len(evidence['terminal_vehicles']) == FLEET_TOTAL
         assert all(v['final_kwh'] + 1e-5 >= v['initial_kwh'] for v in evidence['terminal_vehicles'])
         print(json.dumps({'validation_run_id': status['run_id'], 'state': status['state']}))
     print('PASS: fixed fleet, 72h, verified capacity steps, restored SOC and persisted evidence')
