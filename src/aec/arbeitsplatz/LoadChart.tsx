@@ -165,7 +165,7 @@ export default function LoadChart({
           y={y(capNow) - 8}
           textAnchor="end"
         >
-          {capLabel} {formatCap(capNow)}
+          {capLabel}: {formatCap(capNow)}
         </text>
         {!drawNote ? null : note ? (
           note.tone === "ok" ? (

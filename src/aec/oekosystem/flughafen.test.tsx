@@ -25,15 +25,15 @@ describe("Echter Flughafen", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "Wie viel Reserve braucht das Vorfeld in Teststadt, wenn es elektrisch fährt?",
+        name: "Wie viel Leistung braucht das Vorfeld in Teststadt, wenn es elektrisch fährt?",
       }),
     ).toBeVisible();
     expect(
       screen.getByText(
-        /^Ohne Steuerung bräuchte das Vorfeld in Teststadt 2.400\skW Reserve, mit Lademanagement 1.200\skW, mit Speicher 1.100\skW\.$/,
+        /^Ohne Steuerung bräuchte das Vorfeld in Teststadt 2.400\skW, mit Lademanagement 1.200\skW, mit Speicher 1.100\skW\.$/,
       ),
     ).toBeVisible();
-    expect(screen.getByText(/Mit Lademanagement nötig 1.200\skW/)).toBeInTheDocument();
+    expect(screen.getByText(/Mit Lademanagement nötig: 1.200\skW/)).toBeInTheDocument();
     expect(
       screen.getByText(/Das Modell rechnet mit 137 Fahrzeugen in bis zu zehn Gerätearten/),
     ).toBeVisible();
@@ -70,22 +70,22 @@ describe("Echter Flughafen", () => {
   it("trägt die Reserve ein und urteilt erst dann", async () => {
     serve({ airports: true });
     open("?flughafen=TST");
-    const enter = await screen.findByRole("button", { name: /Reserve eintragen/ });
+    const enter = await screen.findByRole("button", { name: /Wert eintragen/ });
     enter.focus();
     fireEvent.click(enter);
-    const reserve = screen.getByRole("slider", { name: "Reserve fürs Vorfeld" });
+    const reserve = screen.getByRole("slider", { name: "Frei fürs Laden" });
     expect(reserve).toHaveValue("1200");
     expect(reserve).toHaveFocus();
     expect(
       screen.getByText(
-        /^Ungesteuertes Laden bräuchte mehr als Ihre Reserve von 1.200\skW\. Mit Lademanagement reicht sie\.$/,
+        /^Ungesteuertes Laden bräuchte mehr als die 1.200\skW, die fürs Laden frei sind\. Mit Lademanagement reichen sie\.$/,
       ),
     ).toBeVisible();
     await waitFor(() => expect(window.location.search).toBe("?flughafen=TST&anschluss=1200"));
     fireEvent.change(reserve, { target: { value: "1000" } });
-    expect(screen.getByText(/^Ihre Reserve muss um 100\skW größer werden/)).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Reserve offen lassen" }));
-    expect(screen.getByRole("button", { name: /Reserve eintragen/ })).toHaveFocus();
+    expect(screen.getByText(/^Fürs Laden müssen 100\skW mehr frei werden/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Offen lassen" }));
+    expect(screen.getByRole("button", { name: /Wert eintragen/ })).toHaveFocus();
     expect(screen.getByText(/^Ohne Steuerung bräuchte das Vorfeld in Teststadt/)).toBeVisible();
     await waitFor(() => expect(window.location.search).toBe("?flughafen=TST"));
   });
@@ -130,10 +130,10 @@ describe("Echter Flughafen", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "Wie viel Reserve braucht das Vorfeld in Teststadt, und warum?",
+        name: "Wie viel Leistung braucht das Vorfeld in Teststadt, und warum?",
       }),
     ).toBeVisible();
-    expect(screen.getByRole("columnheader", { name: "Benötigte Reserve" })).toBeVisible();
+    expect(screen.getByRole("columnheader", { name: "Nötig fürs Laden" })).toBeVisible();
     const model = (await screen.findByText(/Abflüge/, { selector: "strong" })).closest("ul")!;
     expect(model).toHaveTextContent("420 an einem typischen Tag im Spitzenmonat");
     expect(model).toHaveTextContent("37 Vorfeldbusse, 49 Gepäckschlepper");

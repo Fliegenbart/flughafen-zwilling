@@ -202,7 +202,7 @@ export function AirportModel({ profile }: { profile: AirportProfile }) {
         {`${int(profile.parking_sessions_per_day)} Ladevorgänge am Tag, wenn zugeschaltet`}
       </Item>
       {profile.reserve_basis && profile.reserve_kw_public ? (
-        <Item title="Veröffentlichte Reserve" basis={profile.reserve_basis}>
+        <Item title="Veröffentlicht frei fürs Laden" basis={profile.reserve_basis}>
           {kw(profile.reserve_kw_public)}
         </Item>
       ) : null}

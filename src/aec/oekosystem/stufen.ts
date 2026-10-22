@@ -155,11 +155,11 @@ export const ANSCHLUSS: Words = {
   grow: (by) => `Ihr Anschluss muss um ${by} wachsen, auch mit allen Bausteinen.`,
 };
 export const RESERVE: Words = {
-  noun: "Reserve",
-  your: "Ihre Reserve",
+  noun: "freie Leistung",
+  your: "Die freie Leistung",
   over: (c) =>
-    `Ungesteuertes Laden bräuchte mehr als Ihre Reserve von ${c}. Mit Lademanagement reicht sie.`,
-  grow: (by) => `Ihre Reserve muss um ${by} größer werden, auch mit allen Bausteinen.`,
+    `Ungesteuertes Laden bräuchte mehr als die ${c}, die fürs Laden frei sind. Mit Lademanagement reichen sie.`,
+  grow: (by) => `Fürs Laden müssen ${by} mehr frei werden, auch mit allen Bausteinen.`,
 };
 
 export const atlasKey = (s: Settings) =>
@@ -226,7 +226,7 @@ export function answer(
     const storage = stages.find((st) => st.id === "managed_storage")!;
     const managed = stages.find((st) => st.id === "managed")!;
     const where = place ? `das Vorfeld in ${place}` : "das Vorfeld";
-    return `Ohne Steuerung bräuchte ${where} ${need(first!)} Reserve, mit Lademanagement ${need(managed)}${storage.inactive ? "" : `, mit Speicher ${need(storage)}`}.`;
+    return `Ohne Steuerung bräuchte ${where} ${need(first!)}, mit Lademanagement ${need(managed)}${storage.inactive ? "" : `, mit Speicher ${need(storage)}`}.`;
   }
   const c = kw(connectionKw);
   const enough = firstSufficient(stages, connectionKw);
@@ -285,20 +285,20 @@ export function lineFor(airport: string | null, open: boolean): Line {
       dat: "dem Bedarf mit Lademanagement",
       yourDat: "dem Bedarf mit Lademanagement",
       gen: "der mit Lademanagement nötigen Leistung",
-      need: "Benötigte Reserve",
+      need: "Nötig fürs Laden",
       overload: false,
       more: null,
     };
   return {
-    label: "Ihre Reserve",
-    chart: "Reserve",
-    nom: "Die Reserve",
-    nomLower: "die Reserve",
-    dat: "der Reserve",
-    yourDat: "Ihrer Reserve",
-    gen: "Ihrer Reserve",
-    need: "Benötigte Reserve",
+    label: "Frei fürs Laden",
+    chart: "Frei fürs Laden",
+    nom: "Die freie Leistung",
+    nomLower: "die freie Leistung",
+    dat: "der freien Leistung",
+    yourDat: "der freien Leistung",
+    gen: "der freien Leistung",
+    need: "Nötig fürs Laden",
     overload: true,
-    more: (by) => `Mehr Reserve: Das Vorfeld braucht ${by} mehr, auch mit allen Bausteinen.`,
+    more: (by) => `Mehr Leistung: Das Vorfeld braucht ${by} mehr, auch mit allen Bausteinen.`,
   };
 }

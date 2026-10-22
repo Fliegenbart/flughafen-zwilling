@@ -59,7 +59,7 @@ export default function Treppe({
         <span />
         <span className="oe-treppe__cell">
           <span className="oe-treppe__limitlabel" style={{ left: pct(connectionKw) }}>
-            {line.label} {kw(connectionKw)}
+            {line.label}: {kw(connectionKw)}
           </span>
         </span>
         <span />

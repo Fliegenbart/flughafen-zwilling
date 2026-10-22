@@ -101,7 +101,7 @@ export default function OekosystemCheck() {
         <section className="oe-main" aria-labelledby="oe-question">
           <h1 id="oe-question">
             {airport
-              ? `Wie viel Reserve braucht das Vorfeld${profile ? ` in ${profile.name}` : ""}, wenn es elektrisch fährt?`
+              ? `Wie viel Leistung braucht das Vorfeld${profile ? ` in ${profile.name}` : ""}, wenn es elektrisch fährt?`
               : "Reicht der Anschluss, wenn das Vorfeld elektrisch fährt?"}
           </h1>
           {loadError ? (
@@ -134,7 +134,7 @@ export default function OekosystemCheck() {
               />
               <section className="oe-curve" aria-labelledby="oe-curve-title">
                 <h2 id="oe-curve-title">
-                  Netzlast über drei Tage, {stageTitle ?? "ohne Steuerung"}
+                  {airport ? "Ladelast" : "Netzlast"} über drei Tage, {stageTitle ?? "ohne Steuerung"}
                 </h2>
                 {curve ? (
                   <p className="oe-curve__note" data-tone={curve.note.tone} aria-hidden="true">
