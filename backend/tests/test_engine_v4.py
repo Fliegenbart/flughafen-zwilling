@@ -211,3 +211,15 @@ def test_night_traffic_airport_is_feasible_with_ample_power():
             pv_kwp=0, parking_sessions=0), "managed")
         result = simulate_coupled(world, plan, policy, capture_traces=False)
     assert connection_checks(result)["feasible"]
+
+
+def test_finished_comparisons_survive_a_restart(monkeypatch, tmp_path):
+    monkeypatch.setattr(electrification, "_RESULT_DIR", str(tmp_path))
+    monkeypatch.setattr(electrification, "_RESULTS", type(electrification._RESULTS)())
+    request = ElectrificationRequest(electric_share_pct=50, grid_import_limit_kw=1500,
+                                     storage_kwh=2000, pv_kwp=500, parking_sessions=40)
+    first = electrification.compare_electrification(request)
+    electrification._RESULTS.clear()  # wie nach einem Neustart
+    again = electrification.compare_electrification(request)
+    assert again["compute_ms"] == 0 and len(list(tmp_path.iterdir())) == 1
+    assert again["variants"][1]["metrics"] == first["variants"][1]["metrics"]

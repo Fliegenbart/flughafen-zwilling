@@ -222,10 +222,9 @@ export function serve({
         const body = JSON.parse(String(init?.body));
         bodies.push(body);
         if (failCompare())
-          return new Response(
-            JSON.stringify({ detail: "Demo ausgelastet. Vergleich erneut versuchen." }),
-            { status: 429 },
-          );
+          return new Response(JSON.stringify({ detail: "Rechnung fehlgeschlagen." }), {
+            status: 500,
+          });
         return new Response(JSON.stringify(comparison(body, feasible)));
       }
       return new Response("{}", { status: 404 });

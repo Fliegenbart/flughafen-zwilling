@@ -6,6 +6,7 @@ services:
       dockerfile: deploy/demo/backend.Dockerfile
     environment:
       TWIN_DATA_DIR: /app/data
+      TWIN_RESULT_CACHE_DIR: /app/data/electrification-cache
       TWIN_ENABLE_PLAYBOOK_SYNTH: "true"
       TWIN_BUILD_GIT_COMMIT: ${TWIN_BUILD_GIT_COMMIT:?Set the verified release commit}
       TWIN_ALLOWED_ORIGINS: https://labpulse.ai

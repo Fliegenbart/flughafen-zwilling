@@ -28,6 +28,7 @@ import {
 } from "./stufen";
 
 const SETTLE_MS = 400;
+const BUSY_RETRY_MS = 3000;
 const KEEP = 24;
 const sameSettings = (a: Settings, b: Settings) =>
   (Object.keys(a) as (keyof Settings)[]).every((k) => a[k] === b[k]);
@@ -169,6 +170,7 @@ export function useOekosystem(page: Page) {
   useEffect(() => {
     if (!body || !atlas || shared.results.has(key)) return;
     const controller = new AbortController();
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
     const timer = setTimeout(() => {
       compareElectrification(body, controller.signal)
         .then((data) => {
@@ -176,16 +178,22 @@ export function useOekosystem(page: Page) {
           setArrived((n) => n + 1);
         })
         .catch((e: unknown) => {
-          if (!controller.signal.aborted)
-            setFailure({
-              key,
-              attempt,
-              text: e instanceof Error ? e.message : "Die Kurve ließ sich nicht rechnen.",
-            });
+          if (controller.signal.aborted) return;
+          // Server rechnet gerade eine andere Stellung: kurz warten und selbst erneut fragen.
+          if ((e as { status?: number }).status === 429) {
+            retryTimer = setTimeout(() => setAttempt((n) => n + 1), BUSY_RETRY_MS);
+            return;
+          }
+          setFailure({
+            key,
+            attempt,
+            text: e instanceof Error ? e.message : "Die Kurve ließ sich nicht rechnen.",
+          });
         });
     }, SETTLE_MS);
     return () => {
       clearTimeout(timer);
+      clearTimeout(retryTimer);
       controller.abort();
     };
   }, [atlas, body, key, attempt, airport]);

@@ -132,7 +132,7 @@ describe("Seite für Fachleute", () => {
     let fail = true;
     serve({ failCompare: () => fail });
     open("?seite=fachleute&anteil=47&speicher=2100");
-    expect(await screen.findByRole("alert")).toHaveTextContent("Demo ausgelastet");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Rechnung fehlgeschlagen");
     expect(bodies.map((b) => [b.electric_share_pct, b.storage_kwh])).toEqual([[50, 2000]]);
     expect(screen.getAllByText("nicht gerechnet")).toHaveLength(4);
     fail = false;
