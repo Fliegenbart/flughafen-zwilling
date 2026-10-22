@@ -191,7 +191,7 @@ export function AirportModel({ profile }: { profile: AirportProfile }) {
         </Item>
       ) : null}
       <Item title="Flotte im Modell" basis={profile.fleet.basis}>
-        {`${fleet}. Aus dem Modell bemessen, nicht der echte Bestand. Wo veröffentlicht, ist der echte Bestand größer, auch innerhalb dieser Klassen`}
+        {`${fleet}. Aus dem Modell bemessen, nicht der echte Bestand. Veröffentlichte Zahlen sind anders abgegrenzt und können größer oder kleiner sein`}
       </Item>
       <Item title="Veröffentlichter Elektroanteil" basis={profile.electric_share_basis}>
         {profile.electric_share_now_pct == null

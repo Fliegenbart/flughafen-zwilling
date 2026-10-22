@@ -35,7 +35,7 @@ describe("Echter Flughafen", () => {
     ).toBeVisible();
     expect(screen.getByText(/Mit Lademanagement nötig 1.200\skW/)).toBeInTheDocument();
     expect(
-      screen.getByText(/Das Modell rechnet mit 137 Fahrzeugen in zehn Gerätearten/),
+      screen.getByText(/Das Modell rechnet mit 137 Fahrzeugen in bis zu zehn Gerätearten/),
     ).toBeVisible();
     expect(screen.getByText("offen")).toBeVisible();
     expect(

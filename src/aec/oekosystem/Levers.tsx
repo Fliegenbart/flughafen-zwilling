@@ -147,8 +147,8 @@ export default function Levers({
         !v
           ? "nur das Vorfeld"
           : airport
-            ? "am Tag, je öffentlichem Ladepunkt einer"
-            : "am Tag, Mitarbeiter, Gäste und Mietwagen",
+            ? "am Tag, aus den öffentlichen Ladepunkten des Flughafens"
+            : "am Tag, Reisende und Tagesgäste",
     },
   ];
   const connection = settings.grid_import_limit_kw;

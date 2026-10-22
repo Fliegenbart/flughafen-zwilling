@@ -106,8 +106,12 @@ def storage_axis(spec: AirportSpec) -> list[int]:
 
 def parking_groups(spec: AirportSpec) -> list[ParkingGroup]:
     """Parkhaus je Standort und Nutzergruppe; Ankuenfte folgen den Passagierfluegen."""
-    arrival = parking_arrivals(spec.passenger_departures_by_hour or spec.departures_by_hour,
-                               spec.passenger_arrivals_by_hour or spec.arrivals_by_hour)
+    passengers = [1 - s for s in spec.freight_share_by_hour] if spec.freight_share_by_hour else None
+    dep = (spec.passenger_departures_by_hour or spec.departures_by_hour if passengers is None
+           else [d * p for d, p in zip(spec.departures_by_hour, passengers)])
+    arr = (spec.passenger_arrivals_by_hour or spec.arrivals_by_hour if passengers is None
+           else [a * p for a, p in zip(spec.arrivals_by_hour, passengers)])
+    arrival = parking_arrivals(dep, arr)
     out = []
     for i, group, sessions in spec.parking_sessions():
         point = spec.parking_points[i]

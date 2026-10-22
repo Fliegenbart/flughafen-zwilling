@@ -35,7 +35,10 @@ Parkhaus, weitere Geraete, Grossraum, Fracht); jede Zahl unten traegt ihre Herku
 
 Eine Anschlussstufe besteht, wenn alle Einsaetze bis zu ihrer Frist erledigt sind, die
 Grundlast versorgt ist, jeder Parkvorgang mit Frist im Horizont voll ist (Fristen nach dem
-Rechenende werden nicht geprueft) und am Messtag Fahrzeuge und Speicher eingeschwungen sind.
+Rechenende werden nicht geprueft) und der Messtag sich selbst traegt: Die Flotte laedt an ihm
+so viel nach, wie sie verbraucht (laufende Einsaetze voll angerechnet), bis auf 10 % der
+Tagesarbeit. Diese Schwankung entsteht, weil sich der Dienstplan von Tag zu Tag verschiebt; sie
+tritt auch bei unbegrenztem Netz auf (CGN bis rund 6 %). Der Speicher muss eingeschwungen sein.
 Die unabhaengigen Energiebilanzen muessen stimmen.
 
 ## Fahrzeugklassen und Verbrauch (v4)

@@ -13,10 +13,16 @@ from functools import lru_cache
 from pathlib import Path
 
 from ..munich.coupled_models import CYCLIC_ENGINE_VERSION
-from .airport_model import AIRPORT_MODEL_VERSION, grid_raster, storage_axis
+from .airport_model import (
+    AIRPORT_MODEL_VERSION,
+    airport_config,
+    airport_day,
+    grid_raster,
+    storage_axis,
+)
 from .airport_spec import load_spec
 from .demo import _canonical_hash
-from .electrification_reference import REFERENCE_ID, reference_config
+from .electrification_reference import REFERENCE_ID, reference_config, reference_day
 from .grid_sizing import GRID_MAX_KW, GRID_STEP_KW
 
 ATLAS_PATH = Path(__file__).resolve().parent / "data" / "electrification_atlas.json"
@@ -47,17 +53,14 @@ def axes_for(airport: str | None) -> dict:
 
 def reference_id_for(airport: str | None) -> str:
     """Kennung des Modells; aendert sich mit allem, was die Rechnung des Flughafens treibt."""
+    # Aus der tatsaechlich gerechneten Konfiguration und dem Flugplan, keine Feldliste.
     if airport is None:
-        return REFERENCE_ID
+        return f"{REFERENCE_ID}:" + _canonical_hash({
+            "config": reference_config().model_dump(mode="json"),
+            "plan": reference_day().content_sha256})[:16]
     spec = load_spec(airport)
-    model = spec.model_dump(include={"departures_per_day", "departures_by_hour",
-                                     "arrivals_by_hour", "coverage_pct",
-                                     "parking_sessions_per_day", "parking_points",
-                                     "passenger_departures_by_hour",
-                                     "passenger_arrivals_by_hour", "fleet"})
-    model["fleet"] = {k: v for k, v in (model["fleet"] or {}).items() if k != "basis"}
-    # Fahrzeugdaten kommen aus dem Beispielflughafen: aendert der sich, gilt die Tabelle nicht mehr.
-    model["reference"] = [REFERENCE_ID, _canonical_hash(reference_config().model_dump(mode="json"))]
+    model = {"config": airport_config(spec).model_dump(mode="json"),
+             "plan": airport_day(airport).content_sha256}
     return f"{AIRPORT_MODEL_VERSION}:{airport}:{_canonical_hash(model)[:16]}"
 
 

@@ -185,7 +185,7 @@ def test_several_vehicles_per_flight_and_widebody_values():
     assert 0.1 < share < 0.3
 
 
-def test_measured_day_ignores_rounding_but_not_a_real_shortfall():
+def test_measured_day_counts_the_fleet_balance_and_the_storage():
     from types import SimpleNamespace
     result = SimpleNamespace(
         kpis=SimpleNamespace(mission_count=1, missions_on_time=1, background_unserved_kwh=0,
@@ -193,10 +193,21 @@ def test_measured_day_ignores_rounding_but_not_a_real_shortfall():
                              storage_energy_balance_error_kwh=0),
         energy=SimpleNamespace(charging_unmet_kwh=0, battery_initial_kwh=0, battery_final_kwh=0,
                                battery_cycle_start_kwh=100, battery_cycle_end_kwh=99.995,
-                               battery_cycle_absorbable_kwh=0),
+                               battery_cycle_absorbable_kwh=0, vehicle_recharge_deficit_kwh=0),
         terminal_vehicles=[dict(electric=True, initial_kwh=255, final_kwh=200,
-                                cycle_start_kwh=255.0, cycle_end_kwh=254.9997)])
+                                cycle_start_kwh=255.0, cycle_end_kwh=250.0)])
+    # Einzelne Fahrzeuge duerfen schwanken; es zaehlt die Flottenbilanz aus dem Simulator.
     assert connection_checks(result)["feasible"]
-    result.terminal_vehicles[0]["cycle_end_kwh"] = 254.9
+    result.energy.vehicle_recharge_deficit_kwh = 5.0
     result.energy.battery_cycle_end_kwh = 99.5
     assert connection_checks(result)["reasons"] == ["vehicle_recharge", "storage_recharge"]
+
+
+def test_night_traffic_airport_is_feasible_with_ample_power():
+    from app.munich.coupled_models import trusted_scale
+    with trusted_scale():
+        plan, _, policy, world, _ = prepare_electrification(ElectrificationRequest(
+            airport="CGN", electric_share_pct=50, grid_import_limit_kw=8000, storage_kwh=0,
+            pv_kwp=0, parking_sessions=0), "managed")
+        result = simulate_coupled(world, plan, policy, capture_traces=False)
+    assert connection_checks(result)["feasible"]

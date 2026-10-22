@@ -185,7 +185,7 @@ def test_saved_run_cannot_pass_by_borrowing_starting_vehicle_energy(client):
     # Puenktlich allein reicht nicht: der Messtag muss die Fahrzeuge wieder so voll machen,
     # wie er sie vorgefunden hat (eingeschwungen), sonst lebt der Betrieb vom Startstand.
     from test_demo_materialization import _completed
-    inputs = {'electric_share_pct': 50, 'grid_import_limit_kw': 450,
+    inputs = {'electric_share_pct': 50, 'grid_import_limit_kw': 375,
               'storage_kwh': 2000, 'solution': 'managed'}
     created = client.post('/api/v1/demo/electrification/runs', json=inputs)
     assert created.status_code == 202, created.text

@@ -498,9 +498,10 @@ export default function Fachleute() {
             <li>Jedes Auto im Parkhaus ist bis zur Abfahrt geladen.</li>
             {airport ? null : <li>Der übrige Flughafen bekommt jederzeit seinen Strom.</li>}
             <li>
-              Der mittlere der drei Tage trägt sich selbst: An seinem Ende sind Fahrzeuge und
-              Speicher mindestens so voll wie an seinem Anfang. Der erste Tag läuft sich ein, der
-              dritte läuft normal weiter.
+              Der mittlere der drei Tage trägt sich selbst: Die Flotte lädt an ihm so viel nach, wie
+              sie verbraucht, bis auf 10 % Schwankung durch den Dienstplan. Der Speicher endet so
+              voll wie er begann oder pendelt sich knapp darunter ein. Der erste Tag läuft sich ein,
+              der dritte läuft normal weiter.
             </li>
           </ul>
           {atlas ? (
@@ -526,9 +527,9 @@ export default function Fachleute() {
                     : ""}
                 </li>
                 <li>
-                  Gerechnet werden zehn Gerätearten vom Vorfeldbus bis zum Frischwasserwagen. Crew-
-                  und Kleinbusse, Pkw und Schlepps zur Parkposition fehlen, ihr Ladebedarf kommt
-                  dazu.
+                  Gerechnet werden bis zu zehn Gerätearten vom Vorfeldbus bis zum Frischwasserwagen.
+                  Crew- und Kleinbusse, Pkw und Schlepps zur Parkposition fehlen, ihr Ladebedarf
+                  kommt dazu.
                 </li>
                 <li>
                   Großraumflugzeuge rechnet das Modell mit eigenen Werten. Der Winter mit Heizung in

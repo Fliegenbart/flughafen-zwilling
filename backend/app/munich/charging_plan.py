@@ -184,7 +184,8 @@ class EnergyEnvelopePlan:
                 steps = [(start - guard[spec.kind], k + 1, reserve, False)
                          for k, start in enumerate(starts)]
                 # Zielstand bis der Simulator den Stand zu Beginn des Messtags kennt: Startstand.
-                steps.append((cycle_end - guard[spec.kind],
+                # Mit Vorlauf planen, sonst laden alle in den letzten Minuten des Messtags.
+                steps.append((cycle_end - max(guard[spec.kind], 30),
                               sum(start < cycle_end for start in starts),
                               spec.battery_capacity_kwh * spec.initial_soc_pct / 100, True))
                 self.steps[identity] = [

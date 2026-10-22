@@ -67,6 +67,9 @@ class Vehicle:
         return self.spec.battery_capacity_kwh * self.spec.charge_target_soc_pct / 100
 
 
+# Erlaubte Schwankung der Flottenbilanz am Messtag, Anteil der Tagesarbeit (siehe oben).
+CYCLE_WORK_TOLERANCE = 0.10
+
 # Parkvorgaenge planen ihre Frist mit diesem Puffer (Minuten) und laden ab dann voll.
 PARKING_GUARD_MIN = 30
 
@@ -103,6 +106,15 @@ def _steered_parking(minute: int, world: CoupledWorld, remaining: list[float],
         if forced + extra > EPS:
             out.append(ChargeRequest(world.parking_jobs[i].id, "parking", forced + extra, deadline))
     return out
+
+
+def _effective(v: Vehicle, minute: int, world: CoupledWorld) -> float:
+    """Ladestand abzueglich des Rests eines laufenden Einsatzes: Ein Einsatz zaehlt fuer den
+    Messtag ganz, sobald er begonnen hat (sonst zaehlt, wer gerade faehrt, als leerer)."""
+    if v.mission is None or not v.electric:
+        return v.energy
+    m = world.missions[v.mission]
+    return v.energy - m.energy_kwh / (m.duration_min + m.return_min) * max(0, v.busy_until - minute)
 
 
 def simulate_coupled(
@@ -182,12 +194,12 @@ def simulate_coupled(
         supply.cycle = (cycle_start, cycle_end)
     for minute in range(world.start_min, world.end_min):
         if cyclic and minute == cycle_start:
-            cycle_energy = {v.id: v.energy for v in electric_fleet}
+            cycle_energy = {v.id: _effective(v, minute, world) for v in electric_fleet}
             supply.kpis.battery_cycle_start_kwh = supply.cycle_min_kwh = supply.stored
             if controller:
                 controller.cycle_target = dict(cycle_energy)
         if cyclic and minute == cycle_end:
-            cycle_final = {v.id: v.energy for v in electric_fleet}
+            cycle_final = {v.id: _effective(v, minute, world) for v in electric_fleet}
             supply.kpis.battery_cycle_end_kwh = supply.stored
         for v in vehicles:
             if v.mission is not None:
@@ -459,9 +471,14 @@ def simulate_coupled(
         if cycle_end == world.end_min:
             cycle_final = {v.id: v.energy for v in electric_fleet}
             energy.battery_cycle_end_kwh = energy.battery_final_kwh
-        # Rundungsreste unter 0,01 kWh je Fahrzeug zaehlen nicht (grid_sizing.CYCLE_TOLERANCE_KWH).
-        energy.vehicle_recharge_deficit_kwh = clean(math.fsum(
-            gap for v in electric_fleet if (gap := cycle_energy[v.id] - cycle_final[v.id]) > 0.01))
+        # Flottenbilanz des Messtags (laufende Einsaetze ganz angerechnet). Weil sich der
+        # Dienstplan von Tag zu Tag verschiebt, schwankt sie auch bei unbegrenztem Netz um einige
+        # Prozent der Tagesarbeit; erst darueber zaehlt ein Fehlbetrag (CYCLE_WORK_TOLERANCE).
+        work = math.fsum(m.energy_kwh for i, m in enumerate(world.missions)
+                         if cycle_start <= m.release_min < cycle_end
+                         and evidence[i].get("electric_vehicle", True))
+        gap = math.fsum(cycle_energy[v.id] - cycle_final[v.id] for v in electric_fleet)
+        energy.vehicle_recharge_deficit_kwh = clean(max(0.0, gap - CYCLE_WORK_TOLERANCE * work))
         # Ein Speicher, der am Messtag voll wurde, pendelt sich unter dem Anfangsstand ein, wenn
         # er den Fehlbetrag bei vollem Speicher noch haette aufnehmen koennen (gleicher Verlauf,
         # nur tiefer, bis er wieder voll ist) und dabei die Reserve nicht erreicht.

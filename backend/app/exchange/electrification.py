@@ -378,8 +378,8 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
             "Keine Betankung, Kraftstoffkosten oder Emissionen nicht-elektrischer Fahrzeuge.",
             "Anschlussbedarf = erste erfolgreiche Stufe im 25-kW-Raster, "
             "keine exakte Mindestleistung oder Anschlusszusage.",
-            "Erfolg: alle Aufgaben rechtzeitig, Grundlast und Parkhaus versorgt; am Ende des "
-            "mittleren Tages sind Fahrzeuge und Speicher mindestens so voll wie an seinem Anfang.",
+            "Erfolg: alle Aufgaben rechtzeitig, Grundlast und Parkhaus versorgt; der mittlere "
+            "Tag traegt sich selbst (Energiebilanz der Flotte mit 10 % Schwankung, Speicher).",
             "Speicher startet mit 50 %, Fahrzeuge mit 85 %; gemessen wird der eingeschwungene "
             "mittlere Tag, kein saisonaler oder Jahresnachweis.",
             "Kein Kosten-, ROI-, Netzschutz- oder Lastflussnachweis.",
@@ -437,7 +437,7 @@ def _airport_limitations(airport: str) -> list[str]:
         "Nicht enthalten: Crew- und Kleinbusse, Pkw, Schlepps zur Parkposition, Enteisung "
         "und Winterbetrieb.",
         f"Anschlussbedarf = erste erfolgreiche Stufe im {step}-kW-Raster, keine Anschlusszusage.",
-        "Erfolg: alle Einsaetze bis zur Frist erledigt, Parkhaus versorgt, Fahrzeuge und "
-        "Speicher am Ende wieder geladen.",
+        "Erfolg: alle Einsaetze bis zur Frist erledigt, Parkhaus versorgt; der mittlere Tag "
+        "traegt sich selbst (Energiebilanz der Flotte und des Speichers).",
         "Nicht mit dem Flughafen abgestimmt; kein Kosten-, Netzschutz- oder Lastflussnachweis.",
     ]

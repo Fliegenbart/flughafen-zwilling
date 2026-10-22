@@ -5,7 +5,7 @@ from ..munich.coupled_models import CoupledConfig, FleetSpec, PowerConfig
 from ..munich.flightplan import parse_pages
 from .demo import _HEADER, _airport_code, _canonical_hash
 
-REFERENCE_ID = "apron_grid_reference_v2"
+REFERENCE_ID = "apron_grid_reference_v3"
 SOURCES = [
     {"title": "Hess et al. (2023): gemessener Verbrauch elektrischer Vorfeldbusse (Fraport)",
      "url": "https://doi.org/10.3390/wevj14050126"},

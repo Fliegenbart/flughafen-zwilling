@@ -70,8 +70,8 @@ def connection_checks(result: CoupledResult) -> dict:
     # v4: Ende des Messtags gegen seinen Anfang (eingeschwungen), sonst Ende gegen Start.
     electric = [v for v in result.terminal_vehicles if v['electric']]
     if any('cycle_start_kwh' in v for v in electric):
-        short = any(v['cycle_start_kwh'] - v['cycle_end_kwh'] > CYCLE_TOLERANCE_KWH
-                    for v in electric)
+        # Flottenbilanz mit Schwankungsabzug, berechnet im Simulator.
+        short = (e.vehicle_recharge_deficit_kwh or 0) > CYCLE_TOLERANCE_KWH
     else:
         short = sum(max(0, v['initial_kwh'] - v['final_kwh'])
                     for v in electric) > ENERGY_TOLERANCE_KWH
