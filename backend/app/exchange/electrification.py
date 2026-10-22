@@ -183,8 +183,10 @@ def _contract(plan, config, world) -> dict:
 @lru_cache(maxsize=32)
 def _resource_baseline_feasible(airport: str | None = None) -> bool:
     top = _base(airport)[3]
+    # Nur die Fahrzeuge: Parkhaus und PV spielen fuer die Dieselkontrolle keine Rolle.
     plan, _, policy, world, _ = prepare_electrification(ElectrificationRequest(
-        electric_share_pct=0, grid_import_limit_kw=top, airport=airport), "direct")
+        electric_share_pct=0, grid_import_limit_kw=top, airport=airport, pv_kwp=0,
+        parking_sessions=0), "direct")
     with _scope(airport):
         result = simulate_coupled(world, plan, policy, capture_traces=False)
     return connection_checks(result)['feasible']
