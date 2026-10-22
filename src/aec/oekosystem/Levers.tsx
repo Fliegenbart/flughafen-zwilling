@@ -104,7 +104,8 @@ export default function Levers({
   onChange: (next: Settings) => void;
 }) {
   const airport = profile ?? null;
-  const total = airport ? Object.values(airport.fleet.vehicles).reduce((a, b) => a + b, 0) : 100;
+  const fleet = airport ? airport.fleet.vehicles : atlas.fleet;
+  const total = Object.values(fleet).reduce((a, b) => a + b, 0) || 100;
   const range = connectionRange(atlas, settings.airport);
   const set = (key: keyof Settings, v: number | null) => onChange({ ...settings, [key]: v });
   // Beim Umschalten der Reserve verschwindet der gedrueckte Knopf: sofort neu zeichnen und den
@@ -146,8 +147,8 @@ export default function Levers({
         !v
           ? "nur das Vorfeld"
           : airport
-            ? "am Tag, je öffentlichem Ladepunkt einer"
-            : "am Tag, Mitarbeiter, Gäste und Mietwagen",
+            ? "am Tag, aus den öffentlichen Ladepunkten des Flughafens"
+            : "am Tag, Reisende und Tagesgäste",
     },
   ];
   const connection = settings.grid_import_limit_kw;

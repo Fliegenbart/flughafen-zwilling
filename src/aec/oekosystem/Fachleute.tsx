@@ -13,7 +13,7 @@ import LoadChart from "../arbeitsplatz/LoadChart";
 import { dec1, int } from "../model/format";
 import { CurveWaiting, curveFor, REASONS, type Rechnung } from "./kurve";
 import Levers from "./Levers";
-import { AirportModel, AirportPicker } from "./Steckbrief";
+import { AirportModel, AirportPicker, FLEET_NAMES, fleetTotal } from "./Steckbrief";
 import {
   ANSCHLUSS,
   answer,
@@ -26,13 +26,6 @@ import {
   type Stage,
 } from "./stufen";
 import { useOekosystem } from "./useOekosystem";
-
-const FLEET_NAMES: Record<string, string> = {
-  bus: "Vorfeldbusse",
-  baggage_tractor: "Gepäckschlepper",
-  pushback_tug: "Flugzeugschlepper",
-  gpu: "Bodenstromgeräte",
-};
 
 type Row = {
   id: Rechnung;
@@ -50,7 +43,7 @@ const ROWS: Row[] = [
     name: "Ohne Steuerung",
     with: "ohne Steuerung",
     how: () =>
-      "Jedes Fahrzeug lädt mit voller Leistung bis 85 %, sobald ein Ladepunkt frei ist. Nichts bremst, der Bedarf ist die höchste Netzlast in drei Tagen.",
+      "Jedes Fahrzeug lädt mit voller Leistung bis 85 %, sobald ein Ladepunkt frei ist, und jedes Auto im Parkhaus lädt sofort. Nichts bremst, der Bedarf ist die höchste Netzlast in drei Tagen.",
   },
   {
     id: "direct",
@@ -66,7 +59,7 @@ const ROWS: Row[] = [
     name: "Lademanagement",
     with: "mit Lademanagement",
     how: () =>
-      "Plant die Ladezeiten nach dem Einsatzplan: Wer bald fährt, lädt zuerst. Diesen Wert zeigt die Übersicht.",
+      "Plant die Ladezeiten nach dem Einsatzplan und dem echten Ladestand, mit 15 % Reserve auf den Verbrauch: Wer bald fährt, lädt zuerst. Das Parkhaus lädt, wenn Leistung frei ist, und jedes Auto ist bis zur Abfahrt voll. Diesen Wert zeigt die Übersicht.",
   },
   {
     id: "managed_storage",
@@ -75,7 +68,7 @@ const ROWS: Row[] = [
     with: "mit Lademanagement und Speicher",
     how: (s, line) =>
       s.storage_kwh
-        ? `Lademanagement mit ${dec1(s.storage_kwh / 1000)} MWh Speicher und ${kw(s.storage_kwh / 2)} Leistung. Er lädt aus dem Netz nach, solange weniger als 80 % ${line.gen} genutzt werden.`
+        ? `Lademanagement mit ${dec1(s.storage_kwh / 1000)} MWh Speicher und ${kw(s.storage_kwh / 2)} Leistung. Er lädt aus der Leistung nach, die ${line.nomLower} gerade frei lässt, und gibt sie bei Spitzen wieder ab. Bringt er nichts, bleibt er aus.`
         : "Kein Speicher eingestellt.",
   },
 ];
@@ -87,6 +80,7 @@ type FleetConfig = {
   charger_kw: number;
   battery_capacity_kwh: number;
   mission_energy_kwh: number;
+  wide_mission_energy_kwh?: number;
   initial_soc_pct: number;
 };
 type PowerConfig = {
@@ -415,7 +409,12 @@ export default function Fachleute() {
                           <td>{int(f.vehicles)}</td>
                           <td>{counted ? int(counted.electric) : "…"}</td>
                           <td>{int(f.battery_capacity_kwh)} kWh</td>
-                          <td>{dec1(f.mission_energy_kwh)} kWh</td>
+                          <td>
+                            {dec1(f.mission_energy_kwh)} kWh
+                            {profile?.widebody_share_pct && f.wide_mission_energy_kwh
+                              ? `, Großraum ${dec1(f.wide_mission_energy_kwh)} kWh`
+                              : ""}
+                          </td>
                           <td>
                             {int(f.chargers)} × {kw(f.charger_kw)}
                           </td>
@@ -463,15 +462,18 @@ export default function Fachleute() {
                   </>
                 )}
                 <li>
-                  Parkhaus: {int(settings.parking_sessions)} Autos am Tag laden mit je{" "}
-                  {kw(config.power.parking_charger_kw)}. Sie kommen zwischen 0 und 1:30 Uhr und
-                  brauchen 20 bis 45 kWh bis zur Abfahrt zwischen 9 und 14 Uhr. Das Parkhaus wird
-                  nicht vorausgeplant. Ist {line.nomLower} ausgeschöpft, wird es wie alle Ladepunkte
-                  gleichmäßig gedrosselt.
+                  Parkhaus: {int(settings.parking_sessions)} Ladevorgänge am Tag
+                  {profile ? "" : `, je Auto bis zu ${kw(config.power.parking_charger_kw)}`}.
+                  Reisende kommen zwei bis drei Stunden vor ihrem Abflug und laden bis zu 24
+                  Stunden, Tagesgäste kommen zwei Stunden vorher und bleiben 10 bis 16 Stunden.
+                  Schnelllader laden sofort mit 75 kW. Mit Lademanagement lädt das Parkhaus, wenn
+                  Leistung frei ist, und jedes Auto ist bis zur Abfahrt voll.
                 </li>
                 <li>
-                  Die Fahrzeuge starten mit {int(config.fleets[0]?.initial_soc_pct ?? 85)} % Ladung,
-                  der Speicher mit {int(config.power.battery_initial_soc_pct)} %.
+                  Am ersten Tag starten die Fahrzeuge mit{" "}
+                  {int(config.fleets[0]?.initial_soc_pct ?? 85)} % Ladung, der Speicher mit{" "}
+                  {int(config.power.battery_initial_soc_pct)} %. Gezählt wird der mittlere Tag, wenn
+                  sich der Betrieb eingependelt hat.
                 </li>
               </ul>
             </>
@@ -495,7 +497,12 @@ export default function Fachleute() {
             </li>
             <li>Jedes Auto im Parkhaus ist bis zur Abfahrt geladen.</li>
             {airport ? null : <li>Der übrige Flughafen bekommt jederzeit seinen Strom.</li>}
-            <li>Nach drei Tagen sind Fahrzeuge und Speicher wieder so voll wie am Anfang.</li>
+            <li>
+              Der mittlere der drei Tage trägt sich selbst: Die Flotte lädt an ihm so viel nach, wie
+              sie verbraucht, bis auf 10 % Schwankung durch den Dienstplan. Der Speicher endet so
+              voll wie er begann oder pendelt sich knapp darunter ein. Der erste Tag läuft sich ein,
+              der dritte läuft normal weiter.
+            </li>
           </ul>
           {atlas ? (
             <p className="oe-note">
@@ -520,38 +527,40 @@ export default function Fachleute() {
                     : ""}
                 </li>
                 <li>
-                  Gerechnet werden vier Fahrzeugklassen: Busse, Gepäckschlepper, Flugzeugschlepper
-                  und mobile Bodenstromgeräte. Weitere Geräte wie Förderbänder, Hubwagen oder Pkw
-                  fehlen, ihr Ladebedarf kommt dazu.
+                  Gerechnet werden bis zu zehn Gerätearten vom Vorfeldbus bis zum Frischwasserwagen.
+                  Crew- und Kleinbusse, Pkw und Schlepps zur Parkposition fehlen, ihr Ladebedarf
+                  kommt dazu.
                 </li>
                 <li>
-                  Energie je Einsatz gilt für Kurz- und Mittelstreckenflugzeuge. Großraumflugzeuge
-                  brauchen mehr, an Drehkreuzen liegt der echte Bedarf deshalb höher.
+                  Großraumflugzeuge rechnet das Modell mit eigenen Werten. Der Winter mit Heizung in
+                  Bussen und Kälte im Akku fehlt noch.
                 </li>
                 <li>Nichts davon ist mit dem Flughafen abgestimmt.</li>
               </>
             ) : (
               <li>
-                Der Beispielflughafen ist erfunden: ein Vorfeldabschnitt mit 100 Fahrzeugen, kein
-                ganzer Flughafen.
+                Der Beispielflughafen ist erfunden: ein Vorfeldabschnitt
+                {atlas && fleetTotal(atlas.fleet)
+                  ? ` mit ${int(fleetTotal(atlas.fleet))} Fahrzeugen`
+                  : ""}
+                , kein ganzer Flughafen.
               </li>
             )}
             <li>
-              Akkus und Energie je Einsatz stammen für Gepäckschlepper, Flugzeugschlepper und
-              Bodenstromgeräte aus He et al. (2026), für Vorfeldbusse sind sie angenommen.
+              Energie je Einsatz stammt aus Messungen (Fraport-Busse, Vorfeldgeräte in Stuttgart),
+              Herstellerangaben und Physik, nicht aus Diesel-Lastfaktoren. Wie oft Catering-,
+              Toiletten- und Wasserwagen kommen, ist angenommen.
             </li>
             <li>
-              Lademanagement kennt den Einsatzplan im Voraus, Verspätungen im echten Betrieb rechnet
-              das Modell nicht.
+              Lademanagement kennt den Einsatzplan im Voraus und plant 15 % Reserve auf den
+              Verbrauch ein. Größere Verspätungen und Wintertage rechnet das Modell noch nicht.
             </li>
             {noGain ? (
               <li>
-                Der Speicher lädt nach einer einfachen Regel aus dem Netz nach und senkt den Bedarf
-                an {int(noGain.none)} von {int(noGain.total)} Stellungen nicht, meist bei viel
-                Parkhaus.
+                An {int(noGain.none)} von {int(noGain.total)} Stellungen senkt der Speicher den
+                Bedarf nicht: Schon das Lademanagement nutzt dort die Leistung fast den ganzen Tag.
               </li>
             ) : null}
-            <li>Vorfeld und Parkhaus werden nicht gemeinsam geplant.</li>
             <li>Kein Nachweis für Netzschutz oder Lastfluss, keine Kosten, kein Kraftstoff.</li>
           </ul>
         </section>
@@ -638,7 +647,10 @@ function Figures({
       ["Im Parkhaus nicht geladen", `${dec1(m.parking_unmet_kwh)} kWh`],
     ];
     if (row.id === "managed_storage")
-      remark = `Der Speicher lädt nach, solange weniger als 80 % ${line.gen} genutzt sind. Deshalb kann die höchste Netzlast hier über ${line.need === "Benötigter Anschluss" ? "dem benötigten Anschluss" : "der benötigten Reserve"} liegen.`;
+      remark =
+        v.storage_mode === "off"
+          ? "Hier senkt der Speicher den Bedarf nicht. Er bleibt aus, die Werte entsprechen dem Lademanagement."
+          : `Der Speicher lädt nach, sobald Leistung frei ist. Die Netzlast liegt deshalb oft genau an ${line.dat}.`;
   }
   return (
     <section aria-labelledby="oe-figures-title">

@@ -70,10 +70,27 @@
   "bus": 40,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 40
+  "gpu": 40,
+  "belt_loader": 100,
+  "stairs": 40,
+  "loader": 10,
+  "catering": 40,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Testabdeckung fuer die Entwicklung",
+  "sources": [],
+  "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Testannahme fuer die weiteren Geraete",
+  "sources": [],
+  "assumption": true
+ },
+ "widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "Testflughafen ohne Grossraum",
   "sources": [],
   "assumption": true
  },
@@ -89,6 +106,14 @@
   "sources": [],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Testparkhaus",
+   "kind": "ac",
+   "count": 500,
+   "kw": 11
+  }
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [
@@ -110,16 +135,28 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 37,
-   "baggage_tractor": 49,
-   "pushback_tug": 16,
-   "gpu": 35
+   "bus": 81,
+   "baggage_tractor": 104,
+   "pushback_tug": 22,
+   "gpu": 40,
+   "belt_loader": 97,
+   "stairs": 42,
+   "loader": 16,
+   "catering": 25,
+   "lavatory": 18,
+   "water": 12
   },
   "chargers": {
-   "bus": 15,
-   "baggage_tractor": 17,
-   "pushback_tug": 7,
-   "gpu": 14
+   "bus": 32,
+   "baggage_tractor": 36,
+   "pushback_tug": 9,
+   "gpu": 16,
+   "belt_loader": 97,
+   "stairs": 42,
+   "loader": 8,
+   "catering": 13,
+   "lavatory": 9,
+   "water": 6
   },
   "basis": {
    "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 11, baggage_tractor 22, pushback_tug 11, gpu 15), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",

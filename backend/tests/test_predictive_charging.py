@@ -14,7 +14,7 @@ def reference(share=50, grid=1500, solution='managed', storage=0):
 def test_new_policy_is_explicitly_versioned_and_has_25kw_comparison():
     from app.exchange.grid_sizing import GRID_STEP_KW
     _, _, policy, world, _ = reference()
-    assert world.engine_version == 'airport_electrification_v3'
+    assert world.engine_version == 'airport_electrification_v4'
     assert policy == 'lookahead'
     assert GRID_STEP_KW == 25
 
@@ -27,7 +27,7 @@ def test_fixed_duties_do_not_depend_on_grid_policy_or_drive_share():
         _, _, _, world, _ = reference(share, grid, solution)
         rosters.append(duty_roster(world))
     assert rosters[0] == rosters[1] == rosters[2]
-    assert len(rosters[0]) == 2499
+    assert len(rosters[0]) == 6729
     assert all(d.start_min + d.duration_min <= d.deadline_min for d in rosters[0])
 
 
@@ -43,8 +43,9 @@ def test_plan_smooths_charge_at_ample_grid_without_changing_mission_assignments(
     assert direct.kpis.fleet_consumed_kwh == pytest.approx(planned.kpis.fleet_consumed_kwh)
     assert max(r['grid_import_kw'] for r in planned.series) < max(
         r['grid_import_kw'] for r in direct.series)
-    assert planned.planning_meta['method'] == 'known_duty_energy_envelope_v1'
+    assert planned.planning_meta['method'] == 'known_duty_soc_feedback_v2'
     assert planned.planning_meta['perfect_foresight'] is True
+    assert planned.planning_meta['end_condition'] == 'measured_day_steady_state'
 
 
 def test_low_grid_does_not_substitute_diesel_for_assigned_electric_missions():

@@ -48,6 +48,27 @@ class PowerBalance:
         self.storage_out_terms: list[float] = []
         self.unserved_minutes: list[int] = []
         self.unserved_kwh_terms: list[float] = []
+        # Messtag (Engine v4): tiefster Stand und ungenutzte Ladefaehigkeit bei vollem Speicher.
+        self.cycle: tuple[int, int] | None = None
+        self.cycle_min_kwh = self.stored
+        self.cycle_full_slack_kwh = 0.0
+
+    def parking_room(self, minute: int, apron_kw: float) -> float:
+        """Ladeleistung (Fahrzeugseite), die das Parkhaus ohne Speicher-Entladung bekommen kann,
+        wenn Grundlast, Vorfeld und das Nachladen des Speichers zuerst bedient sind."""
+        p = self.config
+        clock_min = self.clock[minute].hour * 60 + self.clock[minute].minute
+        background, pv, chp = base_power(clock_min, p)
+        grid_cap = min([p.grid_import_limit_kw] + [
+            e.grid_import_limit_kw for e in self.events
+            if e.start_min <= minute < e.end_min and e.grid_import_limit_kw is not None
+        ])
+        free = grid_cap + pv + chp - background - apron_kw / p.transformer_efficiency
+        if p.battery_grid_charge_below_kw is not None:
+            room_kw = max(0, p.battery_capacity_kwh - self.stored) / DT_H / p.battery_efficiency
+            free -= min(p.battery_power_kw, room_kw)
+        free = min(free, p.parking_transformer_kva * p.power_factor)
+        return max(0.0, free) * p.transformer_efficiency
 
     def step(
         self, minute: int, requests: list[ChargeRequest], policy: CoupledPolicy,
@@ -70,25 +91,35 @@ class PowerBalance:
             "parking": p.parking_transformer_kva * p.power_factor,
         }
         allocations: dict[str, float] = {}
+        # Schnelllader (Engine v4, Sektor "fast") wie Last: zuerst, nie verschoben oder gedrosselt.
+        for r in requests:
+            if r.sector == "fast":
+                power = min(r.kw, min(limits["parking"], available) * p.transformer_efficiency)
+                allocations[r.id] = power
+                upstream = power / p.transformer_efficiency
+                limits["parking"] -= upstream
+                available -= upstream
+        flexible = [r for r in requests if r.sector != "fast"]
         if policy == "mission_priority":
-            for r in sorted(requests, key=lambda r: (r.deadline, r.sector != "apron", r.id)):
+            for r in sorted(flexible, key=lambda r: (r.deadline, r.sector != "apron", r.id)):
                 power = min(r.kw, min(limits[r.sector], available) * p.transformer_efficiency)
                 allocations[r.id] = power
                 upstream = power / p.transformer_efficiency
                 limits[r.sector] -= upstream
                 available -= upstream
         else:
-            totals = {s: math.fsum(r.kw for r in requests if r.sector == s) for s in limits}
-            for r in requests:
+            totals = {s: math.fsum(r.kw for r in flexible if r.sector == s) for s in limits}
+            shares: dict[str, float] = {}
+            for r in flexible:
                 factor = (min(1, limits[r.sector] * p.transformer_efficiency / totals[r.sector])
                           if totals[r.sector] else 1)
-                allocations[r.id] = r.kw * factor
-            upstream = math.fsum(allocations.values()) / p.transformer_efficiency
+                shares[r.id] = r.kw * factor
+            upstream = math.fsum(shares.values()) / p.transformer_efficiency
             scale = min(1, available / upstream) if upstream else 1
-            allocations = {key: value * scale for key, value in allocations.items()}
+            allocations.update({key: value * scale for key, value in shares.items()})
         # fsum: exakt gerundet, unabhaengig von der Zuteilungsreihenfolge der Regel.
         apron = math.fsum(allocations[r.id] for r in requests if r.sector == "apron")
-        parking = math.fsum(allocations[r.id] for r in requests if r.sector == "parking")
+        parking = math.fsum(allocations[r.id] for r in requests if r.sector in ("parking", "fast"))
         apron_up, parking_up = apron / p.transformer_efficiency, parking / p.transformer_efficiency
         loss = apron_up + parking_up - apron - parking
         demand = served + apron_up + parking_up
@@ -116,6 +147,15 @@ class PowerBalance:
         if self.stored < self.reserve - 1e-7 or self.stored > p.battery_capacity_kwh + 1e-7:
             raise RuntimeError("Speicher-Energiegrenze verletzt")
         self.stored = min(p.battery_capacity_kwh, max(self.reserve, self.stored))
+        if self.cycle and self.cycle[0] <= minute < self.cycle[1]:
+            self.cycle_min_kwh = min(self.cycle_min_kwh, self.stored)
+            if (p.battery_capacity_kwh and discharge <= 0
+                    and self.stored >= p.battery_capacity_kwh - 1e-9):
+                # Voll: so viel haette er noch laden koennen (Netzreserve bis zur Schwelle, PV).
+                spare = min(p.battery_power_kw - charge,
+                            max(0.0, min(threshold, grid_cap) - imported if threshold is not None
+                                else 0.0) + max(0.0, surplus - charge_surplus))
+                self.cycle_full_slack_kwh += max(0.0, spare) * p.battery_efficiency * DT_H
         exported = min(p.grid_export_limit_kw, max(0, surplus - charge_surplus))
         curtailed = max(0, surplus - charge_surplus - exported)
         # Buchfuehrungscheck: curtailed ist hier Rest derselben Gleichung, daher per

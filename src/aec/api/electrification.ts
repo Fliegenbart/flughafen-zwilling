@@ -15,6 +15,8 @@ export type ElectrificationInputs = {
 };
 export type ElectrificationVariant = Preview & {
   solution: Solution;
+  /** Nur mit Speicher: "off", wenn er hier nichts senkt und deshalb ausbleibt. */
+  storage_mode?: "on" | "off";
   checks: { feasible: boolean; reasons: string[] };
   grid_sizing: {
     status: "feasible" | "not_found" | "resource_infeasible";
@@ -137,6 +139,8 @@ export type Atlas = {
   gridMaxKw: number;
   /** Raster der Anschlusssuche: 25 kW beim Beispiel, bei grossen Flughaefen groeber. */
   gridStepKw: number;
+  /** Fahrzeuge je Klasse im Modell; leer, wenn der Server sie nicht nennt. */
+  fleet: Record<string, number>;
 };
 
 export async function getAtlas(airport: string | null, signal?: AbortSignal): Promise<Atlas> {
@@ -147,6 +151,7 @@ export async function getAtlas(airport: string | null, signal?: AbortSignal): Pr
     peaks?: Atlas["peaks"];
     grid_max_kw?: number;
     grid_step_kw?: number;
+    fleet?: Record<string, number>;
   }>(
     `/demo/electrification/atlas${airport ? `?airport=${encodeURIComponent(airport)}` : ""}`,
     { signal },
@@ -160,6 +165,7 @@ export async function getAtlas(airport: string | null, signal?: AbortSignal): Pr
     peaks: raw.peaks,
     gridMaxKw: raw.grid_max_kw ?? 8000,
     gridStepKw: raw.grid_step_kw ?? 25,
+    fleet: raw.fleet ?? {},
   };
 }
 
@@ -176,7 +182,14 @@ export type AirportProfile = {
   departures_basis: Basis;
   profile_basis: Basis;
   coverage_pct: Record<string, number>;
+  wide_coverage_pct?: Record<string, number>;
   coverage_basis: Basis;
+  equipment_basis: Basis;
+  widebody_share_pct: number;
+  freight_widebody_share_pct: number;
+  widebody_basis: Basis;
+  freight_share_by_hour?: number[] | null;
+  freight_basis?: Basis | null;
   electric_share_now_pct: number | null;
   electric_share_basis: Basis;
   parking_sessions_per_day: number;

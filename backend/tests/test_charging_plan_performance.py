@@ -2,9 +2,11 @@
 import random
 
 from app.exchange.electrification import ElectrificationRequest, prepare_electrification
-from app.munich.charging_plan import EnergyEnvelopePlan
+from app.munich.charging_plan import PLAN_MARGIN, EnergyEnvelopePlan
+from app.munich.coupled_models import PREDICTIVE_ENGINE_VERSION
 from app.munich.coupled_simulator import Vehicle
 from app.munich.coupled_power import DT_H
+from app.munich.coupled_world import build_world
 
 
 def test_request_reads_only_current_and_next_forecast_prefix():
@@ -33,8 +35,10 @@ def test_request_reads_only_current_and_next_forecast_prefix():
 
 
 def test_precomputed_envelopes_equal_original_arithmetic_at_deadlines():
-    _, _, _, world, _ = prepare_electrification(ElectrificationRequest(
+    # Eingefrorene v3-Laeufe muessen genau wie frueher rechnen.
+    plan_snapshot, config, _, v4_world, _ = prepare_electrification(ElectrificationRequest(
         electric_share_pct=100, grid_import_limit_kw=1100), 'managed')
+    world = build_world(plan_snapshot, config, v4_world.seed, PREDICTIVE_ENGINE_VERSION)
     plan = EnergyEnvelopePlan(world)
     rng = random.Random(42)
 
@@ -70,3 +74,26 @@ def test_precomputed_envelopes_equal_original_arithmetic_at_deadlines():
                     vehicle.consumed = max(0, spent)
                     vehicle.energy = rng.random() * spec.battery_capacity_kwh
                     assert plan.request(minute, vehicle) == original(minute, vehicle)
+
+
+def test_v4_plans_from_the_measured_charge_not_from_nominal_consumption():
+    """Gleicher Ladestand, gleiche offene Einsaetze: gleiche Anfrage, egal wie viel ein Fahrzeug
+    bisher tatsaechlich verbraucht hat (v3 rechnete mit dem nominal verbrauchten Anteil)."""
+    _, _, _, world, _ = prepare_electrification(ElectrificationRequest(
+        electric_share_pct=100, grid_import_limit_kw=1100), 'managed')
+    plan = EnergyEnvelopePlan(world)
+    spec = next(f for f in world.config.fleets if f.kind == 'gpu')
+    identity = f'{spec.kind}-001'
+    steps = plan.steps[identity]
+    due, count = steps[1][0], steps[1][1]
+    minute = due - 30
+    a = Vehicle(identity, spec, 40.0, world.start_min, consumed=0.0)
+    b = Vehicle(identity, spec, 40.0, world.start_min, consumed=37.0)
+    assert plan.request(minute, a, 1) == plan.request(minute, b, 1)
+    # Bedarf fuer den naechsten Einsatz: Einsatzenergie mit Planreserve plus Reserve minus Stand.
+    cumulative = plan.cumulative[identity]
+    reserve = spec.battery_capacity_kwh * spec.reserve_soc_pct / 100
+    needs = list(plan._needs(minute, a, 1))
+    assert needs[0][1] == (cumulative[count] - cumulative[1]) * PLAN_MARGIN + reserve - 40.0
+    # Erledigte Einsaetze zaehlen nicht mehr, der Zielstand am Ende des Messtags schon.
+    assert all(n[0] >= steps[1][0] for n in needs)

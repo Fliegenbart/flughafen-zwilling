@@ -13,9 +13,9 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..munich.charging_plan import duty_hash
-from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION, trusted_scale
+from ..munich.coupled_models import CYCLIC_ENGINE_VERSION, trusted_scale
 from ..munich.coupled_simulator import simulate_coupled
-from ..munich.coupled_world import build_world
+from ..munich.coupled_world import build_world, scale_parking
 from .airport_model import (
     AIRPORT_MODEL_VERSION,
     airport_config,
@@ -115,7 +115,14 @@ def _base(airport: str | None):
         return airport_day(airport), airport_config(spec), step, top
 
 
-def prepare_electrification(request: ElectrificationRequest, solution: Solution):
+# Rechenweg der Elektrifizierung (siehe coupled_models: v4).
+ENGINE = CYCLIC_ENGINE_VERSION
+
+
+def prepare_electrification(request: ElectrificationRequest, solution: Solution,
+                            storage_on: bool = True):
+    """Welt einer Ladeloesung. storage_on=False: Speicher steht da, wird aber nicht gefahren
+    (Leistung 0); das rechnet genau wie ohne Speicher (Rueckfall "im Zweifel aus")."""
     plan, config, _, _ = _base(request.airport)
     total = sum(f.vehicles for f in config.fleets)
     target = (total * request.electric_share_pct + 50) // 100
@@ -130,15 +137,20 @@ def prepare_electrification(request: ElectrificationRequest, solution: Solution)
         fleet.electric_vehicles = count
     config.power.grid_import_limit_kw = request.grid_import_limit_kw
     config.power.pv_capacity_kwp = request.pv_kwp
+    if (config.power.parking_groups is not None
+            and request.parking_sessions != config.power.parking_sessions):
+        config.power.parking_groups = scale_parking(config.power.parking_groups,
+                                                    request.parking_sessions)
     config.power.parking_sessions = request.parking_sessions
     config.power.battery_capacity_kwh = request.storage_kwh if solution == "managed_storage" else 0
-    config.power.battery_power_kw = config.power.battery_capacity_kwh / 2
-    config.power.battery_grid_charge_below_kw = (
-        request.grid_import_limit_kw * 0.8 if config.power.battery_capacity_kwh else None
-    )
+    running = bool(config.power.battery_capacity_kwh) and storage_on
+    config.power.battery_power_kw = config.power.battery_capacity_kwh / 2 if running else 0
+    # Netzladung aus allem, was am Anschluss frei bleibt (wie das Lademanagement der Fahrzeuge);
+    # der Speicher nimmt keiner Last etwas weg und hebt den Bezug nie ueber den Anschluss.
+    config.power.battery_grid_charge_below_kw = request.grid_import_limit_kw if running else None
     policy = "uncontrolled" if solution == "direct" else "lookahead"
     with _scope(request.airport):
-        world = build_world(plan, config, DEFAULT_SEED, PREDICTIVE_ENGINE_VERSION)
+        world = build_world(plan, config, DEFAULT_SEED, ENGINE)
     changes = {**request.model_dump(exclude={"solution"}), "solution": solution}
     return plan, config, policy, world, changes
 
@@ -171,8 +183,10 @@ def _contract(plan, config, world) -> dict:
 @lru_cache(maxsize=32)
 def _resource_baseline_feasible(airport: str | None = None) -> bool:
     top = _base(airport)[3]
+    # Nur die Fahrzeuge: Parkhaus und PV spielen fuer die Dieselkontrolle keine Rolle.
     plan, _, policy, world, _ = prepare_electrification(ElectrificationRequest(
-        electric_share_pct=0, grid_import_limit_kw=top, airport=airport), "direct")
+        electric_share_pct=0, grid_import_limit_kw=top, airport=airport, pv_kwp=0,
+        parking_sessions=0), "direct")
     with _scope(airport):
         result = simulate_coupled(world, plan, policy, capture_traces=False)
     return connection_checks(result)['feasible']
@@ -180,9 +194,10 @@ def _resource_baseline_feasible(airport: str | None = None) -> bool:
 
 def size_solution(solution: Solution, electric_share_pct: int, storage_kwh: float,
                   pv_kwp: float = 500, parking_sessions: int = 40,
-                  airport: str | None = None) -> dict:
+                  airport: str | None = None, max_kw: int | None = None) -> dict:
     """Kleinste erfolgreiche Anschlussstufe einer Ladeloesung (Raster-Suche, siehe grid_sizing)."""
     _, _, step, top = _base(airport)
+    top = top if max_kw is None else min(top, max_kw)
     if not _resource_baseline_feasible(airport):
         return {"status": "resource_infeasible", "required_grid_kw": None,
                 "step_kw": step, "max_kw": top, "evaluations": []}
@@ -202,6 +217,23 @@ def size_solution(solution: Solution, electric_share_pct: int, storage_kwh: floa
     return search_connection(evaluate, step_kw=step, max_kw=top,
                              lower_bound_kw=minimum_energy_bound(world))
 
+
+def size_with_storage(managed: dict, electric_share_pct: int, storage_kwh: float,
+                      pv_kwp: float = 500, parking_sessions: int = 40,
+                      airport: str | None = None) -> dict:
+    """Stufe mit Speicher: nie mehr Anschluss als ohne Speicher.
+
+    Gesucht wird nur bis zum Bedarf mit Lademanagement. Besteht der laufende Speicher dort
+    nicht, gilt der Speicher als ausgeschaltet (storage_mode "off"): Er steht da, wird aber
+    nicht gefahren, und das rechnet genau wie ohne Speicher. Ein Betreiber wuerde ihn so
+    fahren; die Wahl faellt einmal fuer den ganzen Plan.
+    """
+    limit = managed["required_grid_kw"] if managed["status"] == "feasible" else None
+    found = size_solution("managed_storage", electric_share_pct, storage_kwh, pv_kwp,
+                          parking_sessions, airport, max_kw=limit)
+    if found["status"] == "feasible" or limit is None:
+        return {**found, "storage_mode": "on"}
+    return {**managed, "storage_mode": "off"}
 
 @lru_cache(maxsize=64)
 def uncontrolled_need(electric_share_pct: int, pv_kwp: float = 500,
@@ -243,13 +275,12 @@ def _size_solutions(electric_share_pct: int, storage_kwh: float, pv_kwp: float =
     if cached is not None:
         return cached
     answers = {}
-    for solution in SOLUTIONS:
-        if solution == "managed_storage" and storage_kwh == 0:
-            # Same world and policy as managed, not an estimated shortcut.
-            answers[solution] = answers["managed"]
-            continue
+    for solution in ("direct", "managed"):
         answers[solution] = size_solution(solution, electric_share_pct, storage_kwh, pv_kwp,
                                           parking_sessions, airport)
+    # Ohne Speicher: dieselbe Welt und Regel wie managed, keine geschaetzte Abkuerzung.
+    answers["managed_storage"] = answers["managed"] if storage_kwh == 0 else size_with_storage(
+        answers["managed"], electric_share_pct, storage_kwh, pv_kwp, parking_sessions, airport)
     return answers
 
 
@@ -274,7 +305,8 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
         sizes = _size_solutions(request.electric_share_pct, request.storage_kwh,
                                 request.pv_kwp, request.parking_sessions, request.airport)
         for solution in SOLUTIONS:
-            plan, config, policy, world, _ = prepare_electrification(request, solution)
+            storage_on = sizes[solution].get("storage_mode", "on") == "on"
+            plan, config, policy, world, _ = prepare_electrification(request, solution, storage_on)
             invariant = _contract(plan, config, world)
             if contract is not None and invariant != contract:
                 raise RuntimeError("Vergleichsbedingungen stimmen nicht ueberein")
@@ -292,6 +324,8 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
                 "departures": departures, "kpis": preview_kpis(result, departures, delayed),
                 "coupled_kpis": result.kpis.model_dump(mode="json"),
                 "grid_sizing": sizes[solution],
+                **({"storage_mode": "on" if storage_on else "off"}
+                   if solution == "managed_storage" else {}),
                 "checks": connection_checks(result),
                 "metrics": {
                     "ready_departures": result.kpis.departures_ready_on_time,
@@ -328,7 +362,7 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
         "uncontrolled": uncontrolled,
         "comparison_id": _canonical_hash({"contract": contract, "inputs": request.model_dump(),
             "variants": [v["input_hash"] for v in variants]}),
-        "engine_version": PREDICTIVE_ENGINE_VERSION,
+        "engine_version": ENGINE,
         "build_commit": os.environ.get("TWIN_BUILD_GIT_COMMIT", "local-unversioned"),
         "compute_ms": round((perf_counter() - started) * 1000),
         "evidence_level": "synthetic_uncalibrated",
@@ -338,22 +372,26 @@ def compare_electrification(request: ElectrificationRequest) -> dict:
             "Synthetischer Vorfeldbereich, kein Modell des gesamten Muenchner Flughafens.",
             "180 Ankunfts- und 180 Abflugabfertigungen pro Tag; "
             "drei wiederholte Tage mit durchlaufendem SOC.",
-            "Flotte, Einsatzfenster, 14 GPU-Ladepunkte, 250 kW Grundlast, "
-            "500 kWp PV (Faktor 0,2) und 40 Parkvorgaenge/Tag sind Annahmen.",
-            "Einsatzenergie und Batteriegroesse fuer Gepaeckschlepper, Flugzeugschlepper "
-            "und Bodenstromgeraete: He et al. (2026), Tabelle 1, Narrow-body.",
+            "Flotte in zehn Klassen, Einsatzfenster, Ladepunkte, 250 kW Grundlast, "
+            "500 kWp PV (Faktor 0,2) und Parkvorgaenge sind Annahmen.",
+            "Energie je Einsatz aus Messungen (Fraport-Busse, Stuttgart) und Herstellerangaben "
+            "(ITW, Goldhofer, Charlatte, Kamag), keine Diesel-Lastfaktoren; zwei Busse je Flug.",
             "Gleiche Einsatzzeiten fuer elektrische und nicht-elektrische Fahrzeuge.",
             "Keine Betankung, Kraftstoffkosten oder Emissionen nicht-elektrischer Fahrzeuge.",
             "Anschlussbedarf = erste erfolgreiche Stufe im 25-kW-Raster, "
             "keine exakte Mindestleistung oder Anschlusszusage.",
-            "Erfolg: alle Aufgaben rechtzeitig, Grundlast und Parken versorgt, "
-            "Anfangsladung jedes Fahrzeugs und des Speichers am Ende wiederhergestellt.",
-            "Speicher startet mit 50 %, Fahrzeuge mit 85 %; keine geliehene Anfangsenergie, "
-            "aber kein saisonaler oder zyklischer Jahresnachweis.",
+            "Erfolg: alle Aufgaben rechtzeitig, Grundlast und Parkhaus versorgt; der mittlere "
+            "Tag traegt sich selbst (Energiebilanz der Flotte mit 10 % Schwankung, Speicher).",
+            "Speicher startet mit 50 %, Fahrzeuge mit 85 %; gemessen wird der eingeschwungene "
+            "mittlere Tag, kein saisonaler oder Jahresnachweis.",
             "Kein Kosten-, ROI-, Netzschutz- oder Lastflussnachweis.",
             "Gleiche Fahrzeugzuordnung je Auftrag, kein Ausweichen auf Dieselfahrzeuge.",
-            "Vorausschauende Energieplanung mit vollstaendig bekanntem Einsatzplan; "
-            "Heuristik, keine optimale Loesung oder Prognose realer Verspaetungen.",
+            "Vorausschauende Energieplanung mit bekanntem Einsatzplan, echtem Ladestand und "
+            "15 % Planreserve; Heuristik, keine optimale Loesung, keine grossen Verspaetungen.",
+            "Speicher laedt aus der freien Leistung am Anschluss; senkt er den Bedarf nicht, "
+            "bleibt er aus.",
+            "Parkhaus nach Nutzergruppen (Reisende, Tagesgaeste, Schnelllader); mit "
+            "Lademanagement gesteuert, Schnelllader nie gedrosselt.",
             "Direktes Laden ist ebenfalls am vorhandenen Netzanschluss begrenzt.",
             "Ohne Steuerung (uncontrolled): gleiche Flotte, kein Anschluss bremst; Bedarf = "
             "hoechste Netzlast in drei Tagen, auf 25 kW aufgerundet.",
@@ -394,12 +432,14 @@ def _airport_limitations(airport: str) -> list[str]:
         "uebrige Last und die Photovoltaik des Flughafens sind darin schon enthalten.",
         "Flotte aus dem Modell bemessen (kleinste puenktliche Dieselflotte plus Puffer des "
         "Beispielflughafens); keine Angabe des Flughafens.",
-        "Akku, Energie je Einsatz und Ladeleistung wie im Beispielflughafen (He et al. 2026, "
-        "Kurz- und Mittelstrecke; Busse angenommen). Grossraumflugzeuge brauchen mehr.",
-        "Nur vier Fahrzeugklassen (Busse, Gepaeck- und Flugzeugschlepper, mobile "
-        "Bodenstromgeraete); weitere Geraete und Pkw kommen im echten Betrieb dazu.",
+        f"Zehn Fahrzeugklassen mit Energie je Einsatz aus Messungen und Herstellerangaben, "
+        f"getrennt fuer Schmal- und Grossraumflugzeuge ({spec.widebody_share_pct:g} % "
+        f"Grossraum)" + ("; Frachtfluege ohne Bus, Treppe und Catering."
+                         if spec.freight_share_by_hour else "."),
+        "Nicht enthalten: Crew- und Kleinbusse, Pkw, Schlepps zur Parkposition, Enteisung "
+        "und Winterbetrieb.",
         f"Anschlussbedarf = erste erfolgreiche Stufe im {step}-kW-Raster, keine Anschlusszusage.",
-        "Erfolg: alle Einsaetze bis zur Frist erledigt, Parkhaus versorgt, Fahrzeuge und "
-        "Speicher am Ende wieder geladen.",
+        "Erfolg: alle Einsaetze bis zur Frist erledigt, Parkhaus versorgt; der mittlere Tag "
+        "traegt sich selbst (Energiebilanz der Flotte und des Speichers).",
         "Nicht mit dem Flughafen abgestimmt; kein Kosten-, Netzschutz- oder Lastflussnachweis.",
     ]

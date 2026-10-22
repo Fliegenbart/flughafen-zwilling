@@ -13,6 +13,7 @@ import { SAMPLE_PROJECT } from "../sample";
 import Link from "../Link";
 import LoadChart from "./LoadChart";
 import MeasurementHandoff from "./MeasurementHandoff";
+import { FLEET_NAMES } from "../oekosystem/Steckbrief";
 
 const DEFAULTS: ElectrificationInputs = {
   electric_share_pct: 50,
@@ -36,12 +37,6 @@ const OPTIONS = [
     description: "Vorausschauend laden, ergänzt um den gewählten Speicher.",
   },
 ] as const;
-const FLEET_NAMES: Record<string, string> = {
-  bus: "Busse",
-  baggage_tractor: "Gepäckschlepper",
-  pushback_tug: "Flugzeugschlepper",
-  gpu: "Bodenstromgeräte",
-};
 const CHECK_REASONS: Record<string, string> = {
   service_deadlines: "Nicht alle Abfertigungsaufträge rechtzeitig",
   parking_deadlines: "Parkhaus-Ladeziele nicht vollständig erreicht",

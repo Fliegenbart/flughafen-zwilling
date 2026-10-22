@@ -79,10 +79,16 @@
   "assumption": true
  },
  "coverage_pct": {
-  "bus": 18,
+  "bus": 50,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 100
+  "gpu": 100,
+  "belt_loader": 100,
+  "stairs": 55,
+  "loader": 5,
+  "catering": 40,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Bus: nicht veröffentlicht, wie viele Flüge per Bus abgefertigt werden. Belegt sind 25 Abstellpositionen und 6 Fluggastbrücken der Flughafengesellschaft; das DHL-Vorfeld bietet Platz für bis zu 65 Flugzeuge. Frachtflüge haben keine Fluggäste: 2025 gab es laut Landesregierung 49.634 Frachtbewegungen bei 65.684 Bewegungen im Linien- und Charterverkehr (ADV). Annahme: Frachtflüge verteilen sich gleichmäßig übers Jahr (im Mittel 68 Abflüge pro Tag), Passagierflüge wie die Fluggäste (Oktober 14,2 % des Jahres). Für Oktober 2025 ergibt das rund 68 Fracht- und 37 Passagierabflüge pro Tag, also 35 % Passagierflüge. Annahme: etwa die Hälfte der Passagierflüge fährt mit dem Bus, 0,35 × 0,5 ≈ 18 %. Schlepper: 100 %. Pushback: 100 %, nicht anders belegt. GPU: fester 400-Hz-Strom an Positionen ist nicht veröffentlicht, Annahme 100 %.",
@@ -95,6 +101,54 @@
   ],
   "assumption": true
  },
+ "equipment_basis": {
+  "text": "Treppen an Bus- und gebäudenahen Positionen ohne Brücke, Annahme 55 % der Passagierflüge. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (5 %). Catering einmal je Abflug (40 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote. Bus 50 % und Bodenstrom 100 % gelten jetzt für Passagierflüge (Fracht siehe unten).",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {},
+ "widebody_share_pct": 0,
+ "freight_widebody_share_pct": 30,
+ "widebody_basis": {
+  "text": "Destatis (über 175 t): 2019 16,1 %, 2022 22,0 % aller Bewegungen mit nur 6.000–13.000 Fluggästen, also reine Frachter (DHL, AeroLogic). Passagier-Großraum 0 %, Frachter rund 30 % Großraum (2025 weniger Frachtbewegungen bei gleich vielen Großraumfrachtern).",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
+  ],
+  "assumption": true
+ },
+ "freight_share_by_hour": [
+  0.95,
+  0.95,
+  0.95,
+  0.95,
+  0.95,
+  0.95,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.34,
+  0.95,
+  0.95
+ ],
+ "freight_basis": {
+  "text": "Oktober 2025 rund 68 Fracht- und 37 Passagierabflüge am Tag (65 % Fracht); 73 % der Frachtbewegungen liegen zwischen 22 und 6 Uhr (Landesregierung 2025). Annahme: nachts 95 % der Flüge Fracht, tagsüber 34 %; das ergibt die 65 %. Frachtflüge brauchen keinen Bus, keine Treppe, kein Catering und keinen Wasser- oder Toilettenwagen.",
+  "sources": [],
+  "assumption": true
+ },
  "electric_share_now_pct": null,
  "electric_share_basis": {
   "text": "Kein Anteil veröffentlicht, eine Gesamtzahl der Vorfeldflotte fehlt. Laut ESG-Bericht 2024 der Mitteldeutschen Flughafen AG umfasst ihr Pool am Standort Leipzig/Halle 98 elektrisch betriebene Fahrzeuge und Geräte, darunter Pkw, Pushback-Fahrzeuge, Highloader, Schlepper, Gabelstapler, Gepäckförderbänder und Passagiertreppen. Im Mai 2024 gingen 4 Elektro-Vorfeldbusse in Betrieb, die Dieselbusse ersetzen, dazu 3 elektrische Bodenstromgeräte (eGPU). Die Angaben gelten für die Flotte der Flughafengruppe; die Flotte am DHL-Drehkreuz ist darin nicht beziffert.",
@@ -103,15 +157,76 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 12,
+ "parking_sessions_per_day": 1,
  "parking_basis": {
-  "text": "Die Flughafen-Website nennt 8 Schnellladepunkte (HPC, bis 400 kW) auf dem Parkplatz P11 vor dem Zentralterminal und 4 Ladepunkte an 2 Säulen unter der Mall bei der Mietwagenrückgabe, alle öffentlich. 8 + 4 = 12. Annahme: ein Ladevorgang je Punkt und Tag. Die mögliche Erweiterung des Schnellladeparks auf bis zu 20 Punkte ist nicht enthalten.",
+  "text": "4 AC-Ladepunkte an der Mietwagenrückgabe. Den Schnellladepark auf P11 (8 Punkte bis 400 kW) betreibt EnBW, vermutlich mit eigenem Netzanschluss; er zählt deshalb nicht zur Reserve des Flughafens. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt.",
   "sources": [
    "https://www.leipzig-halle-airport.de/parken/e-auto-laden/",
-   "https://www.mdf-ag.com/media/user_upload/Verantwortung/Downloadbereich/2024/ESG_Fortschrittsbericht_2024.pdf"
+   "https://www.mdf-ag.com/media/user_upload/Verantwortung/Downloadbereich/2024/ESG_Fortschrittsbericht_2024.pdf",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Mietwagenrückgabe",
+   "kind": "ac",
+   "count": 4,
+   "kw": 11
+  }
+ ],
+ "passenger_departures_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  6.4,
+  4.6,
+  3.6,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  2.95,
+  3.1,
+  3.5,
+  0
+ ],
+ "passenger_arrivals_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1.36,
+  2.06,
+  2.56,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.29,
+  3.73,
+  4.23,
+  9.5,
+  0
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [
@@ -158,19 +273,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 10,
-   "baggage_tractor": 18,
+   "bus": 14,
+   "baggage_tractor": 38,
    "pushback_tug": 6,
-   "gpu": 21
+   "gpu": 47,
+   "belt_loader": 24,
+   "stairs": 6,
+   "loader": 23,
+   "catering": 5,
+   "lavatory": 4,
+   "water": 2
   },
   "chargers": {
-   "bus": 4,
-   "baggage_tractor": 7,
+   "bus": 6,
+   "baggage_tractor": 14,
    "pushback_tug": 3,
-   "gpu": 9
+   "gpu": 19,
+   "belt_loader": 24,
+   "stairs": 6,
+   "loader": 12,
+   "catering": 3,
+   "lavatory": 2,
+   "water": 1
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 3, baggage_tractor 8, pushback_tug 4, gpu 9), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 4, baggage_tractor 17, pushback_tug 4, gpu 20, belt_loader 16, stairs 4, loader 15, catering 3, lavatory 2, water 1), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

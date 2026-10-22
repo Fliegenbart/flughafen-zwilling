@@ -80,10 +80,16 @@
   "assumption": false
  },
  "coverage_pct": {
-  "bus": 35,
+  "bus": 37,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 40
+  "gpu": 43,
+  "belt_loader": 100,
+  "stairs": 37,
+  "loader": 20,
+  "catering": 80,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "bus 35 ist eine Annahme (Standardwert); eine Busquote veröffentlicht der Flughafen nicht. Die Infrastruktur stützt die Größenordnung: Terminal 2 hat 55 gebäudenahe Positionen, davon 27 am Satelliten, der rund 30 % der Bewegungen im T2-System abwickelt. Das Vorfeld West vor Terminal 1 hat 60 Positionen, die Fluggäste per Bus erreichen; seit April 2026 bietet der T1-Pier 12 gebäudenahe Positionen. AeroGround betreibt 95 große Vorfeldbusse. Reine Frachtflüge spielen kaum eine Rolle, 89 % der Fracht fliegt als Beiladung. gpu 40 (Annahme): Die 64 PCA-Anlagen an den gebäudenahen Positionen liefern Bodenstrom. Abflüge von Außen- und Frachtpositionen brauchen ein mobiles Gerät; 5 Punkte Zuschlag decken Positionen ohne feste Versorgung ab. baggage_tractor und pushback_tug: 100, eine abweichende Quote ist nicht veröffentlicht.",
@@ -97,6 +103,27 @@
   ],
   "assumption": true
  },
+ "equipment_basis": {
+  "text": "Treppen wie Busse. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (20 %). Catering einmal je Abflug (80 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote. Bus 37 % und Bodenstrom 43 % gelten jetzt für Schmalrumpfflüge (Großraum siehe unten).",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {
+  "bus": 15,
+  "gpu": 15,
+  "stairs": 15
+ },
+ "widebody_share_pct": 10,
+ "freight_widebody_share_pct": 0,
+ "widebody_basis": {
+  "text": "FMG-Jahresbericht 2025: 34.700 Langstreckenbewegungen, rund 51 Großraumabflüge am Spitzentag (505 Abflüge), also 10 %. Großraum steht meist an Gebäudepositionen mit Brücke und PCA (64 Anlagen), daher Bus und mobiles Bodenstromgerät für Großraum je 15 % (Annahme); Schmalrumpf so gesetzt, dass die Gesamtquote bleibt.",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
+  ],
+  "assumption": true
+ },
  "electric_share_now_pct": 62,
  "electric_share_basis": {
   "text": "AeroGround meldet zum 31.12.2025 583 von 947 Fahrzeugen elektrisch (62 %). Der Wert gilt nur für den Fuhrpark der AeroGround (rund 87 % Marktanteil) einschließlich Bussen und Pkw. Nicht enthalten sind die Flugzeugschlepper sowie die Fuhrparks der weiteren Abfertiger. Je Klasse: große Vorfeldbusse 55 von 95, GPU 35 von 53, Gepäckschlepper 113 elektrisch neben 91 Diesel-Zugfahrzeugen und 32 Diesel-Frachtschleppern.",
@@ -106,16 +133,37 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 442,
+ "parking_sessions_per_day": 135,
  "parking_basis": {
-  "text": "Die FMG betrieb Ende 2025 im öffentlichen Bereich rund 390 AC- und 2 DC-Ladepunkte, davon 275 im Ladepark P44. Im Parkhaus P8 (geöffnet seit 1.9.2026) entstehen im ersten Schritt bis zu 50 Ladepunkte; sie sind voll eingerechnet. Summe: 442. Annahme: ein Ladevorgang je Ladepunkt und Tag.",
+  "text": "Die FMG betrieb Ende 2025 rund 390 AC- und 2 DC-Ladepunkte, 275 davon im Ladepark P44 (11 kW, Langzeitparken möglich). Im Parkhaus P8 kommen bis zu 50 dazu. Schnelllader laden mit 75 kW je Auto und werden nie verschoben. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt.",
   "sources": [
    "https://www.munich-airport.de/_b/0000000000000043012574bb6a8ebd6a/umwelterklaerung-fmg-2026.pdf",
    "https://www.munich-airport.com/presse-neues-parkhaus-p8-am-flughafen-muenchen-eroeffnet-43059920",
-   "https://www.electrive.net/2025/09/17/flughafen-muenchen-bietet-138-ac-ladesaeulen-im-gaeste-parkhaus/"
+   "https://www.electrive.net/2025/09/17/flughafen-muenchen-bietet-138-ac-ladesaeulen-im-gaeste-parkhaus/",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Ladepark P44 und weitere Parkhäuser",
+   "kind": "ac",
+   "count": 390,
+   "kw": 11
+  },
+  {
+   "label": "Parkhaus P8 (erster Schritt)",
+   "kind": "ac",
+   "count": 50,
+   "kw": 11
+  },
+  {
+   "label": "Schnelllader der FMG",
+   "kind": "dc",
+   "count": 2,
+   "kw": 75
+  }
+ ],
  "reserve_kw_public": 40000,
  "reserve_basis": {
   "text": "Für das geplante 3. Stromnetz nennt die FMG in ihrer Ausschreibung den Ansatz, rund 40 MW für künftige E-Mobilität vorzuhalten, dazu rund 50 MWp Photovoltaik und ein neues 110/20-kV-Umspannwerk mit zwei Transformatoren zu je 80 MVA. Laut Integriertem Bericht 2025 kostet das Projekt 246 Mio. Euro, der Bau beginnt 2027 und endet bis Ende 2029. Der Wert gilt für die gesamte E-Mobilität am Campus, nicht nur für die Vorfeldflotte.",
@@ -169,19 +217,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 50,
-   "baggage_tractor": 88,
-   "pushback_tug": 23,
-   "gpu": 38
+   "bus": 97,
+   "baggage_tractor": 125,
+   "pushback_tug": 26,
+   "gpu": 47,
+   "belt_loader": 116,
+   "stairs": 50,
+   "loader": 38,
+   "catering": 60,
+   "lavatory": 21,
+   "water": 14
   },
   "chargers": {
-   "bus": 20,
-   "baggage_tractor": 31,
-   "pushback_tug": 10,
-   "gpu": 16
+   "bus": 39,
+   "baggage_tractor": 43,
+   "pushback_tug": 11,
+   "gpu": 19,
+   "belt_loader": 116,
+   "stairs": 50,
+   "loader": 19,
+   "catering": 30,
+   "lavatory": 11,
+   "water": 7
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 15, baggage_tractor 40, pushback_tug 16, gpu 16), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 29, baggage_tractor 57, pushback_tug 18, gpu 20, belt_loader 77, stairs 33, loader 25, catering 38, lavatory 13, water 9), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

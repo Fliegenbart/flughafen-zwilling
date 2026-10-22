@@ -78,10 +78,16 @@
   "assumption": true
  },
  "coverage_pct": {
-  "bus": 35,
+  "bus": 50,
   "baggage_tractor": 100,
   "pushback_tug": 100,
-  "gpu": 80
+  "gpu": 70,
+  "belt_loader": 100,
+  "stairs": 55,
+  "loader": 10,
+  "catering": 40,
+  "lavatory": 60,
+  "water": 40
  },
  "coverage_basis": {
   "text": "Bus: Belegt sind 113 Parkpositionen (27 gebäudenah, 86 gebäudefern), 12 Fluggastbrücken und 4 von 9 Vorfeldern für Fracht. Für Sommer 2026 nennt der Flughafen rund 200 Türkei-Starts pro Woche als ein Viertel der Gesamtbewegungen. Auf den Passagierverkehr bezogen sind das rund 800 Starts pro Woche, also 114 von 170 Abflügen pro Tag (67 %); das passt zu 1,21 Mio. Fluggästen im August 2026. Annahme: die Hälfte der Passagierflüge fährt per Bus, 0,67 × 0,5 ≈ 35 %. Schlepper und Pushback: 100 %, nicht anders belegt. GPU: An den Fluggastbrücken kommt der Strom aus der Brücke, mobile GPU versorgen die übrigen Positionen. Frachtflüge (33 %) und Busabfertigung (35 %) brauchen also GPU. Annahme: von den gebäudenahen Passagierabflügen (rund 32 %) steht gut die Hälfte an einer Brücke, fest versorgt sind damit rund 20 %, GPU 80 %.",
@@ -90,6 +96,54 @@
    "https://www.adv.aero/wp-content/uploads/2015/11/08.2026-ADV-Monatsstatistik.pdf",
    "https://www.aerotelegraph.com/flughafen-koeln-bonn-investiert-in-elektrische-bodenstromaggregate"
   ],
+  "assumption": true
+ },
+ "equipment_basis": {
+  "text": "Treppen an Bus- und gebäudenahen Positionen ohne Brücke, Annahme 55 % der Passagierflüge. Neue Klassen: Förderbänder bei jedem Flug mit Gepäck (2 je Schmalrumpf-Richtung, Airbus-Abfertigungsangaben). Treppen nur ohne Fluggastbrücke, 2 je Flug. Container-Hublader bei Großraum immer, bei Schmalrumpf nur mit Containern (10 %). Catering einmal je Abflug (40 %), Toilettenwagen 60 %, Frischwasser 40 % der Schmalrumpf-Abflüge, Großraum immer. Die Anteile bei Catering, Toiletten- und Wasserwagen sind Annahmen ohne veröffentlichte Quote. Bus 50 % und Bodenstrom 70 % gelten jetzt für Passagierflüge (Fracht siehe unten).",
+  "sources": [
+   "https://aviation.hawaii.gov/wp-content/uploads/2025/06/Airbus-techdata-AC_A321_0322-2.pdf"
+  ],
+  "assumption": true
+ },
+ "wide_coverage_pct": {},
+ "widebody_share_pct": 0,
+ "freight_widebody_share_pct": 50,
+ "widebody_basis": {
+  "text": "Destatis (über 175 t): 2019 11,9 %, 2022 16,5 % aller Bewegungen, aber nur 39.000–54.000 Fluggäste, also fast nur Frachter (UPS, FedEx). Passagier-Großraum rund 0 %, Frachter rund 50 % Großraum.",
+  "sources": [
+   "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Transport-Verkehr/Personenverkehr/Publikationen/Downloads-Luftverkehr/luftverkehr-flugplaetze-2080610227004.html"
+  ],
+  "assumption": true
+ },
+ "freight_share_by_hour": [
+  0.9,
+  0.9,
+  0.9,
+  0.9,
+  0.9,
+  0.9,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.05,
+  0.9
+ ],
+ "freight_basis": {
+  "text": "Laut Steckbrief rund 33 % Frachtabflüge, fast ganz im Integrator-Verkehr zwischen 23 und 6 Uhr (UPS: Landungen 23–1 Uhr, Starts bis 5:30 Uhr). Annahme: nachts 90 % der Flüge Fracht, tagsüber 5 %; das ergibt die 33 %. Frachtflüge brauchen keinen Bus, keine Treppe, kein Catering und keinen Wasser- oder Toilettenwagen; Bodenstrom immer mobil.",
+  "sources": [],
   "assumption": true
  },
  "electric_share_now_pct": null,
@@ -101,15 +155,82 @@
   ],
   "assumption": false
  },
- "parking_sessions_per_day": 84,
+ "parking_sessions_per_day": 30,
  "parking_basis": {
-  "text": "Laut Geschäftsbericht 2025 hat der Flughafen 80 AC-Ladepunkte und 4 Schnellladesäulen. 60 der AC-Punkte (bis 22 kW) stehen seit 2024 in Parkhaus 1, weitere kamen 2025 in den Parkhäusern 2 und 3 hinzu. 80 + 4 = 84. Annahme: alle öffentlich zugänglich, ein Ladevorgang je Punkt und Tag. Die 55 öffentlichen Ladepunkte im geplanten Mitarbeiterparkhaus P5 sind nicht enthalten.",
+  "text": "Laut Geschäftsbericht 2025 hat der Flughafen 80 AC-Ladepunkte (60 davon mit 22 kW in Parkhaus 1) und 4 Schnellladesäulen. Schnelllader laden mit 75 kW je Auto und werden nie verschoben. Ein Auto lädt mit höchstens 11 kW, mehr schafft das Bordladegerät meist nicht. Annahme ohne Angabe des Flughafens: 0,3 Ladevorgänge je AC-Punkt und Tag (zwei Drittel Reisende mit bis zu 24 Stunden Standzeit, ein Drittel Tagesgäste), 1,5 je Schnellladepunkt. Die 55 Ladepunkte im geplanten Mitarbeiterparkhaus P5 fehlen.",
   "sources": [
    "https://www.lobbyregister.bundestag.de/media/07/3f/763003/Geschaeftsbericht_2025.pdf",
-   "https://www.electrive.net/2024/09/18/flughafen-koeln-bonn-bietet-60-neue-ac-ladepunkte/"
+   "https://www.electrive.net/2024/09/18/flughafen-koeln-bonn-bietet-60-neue-ac-ladepunkte/",
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC9763839/"
   ],
   "assumption": true
  },
+ "parking_points": [
+  {
+   "label": "Parkhäuser 1 bis 3",
+   "kind": "ac",
+   "count": 80,
+   "kw": 11
+  },
+  {
+   "label": "Schnellladesäulen",
+   "kind": "dc",
+   "count": 4,
+   "kw": 75
+  }
+ ],
+ "passenger_departures_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  12.6,
+  9.1,
+  7.1,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  5.1,
+  5.5,
+  3.5,
+  0
+ ],
+ "passenger_arrivals_by_hour": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1.1,
+  2.6,
+  4.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  6.6,
+  7,
+  9.5,
+  14,
+  0
+ ],
  "reserve_kw_public": null,
  "reserve_basis": null,
  "facts": [
@@ -156,19 +277,31 @@
  ],
  "fleet": {
   "vehicles": {
-   "bus": 17,
-   "baggage_tractor": 27,
-   "pushback_tug": 8,
-   "gpu": 24
+   "bus": 27,
+   "baggage_tractor": 73,
+   "pushback_tug": 9,
+   "gpu": 91,
+   "belt_loader": 32,
+   "stairs": 14,
+   "loader": 35,
+   "catering": 7,
+   "lavatory": 5,
+   "water": 3
   },
   "chargers": {
-   "bus": 7,
-   "baggage_tractor": 10,
+   "bus": 11,
+   "baggage_tractor": 26,
    "pushback_tug": 4,
-   "gpu": 10
+   "gpu": 37,
+   "belt_loader": 32,
+   "stairs": 14,
+   "loader": 18,
+   "catering": 4,
+   "lavatory": 3,
+   "water": 2
   },
   "basis": {
-   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 5, baggage_tractor 12, pushback_tug 5, gpu 10), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
+   "text": "Aus dem Modell bemessen: je Fahrzeugklasse die kleinste Flotte, die das Tagesprofil mit Dieselfahrzeugen rechtzeitig schafft (bus 8, baggage_tractor 33, pushback_tug 6, gpu 39, belt_loader 21, stairs 9, loader 23, catering 4, lavatory 3, water 2), dazu derselbe Puffer wie im Beispielflughafen. Ladepunkte im selben Verhaeltnis wie dort. Keine Angabe des Flughafens.",
    "sources": [],
    "assumption": true
   }

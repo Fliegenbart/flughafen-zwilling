@@ -1,6 +1,22 @@
 # Hetzner-Demo
 
-## Aktiver Release vom 21.10.2026 (Echte Flughäfen)
+## Aktiver Release vom 22.10.2026 (Rechenmodell v4, Paket 1 und 3)
+
+Code-Release `44cbdc26cdf7089e90e75a95303a8e73b1040c3e` (Branch codex/modell-paket-1, PR #45) aus
+`/opt/airport-releases/44cbdc2`. Ruecknahmeziel: `/opt/airport-releases/b0accdd`. Engine
+`airport_electrification_v4`, alle 16 Vorab-Tabellen neu gerechnet (Methodik:
+docs/ELECTRIFICATION_COMPARISON.md, Abschnitt v4).
+
+Gleicher Ablauf wie zuvor (bauen bei laufender Version, nur `twin-core` stoppen, sichern,
+starten). Sicherung `/opt/airport-backups/pre-44cbdc2-20261022T070008Z.tar.gz`, 70.547.583 Bytes,
+Modus 0600, SHA256 `07a546ecea5a155a0a1d98b7524565191cb07e4a7217b8fb38d156d10ac6b997`, MD5 aller
+Dateien gegen das Volume identisch, Pruefkopie entfernt. Netze 10.253.250/251 nur eigenes Projekt.
+
+Abnahme: HTTPS `/health` ok; Tabellen fuer MUC, FRA, CGN, DTM verfuegbar (v4); 15 Flughaefen in
+der Liste; `smoke_electrification.py` (auf 226 Fahrzeuge und v4 angepasst) und
+`smoke_public_simulation.py` bestanden.
+
+## Release vom 21.10.2026 (Echte Flughäfen)
 
 Code-Release `b0accdd4f9d71482a988baf8545a669dea4a7166`, PR #44, aus
 `/opt/airport-releases/b0accdd`. CI fuer den Push-Lauf von b0accdd erfolgreich

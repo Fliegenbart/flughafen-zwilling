@@ -40,10 +40,19 @@ ENGINE_VERSION = "airport_coupled_v2"
 ELECTRIFICATION_ENGINE_VERSION = "airport_electrification_v1"
 GRID_SIZING_ENGINE_VERSION = "airport_electrification_v2"
 PREDICTIVE_ENGINE_VERSION = "airport_electrification_v3"
+# v4: Ladeplanung mit Rueckkopplung auf den Ladestand und Planreserve, eingeschwungener Endstand
+# (der letzte Tag muss sich selbst tragen), steuerbares Parkhaus, Speicher laedt aus der vollen
+# freien Reserve. v3 bleibt fuer eingefrorene Laeufe unveraendert.
+CYCLIC_ENGINE_VERSION = "airport_electrification_v4"
+PLANNING_ENGINE_VERSIONS = (PREDICTIVE_ENGINE_VERSION, CYCLIC_ENGINE_VERSION)
 LEGACY_ENGINE_VERSIONS = ("airport_coupled_v1",)
 EngineVersion = Literal["airport_coupled_v1", "airport_coupled_v2", "airport_electrification_v1",
-                        "airport_electrification_v2", "airport_electrification_v3"]
-FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu"]
+                        "airport_electrification_v2", "airport_electrification_v3",
+                        "airport_electrification_v4"]
+FleetKind = Literal["bus", "baggage_tractor", "pushback_tug", "gpu",
+                    # Weitere Abfertigungsgeraete (Engine v4, Paket 3).
+                    "belt_loader", "stairs", "loader", "catering", "lavatory", "water"]
+Aircraft = Literal["narrow", "wide"]
 CoupledPolicy = Literal["uncontrolled", "mission_priority", "lookahead"]
 
 
@@ -70,6 +79,44 @@ class FleetSpec(StrictModel):
     departure_buffer_min: int = Field(default=10, ge=0, le=60)
     arrival_allowance_min: int = Field(default=30, ge=1, le=180)
     coverage_pct: float = Field(default=35, ge=0, le=100)
+    # Engine v4 (alle optional, ohne Angabe wie bisher): welche Flugrichtung die Klasse bedient,
+    # wie viele Fahrzeuge je Flug fahren und was fuer Grossraumflugzeuge anders ist.
+    serves: Literal["both", "arrival", "departure"] | None = Field(
+        default=None, exclude_if=lambda value: value is None)
+    units_per_flight: int = Field(default=1, ge=1, le=6, exclude_if=lambda value: value == 1)
+    wide_units_per_flight: int | None = Field(default=None, ge=0, le=8,
+                                              exclude_if=lambda value: value is None)
+    wide_mission_energy_kwh: float | None = Field(default=None, gt=0, le=500,
+                                                  exclude_if=lambda value: value is None)
+    wide_service_duration_min: int | None = Field(default=None, ge=1, le=240,
+                                                  exclude_if=lambda value: value is None)
+    wide_departure_lead_min: int | None = Field(default=None, ge=1, le=240,
+                                                exclude_if=lambda value: value is None)
+    wide_arrival_allowance_min: int | None = Field(default=None, ge=1, le=240,
+                                                   exclude_if=lambda value: value is None)
+    wide_coverage_pct: float | None = Field(default=None, ge=0, le=100,
+                                            exclude_if=lambda value: value is None)
+    # Reine Frachtfluege: Abdeckung der Klasse (z. B. 0 fuer Busse); ohne Angabe wie Passagiere.
+    freight_coverage_pct: float | None = Field(default=None, ge=0, le=100,
+                                               exclude_if=lambda value: value is None)
+
+    def for_aircraft(self, aircraft: str, freight: bool = False,
+                     ) -> tuple[float, int, int, int, int, float]:
+        """(Energie, Servicezeit, Vorlauf Abflug, Zeitfenster Ankunft, Fahrzeuge je Flug,
+        Abdeckung) fuer Schmal- oder Grossraumflugzeuge, Passagier- oder Frachtflug."""
+        wide = aircraft == "wide"
+
+        def pick(narrow, wide_value):
+            return wide_value if wide and wide_value is not None else narrow
+        coverage = pick(self.coverage_pct, self.wide_coverage_pct)
+        if freight and self.freight_coverage_pct is not None:
+            coverage = self.freight_coverage_pct
+        return (pick(self.mission_energy_kwh, self.wide_mission_energy_kwh),
+                pick(self.service_duration_min, self.wide_service_duration_min),
+                pick(self.departure_lead_min, self.wide_departure_lead_min),
+                pick(self.arrival_allowance_min, self.wide_arrival_allowance_min),
+                pick(self.units_per_flight, self.wide_units_per_flight),
+                coverage)
 
     @model_validator(mode="after")
     def validate_physics(self) -> FleetSpec:
@@ -85,14 +132,16 @@ class FleetSpec(StrictModel):
             raise ValueError("Ladeziel muss oberhalb der Reserve liegen")
         if self.initial_soc_pct < self.reserve_soc_pct:
             raise ValueError("Flotten-Start-SOC liegt unter der Reserve")
-        if self.mission_energy_kwh > self.battery_capacity_kwh * (
-            self.charge_target_soc_pct - self.reserve_soc_pct
-        ) / 100:
-            raise ValueError("Mission benoetigt mehr Energie als oberhalb der Reserve ladbar")
-        if self.departure_lead_min - self.departure_buffer_min < self.service_duration_min:
-            raise ValueError("Abflug-Servicefenster ist kuerzer als der angenommene Einsatz")
-        if self.arrival_allowance_min < self.service_duration_min:
-            raise ValueError("Ankunfts-Servicefenster ist kuerzer als der angenommene Einsatz")
+        for aircraft in ("narrow", "wide"):
+            energy, service, lead, allowance, _, _ = self.for_aircraft(aircraft)
+            if energy > self.battery_capacity_kwh * (
+                self.charge_target_soc_pct - self.reserve_soc_pct
+            ) / 100:
+                raise ValueError("Mission benoetigt mehr Energie als oberhalb der Reserve ladbar")
+            if lead - self.departure_buffer_min < service:
+                raise ValueError("Abflug-Servicefenster ist kuerzer als der angenommene Einsatz")
+            if allowance < service:
+                raise ValueError("Ankunfts-Servicefenster ist kuerzer als der angenommene Einsatz")
         return self
 
 
@@ -112,6 +161,23 @@ def default_fleets() -> list[FleetSpec]:
                   return_min=5, departure_lead_min=60, departure_buffer_min=15,
                   coverage_pct=100),
     ]
+
+
+ParkingGroupKind = Literal["traveler", "day", "dc"]
+
+
+class ParkingGroup(StrictModel):
+    """Eine Nutzergruppe im Parkhaus (Engine v4): Reisende mit Frist bis 24 h, Tagesgaeste mit
+    Rueckkehr am selben Tag, Schnelllader (kurz, nie verschoben oder gedrosselt)."""
+    group: ParkingGroupKind
+    sessions: int = Field(ge=0)
+    charger_kw: float = Field(gt=0, le=400)
+    # Hoechste Standzeit am Ladepunkt (z. B. Blockiergebuehr oder Zeitgrenze des Betreibers).
+    max_dwell_min: int | None = Field(default=None, ge=15, le=1440,
+                                      exclude_if=lambda value: value is None)
+    # Ankuenfte je Ortsstunde; ohne Angabe aus den Fluegen der Welt abgeleitet.
+    arrival_by_hour: list[float] | None = Field(default=None, min_length=24, max_length=24,
+                                                exclude_if=lambda value: value is None)
 
 
 class PowerConfig(StrictModel):
@@ -139,6 +205,9 @@ class PowerConfig(StrictModel):
     )
     parking_sessions: int = Field(default=200, ge=0)
     parking_charger_kw: float = Field(default=11, gt=0, le=150)
+    # Engine v4: Parkhaus nach Nutzergruppen; None = Standardaufteilung der parking_sessions.
+    parking_groups: list[ParkingGroup] | None = Field(default=None, max_length=12,
+                                                      exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def valid_storage(self) -> PowerConfig:
@@ -154,6 +223,10 @@ class PowerConfig(StrictModel):
             self.battery_capacity_kwh <= 0 or self.battery_power_kw <= 0
         ):
             raise ValueError("Netzladung des Speichers benoetigt Kapazitaet und Leistung")
+        if self.parking_groups is not None and (
+            sum(g.sessions for g in self.parking_groups) != self.parking_sessions
+        ):
+            raise ValueError("Parkhaus-Gruppen passen nicht zur Zahl der Ladevorgaenge")
         return self
 
 
@@ -177,7 +250,7 @@ class StressEvent(StrictModel):
 
 class CoupledConfig(StrictModel):
     power: PowerConfig = Field(default_factory=PowerConfig)
-    fleets: list[FleetSpec] = Field(default_factory=default_fleets, min_length=1, max_length=4)
+    fleets: list[FleetSpec] = Field(default_factory=default_fleets, min_length=1, max_length=10)
     warmup_min: int = Field(default=120, ge=0, le=240)
     drain_min: int = Field(default=240, ge=0, le=480)
     shared_group_policy: Literal["reject_unresolved", "independent_entries_assumption"] = (
@@ -185,9 +258,20 @@ class CoupledConfig(StrictModel):
     )
     stress_events: list[StressEvent] = Field(default_factory=list, max_length=20)
     repeat_days: int = Field(default=1, ge=1, le=3, exclude_if=lambda value: value == 1)
+    # Engine v4: Anteil der Fluege mit Grossraumflugzeug (zufaellig je Flug, fester Seed).
+    widebody_share_pct: float = Field(default=0, ge=0, le=100,
+                                      exclude_if=lambda value: value == 0)
+    # Engine v4: Anteil Frachtfluege je Ortsstunde (0..1) und ihr Grossraumanteil.
+    freight_share_by_hour: list[float] | None = Field(
+        default=None, min_length=24, max_length=24, exclude_if=lambda value: value is None)
+    freight_widebody_share_pct: float = Field(default=0, ge=0, le=100,
+                                              exclude_if=lambda value: value == 0)
 
     @model_validator(mode="after")
     def unique_fleets(self) -> CoupledConfig:
+        if self.freight_share_by_hour is not None and any(
+                not 0 <= s <= 1 for s in self.freight_share_by_hour):
+            raise ValueError("Frachtanteil je Stunde zwischen 0 und 1")
         if len({f.kind for f in self.fleets}) != len(self.fleets):
             raise ValueError("Fahrzeugklasse mehrfach definiert")
         if sum(f.vehicles for f in self.fleets) > limit("fleet_total"):
@@ -213,6 +297,8 @@ class Mission(StrictModel):
     return_min: int = Field(ge=0)
     energy_kwh: float = Field(gt=0)
     service_day: int = Field(default=0, ge=0, le=2, exclude_if=lambda value: value == 0)
+    aircraft: Aircraft | None = Field(default=None, exclude_if=lambda value: value is None)
+    freight: bool = Field(default=False, exclude_if=lambda value: not value)
 
 
 class ParkingJob(StrictModel):
@@ -221,6 +307,8 @@ class ParkingJob(StrictModel):
     deadline_min: int
     energy_kwh: float = Field(gt=0)
     charger_kw: float = Field(gt=0)
+    # Engine v4: Nutzergruppe; "dc" (Schnelllader) wird nie verschoben oder gedrosselt.
+    group: ParkingGroupKind | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class CoupledWorld(StrictModel):

@@ -4,7 +4,7 @@ from test_demo_materialization import _completed
 from test_variants import client  # noqa: F401
 
 from app.exchange.electrification import ElectrificationRequest, prepare_electrification
-from app.munich.coupled_models import ELECTRIFICATION_ENGINE_VERSION, PREDICTIVE_ENGINE_VERSION
+from app.munich.coupled_models import CYCLIC_ENGINE_VERSION, ELECTRIFICATION_ENGINE_VERSION
 from app.munich.coupled_simulator import simulate_coupled
 from app.munich.coupled_world import build_world
 
@@ -17,8 +17,9 @@ def test_share_replaces_vehicles_without_changing_fleet_or_demand(share):
         electric_share_pct=share), "direct")
     assert plan.content_sha256 == plan0.content_sha256
     assert plan.rows == plan0.rows
-    assert sum(f.vehicles for f in config.fleets) == 100
-    assert sum(f.electric_vehicles for f in config.fleets) == share
+    total = sum(f.vehicles for f in config.fleets)
+    assert total == 226
+    assert sum(f.electric_vehicles for f in config.fleets) == (total * share + 50) // 100
     assert [f.vehicles for f in config.fleets] == [f.vehicles for f in config0.fleets]
     assert [f.chargers for f in config.fleets] == [f.chargers for f in config0.fleets]
     assert world.missions == world0.missions
@@ -57,9 +58,9 @@ def test_comparison_is_reproducible_and_freezes_three_fair_variants(client):  # 
     data.pop("compute_ms")
     second.pop("compute_ms")
     assert data == second
-    assert data["comparison_contract"]["total_vehicles"] == 100
-    assert data["comparison_contract"]["electric_vehicles"] == 70
-    assert data["comparison_contract"]["non_electric_vehicles"] == 30
+    assert data["comparison_contract"]["total_vehicles"] == 226
+    assert data["comparison_contract"]["electric_vehicles"] == 158
+    assert data["comparison_contract"]["non_electric_vehicles"] == 68
     direct, managed, storage = data["variants"]
     assert direct["world_hash"] == managed["world_hash"]
     assert direct["metadata"]["config"]["fleets"] == storage["metadata"]["config"]["fleets"]
@@ -87,7 +88,7 @@ def test_selected_variant_is_preserved_in_normal_sil_run(client):  # noqa: F811
     assert record["summary"]["coupled_kpis"] == preview["coupled_kpis"]
     assert record["summary"]["energy_world_hash"] == preview["world_hash"]
     assert record["model_pack_snapshot"]["calibration_meta"]["engine_version"] == (
-        PREDICTIVE_ENGINE_VERSION)
+        CYCLIC_ENGINE_VERSION)
 
 
 @pytest.mark.parametrize("payload", [

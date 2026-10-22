@@ -92,7 +92,8 @@ def test_lookahead_is_deterministic_and_preserves_duty_and_power_limits():
             assert left["return_complete_min"] <= right["actual_start_min"] or right["return_complete_min"] <= left["actual_start_min"]
 
 
-def test_v3_mixed_fleet_energy_lower_bound_uses_fixed_electric_duties():
+def test_mixed_fleet_energy_lower_bound_uses_fixed_electric_duties_of_the_measured_day():
+    from app.munich.coupled_world import steady_cycle
     _, _, _, zero_electric, _ = prepare_electrification(ElectrificationRequest(
         electric_share_pct=0, grid_import_limit_kw=1000), "managed")
     _, _, _, mixed, _ = prepare_electrification(ElectrificationRequest(
@@ -102,10 +103,12 @@ def test_v3_mixed_fleet_energy_lower_bound_uses_fixed_electric_duties():
         for fleet in mixed.config.fleets
         for index in range(1, (fleet.electric_vehicles or 0) + 1)
     }
+    first, last = steady_cycle(mixed)
     fixed_ev_energy = sum(
         duty.energy_kwh for duty in duty_roster(mixed) if duty.vehicle_id in electric_ids
+        and first <= duty.start_min and duty.start_min + duty.duration_min + duty.return_min <= last
     )
-    horizon_hours = (mixed.end_min - mixed.start_min) / 60
+    horizon_hours = (last - first) / 60
     expected_increment = fixed_ev_energy / horizon_hours / (
         mixed.config.power.charging_efficiency * mixed.config.power.transformer_efficiency
     )

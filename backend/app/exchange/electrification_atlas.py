@@ -12,11 +12,17 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
-from ..munich.coupled_models import PREDICTIVE_ENGINE_VERSION
-from .airport_model import AIRPORT_MODEL_VERSION, grid_raster, storage_axis
+from ..munich.coupled_models import CYCLIC_ENGINE_VERSION
+from .airport_model import (
+    AIRPORT_MODEL_VERSION,
+    airport_config,
+    airport_day,
+    grid_raster,
+    storage_axis,
+)
 from .airport_spec import load_spec
 from .demo import _canonical_hash
-from .electrification_reference import REFERENCE_ID, reference_config
+from .electrification_reference import REFERENCE_ID, reference_config, reference_day
 from .grid_sizing import GRID_MAX_KW, GRID_STEP_KW
 
 ATLAS_PATH = Path(__file__).resolve().parent / "data" / "electrification_atlas.json"
@@ -47,15 +53,14 @@ def axes_for(airport: str | None) -> dict:
 
 def reference_id_for(airport: str | None) -> str:
     """Kennung des Modells; aendert sich mit allem, was die Rechnung des Flughafens treibt."""
+    # Aus der tatsaechlich gerechneten Konfiguration und dem Flugplan, keine Feldliste.
     if airport is None:
-        return REFERENCE_ID
+        return f"{REFERENCE_ID}:" + _canonical_hash({
+            "config": reference_config().model_dump(mode="json"),
+            "plan": reference_day().content_sha256})[:16]
     spec = load_spec(airport)
-    model = spec.model_dump(include={"departures_per_day", "departures_by_hour",
-                                     "arrivals_by_hour", "coverage_pct",
-                                     "parking_sessions_per_day", "fleet"})
-    model["fleet"] = {k: v for k, v in (model["fleet"] or {}).items() if k != "basis"}
-    # Fahrzeugdaten kommen aus dem Beispielflughafen: aendert der sich, gilt die Tabelle nicht mehr.
-    model["reference"] = [REFERENCE_ID, _canonical_hash(reference_config().model_dump(mode="json"))]
+    model = {"config": airport_config(spec).model_dump(mode="json"),
+             "plan": airport_day(airport).content_sha256}
     return f"{AIRPORT_MODEL_VERSION}:{airport}:{_canonical_hash(model)[:16]}"
 
 
@@ -84,7 +89,7 @@ def load_atlas(airport: str | None = None) -> dict | None:
         expected = (reference_id_for(airport), axes_for(airport))
     except (OSError, ValueError, KeyError):
         return None
-    if (data.get("engine_version") != PREDICTIVE_ENGINE_VERSION
+    if (data.get("engine_version") != CYCLIC_ENGINE_VERSION
             or data.get("reference_id") != expected[0]
             or data.get("grid_step_kw") != step or data.get("grid_max_kw") != top
             or data.get("axes") != expected[1]):
@@ -102,11 +107,22 @@ def atlas_sizes(share: int, storage: float, pv: float, parking: int,
     if entry is None:
         return None
     step, top = raster_for(airport)
-    return {
-        solution: {"status": status, "required_grid_kw": required, "step_kw": step,
+    out = {
+        solution: {"status": cell[0], "required_grid_kw": cell[1], "step_kw": step,
                    "max_kw": top, "evaluations": [], "source": "atlas"}
-        for solution, (status, required) in zip(SOLUTIONS, entry)
+        for solution, cell in zip(SOLUTIONS, entry)
     }
+    # Dritter Wert der Speicherspalte: "off", wenn der Speicher dort ausgeschaltet bleibt.
+    out["managed_storage"]["storage_mode"] = (entry[2][2] if len(entry[2]) > 2 else "on")
+    return out
+
+
+def fleet_for(airport: str | None) -> dict[str, int]:
+    """Fahrzeuge je Klasse im Modell (fuer den Hinweis 'N von M Fahrzeugen')."""
+    if airport is None:
+        return {f.kind: f.vehicles for f in reference_config().fleets}
+    spec = load_spec(airport)
+    return dict(spec.fleet.vehicles) if spec.fleet else {}
 
 
 def public_atlas(airport: str | None = None) -> dict:
@@ -116,11 +132,12 @@ def public_atlas(airport: str | None = None) -> dict:
     if data is None or not data.get("peaks"):
         return {"available": False}
     return {
+        "fleet": fleet_for(airport),
         "available": True, "engine_version": data["engine_version"],
         "reference_id": data["reference_id"], "grid_step_kw": data["grid_step_kw"],
         "airport": airport,
         "grid_max_kw": data["grid_max_kw"], "axes": data["axes"], "solutions": list(SOLUTIONS),
-        "entries": {k: [required for _, required in v] for k, v in data["entries"].items()},
+        "entries": {k: [cell[1] for cell in v] for k, v in data["entries"].items()},
         "peaks": {k: required for k, (_, required) in data["peaks"].items()},
         "evidence_level": "synthetic_uncalibrated",
     }

@@ -46,9 +46,8 @@ export type Stage = {
   /** Ohne Speicher ist Stufe 3 dieselbe Rechnung wie Stufe 2. */
   inactive?: boolean;
   /**
-   * Der Speicher senkt den Bedarf nicht: Die einfache Speicherregel des Modells laedt aus dem
-   * Netz nach und muss am Ende voll sein. Ein Speicher, der nicht hilft, bliebe aus; die Stufe
-   * zaehlt dann nicht.
+   * Der Speicher senkt den Bedarf nicht, meist weil schon das Lademanagement die Leistung fast
+   * den ganzen Tag nutzt. Er bliebe dann aus (storage_mode "off"); die Stufe zaehlt nicht.
    */
   noGain?: boolean;
 };

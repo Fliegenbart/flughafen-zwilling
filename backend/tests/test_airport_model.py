@@ -84,7 +84,7 @@ def test_atlas_of_an_airport_is_checked_against_its_spec(tst, tmp_path):
     axes = electrification_atlas.axes_for("TST")
     assert axes["pv_kwp"] == [0] and axes["parking_sessions"] == [0, 150]
     step, top = electrification_atlas.raster_for("TST")
-    payload = {"engine_version": "airport_electrification_v3",
+    payload = {"engine_version": "airport_electrification_v4",
                "reference_id": electrification_atlas.reference_id_for("TST"),
                "grid_step_kw": step, "grid_max_kw": top, "axes": axes,
                "entries": {"30|0|0|0": [["feasible", 600], ["feasible", 450], ["feasible", 450]]},
@@ -113,7 +113,7 @@ def test_public_requests_only_hit_the_table(client, tst):  # noqa: F811
                for s in axes["electric_share_pct"] for st in axes["storage_kwh"]
                for pk in axes["parking_sessions"]}
     electrification_atlas.path_for("TST").write_text(json.dumps({
-        "engine_version": "airport_electrification_v3",
+        "engine_version": "airport_electrification_v4",
         "reference_id": electrification_atlas.reference_id_for("TST"),
         "grid_step_kw": step, "grid_max_kw": top, "axes": axes, "entries": entries,
         "peaks": {f"{s}|0|{pk}": ["feasible", 900] for s in axes["electric_share_pct"]

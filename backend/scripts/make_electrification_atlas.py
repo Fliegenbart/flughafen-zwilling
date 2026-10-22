@@ -23,7 +23,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from app.exchange.electrification import size_solution, uncontrolled_need  # noqa: E402
+from app.exchange.electrification import (  # noqa: E402
+    ENGINE,
+    size_solution,
+    size_with_storage,
+    uncontrolled_need,
+)
 from app.exchange.electrification_atlas import (  # noqa: E402
     atlas_key,
     axes_for,
@@ -32,21 +37,23 @@ from app.exchange.electrification_atlas import (  # noqa: E402
     raster_for,
     reference_id_for,
 )
-from app.munich.coupled_models import PREDICTIVE_ENGINE_VERSION  # noqa: E402
 
 
 def _short(result: dict) -> list:
-    return [result["status"], result["required_grid_kw"]]
+    short = [result["status"], result["required_grid_kw"]]
+    # Speicher ausgeschaltet (nie mehr Anschluss als ohne Speicher): als dritter Wert.
+    return short + ["off"] if result.get("storage_mode") == "off" else short
 
 
 def group(share: int, pv: int, parking: int, airport: str | None = None) -> dict:
     """Direkt und vorausschauend einmal, mit Speicher fuer jede Speicherstufe."""
     direct = _short(size_solution("direct", share, 0, pv, parking, airport))
-    managed = _short(size_solution("managed", share, 0, pv, parking, airport))
+    managed_result = size_solution("managed", share, 0, pv, parking, airport)
+    managed = _short(managed_result)
     out = {}
     for storage in axes_for(airport)["storage_kwh"]:
         with_storage = managed if storage == 0 else _short(
-            size_solution("managed_storage", share, storage, pv, parking, airport))
+            size_with_storage(managed_result, share, storage, pv, parking, airport))
         out[atlas_key(share, storage, pv, parking)] = [direct, managed, with_storage]
     return out
 
@@ -74,10 +81,10 @@ def main() -> None:
     if "--peaks-only" in sys.argv:
         payload = json.loads(path.read_text(encoding="utf-8"))
         if (payload.get("axes") != axes
-                or payload.get("engine_version") != PREDICTIVE_ENGINE_VERSION):
+                or payload.get("engine_version") != ENGINE):
             raise SystemExit("Vorhandene Datei passt nicht zum Modell; ganz neu rechnen.")
     else:
-        payload = {"engine_version": PREDICTIVE_ENGINE_VERSION,
+        payload = {"engine_version": ENGINE,
                    "reference_id": reference_id_for(airport),
                    "grid_step_kw": step, "grid_max_kw": top, "axes": axes,
                    "entries": run(group, groups, airport)}

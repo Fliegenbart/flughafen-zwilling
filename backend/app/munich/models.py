@@ -104,3 +104,12 @@ class EnergyKpiSummary(BaseModel):
         default=None, ge=0, exclude_if=lambda value: value is None)
     storage_recharge_deficit_kwh: float | None = Field(
         default=None, ge=0, exclude_if=lambda value: value is None)
+    # Ab airport_electrification_v4: Speicherstand zu Beginn und Ende des Messtags.
+    battery_cycle_start_kwh: float | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None)
+    battery_cycle_end_kwh: float | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None)
+    # Fehlbetrag, den der Speicher am Messtag ausgleichen kann: was er zusaetzlich haette
+    # aufnehmen koennen, waehrend er voll war, begrenzt durch den Abstand zur Reserve.
+    battery_cycle_absorbable_kwh: float | None = Field(
+        default=None, ge=0, exclude_if=lambda value: value is None)
