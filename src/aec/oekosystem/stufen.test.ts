@@ -8,6 +8,7 @@ const atlas = (
   storage: number | null,
 ): Atlas => ({
   axes: { electric_share_pct: [50], storage_kwh: [0, 2000], pv_kwp: [500], parking_sessions: [40] },
+  fleet: {},
   // Der erste Wert (direkt, am Anschluss begrenzt) gehört zur Seite für Fachleute.
   entries: {
     "50|2000|500|40": [875, managed, storage],
